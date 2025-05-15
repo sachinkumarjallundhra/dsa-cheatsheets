@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sliding Window Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Sliding Window – Java Cheat Sheet (One Page)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>Sliding Window is a technique to reduce time complexity for problems involving subarrays or substrings. 
+    Instead of nested loops, we “slide” a window across the input.</p>
+
+    <h2>🧱 Pattern Template (Fixed Size)</h2>
+    <pre><code>int sum = 0;
+for (int i = 0; i < nums.length; i++) {
+    sum += nums[i];
+    if (i >= k - 1) {
+        max = Math.max(max, sum);
+        sum -= nums[i - k + 1];
+    }
+}</code></pre>
+
+    <h2>🧱 Pattern Template (Variable Size)</h2>
+    <pre><code>int left = 0;
+for (int right = 0; right < s.length(); right++) {
+    // expand window by including s.charAt(right)
+
+    while (window is invalid) {
+        // shrink window from left
+        left++;
+    }
+
+    if (window is valid) {
+        // update result
+    }
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Maximum/Minimum sum of subarrays</li>
+      <li>Substring with constraints (e.g., distinct chars)</li>
+      <li>Smallest/Longest valid window</li>
+      <li>Binary array with flips allowed</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>239: Sliding Window Maximum</li>
+      <li>3: Longest Substring Without Repeating Characters</li>
+      <li>76: Minimum Window Substring</li>
+      <li>209: Minimum Size Subarray Sum</li>
+      <li>424: Longest Repeating Character Replacement</li>
+    </ul>
+
+    <h2>🧪 Example: Max Sum of Size k</h2>
+    <pre><code>int maxSum = 0, windowSum = 0;
+for (int i = 0; i < nums.length; i++) {
+    windowSum += nums[i];
+    if (i >= k - 1) {
+        maxSum = Math.max(maxSum, windowSum);
+        windowSum -= nums[i - k + 1];
+    }
+}</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use two pointers (left & right) for variable-sized windows</li>
+      <li>Carefully manage window conditions when shrinking</li>
+      <li>Most problems can be solved in O(n) with a correct window</li>
+    </ul>
+  </div>
+</body>
+</html>
