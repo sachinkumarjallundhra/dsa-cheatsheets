@@ -1,47 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fast and Slow Pointer Cheat Sheet</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 2rem auto;
-      max-width: 800px;
-      color: #333;
-    }
-    h1, h2 {
-      color: #2c3e50;
-    }
-    code {
-      background-color: #f4f4f4;
-      padding: 0.2rem 0.4rem;
-      border-radius: 4px;
-      font-size: 0.95rem;
-    }
-    pre {
-      background: #f9f9f9;
-      padding: 1rem;
-      border-left: 4px solid #3498db;
-      overflow-x: auto;
-    }
-    ul {
-      margin: 0.5rem 0 1rem 1.5rem;
-    }
-  </style>
+  <link rel="stylesheet" href="../style.css" />
 </head>
 <body>
-  <h1>🐢🐇 Fast and Slow Pointer – Java Cheat Sheet (One Page)</h1>
+  <div class="container">
+    <h1>🐢🐇 Fast and Slow Pointer – Java Cheat Sheet (One Page)</h1>
 
-  <h2>📌 What Is It?</h2>
-  <p>Two pointers move at different speeds. Often used for cycle detection, midpoint finding, and palindrome logic.</p>
-  <ul>
-    <li>Slow moves one step at a time</li>
-    <li>Fast moves two steps at a time</li>
-  </ul>
+    <h2>📌 What Is It?</h2>
+    <p>Two pointers move at different speeds. Often used for cycle detection, midpoint finding, and palindrome logic.</p>
+    <ul>
+      <li>Slow moves one step at a time</li>
+      <li>Fast moves two steps at a time</li>
+    </ul>
 
-  <h2>🧱 Pattern Template</h2>
-  <pre><code>ListNode slow = head;
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>ListNode slow = head;
 ListNode fast = head;
 
 while (fast != null && fast.next != null) {
@@ -49,26 +26,26 @@ while (fast != null && fast.next != null) {
     fast = fast.next.next;
 }</code></pre>
 
-  <h2>✅ Use Cases</h2>
-  <ul>
-    <li>Detect cycles in linked list or array</li>
-    <li>Find middle of a linked list</li>
-    <li>Check if a linked list is a palindrome</li>
-    <li>Detect infinite loop (e.g., Happy Number)</li>
-    <li>Find circular paths in arrays</li>
-  </ul>
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Detect cycles in linked list or array</li>
+      <li>Find middle of a linked list</li>
+      <li>Check if a linked list is a palindrome</li>
+      <li>Detect infinite loop (e.g., Happy Number)</li>
+      <li>Find circular paths in arrays</li>
+    </ul>
 
-  <h2>📘 Common LeetCode Problems</h2>
-  <ul>
-    <li>141: Linked List Cycle</li>
-    <li>876: Middle of the Linked List</li>
-    <li>234: Palindrome Linked List</li>
-    <li>202: Happy Number</li>
-    <li>457: Circular Array Loop</li>
-  </ul>
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>141: Linked List Cycle</li>
+      <li>876: Middle of the Linked List</li>
+      <li>234: Palindrome Linked List</li>
+      <li>202: Happy Number</li>
+      <li>457: Circular Array Loop</li>
+    </ul>
 
-  <h2>🧪 Example 1: Detect Cycle in Linked List</h2>
-  <pre><code>public boolean hasCycle(ListNode head) {
+    <h2>🧪 Example 1: Detect Cycle in Linked List</h2>
+    <pre><code>public boolean hasCycle(ListNode head) {
     ListNode slow = head, fast = head;
     while (fast != null && fast.next != null) {
         slow = slow.next;
@@ -78,8 +55,8 @@ while (fast != null && fast.next != null) {
     return false;
 }</code></pre>
 
-  <h2>🧪 Example 2: Find Middle of Linked List</h2>
-  <pre><code>public ListNode middleNode(ListNode head) {
+    <h2>🧪 Example 2: Find Middle of Linked List</h2>
+    <pre><code>public ListNode middleNode(ListNode head) {
     ListNode slow = head, fast = head;
     while (fast != null && fast.next != null) {
         slow = slow.next;
@@ -88,12 +65,12 @@ while (fast != null && fast.next != null) {
     return slow;
 }</code></pre>
 
-  <h2>💡 Pro Tips</h2>
-  <ul>
-    <li>Fast pointer catches slow → cycle exists</li>
-    <li>Slow can be used to reverse second half for palindrome check</li>
-    <li>Works for arrays using indices too</li>
-  </ul>
-
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Fast pointer catches slow → cycle exists</li>
+      <li>Slow can be used to reverse second half for palindrome check</li>
+      <li>Works for arrays using indices too</li>
+    </ul>
+  </div>
 </body>
 </html>
