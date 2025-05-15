@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fast & Slow Pointer – Find Middle of Linked List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff;
+      color: #333;
+      padding: 1rem;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 0.2rem;
+    }
+    .animation-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .list-container {
+      position: relative;
+      display: flex;
+      gap: 8px; /* reduced gap */
+      justify-content: center;
+      flex-wrap: nowrap;
+      max-width: 100%;
+      overflow-x: visible; /* no scrollbar */
+      padding-bottom: 60px; /* space for pointer labels */
+    }
+    .node {
+      width: 40px; /* smaller node */
+      height: 40px;
+      border-radius: 50%;
+      background-color: #f9f9f9;
+      border: 2px solid #bbb;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      user-select: none;
+      position: relative;
+      transition: box-shadow 0.3s ease;
+      flex-shrink: 0;
+      font-size: 14px;
+    }
+    .node:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .slow, .fast {
+      position: absolute;
+      top: 48px; /* adjusted for smaller nodes */
+      font-weight: bold;
+      font-size: 1.2rem;
+      padding: 2px 6px;
+      border-radius: 5px;
+      background-color: #eee;
+      user-select: none;
+      white-space: nowrap;
+      transition: transform 0.5s ease;
+    }
+    .slow {
+      color: #2ea44f;
+      border: 1.5px solid #2ea44f;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .fast {
+      color: #d73a49;
+      border: 1.5px solid #d73a49;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    #status {
+      font-size: 1.2rem;
+      color: #2c3e50;
+      min-height: 1.4em;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      background-color: #0366d6;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #0356b6;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐢🐇 Fast & Slow Pointer – Find Middle of Linked List</h1>
+  <p>Click the button to watch slow and fast pointers move linearly. Fast reaches end; slow points to middle.</p>
+
+  <div class="animation-wrapper">
+    <div class="list-container" id="list"></div>
+    <div id="status"></div>
+    <button onclick="startMiddleFinder()">▶️ Start Animation</button>
+  </div>
+
+  <script>
+    const totalNodes = 11; // Odd length for clear middle
+    const listContainer = document.getElementById('list');
+    let slow = 0;
+    let fast = 0;
+    let nodeElements = [];
+    let interval;
+
+    // Create linear nodes
+    for (let i = 0; i < totalNodes; i++) {
+      const node = document.createElement('div');
+      node.className = 'node';
+      node.textContent = i;
+      listContainer.appendChild(node);
+      nodeElements.push(node);
+    }
+
+    function clearMarkers() {
+      nodeElements.forEach(node => {
+        const slowMark = node.querySelector('.slow');
+        const fastMark = node.querySelector('.fast');
+        if (slowMark) node.removeChild(slowMark);
+        if (fastMark) node.removeChild(fastMark);
+      });
+    }
+
+    function updateMarkers() {
+      clearMarkers();
+
+      const slowMark = document.createElement('div');
+      slowMark.className = 'slow';
+      slowMark.textContent = '🐢';
+      nodeElements[slow].appendChild(slowMark);
+
+      if (fast < totalNodes) {
+        const fastMark = document.createElement('div');
+        fastMark.className = 'fast';
+        fastMark.textContent = '🐇';
+        nodeElements[fast].appendChild(fastMark);
+      }
+    }
+
+    function startMiddleFinder() {
+      slow = 0;
+      fast = 0;
+      document.getElementById('status').textContent = '';
+      clearInterval(interval);
+      updateMarkers();
+
+      interval = setInterval(() => {
+        slow = slow + 1;
+        fast = fast + 2;
+
+        if (fast >= totalNodes) {
+          document.getElementById('status').textContent = `🎯 Middle Found at node ${slow}`;
+          clearInterval(interval);
+          updateMarkers();
+          return;
+        }
+
+        updateMarkers();
+      }, 800);
+    }
+
+    updateMarkers();
+  </script>
+</body>
+</html>

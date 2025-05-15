@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fast & Slow Pointer – Cycle Detection (Circular Layout)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fff;
+      color: #333;
+      padding: 1rem;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 0.2rem;
+    }
+    .animation-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .circle-container {
+      position: relative;
+      width: 320px;
+      height: 320px;
+    }
+    .node {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: #f9f9f9;
+      border: 2px solid #bbb;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      user-select: none;
+      transition: box-shadow 0.3s ease;
+    }
+    .node:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .slow, .fast {
+      position: absolute;
+      bottom: -28px;
+      font-weight: bold;
+      font-size: 1.5rem;  /* bigger for emojis */
+      padding: 4px 8px;
+      border-radius: 5px;
+      background-color: #eee;
+      user-select: none;
+      transition: transform 0.5s ease;
+      white-space: nowrap;
+    }
+    .slow {
+      color: #2ea44f;
+      border: 1.5px solid #2ea44f;
+      left: 8px;
+    }
+    .fast {
+      color: #d73a49;
+      border: 1.5px solid #d73a49;
+      right: 8px;
+    }
+    #status {
+      font-size: 1.2rem;
+      color: #2c3e50;
+      min-height: 1.4em;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      background-color: #0366d6;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #0356b6;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐢🐇 Fast & Slow Pointer – Cycle Detection</h1>
+  <p>Click the button to watch slow and fast pointers move around a circular linked list until they meet.</p>
+
+  <div class="animation-wrapper">
+    <div class="circle-container" id="circle"></div>
+    <div id="status"></div>
+    <button onclick="startCycleDetection()">▶️ Start Animation</button>
+  </div>
+
+  <script>
+    const totalNodes = 10;
+    const radius = 120;
+    const container = document.getElementById('circle');
+    let slow = 0;
+    let fast = 0;
+    let nodeElements = [];
+    let interval;
+
+    // Create nodes positioned in a circle
+    for (let i = 0; i < totalNodes; i++) {
+      const angle = (2 * Math.PI * i) / totalNodes;
+      const x = radius + radius * Math.cos(angle) - 30; // -30 to center node (width/2)
+      const y = radius + radius * Math.sin(angle) - 30; // -30 to center node (height/2)
+
+      const node = document.createElement('div');
+      node.className = 'node';
+      node.style.left = `${x}px`;
+      node.style.top = `${y}px`;
+      node.textContent = i;
+      container.appendChild(node);
+      nodeElements.push(node);
+    }
+
+    function clearMarkers() {
+      nodeElements.forEach(node => {
+        const slowMark = node.querySelector('.slow');
+        const fastMark = node.querySelector('.fast');
+        if (slowMark) node.removeChild(slowMark);
+        if (fastMark) node.removeChild(fastMark);
+      });
+    }
+
+    function updateMarkers() {
+      clearMarkers();
+
+      const slowMark = document.createElement('div');
+      slowMark.className = 'slow';
+      slowMark.textContent = '🐢';
+      nodeElements[slow].appendChild(slowMark);
+
+      const fastMark = document.createElement('div');
+      fastMark.className = 'fast';
+      fastMark.textContent = '🐇';
+      nodeElements[fast].appendChild(fastMark);
+    }
+
+    function startCycleDetection() {
+      slow = 0;
+      fast = 0;
+      document.getElementById('status').textContent = '';
+      clearInterval(interval);
+      updateMarkers();
+
+      interval = setInterval(() => {
+        slow = (slow + 1) % totalNodes;
+        fast = (fast + 2) % totalNodes;
+        updateMarkers();
+
+        if (slow === fast) {
+          document.getElementById('status').textContent = `🎯 Cycle Detected! Pointers met at node ${slow}`;
+          clearInterval(interval);
+        }
+      }, 800);
+    }
+
+    updateMarkers();
+  </script>
+</body>
+</html>
