@@ -9,14 +9,15 @@ body {
 .container {
   max-width: 720px;
   padding: 1rem;
-  margin: 0 auto;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
 }
 
 h1 {
   font-size: 1.8rem;
   color: #2c3e50;
   margin-bottom: 1rem;
-  text-align: center;
+  text-align: left;
 }
 
 ul {
@@ -27,7 +28,7 @@ ul {
 li {
   margin-bottom: 1rem;
   font-size: 1.1rem;
-  text-align: center;
+  text-align: left;
 }
 
 a {
