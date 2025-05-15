@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Fast & Slow Pointer</title></head>
+<body><h1>Fast & Slow Pointer</h1><pre><code>public boolean hasCycle(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow == fast) return true;
+    }
+    return false;
+}</code></pre></body></html>
