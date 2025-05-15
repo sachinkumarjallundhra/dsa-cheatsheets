@@ -114,10 +114,11 @@ body[data-theme="dark"] pre {
 }
 
 @media print {
-  /* Hide elements not needed in print */
+  /* Hide UI elements not needed in print */
   button,
   nav,
-  footer {
+  footer,
+  .back-button {
     display: none !important;
   }
 
@@ -126,16 +127,38 @@ body[data-theme="dark"] pre {
     color: #000 !important;
     font-size: 12pt;
     margin: 1in;
+    line-height: 1.5;
   }
 
-  pre, code {
+  .container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  h1, h2, h3 {
     color: #000 !important;
+    page-break-after: avoid;
+  }
+
+  pre {
     background: #f5f5f5 !important;
+    color: #000 !important;
+    padding: 0.75rem;
+    overflow: visible;
+    white-space: pre-wrap;
+    word-wrap: break-word;
     page-break-inside: avoid;
+    border-left: 3px solid #aaa;
+  }
+
+  code {
+    background: none !important;
+    color: #000;
   }
 
   a {
-    color: #000;
     text-decoration: none;
+    color: #000;
   }
 }
