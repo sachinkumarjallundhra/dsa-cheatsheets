@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sliding Window Pattern Template Animation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9fafb;
+      padding: 1rem;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    .array {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .box {
+      width: 40px;
+      height: 40px;
+      line-height: 40px;
+      font-weight: bold;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      position: relative;
+      background: #fff;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    .highlight {
+      background-color: #e0f2fe;
+      border-color: #0284c7;
+    }
+    .pointer {
+      position: absolute;
+      top: -20px;
+      width: 100%;
+      font-size: 1.2rem;
+    }
+    #controls {
+      margin-top: 1rem;
+    }
+    button {
+      background: #3b82f6;
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 8px 14px;
+      margin: 0 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:disabled {
+      background: #93c5fd;
+      cursor: default;
+    }
+    #status {
+      margin-top: 1rem;
+      font-weight: 600;
+      color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sliding Window Pattern Template (Variable Size)</h1>
+  <div class="array" id="array"></div>
+
+  <div id="controls">
+    <button onclick="play()" id="playBtn">▶ Play</button>
+    <button onclick="pause()" id="pauseBtn" disabled>⏸ Pause</button>
+    <button onclick="step()">⏭ Step</button>
+    <button onclick="reset()">🔄 Reset</button>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    const data = ['A','B','C','A','C','B','B'];
+    const arrayDiv = document.getElementById('array');
+    const statusDiv = document.getElementById('status');
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+
+    let start = 0;
+    let end = 0;
+    let stepCount = 0;
+    const freq = {};
+    const maxSteps = data.length * 2;
+    let intervalId = null;
+
+    function render() {
+      arrayDiv.innerHTML = '';
+      for (let i = 0; i < data.length; i++) {
+        const box = document.createElement('div');
+        box.className = 'box';
+        box.innerText = data[i];
+        if (i >= start && i < end) box.classList.add('highlight');
+
+        if (i === start) {
+          const ptr = document.createElement('div');
+          ptr.className = 'pointer';
+          ptr.innerText = '🐢';
+          box.appendChild(ptr);
+        }
+        if (i === end) {
+          const ptr = document.createElement('div');
+          ptr.className = 'pointer';
+          ptr.innerText = '🐇';
+          box.appendChild(ptr);
+        }
+        arrayDiv.appendChild(box);
+      }
+
+      const windowContent = data.slice(start, end).join(', ');
+      const length = end - start;
+      statusDiv.innerHTML = `Window [${start}, ${end}) → [${windowContent}] (Length = ${length})`;
+    }
+
+    function step() {
+      if (stepCount >= maxSteps || end >= data.length) {
+        pause();
+        return;
+      }
+
+      if (!freq[data[end]]) freq[data[end]] = 0;
+      freq[data[end]]++;
+
+      while (Object.keys(freq).length > 2) {
+        freq[data[start]]--;
+        if (freq[data[start]] === 0) delete freq[data[start]];
+        start++;
+      }
+
+      end++;
+      stepCount++;
+      render();
+    }
+
+    function reset() {
+      pause();
+      start = 0;
+      end = 0;
+      stepCount = 0;
+      for (const key in freq) delete freq[key];
+      render();
+    }
+
+    function play() {
+      playBtn.disabled = true;
+      pauseBtn.disabled = false;
+      intervalId = setInterval(step, 1000);
+    }
+
+    function pause() {
+      clearInterval(intervalId);
+      playBtn.disabled = false;
+      pauseBtn.disabled = true;
+    }
+
+    render();
+  </script>
+</body>
+</html>
