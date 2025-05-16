@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Minimum Window Subsequence – Pointer Move Fix</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f9fafb; text-align: center; padding: 1rem; }
+    h1 { color: #111827; }
+    .label-bar { font-size: 1rem; margin-top: 20px; color: #374151; }
+    .input-string { display: flex; justify-content: center; gap: 10px; margin-top: 40px; margin-bottom: 10px; position: relative; flex-wrap: wrap; }
+    .char-box { width: 40px; height: 40px; border: 2px solid #ccc; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem; position: relative; }
+    .highlight { background-color: #dbeafe; border-color: #3b82f6; }
+    .match { background-color: #dcfce7; border-color: #22c55e; }
+    .window { background-color: #fef3c7; border-color: #f59e0b; }
+    .final { background-color: #d1fae5; border-color: #10b981; }
+    .pointer { position: absolute; top: -28px; font-size: 1.2rem; transition: left 0.3s ease; user-select: none; }
+    .match-progress { font-size: 1rem; margin-top: 10px; color: #6b7280; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 1rem; background-color: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background-color: #2563eb; }
+    #status { margin-top: 20px; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+  <h1>🐢 Minimum Window Subsequence – Pointer Move Fix</h1>
+  <div class="label-bar">S1: "abcdebddeacbded"</div>
+  <div class="label-bar">S2: "bde"</div>
+
+  <div class="input-string" id="s1-row"></div>
+  <div class="match-progress" id="match-progress">Progress: </div>
+  <div id="status"></div>
+  <button onclick="startAnimation()">▶️ Start Full Scan</button>
+
+  <script>
+    const s1 = "abcdebddeacbded";
+    const s2 = "bde";
+    const s1Row = document.getElementById("s1-row");
+    const status = document.getElementById("status");
+    const progress = document.getElementById("match-progress");
+
+    let elements = [];
+    let pointer = null;
+    let i = 0, j = 0, k = 0;
+    let bestStart = -1, bestLen = Infinity;
+    let forwardInterval = null;
+    let backwardInterval = null;
+
+    function renderS1() {
+      s1Row.innerHTML = "";
+      elements = [];
+      for (let idx = 0; idx < s1.length; idx++) {
+        const box = document.createElement("div");
+        box.className = "char-box";
+        box.innerText = s1[idx];
+        s1Row.appendChild(box);
+        elements.push(box);
+      }
+      pointer = document.createElement("div");
+      pointer.className = "pointer";
+      pointer.innerText = "🐢";
+      s1Row.style.position = "relative";
+      pointer.style.top = "-28px";
+      pointer.style.left = elements[0].offsetLeft + "px";
+      pointer.style.width = elements[0].offsetWidth + "px";
+      s1Row.appendChild(pointer);
+    }
+
+    function movePointerTo(idx) {
+      if (idx < 0 || idx >= elements.length) return;
+      pointer.style.left = elements[idx].offsetLeft + "px";
+      pointer.style.width = elements[idx].offsetWidth + "px";
+    }
+
+    function clearHighlights() {
+      elements.forEach(el => {
+        el.classList.remove("highlight", "match", "window", "final");
+      });
+      progress.textContent = "Progress: ";
+      status.textContent = "";
+    }
+
+    function reset() {
+      clearInterval(forwardInterval);
+      clearInterval(backwardInterval);
+      clearHighlights();
+      i = 0;
+      bestStart = -1;
+      bestLen = Infinity;
+      k = 0;
+      movePointerTo(0);
+    }
+
+    function startAnimation() {
+      reset();
+      scanNextStart();
+    }
+
+    function scanNextStart() {
+      clearHighlights();
+
+      if (i >= s1.length) {
+        highlightBestWindow();
+        return;
+      }
+
+      movePointerTo(i);  // <-- Move pointer immediately on new start
+
+      if (s1[i] === s2[0]) {
+        j = i;
+        k = 0;
+        progress.textContent = "Progress: ";
+        forwardScan();
+      } else {
+        i++;
+        setTimeout(scanNextStart, 400);
+      }
+    }
+
+    function forwardScan() {
+      forwardInterval = setInterval(() => {
+        movePointerTo(j);
+
+        elements[j].classList.add("highlight");
+
+        if (s1[j] === s2[k]) {
+          elements[j].classList.add("match");
+          k++;
+          progress.textContent = "Progress: " + s2.slice(0, k);
+        }
+
+        if (k === s2.length) {
+          clearInterval(forwardInterval);
+          backwardScan(j, s2.length - 1, i);
+          return;
+        }
+
+        j++;
+        if (j >= s1.length) {
+          clearInterval(forwardInterval);
+          i++;
+          setTimeout(scanNextStart, 400);
+        }
+      }, 800);
+    }
+
+    function backwardScan(j, k, startIdx) {
+      pointer.innerText = "🔁";
+
+      backwardInterval = setInterval(() => {
+        movePointerTo(j);
+
+        if (s1[j] === s2[k]) {
+          elements[j].classList.add("match");
+          k--;
+        }
+
+        j--;
+
+        if (k < 0) {
+          clearInterval(backwardInterval);
+          pointer.innerText = "🐢";
+
+          const winStart = j + 1;
+          const winEnd = startIdx + s2.length + (j + 1 - startIdx) - 1;
+          const winLen = winEnd - winStart + 1;
+
+          if (winLen < bestLen) {
+            bestLen = winLen;
+            bestStart = winStart;
+          }
+
+          for (let t = winStart; t <= winEnd; t++) {
+            elements[t].classList.add("window");
+          }
+
+          i = winStart + 1;
+          setTimeout(scanNextStart, 1000);
+        }
+      }, 800);
+    }
+
+    function highlightBestWindow() {
+      if (bestStart === -1) {
+        status.textContent = "❌ No valid window found.";
+        return;
+      }
+      for (let t = bestStart; t < bestStart + bestLen; t++) {
+        elements[t].classList.remove("window");
+        elements[t].classList.add("final");
+      }
+      status.textContent = `✅ Minimum Window: "${s1.substring(bestStart, bestStart + bestLen)}"`;
+    }
+
+    renderS1();
+  </script>
+</body>
+</html>

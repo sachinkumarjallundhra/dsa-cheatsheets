@@ -1,69 +1,59 @@
-# DSA Cheatsheets
+# 🧠 DSA Cheatsheets with Interactive Visualizations
 
-Welcome to my personal **Data Structures & Algorithms (DSA) Cheatsheets** repository!  
-This repo hosts a collection of pattern-based cheat sheets to help me quickly revise common coding interview patterns with clean, easy-to-understand examples.
+Welcome to the ultimate quick-revision resource for Data Structures and Algorithms. This project combines crisp, mobile-friendly cheatsheets with interactive HTML-based animations that bring algorithm patterns to life.
 
----
-
-## 📚 What’s Inside?
-
-- **HTML-based Cheat Sheets** hosted on GitHub Pages  
-  Live site: [https://sachinkumarjallundhra.github.io/dsa-cheatsheets/](https://sachinkumarjallundhra.github.io/dsa-cheatsheets/)  
-
-- **Patterns Folder**  
-  Contains individual pattern HTML files inside `patterns/` folder, e.g.  
-  - `fast_slow_pointer_cheatsheet.html`  
-  - `sliding_window_cheatsheet.html`  
-
-- **Style and Layout**  
-  Shared CSS in `style.css` ensures responsive design, mobile friendliness, and print-ready formatting.
+> 🎯 Ideal for busy engineers preparing for interviews or refreshing concepts on the go.
 
 ---
 
-## 🚀 How to Use Locally
+## 🔍 What’s Included So Far
 
-1. **Clone this repo:**
+### ✅ Cheatsheets with Code + Concepts
+- 📄 **Fast & Slow Pointer** — find cycle, middle of list
+- 📄 **Sliding Window** — with max, min, and sum problems
 
-   ```bash
-   git clone https://github.com/sachinkumarjallundhra/dsa-cheatsheets.git
-   cd dsa-cheatsheets
-   ```
-
-2. **Open `index.html` in your browser** to browse the cheat sheets locally. Or open any pattern page inside `patterns/` folder.
-
-3. **(Optional) Run MkDocs version**  
-   A Markdown version is available in the `mkdocs/` folder (work in progress).  
-   To run locally:  
-   ```bash
-   cd mkdocs
-   pip install mkdocs mkdocs-material
-   mkdocs serve
-   ```
-   Open [http://127.0.0.1:8000](http://127.0.0.1:8000) to view and edit Markdown notes.
+### 🎬 Interactive Animations
+| Pattern | Description | Link |
+|--------|-------------|------|
+| Fast & Slow Pointer | Detect cycle and middle node visually | [Watch Animation](patterns/fast_slow_pointer_animation.html) |
+| Sliding Window Maximum | Visualize deque actions (`poll`, `offer`) with reasons | [Watch Animation](patterns/sliding_window_maximum_animation.html) |
 
 ---
 
-## ✍️ How to Add or Update Cheat Sheets
-
-- For HTML version, add new `.html` files inside the `patterns/` folder.  
-- Update `index.html` to add links to new pages.  
-- Maintain consistency in layout by using existing `style.css`.  
-- For MkDocs version, add new Markdown files under `mkdocs/docs/patterns/` and update `mkdocs.yml` navigation.
+## 📱 Mobile Friendly
+All animations and pages are responsive and designed to be readable and usable even on small screens. Perfect for quick review from your phone.
 
 ---
 
-## 🖨️ Print and PDF Tips
-
-- The site includes a **print-friendly stylesheet** to help you print clean cheat sheets or save them as PDFs.  
-- Use your browser’s print preview (`Ctrl+P` / `Cmd+P`) to print or save.
-
----
-
-## 💡 Feedback and Contributions
-
-This is a personal project primarily for interview prep, but feel free to open issues or pull requests if you have improvements!
+## 🚧 Upcoming
+- [ ] Two Pointers with merge, remove duplicates
+- [ ] Binary Search Patterns
+- [ ] Dynamic Programming Starter Visuals
+- [ ] Add GitHub Pages theme + MkDocs version
 
 ---
 
-Thank you for visiting!  
-— Sachin Kumar Jallundhra
+## 🤝 Contributing
+Currently in solo development mode as a personal learning + sharing initiative. Planning to open it up for contributions once the core patterns are stable.
+
+---
+
+## 🛠 Built With
+- HTML, CSS, JavaScript
+- Love for clear explanations 💙
+
+---
+
+## 👋 Author
+**Sachin Kumar Jallundhra** — Software Engineer and system design enthusiast. This project is part of his focused prep to level up and help others along the way.
+
+📫 [LinkedIn](https://www.linkedin.com/in/sachinkumarjallundhra/) | [GitHub](https://github.com/sachinkumarjallundhra)
+
+---
+
+## ⭐ Star this Repo
+If this helps you, consider starring it and sharing with your friends!
+
+---
+
+📢 **Live Site:** https://sachinkumarjallundhra.github.io/dsa-cheatsheets/
