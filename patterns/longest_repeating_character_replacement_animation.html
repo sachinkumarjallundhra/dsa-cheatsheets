@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Longest Repeating Character Replacement Animation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 1rem;
+      background-color: #f9fafb;
+    }
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+    .array {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    .box {
+      width: 40px;
+      height: 40px;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      line-height: 40px;
+      font-weight: bold;
+      background: #fff;
+      position: relative;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    .highlight {
+      background-color: #e0f2fe;
+      border-color: #0284c7;
+    }
+    .invalid {
+      background-color: #fee2e2;
+      border-color: #dc2626;
+    }
+    .pointer {
+      position: absolute;
+      top: -20px;
+      font-size: 1.2rem;
+      width: 100%;
+    }
+    .status {
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+    .max-length {
+      font-weight: bold;
+      margin-top: 0.5rem;
+      color: #1e40af;
+    }
+    .log {
+      margin-top: 1rem;
+      max-height: 150px;
+      overflow-y: auto;
+      background: #f1f5f9;
+      padding: 0.5rem;
+      font-family: monospace;
+      text-align: left;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    .log.invalid {
+      color: #dc2626;
+      font-weight: bold;
+    }
+    button {
+      background: #3b82f6;
+      border: none;
+      color: white;
+      padding: 8px 14px;
+      font-weight: bold;
+      margin: 0 6px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    #controls {
+      margin-top: 1rem;
+    }
+    @media print {
+      .hide-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 Longest Repeating Character Replacement</h1>
+  <p><strong>k = 1 (max characters you can replace)</strong></p>
+  <p class="hide-print"><a href="longest_repeating_character_replacement_cheatsheet.html">← Back to Cheatsheet</a></p>
+
+  <div class="array" id="array"></div>
+
+  <div id="controls" class="hide-print">
+    <button onclick="play()">▶ Play</button>
+    <button onclick="pause()">⏸ Pause</button>
+    <button onclick="step()">⏭ Step</button>
+    <button onclick="reset()">🔄 Reset</button>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div class="max-length" id="maxLength"></div>
+  <div class="log" id="log"></div>
+
+  <script>
+    const s = 'AABABBA';
+    const k = 1;
+    let left = 0, right = 0, maxFreq = 0, maxLen = 0;
+    const freq = Array(26).fill(0);
+    const arrayDiv = document.getElementById('array');
+    const statusDiv = document.getElementById('status');
+    const maxLengthDiv = document.getElementById('maxLength');
+    const logDiv = document.getElementById('log');
+    let intervalId = null;
+    let shrinkMode = false;
+
+    function logMsg(msg, invalid = false) {
+      const p = document.createElement('div');
+      p.textContent = msg;
+      if (invalid) p.classList.add('invalid');
+      logDiv.appendChild(p);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function render() {
+      arrayDiv.innerHTML = '';
+      for (let i = 0; i < s.length; i++) {
+        const box = document.createElement('div');
+        box.className = 'box';
+        box.textContent = s[i];
+        if (i >= left && i <= right) box.classList.add('highlight');
+        if (i === left) box.innerHTML += '<div class="pointer">🐢</div>';
+        if (i === right) box.innerHTML += '<div class="pointer">🐇</div>';
+        arrayDiv.appendChild(box);
+      }
+
+      const windowLen = right - left + 1;
+      statusDiv.innerHTML = `Window: [${left}, ${right}] → Length: ${windowLen}, MaxFreq: ${maxFreq}, Replaceable: ${windowLen - maxFreq}`;
+
+      maxLengthDiv.textContent = `Max Length so far: ${maxLen}`;
+
+      // Highlight invalid window
+      const isInvalid = (windowLen - maxFreq) > k;
+      for (let i = left; i <= right; i++) {
+        const box = arrayDiv.children[i];
+        if (isInvalid) box.classList.add('invalid');
+        else box.classList.remove('invalid');
+      }
+    }
+
+    function step() {
+      if (shrinkMode) {
+        freq[s.charCodeAt(left) - 65]--;
+        logMsg(`⏪ Shrink: Replaceable > k, move left → ${left + 1}`);
+        left++;
+        shrinkMode = false;
+        render();
+        return;
+      }
+
+      if (right >= s.length) return pause();
+      const idx = s.charCodeAt(right) - 65;
+      freq[idx]++;
+      maxFreq = Math.max(maxFreq, freq[idx]);
+
+      const windowLen = right - left + 1;
+      const replaceable = windowLen - maxFreq;
+
+      if (replaceable > k) {
+        logMsg(`→ Right=${right}, Char='${s[right]}', WindowLen=${windowLen}, MaxFreq=${maxFreq}, Replaceable=${replaceable}`, true);
+        shrinkMode = true;
+      } else {
+        logMsg(`→ Right=${right}, Char='${s[right]}', WindowLen=${windowLen}, MaxFreq=${maxFreq}, Replaceable=${replaceable}`);
+      }
+
+      render();
+
+      if (!shrinkMode) {
+        maxLen = Math.max(maxLen, windowLen);
+        right++;
+      }
+    }
+
+    function reset() {
+      pause();
+      left = 0;
+      right = 0;
+      maxFreq = 0;
+      maxLen = 0;
+      shrinkMode = false;
+      for (let i = 0; i < 26; i++) freq[i] = 0;
+      logDiv.innerHTML = '';
+      render();
+    }
+
+    function play() {
+      intervalId = setInterval(step, 1000);
+    }
+
+    function pause() {
+      clearInterval(intervalId);
+    }
+
+    render();
+  </script>
+</body>
+</html>
