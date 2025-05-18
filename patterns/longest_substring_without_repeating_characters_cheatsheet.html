@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Longest Substring Without Repeating Characters Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔑 Longest Substring Without Repeating Characters – Java Cheat Sheet (One Page)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves finding the length of the longest substring in a string `s` that contains no repeating characters.</p>
+    <ul>
+      <li>Uses the Sliding Window technique</li>
+      <li>Maintains a set or map to track characters in the current window</li>
+      <li>Expands and shrinks the window dynamically</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>public int lengthOfLongestSubstring(String s) {
+        Map<Character, Integer> lastSeen = new HashMap<>();
+        int maxLen = 0;
+        int left = 0;
+
+        for (int right = 0; right < s.length(); right++) {
+            char c = s.charAt(right);
+
+            if (lastSeen.containsKey(c) && lastSeen.get(c) >= left) {
+                left = lastSeen.get(c) + 1; // jump left forward
+            }
+
+            lastSeen.put(c, right);
+            maxLen = Math.max(maxLen, right - left + 1);
+        }
+
+        return maxLen;
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding substrings with unique characters</li>
+      <li>Text processing problems</li>
+      <li>Dynamic window size problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/longest-substring-without-repeating-characters/" target="_blank" rel="noopener noreferrer">3: Longest Substring Without Repeating Characters</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Sliding Window, HashMap</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/longest-substring-with-at-most-k-distinct-characters/" target="_blank" rel="noopener noreferrer">340: Longest Substring with At Most K Distinct Characters</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Sliding Window, HashMap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Longest Substring Without Repeating Characters</h2>
+    <pre><code>Input: s = "abcabcbb"
+Output: 3
+Explanation: The answer is "abc", with the length of 3.</code></pre>
+    <button onclick="window.open('../animations/longest_substring_without_repeating_characters_animation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a frequency map or set to track characters in the current window</li>
+      <li>Expand the window to include characters, shrink to remove duplicates</li>
+      <li>Edge cases: empty string, all unique characters</li>
+    </ul>
+  </div>
+</body>
+</html>

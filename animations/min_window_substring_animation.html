@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minimum Window Substring Animation</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      background: #f9fafb;
+      text-align: center;
+    }
+    h1 { margin-bottom: 0.5rem; }
+    .array, .state {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 1rem 0;
+      gap: 6px;
+    }
+    .box {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      position: relative;
+    }
+    .highlight {
+      background-color: #fde68a; /* yellow-300 */
+      color: #111827;
+    }
+    .visited {
+      background-color: #4ade80; /* green-400 */
+      color: white;
+    }
+    .pointer {
+      position: absolute;
+      top: -1.6rem;
+      width: 100%;
+      font-size: 1rem;
+    }
+    .status, .log {
+      margin-top: 1rem;
+      font-family: monospace;
+      text-align: left;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .log {
+      background: #f1f5f9;
+      border-radius: 6px;
+      padding: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+    .freqmap {
+      margin: 0.5rem auto;
+      font-family: monospace;
+      font-size: 0.95rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: #fff7ed;
+      border: 1px solid #fde68a;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    .controls { margin-bottom: 1rem; }
+    button {
+      margin: 0.5rem;
+      padding: 8px 12px;
+      font-weight: bold;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    @media print {
+      .hide-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 Minimum Window Substring</h1>
+  <p><strong>s = "ADOBECODEBANC", t = "ABC"</strong></p>
+  <p class="hide-print"><a href="../patterns/minimum_window_substring_cheatsheet.html">← Back to Cheatsheet</a></p>
+  <div class="array" id="array"></div>
+  <div class="freqmap" id="maps"></div>
+
+  <div class="controls hide-print">
+    <button onclick="step()">⏭ Step</button>
+    <button onclick="reset()">🔄 Reset</button>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div class="log" id="log"></div>
+
+  <script>
+    const s = "ADOBECODEBANC";
+    const t = "ABC";
+    let tmap = new Array(128).fill(0);
+    let smap = new Array(128).fill(0);
+    let required = 0;
+    let left = 0, right = 0, matched = 0;
+    let minLen = Infinity, minStart = 0;
+    const arrayEl = document.getElementById("array");
+    const statusEl = document.getElementById("status");
+    const logEl = document.getElementById("log");
+    const mapsEl = document.getElementById("maps");
+
+    t.split('').forEach(c => {
+      if (tmap[c.charCodeAt(0)] === 0) required++;
+      tmap[c.charCodeAt(0)]++;
+    });
+
+    function renderMaps() {
+      let tRow = "Target Map (tmap): ";
+      let sRow = "Sliding Window Map (smap): ";
+      for (let i = 0; i < 128; i++) {
+        if (tmap[i] > 0 || smap[i] > 0) {
+          const ch = String.fromCharCode(i);
+          if (tmap[i] > 0) tRow += `${ch}:${tmap[i]} `;
+          if (smap[i] > 0) sRow += `${ch}:${smap[i]} `;
+        }
+      }
+      mapsEl.innerHTML = `<div>${tRow.trim()}</div><div>${sRow.trim()}</div>`;
+    }
+
+    function render() {
+      arrayEl.innerHTML = '';
+      for (let i = 0; i < s.length; i++) {
+        const box = document.createElement("div");
+        box.className = "box";
+        box.textContent = s[i];
+
+        if (i === right) box.classList.add("highlight");
+        if (i >= left && i <= right) box.classList.add("visited");
+        if (i === left) box.innerHTML += `<div class="pointer">🐢</div>`;
+        if (i === right) box.innerHTML += `<div class="pointer">🐇</div>`;
+
+        arrayEl.appendChild(box);
+      }
+      statusEl.innerHTML = `matched=${matched}, required=${required}, minLen=${minLen === Infinity ? '-' : minLen}`;
+      renderMaps();
+    }
+
+    function log(msg) {
+      const div = document.createElement("div");
+      div.textContent = msg;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function step() {
+      if (right >= s.length) return;
+      const c = s.charAt(right);
+      smap[c.charCodeAt(0)]++;
+      if (tmap[c.charCodeAt(0)] > 0 && smap[c.charCodeAt(0)] === tmap[c.charCodeAt(0)]) {
+        matched++;
+      }
+      log(`→ right=${right}, char='${c}'`);
+      while (matched === required) {
+        if ((right - left + 1) < minLen) {
+          minLen = right - left + 1;
+          minStart = left;
+          log(`✅ New min window: "${s.slice(left, right + 1)}"`);
+        }
+        const lc = s.charAt(left);
+        smap[lc.charCodeAt(0)]--;
+        if (tmap[lc.charCodeAt(0)] > 0 && smap[lc.charCodeAt(0)] < tmap[lc.charCodeAt(0)]) {
+          matched--;
+        }
+        log(`⏪ Shrink left → ${left + 1}`);
+        left++;
+      }
+      right++;
+      render();
+    }
+
+    function reset() {
+      left = 0;
+      right = 0;
+      matched = 0;
+      minLen = Infinity;
+      minStart = 0;
+      smap.fill(0);
+      logEl.innerHTML = "";
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>

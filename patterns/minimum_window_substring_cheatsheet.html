@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimum Window Substring Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔍 Minimum Window Substring – Java Cheat Sheet (One Page)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The Minimum Window Substring problem involves finding the smallest substring in a string `s` that contains all characters of another string `t`.</p>
+    <ul>
+      <li>Uses the Sliding Window technique</li>
+      <li>Requires maintaining a frequency map of characters</li>
+      <li>Expands and shrinks the window dynamically</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>public String minWindow(String s, String t) {
+    int[] smap = new int[128];
+    int[] tmap = new int[128];
+    int required = 0;
+
+    for (char c : t.toCharArray()) {
+        tmap[c]++;
+        if (tmap[c] == 1) required++;
+    }
+
+    int left = 0, right = 0, matched = 0;
+    int minLen = Integer.MAX_VALUE;
+    int minStart = 0;
+
+    while (right < s.length()) {
+        char c = s.charAt(right);
+        smap[c]++;
+        if (tmap[c] > 0 && smap[c] == tmap[c]) matched++;
+
+        while (matched == required) {
+            if (right - left + 1 < minLen) {
+                minLen = right - left + 1;
+                minStart = left;
+            }
+            char lc = s.charAt(left);
+            smap[lc]--;
+            if (tmap[lc] > 0 && smap[lc] < tmap[lc]) matched--;
+            left++;
+        }
+        right++;
+    }
+
+    return minLen == Integer.MAX_VALUE ? "" : s.substring(minStart, minStart + minLen);
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding substrings with specific constraints</li>
+      <li>Text search problems</li>
+      <li>Dynamic window size problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/minimum-window-substring/" target="_blank" rel="noopener noreferrer">76: Minimum Window Substring</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Sliding Window, HashMap</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/substring-with-concatenation-of-all-words/" target="_blank" rel="noopener noreferrer">30: Substring with Concatenation of All Words</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Sliding Window, HashMap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Minimum Window Substring</h2>
+    <pre><code>Input: s = "ADOBECODEBANC", t = "ABC"
+Output: "BANC"</code></pre>
+    <button onclick="window.open('../animations/min_window_substring_animation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a frequency map to track required characters</li>
+      <li>Expand the window to include characters, shrink to meet constraints</li>
+      <li>Edge cases: empty strings, no valid window</li>
+    </ul>
+  </div>
+</body>
+</html>
