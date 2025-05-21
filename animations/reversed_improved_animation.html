@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse Linked List Animation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 700px;
+        }
+        #animation-viewport {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 150px; /* Increased to give more space for pointers below nodes */
+        }
+        .list-area {
+            display: flex;
+            min-height: 60px;
+            align-items: center;
+            position: relative; /* For null-targets */
+        }
+        .node {
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            padding: 5px;
+            margin: 0 25px 0 5px;
+            display: flex;
+            align-items: center;
+            background-color: #eaf5ff;
+            position: relative;
+            min-width: 80px; /* Ensure nodes have some width */
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out, border-color 0.3s, background-color 0.3s;
+            box-sizing: border-box;
+            text-align: center; /* Center content within node parts */
+        }
+        .node-data {
+            padding: 10px;
+            font-weight: bold;
+            border-right: 1px solid #a9cce3;
+            margin-right: 5px;
+            min-width: 30px; /* Ensure data part has width */
+        }
+        .node-next {
+            padding: 10px 5px;
+            font-size: 0.9em;
+            color: #2980b9;
+            display: flex;
+            align-items: center;
+            min-width: 40px; /* Ensure next part has width */
+        }
+        .node-next-arrow {
+            margin-left: 5px;
+            color: #2980b9;
+        }
+        .node.highlight-current { border-color: #2ecc71; background-color: #e8f8f0; }
+        .node.highlight-previous { border-color: #e74c3c; background-color: #fdedec; }
+        .node.highlight-next-node { border-color: #f39c12; background-color: #fef5e7; }
+
+        .pointer {
+            position: absolute;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+            transition: all 0.5s ease-in-out;
+            white-space: nowrap;
+            text-align: center;
+            min-width: 40px;
+            z-index: 10;
+            opacity: 0; /* Initially hidden, shown by JS */
+        }
+        .pointer-arrow {
+            font-size: 1.2em;
+            margin-top: -2px; /* Small adjustment for arrow alignment */
+        }
+        #head-ptr { background-color: #8e44ad; }
+        #prev-ptr { background-color: #e74c3c; }
+        #curr-ptr { background-color: #2ecc71; }
+        #next-node-ptr { background-color: #f39c12; }
+
+        .null-pointer-target {
+            position: absolute;
+            border: 1px dashed #ccc;
+            padding: 10px;
+            color: #aaa;
+            height: 40px; /* Match node height roughly */
+            min-width: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            font-size: 0.9em;
+        }
+        #null-prev-target { left: -70px; top: 10px; } /* Adjusted slightly */
+        #null-curr-target { right: -70px; top: 10px; }/* Adjusted slightly */
+
+        .controls, .narration, .code-display {
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+        }
+        .controls button {
+            padding: 10px 15px;
+            margin: 0 5px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        .narration {
+            padding: 10px;
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            min-height: 40px;
+            text-align: left;
+        }
+        .code-display pre {
+            background-color: #2d3436;
+            color: #dfe6e9;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: left;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .code-display .highlight-line {
+            background-color: #636e72;
+            display: block;
+            margin: -2px -15px;
+            padding: 2px 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Reverse Linked List</h1>
+
+        <div id="animation-viewport">
+            <div id="head-ptr" class="pointer">HEAD <span class="pointer-arrow">⬇</span></div>
+            <div id="prev-ptr" class="pointer">prev <span class="pointer-arrow">⬆</span></div>
+            <div id="curr-ptr" class="pointer">curr <span class="pointer-arrow">⬆</span></div>
+            <div id="next-node-ptr" class="pointer">nextNode <span class="pointer-arrow">⬆</span></div>
+
+            <div class="list-area" id="listArea">
+                <div id="null-prev-target" class="null-pointer-target">NULL</div>
+                <div id="null-curr-target" class="null-pointer-target">NULL</div>
+                <!-- Nodes will be rendered here by JS -->
+            </div>
+        </div>
+
+        <div class="narration" id="narrationBox">
+            Initial state of the linked list. Click "Next Step" to begin.
+        </div>
+
+        <div class="code-display">
+            <pre><code id="codeListing">
+ListNode prev = null;
+ListNode current = head;
+ListNode nextNode = null;
+
+while (current != null) {
+    nextNode = current.next;
+    current.next = prev;
+    prev = current;
+    current = nextNode;
+}
+head = prev;
+            </code></pre>
+        </div>
+
+        <div class="controls">
+            <button id="nextStepBtn">Next Step</button>
+            <button id="resetBtn">Reset</button>
+            <label for="initialListData">Initial List (comma-separated):</label>
+            <input type="text" id="initialListData" value="A,B,C">
+        </div>
+    </div>
+    <!-- Add the Go Back button -->
+<div class="go-back">
+    <button onclick="window.location.href='../patterns/in_place_linked_list_cheatsheet.html'">← Go Back to In-Place Linked List</button>
+</div>
+
+    <script>
+        const animationViewport = document.getElementById('animation-viewport');
+        const listArea = document.getElementById('listArea');
+        const narrationBox = document.getElementById('narrationBox');
+        const nextStepBtn = document.getElementById('nextStepBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const codeLines = document.getElementById('codeListing').innerHTML.trim().split('\n').map(line => line.trim());
+        const codeListingEl = document.getElementById('codeListing');
+        const initialListDataInput = document.getElementById('initialListData');
+
+        const headPtrEl = document.getElementById('head-ptr');
+        const prevPtrEl = document.getElementById('prev-ptr');
+        const currPtrEl = document.getElementById('curr-ptr');
+        const nextNodePtrEl = document.getElementById('next-node-ptr');
+        const nullPrevTarget = document.getElementById('null-prev-target');
+        const nullCurrTarget = document.getElementById('null-curr-target');
+
+        let nodes = [];
+        let listHeadId = null; // Stores the ID of the head node, or null
+
+        let p_prev = null;    // Stores ID of node prev points to, or 'null-prev-target'
+        let p_curr = null;    // Stores ID of node current points to, or 'null-curr-target'
+        let p_nextNode = null; // Stores ID of node nextNode points to, or 'null-curr-target'
+
+        let step = 0; // Tracks the current step in the animation sequence
+
+        function createNodeElement(node) {
+            const el = document.createElement('div');
+            el.classList.add('node');
+            el.id = node.id;
+            // Basic structure; updateNodeNextVisual will fill .node-next correctly
+            el.innerHTML = `
+                <div class="node-data">${node.data}</div>
+                <div class="node-next" id="next-${node.id}">NULL</div>
+            `;
+            return el;
+        }
+
+        function renderList() {
+            const existingNodes = listArea.querySelectorAll('.node');
+            existingNodes.forEach(n => n.remove());
+
+            nodes.forEach(node => {
+                node.el = createNodeElement(node);
+                listArea.appendChild(node.el);
+                updateNodeNextVisual(node.id, node.nextId); // Update visuals after appending
+            });
+            // Ensure null targets are always present (they are static HTML children of listArea now)
+        }
+
+        function updateNodeNextVisual(nodeId, nextNodeTargetId) {
+            const node = nodes.find(n => n.id === nodeId);
+            if (!node || !node.el) return;
+
+            const nextVisualEl = node.el.querySelector(`#next-${nodeId}`);
+            if (!nextVisualEl) return;
+
+            if (nextNodeTargetId && nextNodeTargetId !== 'null-prev-target' && nextNodeTargetId !== 'null-curr-target' && nextNodeTargetId !== null) {
+                const nextNodeActual = nodes.find(n => n.id === nextNodeTargetId);
+                if (nextNodeActual) {
+                    nextVisualEl.innerHTML = `${nextNodeActual.data} <span class="node-next-arrow">➔</span>`;
+                } else {
+                    console.warn(`Node data not found for nextNodeTargetId: ${nextNodeTargetId} when updating node ${nodeId}`);
+                    nextVisualEl.innerHTML = 'ERROR ➔';
+                }
+            } else {
+                nextVisualEl.innerHTML = 'NULL';
+            }
+        }
+
+        function positionPointer(ptrEl, targetId) {
+            if (!ptrEl) return; // Safety check
+
+            let targetEl;
+            if (targetId === 'null-prev-target') {
+                targetEl = nullPrevTarget;
+            } else if (targetId === 'null-curr-target') {
+                targetEl = nullCurrTarget;
+            } else if (targetId) { // targetId is a node ID
+                targetEl = document.getElementById(targetId);
+            } else { // targetId is null or undefined
+                ptrEl.style.opacity = 0;
+                return;
+            }
+            
+            const animationViewportRect = animationViewport.getBoundingClientRect();
+
+            if (targetEl) {
+                const targetRect = targetEl.getBoundingClientRect();
+                let newLeft = targetRect.left - animationViewportRect.left + (targetEl.offsetWidth / 2) - (ptrEl.offsetWidth / 2);
+                let newTop;
+
+                const pointerHeightWithMargin = ptrEl.offsetHeight + 3; // Base height + small margin
+
+                if (ptrEl.id === 'head-ptr') {
+                    newTop = targetRect.top - animationViewportRect.top - pointerHeightWithMargin;
+                } else { // For prev, curr, nextNode pointers (below the node)
+                    newTop = targetRect.top - animationViewportRect.top + targetEl.offsetHeight + 5; // Base position below node
+
+                    if (ptrEl.id === 'curr-ptr') {
+                        if (p_prev === p_curr && p_prev !== 'null-prev-target' && p_prev !== 'null-curr-target') { // prev and curr on same node
+                            newTop += pointerHeightWithMargin;
+                        }
+                    } else if (ptrEl.id === 'next-node-ptr') {
+                        let shifts = 0;
+                        if (p_nextNode === p_curr && p_curr !== 'null-curr-target') shifts++;
+                        if (p_nextNode === p_prev && p_prev !== 'null-prev-target' && shifts === 0) shifts++; // only add shift if not already shifted by curr
+                        if (p_nextNode === p_curr && p_curr === p_prev && p_prev !== 'null-prev-target') shifts = 2; // All three on same node
+                        
+                        newTop += shifts * pointerHeightWithMargin;
+                    }
+                }
+                ptrEl.style.left = `${newLeft}px`;
+                ptrEl.style.top = `${newTop}px`;
+                ptrEl.style.opacity = 1;
+            } else {
+                 ptrEl.style.opacity = 0; // Target element not found (e.g. listHeadId is null)
+            }
+        }
+
+        function updatePointerVisuals() {
+            positionPointer(headPtrEl, listHeadId);
+            positionPointer(prevPtrEl, p_prev);
+            positionPointer(currPtrEl, p_curr);
+            positionPointer(nextNodePtrEl, p_nextNode);
+
+            document.querySelectorAll('.node').forEach(nEl => {
+                nEl.classList.remove('highlight-current', 'highlight-previous', 'highlight-next-node');
+                if (p_curr && nEl.id === p_curr && p_curr !== 'null-curr-target') nEl.classList.add('highlight-current');
+                if (p_prev && nEl.id === p_prev && p_prev !== 'null-prev-target') nEl.classList.add('highlight-previous');
+                // Highlight nextNode only if it's pointing to an actual node, not NULL target
+                if (p_nextNode && nEl.id === p_nextNode && p_nextNode !== 'null-curr-target') nEl.classList.add('highlight-next-node');
+            });
+        }
+
+        function highlightCodeLine(lineNumber) {
+            let currentCode = codeLines.map((line, index) =>
+                index === lineNumber ? `<span class="highlight-line">${line}</span>` : line
+            ).join('\n');
+            codeListingEl.innerHTML = currentCode;
+        }
+
+        function initialize() {
+            const rawData = initialListDataInput.value.split(',').map(s => s.trim()).filter(s => s !== "");
+            
+            nodes = rawData.map((d, i) => ({
+                id: `node-${i}`, // Unique ID using index
+                data: d,
+                nextId: (i < rawData.length - 1) ? `node-${i+1}` : null,
+                el: null
+            }));
+            listHeadId = nodes.length > 0 ? nodes[0].id : null;
+
+            step = 0;
+            p_prev = 'null-prev-target'; // prev starts at NULL (visualized by null-prev-target)
+            p_curr = listHeadId || 'null-curr-target'; // current starts at head or NULL
+            p_nextNode = 'null-curr-target'; // nextNode starts at NULL (visualized by null-curr-target)
+
+            renderList(); // This will also call updateNodeNextVisual for each node
+            narrationBox.textContent = 'Initial state. Press "Next Step" to start reversing.';
+            highlightCodeLine(-1); // No line highlighted initially
+            nextStepBtn.disabled = false;
+            
+            // Ensure pointers are positioned correctly after DOM is stable
+            setTimeout(updatePointerVisuals, 50);
+        }
+
+        function executeNextStep() {
+            const totalLoopPhases = nodes.length * 4; // 4 operations per node in the loop
+
+            // Step 0: Initial setup explanation (covers lines 0, 1, 2 conceptually)
+            if (step === 0) {
+                narrationBox.textContent = "Pointers initialized: 'prev' is NULL, 'current' is HEAD, 'nextNode' is unassigned (conceptually NULL).";
+                highlightCodeLine(0); // Highlights "ListNode prev = null;"
+                step++;
+            }
+            // Steps for operations within the while loop
+            else if (step >= 1 && step <= totalLoopPhases && p_curr && p_curr !== 'null-curr-target') {
+                const currentLoopNode = nodes.find(n => n.id === p_curr);
+                if (!currentLoopNode) {
+                    console.error("Error: currentLoopNode not found for p_curr:", p_curr);
+                    narrationBox.textContent = "Error occurred. Please reset.";
+                    nextStepBtn.disabled = true;
+                    return;
+                }
+
+                const phaseInLoop = (step - 1) % 4; // 0, 1, 2, 3 for the 4 lines in the loop body
+
+                if (phaseInLoop === 0) { // Corresponds to "nextNode = current.next;"
+                    p_nextNode = currentLoopNode.nextId || 'null-curr-target';
+                    const nextNodeData = (p_nextNode === 'null-curr-target') ? 'NULL' : (nodes.find(n => n.id === p_nextNode)?.data || 'ERROR');
+                    narrationBox.textContent = `Store current.next (points to ${nextNodeData}) into 'nextNode'.`;
+                    highlightCodeLine(5); // CORRECTED: Line index for "nextNode = current.next;"
+                } else if (phaseInLoop === 1) { // Corresponds to "current.next = prev;"
+                    currentLoopNode.nextId = p_prev;
+                    updateNodeNextVisual(p_curr, p_prev);
+                    const prevNodeData = (p_prev === 'null-prev-target') ? 'NULL' : (nodes.find(n => n.id === p_prev)?.data || 'ERROR');
+                    narrationBox.textContent = `Reverse link: current.next now points to 'prev' (which is ${prevNodeData}).`;
+                    highlightCodeLine(6); // CORRECTED: Line index for "current.next = prev;"
+                } else if (phaseInLoop === 2) { // Corresponds to "prev = current;"
+                    p_prev = p_curr;
+                    narrationBox.textContent = `Move 'prev' to 'current' (node ${currentLoopNode.data}).`;
+                    highlightCodeLine(7); // CORRECTED: Line index for "prev = current;"
+                } else if (phaseInLoop === 3) { // Corresponds to "current = nextNode;"
+                    p_curr = p_nextNode;
+                    const currNodeData = (p_curr === 'null-curr-target') ? 'NULL' : (nodes.find(n => n.id === p_curr)?.data || 'ERROR');
+                    narrationBox.textContent = `Move 'current' to 'nextNode' (which is ${currNodeData}). Loop condition will be checked next.`;
+                    highlightCodeLine(8); // CORRECTED: Line index for "current = nextNode;"
+                }
+                step++;
+            }
+            // Step after loop (or if loop never ran for empty/single node list after init step)
+            // `head = prev;`
+            else if (step === totalLoopPhases + 1) {
+                listHeadId = (p_prev === 'null-prev-target') ? null : p_prev;
+                const newHeadData = (listHeadId === null) ? 'NULL' : (nodes.find(n => n.id === listHeadId)?.data || 'ERROR');
+                narrationBox.textContent = `Loop finished (current is NULL or list was initially empty). Update HEAD to 'prev' (now ${newHeadData}). List is reversed!`;
+                highlightCodeLine(10); // CORRECTED: Line index for "head = prev;"
+                step++;
+            }
+            // Animation finished
+            else {
+                narrationBox.textContent = "List is reversed! Press Reset to start over.";
+                highlightCodeLine(-1); // No line highlighted
+                nextStepBtn.disabled = true;
+            }
+            updatePointerVisuals();
+        }
+        nextStepBtn.addEventListener('click', executeNextStep);
+        resetBtn.addEventListener('click', initialize);
+        initialListDataInput.addEventListener('change', initialize); // Re-initialize if user changes input
+
+        // Initial call
+        initialize();
+    </script>
+</body>
+</html>

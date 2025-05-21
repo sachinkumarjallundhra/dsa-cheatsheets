@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse K-Group (Visual Reorder)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0; 
+            padding: 10px; 
+            background-color: #f0f0f0;
+            min-height: 100vh; 
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 700px; 
+            margin: auto; 
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            font-size: 1.5em; 
+            margin-bottom: 15px;
+        }
+        
+        #animation-setup {
+            display: flex;
+            flex-wrap: wrap; 
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px 15px; 
+            width: 100%;
+        }
+        #animation-setup label {
+            font-weight: bold;
+            margin-right: 5px;
+            font-size: 0.9em;
+        }
+        #animation-setup input[type="text"], 
+        #animation-setup input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100px; 
+            font-size: 0.9em;
+        }
+        
+        #animation-viewport {
+            position: relative;
+            width: 100%;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            min-height: 160px; 
+            padding-top: 25px; 
+            background-color: #f9f9f9; 
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            overflow-x: auto; 
+        }
+        .list-area {
+            display: flex;
+            min-height: 60px;
+            align-items: center;
+            position: relative;
+            padding: 0 20px; 
+        }
+        
+        .node {
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            padding: 4px; 
+            margin: 0 20px 0 3px; 
+            display: flex;
+            align-items: center;
+            background-color: #eaf5ff;
+            position: relative; /* Needed for potential future animated swaps */
+            min-width: 75px; 
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* Added transform for swapping */
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 0.85em;
+        }
+        .node.dummy-node { border-color: #7f8c8d; background-color: #ecf0f1; }
+        .node-data {
+            padding: 8px; 
+            font-weight: bold;
+            border-right: 1px solid #a9cce3;
+            margin-right: 4px; 
+            min-width: 25px; 
+        }
+        .dummy-node .node-data { border-right: none; margin-right: 0; }
+        .node-next {
+            padding: 8px 4px; 
+            font-size: 0.9em;
+            color: #2980b9;
+            display: flex;
+            align-items: center;
+            min-width: 35px; 
+        }
+        .node-next-arrow { margin-left: 3px; }
+
+        .node.highlight-scanner { border-color: #1abc9c; background-color: #d1f2eb; transform: scale(1.05); }
+        .node.highlight-kth { border-color: #2ecc71; background-color: #e8f8f0; font-weight: bold;}
+        .node.highlight-prevGroupEnd { border-color: #9b59b6; background-color: #f4ecf7; }
+        .node.highlight-groupStart { border-color: #34495e; background-color: #d5dbdb; }
+        .node.highlight-nextGroupStart { border-color: #e67e22; background-color: #fbeee6; }
+        .node.highlight-revfn-curr { border-color: #e74c3c; background-color: #fdedec; }
+        .node.highlight-revfn-prev { border-color: #f1c40f; background-color: #fef9e7; }
+        .node.highlight-k-group { outline: 2px dashed #3498db; outline-offset: 2px; }
+        .node.highlight-link-change-source {
+            box-shadow: 0 0 8px 2px gold !important; 
+        }
+        .node.highlight-link-change-target {
+            box-shadow: 0 0 8px 2px lawngreen !important; 
+        }
+        .node.node-reordering { /* For visual swap effect */
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+
+        .pointer {
+            position: absolute;
+            padding: 2px 5px; 
+            border-radius: 3px; 
+            font-size: 0.7em; 
+            font-weight: bold;
+            color: white;
+            transition: all 0.5s ease-in-out;
+            white-space: nowrap;
+            text-align: center;
+            min-width: 40px; 
+            z-index: 10;
+            opacity: 0;
+        }
+        .pointer-arrow { font-size: 1em; margin-top: -1px; }
+        
+        #head-ptr { background-color: #8e44ad; }
+        #dummy-ptr { background-color: #7f8c8d; }
+        #prevGroupEnd-ptr { background-color: #9b59b6; }
+        #kth-ptr { background-color: #2ecc71;}
+        #kthScanner-ptr { background-color: #16a085; }
+        #groupStart-ptr { background-color: #34495e; }
+        #nextGroupStart-ptr { background-color: #e67e22; }
+        #revfn-prev-ptr { background-color: #f39c12; }
+        #revfn-curr-ptr { background-color: #c0392b; }
+        #revfn-next-ptr { background-color: #2980b9; }
+
+        .null-pointer-target {
+            position: absolute;
+            border: 1px dashed #ccc;
+            padding: 8px; 
+            color: #aaa;
+            height: 35px; 
+            min-width: 40px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            font-size: 0.8em;
+            opacity: 0;
+        }
+        #null-target { top: 8px; }
+
+        .narration-box {
+            margin-top: 15px;
+            width: 100%;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            min-height: 3em; 
+            max-height: 6em; 
+            overflow-y: auto; 
+            text-align: left;
+            font-size: 0.9em;
+            box-sizing: border-box;
+        }
+
+        .code-display {
+            margin-top: 15px;
+            width: 100%;
+            max-height: 200px; 
+            overflow: auto;   
+            box-sizing: border-box;
+        }
+        .code-display pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px; 
+            border-radius: 5px;
+            text-align: left;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8em; 
+            margin: 0; 
+            white-space: pre; 
+        }
+        .code-display .highlight-line {
+            background-color: #34495e;
+            display: block;
+            margin: -2px -10px; 
+            padding: 2px 10px; 
+        }
+
+        .controls {
+            margin-top: 15px;
+            width: 100%;
+            text-align: center;
+        }
+        .controls button {
+            padding: 10px 12px; 
+            margin: 5px; 
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 10px; }
+            h1 { font-size: 1.3em; }
+            #animation-setup input[type="text"], 
+            #animation-setup input[type="number"] { width: 80px; }
+            .node { margin: 0 15px 0 2px; min-width: 65px; font-size: 0.8em; }
+            .node-data { padding: 6px; min-width: 20px; }
+            .node-next { padding: 6px 3px; min-width: 30px;}
+            .pointer { font-size: 0.65em; min-width: 35px; padding: 2px 4px;}
+            .narration-box, .code-display pre { font-size: 0.85em; }
+            .code-display { max-height: 150px; }
+            .controls button { padding: 8px 10px; font-size: 0.85em; }
+        }
+        @media (max-width: 400px) {
+             .list-area { padding: 0 10px; }
+             .node { margin: 0 10px 0 1px; min-width: 55px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Reverse K-Group (Visual Reorder)</h1>
+
+        <div id="animation-setup">
+            <label for="initialListData">Initial List:</label>
+            <input type="text" id="initialListData" value="1,2,3,4,5,6,7">
+            <label for="kValueInput">k:</label>
+            <input type="number" id="kValueInput" value="3" min="1"> 
+        </div>
+
+        <div id="animation-viewport">
+            <div id="head-ptr" class="pointer">HEAD ⬇</div>
+            <div id="dummy-ptr" class="pointer">dummy ⬇</div>
+            <div id="prevGroupEnd-ptr" class="pointer">prevGroupEnd ⬆</div>
+            <div id="kth-ptr" class="pointer">kth ⬆</div>
+            <div id="kthScanner-ptr" class="pointer">kthScan ⬆</div>
+            <div id="groupStart-ptr" class="pointer">groupStart ⬆</div>
+            <div id="nextGroupStart-ptr" class="pointer">nextGroupStart ⬆</div>
+            <div id="revfn-prev-ptr" class="pointer">rev.prev ⬆</div>
+            <div id="revfn-curr-ptr" class="pointer">rev.curr ⬆</div>
+            <div id="revfn-next-ptr" class="pointer">rev.next ⬆</div>
+            
+            <div class="list-area" id="listArea">
+                 <div id="null-target" class="null-pointer-target">NULL</div>
+            </div>
+        </div>
+
+        <div class="narration-box" id="narrationBox">Set list and k, then "Reset/Start".</div>
+
+        <div class="code-display">
+            <pre><code id="codeListing">
+public ListNode reverseKGroup(ListNode head, int k) { // 0
+    if (head == null || k == 1) return head;        // 1
+
+    ListNode dummy = new ListNode(0);               // 3
+    dummy.next = head;                              // 4
+
+    ListNode prevGroupEnd = dummy;                  // 6
+
+    while (true) {                                  // 8
+        ListNode kth = getKthNode(prevGroupEnd, k); // 10
+        if (kth == null) break;                     // 11
+
+        ListNode groupStart = prevGroupEnd.next;    // 13
+        ListNode nextGroupStart = kth.next;         // 14
+
+        reverse(groupStart, kth);                   // 17 (Call)
+
+        prevGroupEnd.next = kth;                    // 19
+        groupStart.next = nextGroupStart;           // 20
+
+        prevGroupEnd = groupStart;                  // 23
+    }
+
+    return dummy.next;                              // 26
+}
+
+private ListNode getKthNode(ListNode curr, int k) { // 29
+    while (curr != null && k > 0) {                 // 30
+        curr = curr.next;                           // 31
+        k--;                                        // 32
+    }
+    return curr;                                    // 34
+}
+
+private void reverse(ListNode start, ListNode end) { // 37
+    ListNode prev = null, curr = start, next = null;// 38
+    while (prev != end) {                           // 39
+        next = curr.next;                           // 40
+        curr.next = prev;                           // 41
+        prev = curr;                                // 42
+        curr = next;                                // 43
+    }
+}                                                   // 45
+            </code></pre>
+        </div>
+
+        <div class="controls">
+            <button id="nextStepBtn">Next Step</button>
+            <button id="resetBtn">Reset/Start</button>
+        </div>
+    </div>
+<!-- Add the Go Back button -->
+<div class="go-back">
+    <button onclick="window.location.href='../patterns/reverse_nodes_k_group_cheatsheet.html'">← Go Back to In-Place Linked List</button>
+</div>
+    <script>
+        // DOM Elements
+        const animationViewport = document.getElementById('animation-viewport');
+        const listArea = document.getElementById('listArea');
+        const narrationBox = document.getElementById('narrationBox');
+        const nextStepBtn = document.getElementById('nextStepBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const initialListDataInput = document.getElementById('initialListData');
+        const kValueInput = document.getElementById('kValueInput');
+        const codeListingEl = document.getElementById('codeListing');
+        const codeLines = codeListingEl.innerHTML.trim().split('\n').map(line => line.trim().replace(/\/\/ \d+/g, '').replace(/\/\/.*$/g, '').trim());
+        const nullTargetEl = document.getElementById('null-target');
+
+        // Pointer Elements
+        const headPtrEl = document.getElementById('head-ptr');
+        const dummyPtrEl = document.getElementById('dummy-ptr');
+        const prevGroupEndPtrEl = document.getElementById('prevGroupEnd-ptr');
+        const kthPtrEl = document.getElementById('kth-ptr');
+        const kthScannerPtrEl = document.getElementById('kthScanner-ptr');
+        const groupStartPtrEl = document.getElementById('groupStart-ptr');
+        const nextGroupStartPtrEl = document.getElementById('nextGroupStart-ptr');
+        const revFnPrevPtrEl = document.getElementById('revfn-prev-ptr');
+        const revFnCurrPtrEl = document.getElementById('revfn-curr-ptr');
+        const revFnNextPtrEl = document.getElementById('revfn-next-ptr');
+        
+        const allPointerElements = [headPtrEl, dummyPtrEl, prevGroupEndPtrEl, kthPtrEl, kthScannerPtrEl, groupStartPtrEl, nextGroupStartPtrEl, revFnPrevPtrEl, revFnCurrPtrEl, revFnNextPtrEl];
+
+        // State
+        let nodes = []; 
+        let mainHeadId = null; 
+        let js_dummyId = 'node-js-dummy'; 
+        let js_prevGroupEndId = null;
+        let js_kthId = null;
+        let js_kthScannerId = null; 
+        let js_kthScanCounter_param = 0;  
+        let js_groupStartId = null;
+        let js_nextGroupStartId = null;
+        let js_revFn_prevId = null;
+        let js_revFn_currId = null;
+        let js_revFn_nextId = null;
+        let js_revFn_endId_param = null; 
+        let kValue = 3;
+        let currentPhase = 'INIT'; 
+        let currentKGroupNodeIdsForHighlight = [];
+        let nodePrevGroupEnd, nodeKth, nodeKthScanner, nodeGroupStart, nodeRevFnCurr;
+        let reversedKGroupIdOrder = []; 
+
+
+        function createNodeElement(node) {
+            const el = document.createElement('div');
+            el.classList.add('node');
+            if (node.id === js_dummyId) el.classList.add('dummy-node');
+            el.id = node.id;
+            el.innerHTML = `
+                <div class="node-data">${node.data}</div>
+                ${node.id !== js_dummyId ? `<div class="node-next" id="next-${node.id}">NULL</div>` : ''}
+            `;
+            return el;
+        }
+        function renderList() {
+            listArea.innerHTML = ''; 
+            listArea.appendChild(nullTargetEl); 
+
+            nodes.forEach(node => {
+                node.el = createNodeElement(node);
+                listArea.appendChild(node.el);
+                if (node.id !== js_dummyId) { 
+                    updateNodeNextVisual(node.id, node.nextId);
+                }
+            });
+         }
+        function getNodeById(id) { return nodes.find(n => n.id === id); }
+        function updateNodeNextVisual(nodeId, nextNodeTargetId) {
+            const node = getNodeById(nodeId);
+            if (!node || !node.el || node.id === js_dummyId) return;
+            const nextVisualEl = node.el.querySelector(`#next-${nodeId}`);
+            if (!nextVisualEl) return;
+
+            if (nextNodeTargetId && nextNodeTargetId !== 'null-target') {
+                const nextNodeActual = getNodeById(nextNodeTargetId);
+                nextVisualEl.innerHTML = `${nextNodeActual ? nextNodeActual.data : 'ERR'} <span class="node-next-arrow">➔</span>`;
+            } else {
+                nextVisualEl.innerHTML = 'NULL';
+            }
+         }
+        function positionPointer(ptrEl, targetNodeId, isBelow = true, offsetIndex = 0) {
+            if (!ptrEl) return;
+            let targetEl;
+            let targetIsValid = false; 
+
+            if (targetNodeId === 'null-target') {
+                targetEl = nullTargetEl; 
+                const listAreaRect = listArea.getBoundingClientRect();
+                const viewportRect = animationViewport.getBoundingClientRect();
+                if (ptrEl === revFnPrevPtrEl || ptrEl === revFnNextPtrEl || ptrEl === nextGroupStartPtrEl) {
+                    nullTargetEl.style.left = (listAreaRect.right - viewportRect.left + 10) + 'px';
+                } else {
+                     nullTargetEl.style.left = (listAreaRect.left - viewportRect.left - (nullTargetEl.offsetWidth || 50) - 10) + 'px';
+                }
+                targetIsValid = true;
+            } else if (targetNodeId) { 
+                targetEl = document.getElementById(targetNodeId);
+                if (targetEl) {
+                     targetIsValid = true;
+                }
+            }
+
+            if (targetIsValid && targetEl) {
+                const viewportRect = animationViewport.getBoundingClientRect();
+                const targetRect = targetEl.getBoundingClientRect();
+                let newLeft = targetRect.left - viewportRect.left + (targetEl.offsetWidth / 2) - (ptrEl.offsetWidth / 2);
+                let newTop;
+                const pointerHeightMargin = ptrEl.offsetHeight + 3;
+
+                if (!isBelow) { 
+                    newTop = targetRect.top - viewportRect.top - pointerHeightMargin - (offsetIndex * pointerHeightMargin);
+                } else { 
+                    newTop = targetRect.top - viewportRect.top + targetEl.offsetHeight + 5 + (offsetIndex * pointerHeightMargin);
+                }
+                ptrEl.style.left = `${newLeft}px`;
+                ptrEl.style.top = `${newTop}px`;
+                ptrEl.style.opacity = 1; 
+            }
+        }
+        function updatePointerVisuals() {
+            const visiblePointers = new Set();
+
+            if (currentPhase === 'START' || currentPhase === 'CHECK_HEAD_K1') {
+                if (mainHeadId) {
+                    positionPointer(headPtrEl, mainHeadId, false);
+                    visiblePointers.add(headPtrEl);
+                }
+            } else if (currentPhase.startsWith('ALL_DONE') || currentPhase === 'RETURN_DUMMY_NEXT') {
+                 const finalHeadNodeId = getNodeById(js_dummyId)?.nextId || mainHeadId; 
+                 if (finalHeadNodeId) {
+                    positionPointer(headPtrEl, finalHeadNodeId, false);
+                    visiblePointers.add(headPtrEl);
+                 } else if (mainHeadId && currentPhase === 'ALL_DONE_NO_CHANGE') { 
+                    positionPointer(headPtrEl, mainHeadId, false);
+                    visiblePointers.add(headPtrEl);
+                 }
+            }
+
+
+            if (js_dummyId && (currentPhase !== 'INIT' && currentPhase !== 'START' && currentPhase !== 'CHECK_HEAD_K1')) {
+                visiblePointers.add(dummyPtrEl);
+            }
+
+            if (js_prevGroupEndId) visiblePointers.add(prevGroupEndPtrEl);
+            if (js_kthId) visiblePointers.add(kthPtrEl);
+            if (js_kthScannerId) visiblePointers.add(kthScannerPtrEl);
+            if (js_groupStartId) visiblePointers.add(groupStartPtrEl);
+            if (js_nextGroupStartId) visiblePointers.add(nextGroupStartPtrEl);
+            
+            if (js_revFn_prevId) visiblePointers.add(revFnPrevPtrEl);
+            if (js_revFn_currId) visiblePointers.add(revFnCurrPtrEl);
+            if (js_revFn_nextId) visiblePointers.add(revFnNextPtrEl);
+
+            allPointerElements.forEach(p => {
+                if (!visiblePointers.has(p)) {
+                    p.style.opacity = 0;
+                }
+            });
+            
+            let nullTargetInUse = false;
+            const nullCheckIds = [js_nextGroupStartId, js_revFn_prevId, js_revFn_nextId];
+            const nullCheckPtrs = [nextGroupStartPtrEl, revFnPrevPtrEl, revFnNextPtrEl];
+
+            for(let i=0; i < nullCheckIds.length; i++){
+                if(nullCheckIds[i] === 'null-target' && visiblePointers.has(nullCheckPtrs[i])){
+                    nullTargetInUse = true;
+                    break;
+                }
+            }
+            nullTargetEl.style.opacity = nullTargetInUse ? '1' : '0';
+
+            if (visiblePointers.has(dummyPtrEl)) positionPointer(dummyPtrEl, js_dummyId, false, 0); 
+            if (visiblePointers.has(prevGroupEndPtrEl)) positionPointer(prevGroupEndPtrEl, js_prevGroupEndId, true, 0);
+            if (visiblePointers.has(kthPtrEl)) positionPointer(kthPtrEl, js_kthId, true, 1);
+            if (visiblePointers.has(kthScannerPtrEl)) positionPointer(kthScannerPtrEl, js_kthScannerId, true, 0);
+            if (visiblePointers.has(groupStartPtrEl)) positionPointer(groupStartPtrEl, js_groupStartId, true, 2);
+            if (visiblePointers.has(nextGroupStartPtrEl)) positionPointer(nextGroupStartPtrEl, js_nextGroupStartId, true, 3);
+            
+            if (visiblePointers.has(revFnPrevPtrEl)) positionPointer(revFnPrevPtrEl, js_revFn_prevId, true, 0);
+            if (visiblePointers.has(revFnCurrPtrEl)) positionPointer(revFnCurrPtrEl, js_revFn_currId, true, 1);
+            if (visiblePointers.has(revFnNextPtrEl)) positionPointer(revFnNextPtrEl, js_revFn_nextId, true, 2);
+
+            document.querySelectorAll('.node').forEach(nEl => {
+                nEl.classList.remove('highlight-scanner', 'highlight-kth', 'highlight-prevGroupEnd', 'highlight-groupStart', 'highlight-nextGroupStart', 'highlight-revfn-curr', 'highlight-revfn-prev', 'highlight-k-group', 'highlight-link-change-source', 'highlight-link-change-target', 'node-reordering');
+                if (nEl.id === js_kthScannerId && visiblePointers.has(kthScannerPtrEl)) nEl.classList.add('highlight-scanner');
+                if (nEl.id === js_kthId && visiblePointers.has(kthPtrEl)) nEl.classList.add('highlight-kth');
+                if (nEl.id === js_prevGroupEndId && visiblePointers.has(prevGroupEndPtrEl)) nEl.classList.add('highlight-prevGroupEnd');
+                if (nEl.id === js_groupStartId && visiblePointers.has(groupStartPtrEl)) nEl.classList.add('highlight-groupStart');
+                if (nEl.id === js_nextGroupStartId && visiblePointers.has(nextGroupStartPtrEl) && js_nextGroupStartId !== 'null-target') nEl.classList.add('highlight-nextGroupStart');
+                if (nEl.id === js_revFn_currId && visiblePointers.has(revFnCurrPtrEl)) nEl.classList.add('highlight-revfn-curr');
+                if (nEl.id === js_revFn_prevId && js_revFn_prevId !== 'null-target' && visiblePointers.has(revFnPrevPtrEl)) nEl.classList.add('highlight-revfn-prev');
+                if (currentKGroupNodeIdsForHighlight.includes(nEl.id)) nEl.classList.add('highlight-k-group');
+            });
+        }
+        function highlightCodeLine(lineIndex) {
+            const targetLine = codeLines[lineIndex] || "";
+            codeListingEl.innerHTML = codeLines.map((line, index) => {
+                let displayLine = line;
+                if (line.includes("//")) {
+                    displayLine = line.substring(0, line.indexOf("//")).trim();
+                }
+                 return index === lineIndex ? `<span class="highlight-line">${displayLine || "&nbsp;"}</span>` : (displayLine || "&nbsp;");
+            }).join('\n');
+         }
+
+        function initialize() {
+            const rawData = initialListDataInput.value.split(',').map(s => s.trim()).filter(s => s);
+            kValue = parseInt(kValueInput.value) || 1;
+            if (kValue < 1) kValue = 1;
+            kValueInput.value = kValue;
+
+            nodes = [];
+            mainHeadId = null;
+            if (rawData.length > 0) mainHeadId = `node-0`;
+            
+            let prevNodeInInit = null;
+            rawData.forEach((d, i) => {
+                const newNode = { id: `node-${i}`, data: d, nextId: null, el: null };
+                nodes.push(newNode);
+                if (prevNodeInInit) prevNodeInInit.nextId = newNode.id;
+                prevNodeInInit = newNode;
+            });
+            
+            js_dummyId = 'node-js-dummy'; 
+            js_prevGroupEndId = null;
+            js_kthId = null; js_kthScannerId = null; js_kthScanCounter_param = 0;
+            js_groupStartId = null; js_nextGroupStartId = null;
+            js_revFn_prevId = null; js_revFn_currId = null; js_revFn_nextId = null; js_revFn_endId_param = null;
+            currentKGroupNodeIdsForHighlight = [];
+            reversedKGroupIdOrder = [];
+
+            currentPhase = 'START'; 
+            renderList(); 
+            narrationBox.textContent = `Initial list with k=${kValue}. Press "Next Step".`;
+            highlightCodeLine(0); 
+            nextStepBtn.disabled = false;
+            setTimeout(updatePointerVisuals, 50);
+        }
+        
+        function visuallyReorderKGroup() {
+            if (reversedKGroupIdOrder.length === 0) {
+                console.warn("No reversed order to apply visually.");
+                return;
+            }
+
+            const reorderedDOMElements = reversedKGroupIdOrder.map(id => getNodeById(id)?.el).filter(el => el);
+
+            if (reorderedDOMElements.length === 0) {
+                console.warn("No DOM elements found for reordering.");
+                return;
+            }
+
+            const prevGroupEndNodeEl = getNodeById(js_prevGroupEndId)?.el;
+            if (!prevGroupEndNodeEl) {
+                console.error("prevGroupEnd DOM element not found for reordering.");
+                return;
+            }
+
+            // Temporarily apply a class for visual feedback during reorder
+            reorderedDOMElements.forEach(el => el.classList.add('node-reordering'));
+
+            // Detach all nodes from prevGroupEnd.next up to what was nextGroupStart (or end of list)
+            // This is simpler than trying to manage individual k-group nodes if they are contiguous
+            let currentEl = prevGroupEndNodeEl.nextElementSibling;
+            const fragmentToReinsert = document.createDocumentFragment();
+            
+            // Build the reordered fragment
+            reorderedDOMElements.forEach(el => fragmentToReinsert.appendChild(el));
+
+            // Find the original next element after the group (if any)
+            let originalNextGroupStartEl = null;
+            if (js_nextGroupStartId && js_nextGroupStartId !== 'null-target') {
+                originalNextGroupStartEl = getNodeById(js_nextGroupStartId)?.el;
+            }
+
+            // Insert the reordered group
+            if (originalNextGroupStartEl && originalNextGroupStartEl.parentNode === listArea) {
+                 listArea.insertBefore(fragmentToReinsert, originalNextGroupStartEl);
+            } else {
+                 listArea.appendChild(fragmentToReinsert); // If it was the end of the list
+            }
+            
+            // Remove the reordering class after a short delay
+            setTimeout(() => {
+                reorderedDOMElements.forEach(el => el.classList.remove('node-reordering'));
+            }, 100); // Short delay for the reordering class effect
+        }
+
+
+        function executeNextStep() {
+            function updateLocalNodeRefs() {
+                nodePrevGroupEnd = getNodeById(js_prevGroupEndId);
+                nodeKth = getNodeById(js_kthId);
+                nodeKthScanner = getNodeById(js_kthScannerId);
+                nodeGroupStart = getNodeById(js_groupStartId);
+                nodeRevFnCurr = getNodeById(js_revFn_currId);
+            }
+            updateLocalNodeRefs();
+
+            switch (currentPhase) {
+                case 'START': 
+                    highlightCodeLine(1);
+                    if (mainHeadId == null || kValue == 1) {
+                        narrationBox.textContent = (mainHeadId == null ? "Head is null. " : "k is 1. ") + "No change. Returning head.";
+                        currentPhase = 'ALL_DONE_NO_CHANGE';
+                    } else {
+                        narrationBox.textContent = "Head not null and k > 1. Proceeding.";
+                        currentPhase = 'DUMMY_INIT_1';
+                    }
+                    break;
+                case 'DUMMY_INIT_1': 
+                    nodes.unshift({ id: js_dummyId, data: 'D', nextId: null, el: null });
+                    renderList(); 
+                    narrationBox.textContent = "ListNode dummy = new ListNode(0);";
+                    currentPhase = 'DUMMY_INIT_2';
+                    highlightCodeLine(3);
+                    break;
+                case 'DUMMY_INIT_2': 
+                    const dummyNode = getNodeById(js_dummyId);
+                    if (dummyNode) dummyNode.nextId = mainHeadId;
+                    narrationBox.textContent = "dummy.next = head;";
+                    currentPhase = 'PREVGROUPEND_INIT';
+                    highlightCodeLine(4);
+                    break;
+                case 'PREVGROUPEND_INIT': 
+                    js_prevGroupEndId = js_dummyId;
+                    narrationBox.textContent = "ListNode prevGroupEnd = dummy;";
+                    currentPhase = 'MAIN_LOOP_CONDITION';
+                    highlightCodeLine(6);
+                    break;
+
+                case 'MAIN_LOOP_CONDITION': 
+                    js_kthId = null; js_groupStartId = null; js_nextGroupStartId = null; 
+                    js_revFn_prevId = null; js_revFn_currId = null; js_revFn_nextId = null; js_revFn_endId_param = null;
+                    currentKGroupNodeIdsForHighlight = [];
+                    reversedKGroupIdOrder = []; 
+                    narrationBox.textContent = "Entering main loop. Finding k-th node...";
+                    currentPhase = 'GET_KTH_NODE_CALL';
+                    highlightCodeLine(8);
+                    break;
+                
+                case 'GET_KTH_NODE_CALL': 
+                    js_kthScannerId = js_prevGroupEndId; 
+                    js_kthScanCounter_param = kValue;    
+                    updateLocalNodeRefs(); 
+                    narrationBox.textContent = `Calling getKthNode with start: ${nodeKthScanner?.data || 'null'} and k: ${js_kthScanCounter_param}.`;
+                    currentPhase = 'GET_KTH_NODE_LOOP_COND';
+                    highlightCodeLine(10); 
+                    break;
+
+                case 'GET_KTH_NODE_LOOP_COND': 
+                    highlightCodeLine(30);
+                    updateLocalNodeRefs();
+                    if (nodeKthScanner != null && js_kthScanCounter_param > 0) {
+                        narrationBox.textContent = `getKthNode: Scanner (${nodeKthScanner.data}) not null, k_param=${js_kthScanCounter_param} > 0. Loop.`;
+                        currentPhase = 'GET_KTH_NODE_ADVANCE'; 
+                    } else {
+                        narrationBox.textContent = `getKthNode: Loop condition false. Scanner=${nodeKthScanner?.data || 'null'}, k_param=${js_kthScanCounter_param}.`;
+                        currentPhase = 'GET_KTH_NODE_RETURN';
+                    }
+                    break;
+                case 'GET_KTH_NODE_ADVANCE': 
+                    highlightCodeLine(31);
+                    updateLocalNodeRefs();
+                    if (nodeKthScanner) {
+                         js_kthScannerId = nodeKthScanner.nextId; 
+                    } else { 
+                        js_kthScannerId = null; 
+                    }
+                    updateLocalNodeRefs(); 
+                    narrationBox.textContent = `getKthNode: Scanner moves to ${nodeKthScanner?.data || 'NULL'}.`;
+                    currentPhase = 'GET_KTH_NODE_DECREMENT_K';
+                    break;
+                case 'GET_KTH_NODE_DECREMENT_K': 
+                    highlightCodeLine(32);
+                    js_kthScanCounter_param--;
+                    narrationBox.textContent = `getKthNode: k_param decremented to ${js_kthScanCounter_param}.`;
+                    currentPhase = 'GET_KTH_NODE_LOOP_COND'; 
+                    break;
+                case 'GET_KTH_NODE_RETURN': 
+                    highlightCodeLine(34);
+                    js_kthId = js_kthScannerId; 
+                    js_kthScannerId = null; 
+                    updateLocalNodeRefs();
+                    narrationBox.textContent = `getKthNode returns. kth is now ${nodeKth?.data || 'NULL'}.`;
+                    currentPhase = 'CHECK_KTH_NULL';
+                    break;
+
+                case 'CHECK_KTH_NULL': 
+                    highlightCodeLine(11);
+                    updateLocalNodeRefs(); 
+                    if (js_kthId == null || js_kthId === 'null-target') {
+                        narrationBox.textContent = "kth is null. Not enough nodes. Breaking main loop.";
+                        currentPhase = 'RETURN_DUMMY_NEXT';
+                    } else {
+                        narrationBox.textContent = `kth is ${nodeKth.data}. Group found.`;
+                        if (nodePrevGroupEnd) { 
+                            let tempScan = nodePrevGroupEnd.nextId;
+                            currentKGroupNodeIdsForHighlight = []; 
+                            for(let i=0; i<kValue; i++) {
+                                if(!tempScan) break;
+                                currentKGroupNodeIdsForHighlight.push(tempScan);
+                                if(tempScan === js_kthId) break;
+                                const tempNode = getNodeById(tempScan);
+                                if (!tempNode) break;
+                                tempScan = tempNode.nextId;
+                            }
+                        }
+                        currentPhase = 'GROUPSTART_INIT';
+                    }
+                    break;
+
+                case 'GROUPSTART_INIT': 
+                    highlightCodeLine(13);
+                    updateLocalNodeRefs();
+                    if (nodePrevGroupEnd) js_groupStartId = nodePrevGroupEnd.nextId;
+                    else { currentPhase = 'ALL_DONE'; break; } 
+                    updateLocalNodeRefs(); 
+                    narrationBox.textContent = `groupStart = prevGroupEnd.next (${nodeGroupStart?.data}).`;
+                    currentPhase = 'NEXTGROUPSTART_INIT';
+                    break;
+                case 'NEXTGROUPSTART_INIT': 
+                    highlightCodeLine(14);
+                    updateLocalNodeRefs();
+                    if (nodeKth) js_nextGroupStartId = nodeKth.nextId || 'null-target';
+                    else { currentPhase = 'ALL_DONE'; break; } 
+                    narrationBox.textContent = `nextGroupStart = kth.next (${getNodeById(js_nextGroupStartId)?.data || 'NULL'}).`;
+                    currentPhase = 'CALL_REVERSE_FN';
+                    break;
+                
+                case 'CALL_REVERSE_FN': 
+                    highlightCodeLine(17);
+                    updateLocalNodeRefs();
+                    narrationBox.textContent = `Calling reverse(groupStart=${nodeGroupStart?.data}, end=${nodeKth?.data}).`;
+                    currentPhase = 'REVERSE_FN_INIT_POINTERS';
+                    break;
+                
+                case 'REVERSE_FN_INIT_POINTERS': 
+                    highlightCodeLine(38);
+                    js_revFn_prevId = 'null-target';
+                    js_revFn_currId = js_groupStartId; 
+                    js_revFn_nextId = 'null-target';   
+                    js_revFn_endId_param = js_kthId;   
+                    updateLocalNodeRefs();
+                    narrationBox.textContent = `reverse(): prev=null, curr=start(${nodeRevFnCurr?.data}), next=null. (end param is ${nodeKth?.data})`;
+                    currentPhase = 'REVERSE_FN_LOOP_COND';
+                    break;
+                case 'REVERSE_FN_LOOP_COND': 
+                    highlightCodeLine(39);
+                    updateLocalNodeRefs();
+                    if (js_revFn_prevId !== js_revFn_endId_param) {
+                        narrationBox.textContent = `reverse() loop: prev (${getNodeById(js_revFn_prevId)?.data || 'NULL'}) != end (${nodeKth?.data}). Enter loop.`;
+                        currentPhase = 'REVERSE_FN_NEXT_ASSIGN';
+                    } else {
+                        narrationBox.textContent = "reverse() logic complete. Group pointers reversed.";
+                        reversedKGroupIdOrder = []; 
+                        let tempTracer = js_kthId; // New head of reversed group is kth
+                        for (let i = 0; i < currentKGroupNodeIdsForHighlight.length; i++) {
+                             if (!tempTracer || tempTracer === js_nextGroupStartId || tempTracer === 'null-target') break; 
+                             reversedKGroupIdOrder.push(tempTracer);
+                             const node = getNodeById(tempTracer);
+                             if (!node) break;
+                             tempTracer = node.nextId; 
+                        }
+                        currentPhase = 'VISUALLY_REORDER_K_GROUP'; 
+                    }
+                    break;
+                case 'REVERSE_FN_NEXT_ASSIGN': 
+                    highlightCodeLine(40);
+                    updateLocalNodeRefs();
+                    if (nodeRevFnCurr) js_revFn_nextId = nodeRevFnCurr.nextId || 'null-target'; else { currentPhase = 'ALL_DONE'; break; }
+                    narrationBox.textContent = `reverse(): next = curr.next (${getNodeById(js_revFn_nextId)?.data || 'NULL'}).`;
+                    currentPhase = 'REVERSE_FN_CURR_NEXT_ASSIGN';
+                    break;
+                case 'REVERSE_FN_CURR_NEXT_ASSIGN': 
+                    highlightCodeLine(41);
+                    updateLocalNodeRefs();
+                    if (nodeRevFnCurr) {
+                        nodeRevFnCurr.nextId = js_revFn_prevId;
+                        updateNodeNextVisual(js_revFn_currId, js_revFn_prevId);
+                    } else { currentPhase = 'ALL_DONE'; break; }
+                    narrationBox.textContent = `reverse(): curr.next = prev (${getNodeById(js_revFn_prevId)?.data || 'NULL'}).`;
+                    currentPhase = 'REVERSE_FN_PREV_ASSIGN';
+                    break;
+                case 'REVERSE_FN_PREV_ASSIGN': 
+                    highlightCodeLine(42);
+                    js_revFn_prevId = js_revFn_currId;
+                    updateLocalNodeRefs(); 
+                    narrationBox.textContent = `reverse(): prev = curr (${nodeRevFnCurr?.data}).`; 
+                    currentPhase = 'REVERSE_FN_CURR_ASSIGN';
+                    break;
+                case 'REVERSE_FN_CURR_ASSIGN': 
+                    highlightCodeLine(43);
+                    js_revFn_currId = js_revFn_nextId;
+                    narrationBox.textContent = `reverse(): curr = next (${getNodeById(js_revFn_currId)?.data || 'NULL'}).`;
+                    currentPhase = 'REVERSE_FN_LOOP_COND'; 
+                    break;
+
+                case 'VISUALLY_REORDER_K_GROUP':
+                    narrationBox.textContent = "Visually reordering the reversed group elements...";
+                    visuallyReorderKGroup();
+                    highlightCodeLine(45); 
+                    currentPhase = 'CONNECT_PREVGROUPEND_TO_KTH'; // Proceed immediately
+                    // No setTimeout, let the next click trigger the next logical step after visual reorder
+                    break; 
+
+                case 'CONNECT_PREVGROUPEND_TO_KTH': 
+                    highlightCodeLine(19);
+                    updateLocalNodeRefs();
+                    if (nodePrevGroupEnd) {
+                        nodePrevGroupEnd.nextId = js_kthId; 
+                        updateNodeNextVisual(js_prevGroupEndId, js_kthId);
+                        
+                        nodePrevGroupEnd.el?.classList.add('highlight-link-change-source');
+                        nodeKth?.el?.classList.add('highlight-link-change-target');
+                        setTimeout(() => {
+                             nodePrevGroupEnd.el?.classList.remove('highlight-link-change-source');
+                             nodeKth?.el?.classList.remove('highlight-link-change-target');
+                        }, 700);
+                    }  else { currentPhase = 'ALL_DONE'; break; }
+                    narrationBox.textContent = `Connect: prevGroupEnd's NEXT field now points to kth (${nodeKth?.data}).`;
+                    currentPhase = 'CONNECT_GROUPSTART_TO_NEXTGROUPSTART';
+                    break;
+                case 'CONNECT_GROUPSTART_TO_NEXTGROUPSTART': 
+                    highlightCodeLine(20);
+                    updateLocalNodeRefs();
+                    if (nodeGroupStart) { 
+                        nodeGroupStart.nextId = js_nextGroupStartId;
+                        updateNodeNextVisual(js_groupStartId, js_nextGroupStartId);
+
+                        nodeGroupStart.el?.classList.add('highlight-link-change-source');
+                        if (js_nextGroupStartId && js_nextGroupStartId !== 'null-target') {
+                            getNodeById(js_nextGroupStartId)?.el?.classList.add('highlight-link-change-target');
+                        }
+                        setTimeout(() => {
+                             nodeGroupStart.el?.classList.remove('highlight-link-change-source');
+                             if (js_nextGroupStartId && js_nextGroupStartId !== 'null-target') {
+                                getNodeById(js_nextGroupStartId)?.el?.classList.remove('highlight-link-change-target');
+                             }
+                        }, 700);
+                    } else { currentPhase = 'ALL_DONE'; break; }
+                    narrationBox.textContent = `Connect: groupStart's NEXT field now points to nextGroupStart (${getNodeById(js_nextGroupStartId)?.data || 'NULL'}).`;
+                    currentPhase = 'ADVANCE_PREVGROUPEND';
+                    break;
+                case 'ADVANCE_PREVGROUPEND': 
+                    highlightCodeLine(23);
+                    js_prevGroupEndId = js_groupStartId; 
+                    updateLocalNodeRefs(); 
+                    narrationBox.textContent = `Advance: prevGroupEnd pointer moves to groupStart (${nodePrevGroupEnd?.data}).`;
+                    currentPhase = 'MAIN_LOOP_CONDITION'; 
+                    js_revFn_prevId = null; js_revFn_currId = null; js_revFn_nextId = null; js_revFn_endId_param = null;
+                    break;
+
+                case 'RETURN_DUMMY_NEXT': 
+                    highlightCodeLine(26);
+                    const finalDummyNode = getNodeById(js_dummyId);
+                    if (finalDummyNode) mainHeadId = finalDummyNode.nextId; 
+                    narrationBox.textContent = "Algorithm finished. Returning dummy.next.";
+                    currentPhase = 'ALL_DONE';
+                    js_prevGroupEndId = null; js_kthId = null; js_groupStartId = null; js_nextGroupStartId = null;
+                    js_revFn_prevId = null; js_revFn_currId = null; js_revFn_nextId = null; js_revFn_endId_param = null;
+                    currentKGroupNodeIdsForHighlight = [];
+                    break;
+                
+                case 'ALL_DONE_NO_CHANGE': 
+                case 'ALL_DONE':
+                    nextStepBtn.disabled = true;
+                    if (currentPhase !== 'ALL_DONE_NO_CHANGE') highlightCodeLine(-1); 
+                    narrationBox.textContent = currentPhase === 'ALL_DONE_NO_CHANGE' ? narrationBox.textContent : "All steps finished. Press Reset/Start to try again.";
+                    break;
+            }
+            // Only call updatePointerVisuals if not in a phase that uses setTimeout to call executeNextStep
+            if (currentPhase !== 'VISUALLY_REORDER_K_GROUP_DELAYED_STEP') { 
+                 updatePointerVisuals();
+            }
+        }
+
+        nextStepBtn.addEventListener('click', executeNextStep);
+        resetBtn.addEventListener('click', initialize);
+        initialListDataInput.addEventListener('change', initialize);
+        kValueInput.addEventListener('change', initialize);
+
+        initialize();
+    </script>
+</body>
+</html>

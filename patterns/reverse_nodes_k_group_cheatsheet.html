@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reverse Nodes in k-Group Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Reverse Nodes in k-Group – Java Cheat Sheet (One Page)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The Reverse Nodes in k-Group problem involves reversing nodes of a linked list in groups of size <code>k</code>. If the number of nodes is not a multiple of <code>k</code>, the remaining nodes are left as is.</p>
+    <ul>
+      <li>Reverse nodes in groups of size <code>k</code></li>
+      <li>Handle edge cases like fewer than <code>k</code> nodes at the end</li>
+      <li>Use pointers to manipulate the list in-place</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>public ListNode reverseKGroup(ListNode head, int k) {
+    if (head == null || k == 1) return head;
+
+    // Dummy node to simplify edge cases
+    ListNode dummy = new ListNode(0);
+    dummy.next = head;
+
+    ListNode prevGroupEnd = dummy;
+
+    while (true) {
+        // Find the kth node
+        ListNode kth = getKthNode(prevGroupEnd, k);
+        if (kth == null) break;
+
+        // Reverse the group
+        ListNode groupStart = prevGroupEnd.next;
+        ListNode nextGroupStart = kth.next;
+
+        // Reverse the current group
+        reverse(groupStart, kth);
+
+        // Connect the reversed group
+        prevGroupEnd.next = kth;
+        groupStart.next = nextGroupStart;
+
+        // Move to the next group
+        prevGroupEnd = groupStart;
+    }
+
+    return dummy.next;
+}
+
+private ListNode getKthNode(ListNode curr, int k) {
+    while (curr != null && k > 0) {
+        curr = curr.next;
+        k--;
+    }
+    return curr;
+}
+
+private void reverse(ListNode start, ListNode end) {
+    ListNode prev = null, curr = start, next = null;
+    while (prev != end) {
+        next = curr.next;
+        curr.next = prev;
+        prev = curr;
+        curr = next;
+    }
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Reversing nodes in groups of size <code>k</code></li>
+      <li>Manipulating linked lists in-place</li>
+      <li>Handling edge cases like fewer than <code>k</code> nodes</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/reverse-nodes-in-k-group/" target="_blank" rel="noopener noreferrer">25: Reverse Nodes in k-Group</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Linked List</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/reverse-linked-list/" target="_blank" rel="noopener noreferrer">206: Reverse Linked List</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Linked List</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Reverse Nodes in k-Group</h2>
+    <pre><code>Input: head = [1,2,3,4,5], k = 2
+Output: [2,1,4,3,5]
+Explanation: The nodes are reversed in groups of 2.</code></pre>
+<button onclick="window.open('../animations/reverse_nodes_k_group_animation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a dummy node to simplify edge cases</li>
+      <li>Reverse the nodes in-place using pointers</li>
+      <li>Edge cases: fewer than <code>k</code> nodes, single node, empty list</li>
+    </ul>
+  </div>
+</body>
+</html>
