@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Rooms II Animation</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      background: #f9fafb;
+      text-align: center;
+    }
+    h1 { margin-bottom: 1rem; }
+    .timeline, .rooms {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 1rem 0;
+      gap: 10px;
+    }
+    .block {
+      width: 80px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1rem;
+      border-radius: 6px;
+      background: #ffffff;
+      border: 2px solid #d1d5db;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    .highlight {
+      background-color: #fde68a; /* yellow */
+    }
+    .room {
+      background-color: #4ade80; /* green */
+      color: white;
+    }
+    .controls {
+      margin-top: 20px;
+    }
+    .controls button {
+      margin: 0.5rem;
+      padding: 8px 12px;
+      font-weight: bold;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .log {
+      margin-top: 1rem;
+      font-family: monospace;
+      text-align: left;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      background: #f1f5f9;
+      border-radius: 6px;
+      padding: 0.5rem;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 Meeting Rooms II Animation</h1>
+  <p class="hide-print"><a href="../patterns/meeting_rooms_ii_cheatsheet.html">← Back to Meeting Rooms II Cheat Sheet</a></p>
+
+  <strong>Meetings:</strong>
+  <div class="timeline" id="meetings"></div>
+
+  <strong>Rooms:</strong>
+  <div class="rooms" id="rooms"></div>
+
+  <div class="controls hide-print">
+    <button onclick="step()">⏭ Step</button>
+    <button onclick="reset()">🔄 Reset</button>
+  </div>
+
+  <div class="log" id="log"></div>
+
+  <script>
+    const meetings = [[0, 30], [5, 10], [15, 20]];
+    let heap = [];
+    let currentIndex = 0;
+    const meetingsEl = document.getElementById("meetings");
+    const roomsEl = document.getElementById("rooms");
+    const logEl = document.getElementById("log");
+
+    function renderMeetings() {
+      meetingsEl.innerHTML = '';
+      meetings.forEach((meeting, index) => {
+        const block = document.createElement("div");
+        block.className = "block";
+        block.textContent = `[${meeting[0]}, ${meeting[1]}]`;
+        if (index === currentIndex) block.classList.add("highlight");
+        meetingsEl.appendChild(block);
+      });
+    }
+
+    function renderRooms() {
+      roomsEl.innerHTML = '';
+      heap.forEach((endTime, index) => {
+        const block = document.createElement("div");
+        block.className = "block room";
+        block.textContent = `Room ${index + 1}: ${endTime}`;
+        roomsEl.appendChild(block);
+      });
+    }
+
+    function log(message) {
+      const div = document.createElement("div");
+      div.textContent = message;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function step() {
+      if (currentIndex >= meetings.length) {
+        log(`🎉 All meetings processed. Total rooms required: ${heap.length}`);
+        return;
+      }
+
+      const [start, end] = meetings[currentIndex];
+      log(`📌 Processing meeting [${start}, ${end}]...`);
+
+      // Check if any room is free
+      if (heap.length > 0 && heap[0] <= start) {
+        log(`✅ Room freed up. Reusing room with end time ${heap[0]}.`);
+        heap.shift(); // Remove the earliest ending meeting
+      }
+
+      // Add the current meeting's end time to the heap
+      heap.push(end);
+      heap.sort((a, b) => a - b); // Sort the heap to maintain the min-heap property
+      log(`➕ Assigned room for meeting [${start}, ${end}]. Current rooms: ${heap.length}`);
+
+      currentIndex++;
+      renderMeetings();
+      renderRooms();
+    }
+
+    function reset() {
+      currentIndex = 0;
+      heap = [];
+      logEl.innerHTML = '';
+      renderMeetings();
+      renderRooms();
+    }
+
+    reset();
+  </script>
+</body>
+</html>

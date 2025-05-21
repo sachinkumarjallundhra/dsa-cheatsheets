@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Free Time Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Employee Free Time – Java Cheat Sheet (One Page)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The Employee Free Time problem involves finding the common free time intervals across multiple employees' schedules. Each employee's schedule is represented as a list of non-overlapping intervals.</p>
+    <ul>
+      <li>Merge all intervals across employees</li>
+      <li>Find gaps between merged intervals</li>
+      <li>Return the gaps as the free time intervals</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>public List<Interval> employeeFreeTime(List<List<Interval>> schedule) {
+    List<Interval> allIntervals = new ArrayList<>();
+    for (List<Interval> employee : schedule) {
+        allIntervals.addAll(employee);
+    }
+
+    // Sort intervals by start time
+    allIntervals.sort((a, b) -> Integer.compare(a.start, b.start));
+
+    List<Interval> freeTime = new ArrayList<>();
+    Interval prev = allIntervals.get(0);
+
+    for (int i = 1; i < allIntervals.size(); i++) {
+        Interval curr = allIntervals.get(i);
+        if (prev.end < curr.start) {
+            // Gap found
+            freeTime.add(new Interval(prev.end, curr.start));
+        }
+        prev = prev.end >= curr.end ? prev : curr;
+    }
+
+    return freeTime;
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding common free time for scheduling meetings</li>
+      <li>Analyzing gaps in time intervals</li>
+      <li>Handling multiple sorted lists of intervals</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/employee-free-time/" target="_blank" rel="noopener noreferrer">759: Employee Free Time</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Sorting, Intervals</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/merge-intervals/" target="_blank" rel="noopener noreferrer">56: Merge Intervals</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Sorting, Intervals</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Employee Free Time</h2>
+    <pre><code>Input: schedule = [[[1,2],[5,6]],[[1,3]],[[4,10]]]
+Output: [[3,4]]
+Explanation: There is a free time gap between [3,4].</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Flatten all intervals into a single list before processing</li>
+      <li>Sort intervals by start time to simplify merging</li>
+      <li>Edge cases: no free time, single employee, overlapping schedules</li>
+    </ul>
+  </div>
+</body>
+</html>

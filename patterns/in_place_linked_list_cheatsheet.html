@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>In-Place Manipulation of a Linked List Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 In-Place Manipulation of a Linked List – Java Cheat Sheet (One Page)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>In-place manipulation of a linked list involves modifying the structure of the list without using extra space. Common operations include reversing, reordering, or merging nodes.</p>
+    <ul>
+      <li>Reverse a linked list</li>
+      <li>Reorder a linked list</li>
+      <li>Find the middle of a linked list</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>// Reverse a Linked List
+public ListNode reverse(ListNode head) {
+    ListNode prev = null;
+    while (head != null) {
+        ListNode next = head.next;
+        head.next = prev;
+        prev = head;
+        head = next;
+    }
+    return prev;
+}
+
+// Reorder a Linked List
+public void reorderList(ListNode head) {
+    if (head == null || head.next == null) return;
+
+    // Find the middle of the list
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+
+    // Reverse the second half
+    ListNode second = reverse(slow.next);
+    slow.next = null;
+
+    // Merge two halves
+    ListNode first = head;
+    while (second != null) {
+        ListNode temp1 = first.next, temp2 = second.next;
+        first.next = second;
+        second.next = temp1;
+        first = temp1;
+        second = temp2;
+    }
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Reversing a linked list</li>
+      <li>Reordering a linked list</li>
+      <li>Finding the middle of a linked list</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/reverse-linked-list/" target="_blank" rel="noopener noreferrer">206: Reverse Linked List</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Linked List</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/reorder-list/" target="_blank" rel="noopener noreferrer">143: Reorder List</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Linked List</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/palindrome-linked-list/" target="_blank" rel="noopener noreferrer">234: Palindrome Linked List</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Linked List</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Reverse a Linked List</h2>
+    <pre><code>Input: head = [1,2,3,4,5]
+Output: [5,4,3,2,1]</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use two pointers to manipulate the list in-place</li>
+      <li>Be cautious of null pointers when modifying links</li>
+      <li>Edge cases: empty list, single node, even/odd length lists</li>
+    </ul>
+  </div>
+</body>
+</html>

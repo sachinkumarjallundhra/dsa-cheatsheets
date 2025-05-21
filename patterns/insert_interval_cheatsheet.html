@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insert Interval Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="merge_intervals_cheatsheet.html">← Back to Merge Intervals</a></p>    <h1>📚 Insert Interval – Java Cheat Sheet (One Page)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The Insert Interval pattern involves inserting a new interval into a list of sorted, non-overlapping intervals and merging if necessary.</p>
+    <ul>
+      <li>Iterate through the intervals</li>
+      <li>Handle three cases: before, overlapping, and after the new interval</li>
+      <li>Merge overlapping intervals dynamically</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>public int[][] insert(int[][] intervals, int[] newInterval) {
+    List<int[]> result = new ArrayList<>();
+    int i = 0;
+
+    // Add all intervals before the new interval
+    while (i < intervals.length && intervals[i][1] < newInterval[0]) {
+        result.add(intervals[i]);
+        i++;
+    }
+
+    // Merge overlapping intervals
+    while (i < intervals.length && intervals[i][0] <= newInterval[1]) {
+        newInterval[0] = Math.min(newInterval[0], intervals[i][0]);
+        newInterval[1] = Math.max(newInterval[1], intervals[i][1]);
+        i++;
+    }
+    result.add(newInterval);
+
+    // Add all intervals after the new interval
+    while (i < intervals.length) {
+        result.add(intervals[i]);
+        i++;
+    }
+
+    return result.toArray(new int[result.size()][]);
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Inserting a new interval into a sorted list</li>
+      <li>Merging overlapping intervals dynamically</li>
+      <li>Handling edge cases like no overlap or full overlap</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/insert-interval/" target="_blank" rel="noopener noreferrer">57: Insert Interval</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Sorting, Intervals</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/merge-intervals/" target="_blank" rel="noopener noreferrer">56: Merge Intervals</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Sorting, Intervals</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Insert Interval</h2>
+    <pre><code>Input: intervals = [[1,3],[6,9]], newInterval = [2,5]
+Output: [[1,5],[6,9]]
+Explanation: The new interval [2,5] overlaps with [1,3], so they are merged into [1,5].</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Handle intervals before, overlapping, and after the new interval separately</li>
+      <li>Use a list to dynamically store the result</li>
+      <li>Edge cases: empty intervals, fully overlapping intervals</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Insert Interval - In-Place Merge (Styled)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 1000px; margin: auto; }
+    h1 { font-size: 1.5rem; }
+    .timeline {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      margin: 1rem 0;
+    }
+    .block {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 15px;
+      font-weight: bold;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+    .original { background: #a78bfa; color: white; }
+    .new { background: #facc15; color: black; }
+    .merged { background: #6ee7b7; color: black; }
+    .hidden { opacity: 0; pointer-events: none; }
+    .log { font-size: 1rem; margin-top: 15px; min-height: 24px; }
+
+    button {
+      margin: 0.5rem 0.5rem 0 0;
+      padding: 0.5rem 1.25rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background-color: #6366f1;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #4f46e5;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎬 Insert Interval – In-Place Merge</h1>
+  <p class="hide-print"><a href="merge_intervals_cheatsheet.html">← Back to Cheatsheet</a></p>
+
+  <strong>Original Intervals:</strong>
+  <div class="timeline" id="original-row">
+    <div class="block original" id="o1">[1,2]</div>
+    <div class="block original" id="o2">[3,5]</div>
+    <div class="block original" id="o3">[6,7]</div>
+    <div class="block original" id="o4">[8,10]</div>
+    <div class="block original" id="o5">[12,16]</div>
+  </div>
+
+  <strong>New Interval:</strong>
+  <div class="timeline" id="new-int-row">
+    <div class="block new" id="newInt">[4,9]</div>
+  </div>
+
+  <strong>Merged Result:</strong>
+  <div class="timeline" id="result-row">
+    <div class="block merged hidden" id="m1">[1,2]</div>
+    <div class="block merged hidden" id="mMerge">[3,5]</div>
+    <div class="block merged hidden" id="m3">[12,16]</div>
+  </div>
+
+  <div class="log" id="log">Click "Next" to start merging...</div>
+  <button onclick="nextStep()">▶️ Next</button>
+  <button onclick="reset()">🔄 Reset</button>
+
+  <script>
+    let step = 0;
+
+    function nextStep() {
+      const log = document.getElementById("log");
+      const mMerge = document.getElementById("mMerge");
+
+      switch (step) {
+        case 0:
+          log.textContent = "📌 Inserting [4,9]...";
+          break;
+        case 1:
+          document.getElementById("o1").classList.add("hidden");
+          document.getElementById("m1").classList.remove("hidden");
+          log.textContent = "✅ [1,2] does not overlap — added as is.";
+          break;
+        case 2:
+          document.getElementById("o2").classList.add("hidden");
+          document.getElementById("mMerge").classList.remove("hidden");
+          document.getElementById("newInt").classList.add("hidden");
+          mMerge.textContent = "[3,9]";
+          log.textContent = "🔁 Merged [3,5] + [4,9] → [3,9]";
+          break;
+        case 3:
+          document.getElementById("o3").classList.add("hidden");
+          mMerge.textContent = "[3,9]";
+          log.textContent = "🔁 Merged [3,9] + [6,7] → [3,9]";
+          break;
+        case 4:
+          document.getElementById("o4").classList.add("hidden");
+          mMerge.textContent = "[3,10]";
+          log.textContent = "🔁 Merged [3,9] + [8,10] → [3,10]";
+          break;
+        case 5:
+          document.getElementById("o5").classList.add("hidden");
+          document.getElementById("m3").classList.remove("hidden");
+          log.textContent = "✅ [12,16] does not overlap — added as is.";
+          break;
+        case 6:
+          log.textContent = "🎉 Final result: [[1,2], [3,10], [12,16]]";
+          break;
+      }
+      step++;
+    }
+
+    function reset() {
+      step = 0;
+      document.getElementById("log").textContent = "Click \"Next\" to start merging...";
+      ["o1","o2","o3","o4","o5"].forEach(id => document.getElementById(id).classList.remove("hidden"));
+      ["m1","mMerge","m3"].forEach(id => document.getElementById(id).classList.add("hidden"));
+      document.getElementById("mMerge").textContent = "[3,5]";
+      document.getElementById("newInt").classList.remove("hidden");
+    }
+  </script>
+
+</body>
+</html>

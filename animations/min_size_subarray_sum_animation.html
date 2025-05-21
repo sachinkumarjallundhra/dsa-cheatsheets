@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimum Size Subarray Sum Animation</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    body {
+      font-family: monospace;
+      padding: 1rem;
+      background: #f9fafb;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+    .array {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 1.5rem 0 1rem;
+      gap: 6px;
+    }
+    .box {
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: 2px solid #d1d5db;
+      border-radius: 6px;
+      background: #ffffff;
+      position: relative;
+    }
+    .highlight {
+      background-color: #fde68a; /* yellow */
+    }
+    .valid-window {
+      background-color: #86efac; /* green */
+      color: white;
+    }
+    .pointer {
+      position: absolute;
+      top: -1.6rem;
+      width: 100%;
+      font-size: 1rem;
+    }
+    .status, .log {
+      font-family: monospace;
+      max-width: 800px;
+      margin: 1rem auto;
+      text-align: left;
+    }
+    .log {
+      background: #f1f5f9;
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .controls button {
+      margin: 0.5rem;
+      padding: 8px 12px;
+      font-weight: bold;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    @media print {
+      .hide-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 Minimum Size Subarray Sum</h1>
+  <p><strong>target = 7, nums = [2, 3, 1, 2, 4, 3]</strong></p>
+  <p class="hide-print" style="margin-bottom: 2rem;"><a href="minimum_size_subarray_sum_cheatsheet.html">← Back to Cheatsheet</a></p>
+
+  <div class="array" id="array"></div>
+  <div class="controls hide-print">
+    <button onclick="step()">⏭ Step</button>
+    <button onclick="reset()">🔄 Reset</button>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="log" id="log"></div>
+
+  <script>
+    const nums = [2, 3, 1, 2, 4, 3];
+    const target = 7;
+    let left = 0, right = 0, sum = 0, minLen = Infinity;
+
+    const arrayEl = document.getElementById("array");
+    const logEl = document.getElementById("log");
+    const statusEl = document.getElementById("status");
+
+    function render() {
+      arrayEl.innerHTML = "";
+      for (let i = 0; i < nums.length; i++) {
+        const box = document.createElement("div");
+        box.className = "box";
+        box.textContent = nums[i];
+        if (i >= left && i <= right - 1) box.classList.add("valid-window");
+        if (i === left) box.innerHTML += `<div class='pointer'>🐢</div>`;
+        if (i === right) box.innerHTML += `<div class='pointer'>🐇</div>`;
+        arrayEl.appendChild(box);
+      }
+      statusEl.innerHTML = `sum = ${sum}, minLen = ${minLen === Infinity ? '-' : minLen}`;
+    }
+
+    function log(msg) {
+      const div = document.createElement("div");
+      div.textContent = msg;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function step() {
+      if (right >= nums.length && sum < target) return;
+      if (sum < target && right < nums.length) {
+        sum += nums[right];
+        log(`➕ Added nums[${right}] = ${nums[right]}, sum = ${sum}`);
+        right++;
+      } else {
+        if (sum >= target) {
+          const windowLen = right - left;
+          minLen = Math.min(minLen, windowLen);
+          log(`✅ Valid window [${left}, ${right - 1}], len = ${windowLen}`);
+          sum -= nums[left];
+          log(`➖ Shrink left: Removed nums[${left}] = ${nums[left]}, sum = ${sum}`);
+          left++;
+        }
+      }
+      render();
+    }
+
+    function reset() {
+      left = 0;
+      right = 0;
+      sum = 0;
+      minLen = Infinity;
+      logEl.innerHTML = "";
+      render();
+    }
+
+    reset();
+  </script>
+</body>
+</html>

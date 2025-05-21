@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Rooms II Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Meeting Rooms II – Java Cheat Sheet (One Page)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The Meeting Rooms II problem involves finding the minimum number of meeting rooms required to accommodate all meetings without overlap. Each meeting is represented as an interval with a start and end time.</p>
+    <ul>
+      <li>Sort all intervals by start time</li>
+      <li>Use a min-heap (priority queue) to track ongoing meetings</li>
+      <li>Allocate or free meeting rooms dynamically</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>public int minMeetingRooms(int[][] intervals) {
+    if (intervals == null || intervals.length == 0) return 0;
+
+    // Sort intervals by start time
+    Arrays.sort(intervals, (a, b) -> Integer.compare(a[0], b[0]));
+
+    // Min-heap to track end times of meetings
+    PriorityQueue<Integer> heap = new PriorityQueue<>();
+
+    // Add the first meeting
+    heap.add(intervals[0][1]);
+
+    for (int i = 1; i < intervals.length; i++) {
+        // If the room due to free up the earliest is free, remove it
+        if (intervals[i][0] >= heap.peek()) {
+            heap.poll();
+        }
+
+        // Add the current meeting's end time to the heap
+        heap.add(intervals[i][1]);
+    }
+
+    // The size of the heap is the number of meeting rooms required
+    return heap.size();
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Scheduling meetings in conference rooms</li>
+      <li>Resource allocation problems</li>
+      <li>Handling overlapping intervals</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/meeting-rooms-ii/" target="_blank" rel="noopener noreferrer">253: Meeting Rooms II</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap, Intervals</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/meeting-rooms/" target="_blank" rel="noopener noreferrer">252: Meeting Rooms</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Sorting, Intervals</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Meeting Rooms II</h2>
+    <pre><code>Input: intervals = [[0,30],[5,10],[15,20]]
+Output: 2
+Explanation: Two meeting rooms are required:
+- Room 1: [0,30]
+- Room 2: [5,10] and [15,20]</code></pre>
+<button onclick="window.open('../animations/meeting_rooms_ii_animation.html', '_blank')">▶️ View Animation</button>
+<h2>⏱ Time and Space Complexity</h2>
+<ul>
+  <li><strong>Time Complexity:</strong> <code>O(n log n)</code>  
+    - Sorting the intervals takes <code>O(n log n)</code>.  
+    - Each insertion and removal operation in the min-heap takes <code>O(log k)</code>, where <code>k</code> is the size of the heap. In the worst case, this is <code>O(n log n)</code>.
+  </li>
+  <li><strong>Space Complexity:</strong> <code>O(n)</code>  
+    - The heap can grow to the size of all intervals in the worst case.
+  </li>
+</ul>
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the earliest ending meeting</li>
+      <li>Sort intervals by start time before processing</li>
+      <li>Edge cases: no meetings, all meetings overlap</li>
+    </ul>
+  </div>
+</body>
+</html>
