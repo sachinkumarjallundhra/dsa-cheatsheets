@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Find Median from Data Stream - Heap Pattern</title>
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .section { margin-bottom: 30px; }
+    .code-block { background: #f4f4f4; padding: 10px; border-left: 4px solid #ccc; }
+    pre { white-space: pre-wrap; }
+    .complexity-box { background: #eef; padding: 10px; border-left: 4px solid #99f; }
+    .leetcode-link a { text-decoration: none; color: #0073e6; font-weight: bold; }
+    .pill { background-color: #e0e0e0; border-radius: 12px; padding: 4px 10px; display: inline-block; margin-right: 8px; color: black; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h1>📊 Find Median from Data Stream</h1>
+<p class="pill">Heap</p>
+<p class="pill" style="background-color: #fca5a5;">Hard</p>
+<div class="leetcode-link">🔗 <a href="https://leetcode.com/problems/find-median-from-data-stream/" target="_blank">View on LeetCode</a></div>
+
+<div class="section">
+  <h2>🧠 Problem Summary</h2>
+  <p>Design a data structure that supports adding numbers from a data stream and finding the median efficiently at any point.</p>
+</div>
+
+<div class="section">
+  <h2>🔍 Intuition</h2>
+  <p>Use two heaps to maintain the lower and upper halves of the stream:
+    <ul>
+      <li><strong>Max-Heap</strong> (left half)</li>
+      <li><strong>Min-Heap</strong> (right half)</li>
+    </ul>
+    This ensures median can be retrieved in constant time.
+  </p>
+</div>
+
+<div class="section">
+  <h2>📈 Diagram</h2>
+  <p>Stream: [1, 2, 3, 4]</p>
+  <p>Heaps at any time:</p>
+  <ul>
+    <li>MaxHeap (Left): [2, 1]</li>
+    <li>MinHeap (Right): [3, 4]</li>
+    <li>Median: (2 + 3) / 2 = 2.5</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>💡 Code (Java)</h2>
+  <div class="code-block"><pre>
+class MedianFinder {
+    PriorityQueue<Integer> maxHeap; // smaller half
+    PriorityQueue<Integer> minHeap; // larger half
+
+    public MedianFinder() {
+        maxHeap = new PriorityQueue<>(Collections.reverseOrder());
+        minHeap = new PriorityQueue<>();
+    }
+
+    public void addNum(int num) {
+        if (maxHeap.isEmpty() || num <= maxHeap.peek())
+            maxHeap.offer(num);
+        else
+            minHeap.offer(num);
+
+        // Balance the heaps
+        if (maxHeap.size() > minHeap.size() + 1)
+            minHeap.offer(maxHeap.poll());
+        else if (minHeap.size() > maxHeap.size())
+            maxHeap.offer(minHeap.poll());
+    }
+
+    public double findMedian() {
+        if (maxHeap.size() == minHeap.size())
+            return (maxHeap.peek() + minHeap.peek()) / 2.0;
+        return maxHeap.peek();
+    }
+}
+  </pre></div>
+</div>
+
+<div class="section">
+  <h2>🧪 Dry Run</h2>
+  <ul>
+    <li>addNum(1): maxHeap = [1], minHeap = []</li>
+    <li>addNum(2): maxHeap = [1], minHeap = [2]</li>
+    <li>Median = (1 + 2) / 2 = 1.5</li>
+    <li>addNum(3): maxHeap = [2, 1], minHeap = [3]</li>
+    <li>Median = 2</li>
+  </ul>
+</div>
+
+<div class="section complexity-box">
+  <h2>⏱️ Time and Space Complexity</h2>
+  <ul>
+    <li><strong>addNum():</strong> O(log n)</li>
+    <li><strong>findMedian():</strong> O(1)</li>
+    <li><strong>Space:</strong> O(n) for storing the stream</li>
+  </ul>
+</div>
+
+<p class="hide-print"><a href="../index.html">← Back to Index</a></p>
+
+</body>
+</html>

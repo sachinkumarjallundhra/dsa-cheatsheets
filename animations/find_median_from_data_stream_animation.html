@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Median from Data Stream Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px; /* Wider for two heaps */
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls label { font-weight: bold; margin-right: 5px; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .controls input[type="number"] { width: 80px; }
+        .controls input[type="text"] { width: 250px; }
+        .controls button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-visualization-fm {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Two columns for the heaps */
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .info-panel-fm, .log-container-fm, .input-stream-area-fm {
+            grid-column: 1 / -1; /* Span full width */
+        }
+        
+        .input-stream-area-fm {
+            text-align: center; margin-bottom: 10px;
+        }
+        #current_num_fm {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            background-color: #f39c12; /* Orange */
+            border-radius: 5px;
+            min-width: 50px; text-align:center;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        #current_num_fm.processing { transform: scale(1.2); }
+
+        .heap-display-area-fm {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+            min-height: 300px;
+        }
+        .heap-visualization-fm {
+            position: relative;
+            min-height: 250px;
+            width: 100%;
+            overflow: auto;
+        }
+        .heap-node-fm {
+            position: absolute; color: white; border-radius: 50%;
+            width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size:0.9em; box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.4s ease, background-color 0.4s ease, top 0.4s ease, left 0.4s ease, opacity 0.4s ease;
+            z-index: 10;
+        }
+        .max-heap-node-fm { background-color: #c0392b; border: 2px solid #a93226; } /* Reddish for Max Heap */
+        .min-heap-node-fm { background-color: #27ae60; border: 2px solid #229954; } /* Greenish for Min Heap */
+        
+        .heap-node-fm.highlight-active { transform: scale(1.2); z-index: 20;}
+        .heap-node-fm.highlight-compare { border-width: 3px; border-style:dashed; border-color: #f1c40f;}
+        .heap-node-fm.highlight-swap { animation: pulse-fm 0.5s 2; }
+        .heap-node-fm.fading-out { opacity: 0; transform: scale(0.5) translateY(-20px); }
+        .heap-node-fm.highlight-root { border: 3px solid gold; box-shadow: 0 0 10px gold;}
+
+        @keyframes pulse-fm { 0% {transform: scale(1.1);} 50% {transform: scale(1.3);} 100% {transform: scale(1.1);} }
+
+        .heap-line-fm {
+            position: absolute; background-color: #7f8c8d; height: 2px;
+            transform-origin: 0 0; z-index: 5; transition: opacity 0.4s ease;
+        }
+
+        .info-panel-fm {
+            padding: 15px; background-color: #eafaf1; border: 1px solid #d5f5e3; border-radius: 5px;
+            text-align: center;
+        }
+        #current_median_val_fm { font-size: 1.5em; font-weight: bold; color: #1abc9c; }
+        #small_heap_size_fm, #large_heap_size_fm { font-weight: bold; }
+
+        .log-container-fm { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        #log_output_fm { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+        #current_action_fm { text-align:center; margin-bottom:10px; font-weight:bold; min-height:1.2em; color: #c0392b;}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Add this button to all animation files -->
+        <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+        <h1>Find Median from Data Stream Animation</h1>
+
+        <div class="controls">
+            <label for="stream_input_fm">Number Stream (comma-separated for auto-run):</label>
+            <input type="text" id="stream_input_fm" value="1,2,3,4,5,0,6">
+            <button id="start_stream_button_fm">Start Stream</button>
+            <br>
+            <label for="single_num_input_fm">Add Single Number:</label>
+            <input type="number" id="single_num_input_fm" value="10">
+            <button id="add_num_button_fm">Add Number</button>
+            <button id="reset_button_fm">Reset</button>
+        </div>
+        
+        <div class="input-stream-area-fm">
+            <h2>Current Number Being Added</h2>
+            <div id="current_num_fm">-</div>
+        </div>
+
+        <div class="info-panel-fm">
+            <p>Small Half (MaxHeap) Size: <span id="small_heap_size_fm">0</span> | Large Half (MinHeap) Size: <span id="large_heap_size_fm">0</span></p>
+            <p>Current Median: <span id="current_median_val_fm">-</span></p>
+        </div>
+
+        <div class="main-visualization-fm">
+            <div class="heap-display-area-fm">
+                <h2>Small Half (Max-Heap)</h2>
+                <div id="small_heap_visualization_fm" class="heap-visualization-fm"></div>
+            </div>
+            <div class="heap-display-area-fm">
+                <h2>Large Half (Min-Heap)</h2>
+                <div id="large_heap_visualization_fm" class="heap-visualization-fm"></div>
+            </div>
+        </div>
+        
+        <div id="current_action_fm"></div>
+        <div class="log-container-fm">
+            <h2>Log</h2>
+            <pre id="log_output_fm"></pre>
+        </div>
+    </div>
+
+    <script>
+    var ANIMATION_DELAY_FM = 700; 
+
+    class SimpleHeapFM {
+        constructor(type = 'min', vizArea, nodeClassSuffix) {
+            this.heap = [];
+            this.type = type; 
+            this.vizArea = vizArea;
+            this.nodeClass = type + "-heap-node-" + nodeClassSuffix;
+            this.domNodes = {}; 
+            this.domLines = {};
+        }
+        _compare(a, b) { 
+            return this.type === 'min' ? a < b : a > b; 
+        }
+        _getParent(i) { return Math.floor((i - 1) / 2); }
+        _getLeft(i) { return 2 * i + 1; }
+        _getRight(i) { return 2 * i + 2; }
+        
+        async _swap(i, j) {
+            logFM(`Swapping in ${this.type}-heap: [${i}](${this.heap[i]}) with [${j}](${this.heap[j]})`);
+            [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+            
+            const node1Visual = this.domNodes[i];
+            const node2Visual = this.domNodes[j];
+
+            if (node1Visual && node1Visual.el) node1Visual.el.classList.add('highlight-swap');
+            if (node2Visual && node2Visual.el) node2Visual.el.classList.add('highlight-swap');
+            
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM / 2));
+            [this.domNodes[i], this.domNodes[j]] = [this.domNodes[j], this.domNodes[i]]; 
+            this.render(); 
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM / 1.5));
+            if (node1Visual && node1Visual.el) node1Visual.el.classList.remove('highlight-swap');
+            if (node2Visual && node2Visual.el) node2Visual.el.classList.remove('highlight-swap');
+        }
+
+        async _heapifyUp(index) {
+            if (index === 0) { this._clearNodeHighlights(); return; } 
+            let parentIndex = this._getParent(index);
+            
+            if (this.domNodes[index] && this.domNodes[index].el) this.domNodes[index].el.classList.add('highlight-active');
+            if (this.domNodes[parentIndex] && this.domNodes[parentIndex].el) this.domNodes[parentIndex].el.classList.add('highlight-compare');
+            logFM(`Heapify Up (${this.type}): Comparing child idx ${index} (val ${this.heap[index]}) with parent idx ${parentIndex} (val ${this.heap[parentIndex]})`);
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM));
+
+            if (this._compare(this.heap[index], this.heap[parentIndex])) {
+                await this._swap(index, parentIndex);
+                await this._heapifyUp(parentIndex);
+            } else { 
+                 this._clearNodeHighlights();
+            }
+        }
+
+        async _heapifyDown(index) {
+            let extremum = index; 
+            let left = this._getLeft(index);
+            let right = this._getRight(index);
+
+            if (this.domNodes[index] && this.domNodes[index].el) this.domNodes[index].el.classList.add('highlight-active');
+            logFM(`Heapify Down (${this.type}): At idx ${index} (val ${this.heap[index]})`);
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM / 2));
+
+            if (left < this.size()) {
+                if (this.domNodes[left] && this.domNodes[left].el) this.domNodes[left].el.classList.add('highlight-compare');
+                logFM(`  Comparing with left child idx ${left} (val ${this.heap[left]})`);
+                if (this._compare(this.heap[left], this.heap[extremum])) extremum = left;
+            }
+            if (right < this.size()) {
+                if (this.domNodes[right] && this.domNodes[right].el) this.domNodes[right].el.classList.add('highlight-compare');
+                logFM(`  Comparing with right child idx ${right} (val ${this.heap[right]})`);
+                if (this._compare(this.heap[right], this.heap[extremum])) extremum = right;
+            }
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM / 1.5));
+            
+            if (extremum !== index) {
+                await this._swap(index, extremum);
+                await this._heapifyDown(extremum);
+            } else { 
+                this._clearNodeHighlights();
+            }
+        }
+        _clearNodeHighlights() {
+            this.vizArea.querySelectorAll('.heap-node-fm').forEach(n => 
+                n.classList.remove('highlight-active', 'highlight-compare')
+            );
+        }
+
+        async add(value) {
+            logFM(`Adding ${value} to ${this.type}-heap.`);
+            const newIndex = this.heap.length;
+            this.heap.push(value);
+            
+            this._createNodeEl(newIndex, value); 
+            this.render(); 
+            
+            const newNodeVisual = this.domNodes[newIndex]; 
+            if (newNodeVisual && newNodeVisual.el) {
+                 newNodeVisual.el.classList.add('highlight-active');
+                 newNodeVisual.el.style.transform = 'scale(0.5)'; 
+                 newNodeVisual.el.style.opacity = '0';
+                 await new Promise(r => setTimeout(r, 50)); 
+                 newNodeVisual.el.style.transform = 'scale(1.2)'; 
+                 newNodeVisual.el.style.opacity = '1';
+            }
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM));
+            
+            await this._heapifyUp(newIndex);
+            this.render(); 
+            updateHeapSizeDisplaysFM();
+        }
+        
+        async poll() {
+            if (this.isEmpty()) return null;
+            const value = this.heap[0];
+            logFM(`Polling ${value} from ${this.type}-heap root.`);
+            
+            if (this.domNodes[0] && this.domNodes[0].el) {
+                this.domNodes[0].el.classList.add('fading-out');
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM));
+            }
+
+            if (this.size() === 1) {
+                this.heap.pop();
+                if(this.domNodes[0] && this.domNodes[0].el) this.domNodes[0].el.remove();
+                delete this.domNodes[0];
+            } else {
+                const lastVal = this.heap.pop();
+                this.heap[0] = lastVal;
+                
+                if(this.domNodes[0] && this.domNodes[0].el) this.domNodes[0].el.remove();
+                this.domNodes[0] = this.domNodes[this.heap.length]; 
+                delete this.domNodes[this.heap.length];
+
+                this.render(); 
+                await this._heapifyDown(0);
+            }
+            this.render(); 
+            updateHeapSizeDisplaysFM();
+            return value;
+        }
+
+        peek() { return this.isEmpty() ? null : this.heap[0]; }
+        size() { return this.heap.length; }
+        isEmpty() { return this.size() === 0; }
+
+        _createNodeEl(index, value) {
+            if(!this.domNodes[index] || !this.domNodes[index].el || !this.domNodes[index].el.parentElement) {
+                this.domNodes[index] = { el: null, value: value }; 
+            } else {
+                this.domNodes[index].value = value; 
+            }
+        }
+        render() {
+            const tempDomNodes = {}; 
+            this.vizArea.innerHTML = ''; 
+            this.domLines = {}; 
+
+            const containerWidth = this.vizArea.clientWidth;
+            if (containerWidth === 0 && this.heap.length > 0) { 
+                console.warn(`Heap ${this.type} container not visible or has no width, skipping render.`);
+                Object.keys(this.domNodes).forEach(idx => tempDomNodes[idx] = this.domNodes[idx]);
+                this.domNodes = tempDomNodes;
+                return;
+            }
+
+            this.heap.forEach((value, index) => {
+                const nodeEl = document.createElement('div');
+                nodeEl.classList.add('heap-node-fm', this.nodeClass);
+                nodeEl.textContent = value;
+                this.vizArea.appendChild(nodeEl);
+                tempDomNodes[index] = {el: nodeEl, value: value}; 
+
+                const pos = this._getNodePosition(index, containerWidth);
+                nodeEl.style.left = `${pos.x}px`;
+                nodeEl.style.top = `${pos.y}px`;
+            });
+            this.domNodes = tempDomNodes; 
+
+            this.heap.forEach((_, index) => {
+                if (index === 0) return;
+                const pIdx = this._getParent(index);
+                if (this.domNodes[pIdx] && this.domNodes[pIdx].el && this.domNodes[index] && this.domNodes[index].el) {
+                    this._drawLine(this.domNodes[pIdx].el, this.domNodes[index].el, pIdx, index);
+                }
+            });
+        }
+         _getNodePosition(index, containerWidth) { 
+            const LEVEL_HEIGHT_FM = 65; const NODE_WIDTH_FM = 40;
+            const level = Math.floor(Math.log2(index + 1));
+            const indexInLevel = index - (Math.pow(2, level) - 1);
+            const nodesInLevel = Math.pow(2, level);
+            const y = level * LEVEL_HEIGHT_FM + 20;
+            const sectionWidth = containerWidth / nodesInLevel;
+            let x = (indexInLevel * sectionWidth) + (sectionWidth / 2) - (NODE_WIDTH_FM / 2);
+            
+            if (level > 0) {
+                const parentIndex = this._getParent(index);
+                const parentLevel = Math.floor(Math.log2(parentIndex + 1));
+                const parentIndexInLevel = parentIndex - (Math.pow(2, parentLevel) - 1);
+                const parentNodesInLevel = Math.pow(2, parentLevel);
+                const parentSectionWidth = containerWidth / parentNodesInLevel;
+                const parentX = (parentIndexInLevel * parentSectionWidth) + (parentSectionWidth / 2) - (NODE_WIDTH_FM / 2);
+
+                const offsetFactor = (index % 2 === 1) ? -0.7 : 0.7; 
+                const childSpread = containerWidth / (Math.pow(2, level + 1)); 
+                x = parentX + (NODE_WIDTH_FM/2) + (offsetFactor * childSpread * 1.0) - (NODE_WIDTH_FM/2); 
+            }
+            x = Math.max(5, Math.min(x, containerWidth - NODE_WIDTH_FM - 5));
+            return { x, y };
+        }
+        _drawLine(parentEl, childEl, pIdx, cIdx) { 
+            const lineId = `line-${this.type}-${pIdx}-${cIdx}`;
+            let lineEl = this.vizArea.querySelector(`#${lineId}`);
+            if (!lineEl) {
+                lineEl = document.createElement('div');
+                lineEl.id = lineId;
+                lineEl.classList.add('heap-line-fm');
+                this.vizArea.insertBefore(lineEl, this.vizArea.firstChild); 
+            }
+            // this.domLines[lineId] = lineEl; // Not strictly needed if we query each time
+
+            const pRect = parentEl.getBoundingClientRect(); const cRect = childEl.getBoundingClientRect();
+            const containerRect = this.vizArea.getBoundingClientRect();
+            if (containerRect.width === 0 || containerRect.height === 0) return; 
+
+            const pX = pRect.left - containerRect.left + pRect.width / 2;
+            const pY = pRect.top - containerRect.top + pRect.height / 2;
+            const cX = cRect.left - containerRect.left + cRect.width / 2;
+            const cY = cRect.top - containerRect.top + cRect.height / 2;
+            const angle = Math.atan2(cY - pY, cX - pX) * 180 / Math.PI;
+            const length = Math.sqrt(Math.pow(cX - pX, 2) + Math.pow(cY - pY, 2));
+            
+            if (length < 5) { 
+                lineEl.style.display = 'none'; return; 
+            }
+            lineEl.style.display = 'block';
+            lineEl.style.width = `${length}px`;
+            lineEl.style.left = `${pX}px`;
+            lineEl.style.top = `${pY}px`;
+            lineEl.style.transform = `rotate(${angle}deg)`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const streamInput = document.getElementById('stream_input_fm');
+        const startStreamButton = document.getElementById('start_stream_button_fm');
+        const singleNumInput = document.getElementById('single_num_input_fm');
+        const addNumButton = document.getElementById('add_num_button_fm');
+        const resetButton = document.getElementById('reset_button_fm');
+
+        const currentNumDisplay = document.getElementById('current_num_fm');
+        const smallHeapViz = document.getElementById('small_heap_visualization_fm');
+        const largeHeapViz = document.getElementById('large_heap_visualization_fm');
+        const medianDisplay = document.getElementById('current_median_val_fm');
+        const smallHeapSizeDisplay = document.getElementById('small_heap_size_fm');
+        const largeHeapSizeDisplay = document.getElementById('large_heap_size_fm');
+        const currentActionDisplay = document.getElementById('current_action_fm');
+        const logOutput = document.getElementById('log_output_fm');
+        
+        let smallHalf; 
+        let largeHalf; 
+        let inputStreamNumbers = [];
+        let streamProcessingIndex = 0;
+        let isProcessingCurrentNumber = false; 
+        let isStreamGloballyActive = false; 
+
+        window.logFM = function(message) { 
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        window.updateHeapSizeDisplaysFM = function() {
+            smallHeapSizeDisplay.textContent = smallHalf ? smallHalf.size() : 0;
+            largeHeapSizeDisplay.textContent = largeHalf ? largeHalf.size() : 0;
+        }
+
+        function clearAllHighlightsFM() {
+            smallHeapViz.querySelectorAll('.heap-node-fm').forEach(n => n.classList.remove('highlight-root'));
+            largeHeapViz.querySelectorAll('.heap-node-fm').forEach(n => n.classList.remove('highlight-root'));
+            currentNumDisplay.classList.remove('processing');
+            currentActionDisplay.textContent = '';
+        }
+        
+        async function addNumberToMedianFinder(num) { 
+            if (isProcessingCurrentNumber) {
+                logFM(`SKIPPING ADD of ${num} - previous operation still in progress.`);
+                return false; 
+            }
+            isProcessingCurrentNumber = true;
+            addNumButton.disabled = true; // Disable during processing
+            // Keep startStreamButton state managed by its own logic, but it should also be disabled if stream is active
+
+            clearAllHighlightsFM();
+            currentNumDisplay.textContent = num;
+            currentNumDisplay.classList.add('processing');
+            logFM(`--- Adding Number: ${num} ---`);
+            currentActionDisplay.textContent = `Adding ${num}...`;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM / 2));
+
+            if (smallHalf.isEmpty() || num <= smallHalf.peek()) {
+                currentActionDisplay.textContent = `${num} <= max of Small Half (${smallHalf.peek() !== null ? smallHalf.peek() : 'empty'}). Adding to Small Half.`;
+                await smallHalf.add(num);
+            } else {
+                currentActionDisplay.textContent = `${num} > max of Small Half (${smallHalf.peek()}). Adding to Large Half.`;
+                await largeHalf.add(num);
+            }
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM / 2));
+
+            currentActionDisplay.textContent = `Balancing heaps...`;
+            logFM("Balancing heaps...");
+            if (smallHalf.size() > largeHalf.size() + 1) {
+                const valToMove = await smallHalf.poll();
+                if (valToMove !== null) {
+                    logFM(`SmallHalf too large. Moving ${valToMove} from SmallHalf to LargeHalf.`);
+                    currentActionDisplay.textContent = `SmallHalf too big. Moving ${valToMove} to LargeHalf.`;
+                    await largeHalf.add(valToMove);
+                }
+            } else if (largeHalf.size() > smallHalf.size()) {
+                const valToMove = await largeHalf.poll();
+                 if (valToMove !== null) {
+                    logFM(`LargeHalf too large. Moving ${valToMove} from LargeHalf to SmallHalf.`);
+                    currentActionDisplay.textContent = `LargeHalf too big. Moving ${valToMove} to SmallHalf.`;
+                    await smallHalf.add(valToMove);
+                }
+            } else {
+                logFM("Heaps are balanced.");
+            }
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM / 2));
+
+            findMedianAndUpdateDisplay();
+            currentNumDisplay.classList.remove('processing');
+            
+            // Re-enable addNumButton only if the stream is not globally active
+            if (!isStreamGloballyActive) {
+                addNumButton.disabled = false;
+            }
+            isProcessingCurrentNumber = false;
+            return true; 
+        }
+
+        function findMedianAndUpdateDisplay() {
+            clearAllHighlightsFM(); 
+            currentActionDisplay.textContent = `Calculating Median...`;
+            logFM("Calculating median...");
+            let median;
+            if (smallHalf.size() === largeHalf.size()) {
+                if (smallHalf.isEmpty()) {
+                    median = null; 
+                    logFM("Both heaps empty. Median undefined.");
+                } else {
+                    median = (smallHalf.peek() + largeHalf.peek()) / 2.0;
+                    logFM(`Sizes equal. Median = (${smallHalf.peek()} + ${largeHalf.peek()}) / 2 = ${median.toFixed(1)}`);
+                    if(smallHalf.domNodes[0] && smallHalf.domNodes[0].el) smallHalf.domNodes[0].el.classList.add('highlight-root');
+                    if(largeHalf.domNodes[0] && largeHalf.domNodes[0].el) largeHalf.domNodes[0].el.classList.add('highlight-root');
+                }
+            } else { 
+                median = smallHalf.peek(); 
+                logFM(`SmallHalf has one more. Median = ${smallHalf.peek()}`);
+                 if(smallHalf.domNodes[0] && smallHalf.domNodes[0].el) smallHalf.domNodes[0].el.classList.add('highlight-root');
+            }
+            medianDisplay.textContent = median !== null ? median.toFixed(1) : "-";
+            currentActionDisplay.textContent = `Median is ${median !== null ? median.toFixed(1) : "-"}`;
+        }
+        
+        function initializeMedianFinder() {
+            logFM("Resetting Median Finder...");
+            isStreamGloballyActive = false; 
+            isProcessingCurrentNumber = false;
+            streamProcessingIndex = 0;
+            inputStreamNumbers = [];
+
+            smallHalf = new SimpleHeapFM('max', smallHeapViz, 'fm'); 
+            largeHalf = new SimpleHeapFM('min', largeHeapViz, 'fm'); 
+            
+            smallHalf.heap = []; smallHalf.domNodes = {}; smallHalf.domLines = {};
+            largeHalf.heap = []; largeHalf.domNodes = {}; largeHalf.domLines = {};
+
+            smallHalf.render();
+            largeHalf.render();
+            updateHeapSizeDisplaysFM();
+            medianDisplay.textContent = "-";
+            currentNumDisplay.textContent = "-";
+            logOutput.innerHTML = "";
+            currentActionDisplay.textContent = "";
+            
+            streamInput.disabled = false;
+            addNumButton.disabled = false;
+            startStreamButton.disabled = false;
+            startStreamButton.textContent = "Start Stream";
+        }
+        
+        async function streamStep() { 
+            if (!isStreamGloballyActive || streamProcessingIndex >= inputStreamNumbers.length) {
+                if (isStreamGloballyActive) logFM("End of stream loop.");
+                currentActionDisplay.textContent = "Stream finished or stopped.";
+                isStreamGloballyActive = false;
+                streamInput.disabled = false;
+                addNumButton.disabled = false;
+                startStreamButton.textContent = "Start Stream";
+                startStreamButton.disabled = false;
+                return;
+            }
+
+            if (isProcessingCurrentNumber) {
+                logFM("Stream step waiting for previous number to finish processing...");
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM / 2));
+                if (isStreamGloballyActive) streamStep(); 
+                return;
+            }
+
+            const num = inputStreamNumbers[streamProcessingIndex];
+            const processed = await addNumberToMedianFinder(num);
+
+            if (processed) { 
+                streamProcessingIndex++;
+            }
+
+            if (isStreamGloballyActive) { 
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY_FM * 0.5)); 
+                if (isStreamGloballyActive) {
+                    streamStep(); 
+                } else { 
+                    currentActionDisplay.textContent = "Stream stopped during pause.";
+                    streamInput.disabled = false;
+                    addNumButton.disabled = false;
+                    startStreamButton.textContent = "Start Stream";
+                    startStreamButton.disabled = false;
+                }
+            } else { 
+                currentActionDisplay.textContent = "Stream stopped.";
+                streamInput.disabled = false;
+                addNumButton.disabled = false;
+                startStreamButton.textContent = "Start Stream";
+                startStreamButton.disabled = false;
+            }
+        }
+
+        startStreamButton.addEventListener('click', () => {
+            if (isProcessingCurrentNumber && !isStreamGloballyActive) { 
+                logFM("Please wait for the current single number addition to complete before starting stream.");
+                return;
+            }
+
+            if (isStreamGloballyActive) { 
+                isStreamGloballyActive = false; 
+                startStreamButton.textContent = "Start Stream";
+                currentActionDisplay.textContent = "Stream stopping...";
+                logFM("Stream processing stop requested by user.");
+                // The streamStep function will see isStreamGloballyActive is false and stop, then re-enable buttons.
+                return;
+            }
+
+            try {
+                inputStreamNumbers = streamInput.value.split(',')
+                    .map(s => parseInt(s.trim()))
+                    .filter(n => !isNaN(n));
+            } catch (e) {
+                alert("Invalid stream input. Use comma-separated numbers."); return;
+            }
+            if (inputStreamNumbers.length === 0) {
+                logFM("Stream input is empty."); return;
+            }
+
+            initializeMedianFinder(); 
+            logFM(`Starting stream: [${inputStreamNumbers.join(', ')}]`);
+            currentActionDisplay.textContent = "Stream started...";
+            isStreamGloballyActive = true;
+            streamInput.disabled = true;
+            addNumButton.disabled = true; 
+            startStreamButton.textContent = "Stop Stream";
+            startStreamButton.disabled = false; // Keep "Stop Stream" button enabled
+            streamProcessingIndex = 0;
+            streamStep(); 
+        });
+
+        addNumButton.addEventListener('click', async () => { 
+            if (isStreamGloballyActive) {
+                logFM("Stream is running. Please stop it first to add a single number.");
+                return;
+            }
+            if (isProcessingCurrentNumber) {
+                logFM("Another number addition is already in progress.");
+                return;
+            }
+            const numStr = singleNumInput.value;
+            if (numStr.trim() === "") { logFM("Please enter a number."); return; }
+            const num = parseInt(numStr);
+            if (isNaN(num)) { alert("Invalid number input."); return; }
+
+            if (!smallHalf) initializeMedianFinder(); 
+
+            await addNumberToMedianFinder(num); 
+
+            singleNumInput.value = '';
+        });
+
+        resetButton.addEventListener('click', () => {
+            isStreamGloballyActive = false; 
+            initializeMedianFinder();
+        });
+
+        initializeMedianFinder();
+        window.addEventListener('resize', () => { 
+            if (smallHalf && largeHalf) {
+                setTimeout(() => { 
+                    if (smallHalf) smallHalf.render(); 
+                    if (largeHalf) largeHalf.render();
+                }, 100);
+            }
+        });
+    });
+    </script>
+</body>
+</html>

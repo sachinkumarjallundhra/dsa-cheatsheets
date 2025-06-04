@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Largest Number After Digit Swaps by Parity Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/sorting_cheatsheet.html">← Back to Sorting Pattern</a></p>
+    <h1>📚 Largest Number After Digit Swaps by Parity – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves rearranging the digits of a number such that the resulting number is the largest possible while maintaining the parity of each digit. Parity means:</p>
+    <ul>
+      <li>Even digits can only swap with other even digits.</li>
+      <li>Odd digits can only swap with other odd digits.</li>
+    </ul>
+    <p>The solution involves separating the digits by parity, sorting them in descending order, and reconstructing the number.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int largestInteger(int num) {
+        // Convert the number to a character array
+        char[] digits = String.valueOf(num).toCharArray();
+
+        // Separate even and odd digits
+        List&lt;Integer&gt; evens = new ArrayList&lt;&gt;();
+        List&lt;Integer&gt; odds = new ArrayList&lt;&gt;();
+
+        for (char digit : digits) {
+            int d = digit - '0';
+            if (d % 2 == 0) {
+                evens.add(d);
+            } else {
+                odds.add(d);
+            }
+        }
+
+        // Sort even and odd digits in descending order
+        evens.sort(Collections.reverseOrder());
+        odds.sort(Collections.reverseOrder());
+
+        // Reconstruct the largest number
+        StringBuilder result = new StringBuilder();
+        int evenIndex = 0, oddIndex = 0;
+
+        for (char digit : digits) {
+            int d = digit - '0';
+            if (d % 2 == 0) {
+                result.append(evens.get(evenIndex++));
+            } else {
+                result.append(odds.get(oddIndex++));
+            }
+        }
+
+        return Integer.parseInt(result.toString());
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Separating Digits</b>: <code>O(n)</code> – Iterating through the digits of the number.</li>
+      <li><b>Sorting Digits</b>: <code>O(n log n)</code> – Sorting the even and odd digits.</li>
+      <li><b>Reconstructing the Number</b>: <code>O(n)</code> – Rebuilding the number from the sorted digits.</li>
+      <li><b>Overall Complexity</b>: <code>O(n log n)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Rearranging digits to maximize or minimize a number</li>
+      <li>Maintaining specific constraints while sorting</li>
+      <li>Applications in combinatorics and number theory</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/largest-number-after-digit-swaps-by-parity/" target="_blank" rel="noopener noreferrer">2231. Largest Number After Digit Swaps by Parity</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Sorting</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Largest Number After Digit Swaps by Parity</h2>
+    <pre><code>Input: num = 65875
+Output: 87655
+
+Explanation:
+- Even digits: [6, 8]
+- Odd digits: [5, 7, 5]
+- Rearrange evens: [8, 6]
+- Rearrange odds: [7, 5, 5]
+- Reconstruct: 87655</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use separate lists for even and odd digits to simplify sorting and reconstruction.</li>
+      <li>Edge cases: single-digit numbers, all even or all odd digits.</li>
+      <li>Ensure the result fits within the range of a 32-bit integer.</li>
+    </ul>
+  </div>
+</body>
+</html>

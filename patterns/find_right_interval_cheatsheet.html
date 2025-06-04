@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Right Interval Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/sorting_cheatsheet.html">← Back to Sorting Pattern</a></p>
+    <h1>📚 Find Right Interval – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves finding the smallest "right interval" for each interval in a given list of intervals. A "right interval" for an interval <code>[start, end]</code> is an interval <code>[start2, end2]</code> such that <code>start2 ≥ end</code>.</p>
+    <p>The solution involves sorting the intervals by their start times and using binary search to efficiently find the right interval for each interval.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int[] findRightInterval(int[][] intervals) {
+        int n = intervals.length;
+        int[] result = new int[n];
+        TreeMap&lt;Integer, Integer&gt; map = new TreeMap&lt;&gt;(); // Stores start time and its index
+
+        // Step 1: Store start times and their indices in TreeMap
+        for (int i = 0; i < n; i++) {
+            map.put(intervals[i][0], i);
+        }
+
+        // Step 2: Find the right interval for each interval
+        for (int i = 0; i < n; i++) {
+            Integer key = map.ceilingKey(intervals[i][1]); // Find the smallest start time >= end time
+            result[i] = (key != null) ? map.get(key) : -1;
+        }
+
+        return result;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>TreeMap Operations</b>: <code>O(log n)</code> – Each lookup or insertion in the TreeMap takes logarithmic time.</li>
+      <li><b>Overall Complexity</b>: <code>O(n log n)</code> – For <code>n</code> intervals, inserting into the TreeMap and performing lookups.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the next available interval in scheduling problems</li>
+      <li>Efficiently handling interval-based queries</li>
+      <li>Applications in event scheduling and resource allocation</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-right-interval/" target="_blank" rel="noopener noreferrer">436. Find Right Interval</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">TreeMap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Find Right Interval</h2>
+    <pre><code>Input: intervals = [[3,4],[2,3],[1,2]]
+Output: [-1, 0, 1]
+
+Explanation:
+- For interval [3,4], there is no right interval, so the output is -1.
+- For interval [2,3], the right interval is [3,4] (index 0).
+- For interval [1,2], the right interval is [2,3] (index 1).</code></pre>
+    <button onclick="window.open('../animations/findFirstIntervalAnimation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a TreeMap to efficiently find the smallest start time greater than or equal to the current end time.</li>
+      <li>Edge cases: no right interval exists, overlapping intervals, single interval.</li>
+      <li>TreeMap automatically keeps keys sorted, making it ideal for this problem.</li>
+    </ul>
+  </div>
+</body>
+</html>

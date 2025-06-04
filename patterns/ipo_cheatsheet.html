@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPO (Initial Public Offering) Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+    <h1>📚 IPO (Initial Public Offering) – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The IPO problem involves selecting projects to maximize capital given limited initial resources. Each project has a profit and a capital requirement.</p>
+    <ul>
+      <li>Select projects that maximize profit</li>
+      <li>Use a min-heap and max-heap to manage capital and profits</li>
+      <li>Handle constraints like limited initial capital</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    // Helper class to store project profit and capital
+    class Pair {
+        int pro; // Profit of the project
+        int cap; // Capital required to start the project
+
+        Pair(int pro, int cap) {
+            this.pro = pro;
+            this.cap = cap;
+        }
+    }
+
+    public int findMaximizedCapital(int k, int w, int[] profits, int[] capital) {
+        int n = profits.length; // Number of projects
+        Pair[] projects = new Pair[n]; // Array to store all projects
+
+        // Step 1: Create Pair objects for each project
+        for (int i = 0; i &lt; n; i++) {
+            projects[i] = new Pair(profits[i], capital[i]);
+        }
+
+        // Step 2: Sort projects by their capital requirements in ascending order
+        Arrays.sort(projects, (a, b) -&gt; a.cap - b.cap);
+
+        // Step 3: Use a max-heap to store projects based on their profit
+        PriorityQueue&lt;Pair&gt; pq = new PriorityQueue&lt;&gt;((a, b) -&gt; b.pro - a.pro);
+
+        int idx = 0; // Pointer to iterate through the sorted projects array
+
+        // Step 4: Select up to 'k' projects
+        while (k-- &gt; 0) {
+            // Add all projects that can be started with the current capital to the max-heap
+            while (idx &lt; n && projects[idx].cap &lt;= w) {
+                pq.offer(projects[idx++]);
+            }
+
+            // If no projects can be started, break the loop
+            if (pq.isEmpty()) {
+                break;
+            }
+
+            // Step 5: Select the most profitable project and update the available capital
+            w += pq.poll().pro;
+        }
+
+        // Step 6: Return the final capital after selecting up to 'k' projects
+        return w;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Sorting Projects</b>: Sorting the `projects` array by capital takes <code>O(n log n)</code>, where <code>n</code> is the number of projects.</li>
+      <li><b>Heap Operations</b>:
+        <ul>
+          <li>Each project is added to the max-heap at most once. Adding to or removing from the heap takes <code>O(log n)</code>.</li>
+          <li>In the worst case, all <code>n</code> projects are added to the heap, and the loop runs <code>k</code> times. Thus, heap operations take <code>O(k log n)</code>.</li>
+        </ul>
+      </li>
+      <li><b>Overall Complexity</b>: The total time complexity is <code>O(n log n + k log n)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Maximizing profit with limited resources</li>
+      <li>Scheduling problems with constraints</li>
+      <li>Dynamic selection of tasks based on priority</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/ipo/" target="_blank" rel="noopener noreferrer">502. IPO</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: IPO</h2>
+    <pre><code>Input: k = 2, w = 0, profits = [1,2,3], capital = [0,1,1]
+Output: 4
+Explanation: 
+- Select project 0 (profit = 1, capital = 0), updated capital = 1.
+- Select project 2 (profit = 3, capital = 1), updated capital = 4.</code></pre>
+<button onclick="window.open('../animations/ipoAnimation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to track projects by capital</li>
+      <li>Use a max-heap to select the most profitable project</li>
+      <li>Edge cases: no projects can be started, or k is greater than the number of projects</li>
+    </ul>
+  </div>
+</body>
+</html>

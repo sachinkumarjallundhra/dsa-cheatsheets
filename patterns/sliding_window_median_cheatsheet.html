@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sliding Window Median Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+    <h1>📚 Sliding Window Median – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves finding the median of every sliding window of size <code>k</code> in an array. The sliding window moves one step at a time, and the median of the current window is calculated.</p>
+    <p>To solve this efficiently, we use two heaps:</p>
+    <ul>
+      <li><b>Max-Heap</b>: Stores the smaller half of the numbers in the current window.</li>
+      <li><b>Min-Heap</b>: Stores the larger half of the numbers in the current window.</li>
+    </ul>
+    <p>The heaps are balanced such that the size difference between them is at most 1. This allows us to calculate the median in constant time by looking at the top elements of the heaps.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public double[] medianSlidingWindow(int[] nums, int k) {
+        PriorityQueue&lt;Integer&gt; maxHeap = new PriorityQueue&lt;&gt;(Collections.reverseOrder());
+        PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+        Map&lt;Integer, Integer&gt; delayed = new HashMap&lt;&gt;(); // Tracks elements to be removed
+        double[] result = new double[nums.length - k + 1];
+        int left = 0, right = 0;
+
+        while (right < nums.length) {
+            // Add the current number to the appropriate heap
+            if (maxHeap.isEmpty() || nums[right] <= maxHeap.peek()) {
+                maxHeap.offer(nums[right]);
+            } else {
+                minHeap.offer(nums[right]);
+            }
+
+            // Balance the heaps
+            balanceHeaps(maxHeap, minHeap);
+
+            // Check if the window size is reached
+            if (right - left + 1 == k) {
+                // Calculate the median
+                if (maxHeap.size() > minHeap.size()) {
+                    result[left] = maxHeap.peek();
+                } else {
+                    result[left] = (maxHeap.peek() + minHeap.peek()) / 2.0;
+                }
+
+                // Remove the element going out of the window
+                int toRemove = nums[left];
+                delayed.put(toRemove, delayed.getOrDefault(toRemove, 0) + 1);
+                if (toRemove <= maxHeap.peek()) {
+                    maxHeap.poll();
+                } else {
+                    minHeap.poll();
+                }
+
+                // Balance the heaps after removal
+                balanceHeaps(maxHeap, minHeap);
+
+                left++; // Slide the window
+            }
+
+            right++;
+        }
+
+        return result;
+    }
+
+    private void balanceHeaps(PriorityQueue&lt;Integer&gt; maxHeap, PriorityQueue&lt;Integer&gt; minHeap) {
+        while (maxHeap.size() > minHeap.size() + 1) {
+            minHeap.offer(maxHeap.poll());
+        }
+        while (minHeap.size() > maxHeap.size()) {
+            maxHeap.offer(minHeap.poll());
+        }
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Adding/Removing Elements</b>: <code>O(log k)</code> – Adding or removing elements from a heap takes logarithmic time.</li>
+      <li><b>Balancing Heaps</b>: <code>O(log k)</code> – Balancing the heaps after each operation takes logarithmic time.</li>
+      <li><b>Overall Complexity</b>: <code>O(n log k)</code> – For an array of size <code>n</code>, each sliding window operation involves logarithmic operations on heaps of size <code>k</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Real-time median calculation in a sliding window</li>
+      <li>Efficiently handling dynamic datasets</li>
+      <li>Applications in signal processing and data analysis</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/sliding-window-median/" target="_blank" rel="noopener noreferrer">480. Sliding Window Median</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Two Heaps</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Sliding Window Median</h2>
+    <pre><code>Input: nums = [1,3,-1,-3,5,3,6,7], k = 3
+Output: [1.0,-1.0,-1.0,3.0,5.0,6.0]
+
+Explanation:
+Sliding window size = 3
+Window positions and medians:
+[1, 3, -1] -> Median = 1.0
+[3, -1, -3] -> Median = -1.0
+[-1, -3, 5] -> Median = -1.0
+[-3, 5, 3] -> Median = 3.0
+[5, 3, 6] -> Median = 5.0
+[3, 6, 7] -> Median = 6.0</code></pre>
+    <button onclick="window.open('../animations/SlidingWindowMedianAnimation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a max-heap for the smaller half and a min-heap for the larger half</li>
+      <li>Track elements to be removed using a map to avoid unnecessary heap operations</li>
+      <li>Edge cases: small window size, duplicate elements, negative numbers</li>
+    </ul>
+  </div>
+</body>
+</html>

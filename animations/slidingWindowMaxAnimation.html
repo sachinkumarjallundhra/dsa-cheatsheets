@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sliding Window Maximum Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1000px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls label { font-weight: bold; margin-right: 5px; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .controls input[type="number"] { width: 60px; }
+        .controls input[type="text"] { width: 250px; }
+        .controls button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .visualization-area-swm {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .array-display-container-swm, .deque-display-container-swm, .results-display-container-swm {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        
+        .array-elements-swm {
+            display: flex;
+            flex-wrap: nowrap; 
+            gap: 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            min-height: 50px;
+            align-items: center;
+            overflow-x: auto; 
+            position: relative; /* For window highlight */
+        }
+        .array-element-swm {
+            padding: 10px 15px;
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 40px; 
+            position: relative; /* For index label */
+            transition: background-color 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+        }
+        .array-element-swm .index-label-swm {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7em;
+            color: #777;
+        }
+        .window-highlight-swm {
+            position: absolute;
+            top: -2px; /* Adjust to be slightly outside elements */
+            bottom: -2px;
+            background-color: rgba(52, 152, 219, 0.15); 
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            z-index: 0;
+            transition: left 0.5s ease, width 0.5s ease;
+            pointer-events: none; /* Allow clicking through */
+        }
+        .array-element-swm.current-new-element { background-color: #f1c40f; border-color: #d39e00; transform: scale(1.1);}
+        .array-element-swm.deque-max-element { background-color: #2ecc71; border-color: #27ae60; color: white; }
+
+        .deque-elements-swm {
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            border: 1px dashed #8e44ad; /* Purple for deque */
+            min-height: 40px;
+            align-items: center;
+            background-color: #f5f0fa;
+        }
+        .deque-entry-swm {
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            text-align: center;
+            border: 1px solid #9b59b6;
+            background-color: #ebdef0;
+            transition: opacity 0.4s ease, transform 0.4s ease, background-color 0.3s ease;
+        }
+        .deque-entry-swm strong { display: block; font-size: 0.8em; color: #555; } /* For value */
+        .deque-entry-swm.deque-front { border-left-width: 3px; border-left-color: #27ae60; }
+        .deque-entry-swm.removing-from-front { transform: translateX(-20px) scale(0.8); opacity: 0; }
+        .deque-entry-swm.removing-from-back { transform: translateX(20px) scale(0.8); opacity: 0; }
+        .deque-entry-swm.adding-to-back { transform: scale(0.5); opacity: 0;} /* Will transition to 1,1 */
+        .deque-entry-swm.highlight-compare { background-color: #fAD7A0; border-color: #F39C12; }
+
+
+        .results-list-swm {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            border: 1px dashed #27ae60;
+            min-height: 30px;
+            background-color: #e8f8f5;
+        }
+        .result-value-swm {
+            padding: 6px 10px;
+            background-color: #d4efdf;
+            border: 1px solid #a9dfbf;
+            border-radius: 4px;
+            font-weight: bold;
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
+
+        #current_max_val_swm { font-size: 1.2em; font-weight: bold; color: #e67e22; }
+        #current_action_swm { text-align:center; margin-bottom:10px; font-weight:bold; min-height:1.2em; color: #c0392b;}
+        .log-container-swm { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        #log_output_swm { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sliding Window Maximum Animation</h1>
+
+        <div class="controls">
+            <label for="array_input_swm_max">Numbers (comma-separated):</label>
+            <input type="text" id="array_input_swm_max" value="1,3,-1,-3,5,3,6,7">
+            <label for="k_input_swm_max">Window Size (k):</label>
+            <input type="number" id="k_input_swm_max" value="3" min="1">
+            <button id="start_button_swm_max">Start/Reset</button>
+            <button id="next_step_button_swm_max" disabled>Next Window Position</button>
+        </div>
+
+        <div class="visualization-area-swm">
+            <div class="array-display-container-swm">
+                <h2>Input Array & Window</h2>
+                <div id="array_elements_swm_max" class="array-elements-swm">
+                    <div id="window_highlight_swm_max" class="window-highlight-swm" style="display:none;"></div>
+                </div>
+            </div>
+
+            <div class="deque-display-container-swm">
+                <h2>Deque (Indices of Max Candidates) <span style="font-size:0.8em; color:#555;">[Front ... Back]</span></h2>
+                <div id="deque_elements_swm_max" class="deque-elements-swm"></div>
+            </div>
+            
+            <div class="results-display-container-swm">
+                <h2>Results (Maximums)</h2>
+                <div style="text-align:center; margin-bottom:5px;">Current Window Max: <span id="current_max_val_swm">-</span></div>
+                <div id="results_list_swm_max" class="results-list-swm"></div>
+            </div>
+        </div>
+        
+        <div id="current_action_swm"></div>
+        <div class="log-container-swm">
+            <h2>Log</h2>
+            <pre id="log_output_swm_max"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const arrayInput = document.getElementById('array_input_swm_max');
+        const kInput = document.getElementById('k_input_swm_max');
+        const startButton = document.getElementById('start_button_swm_max');
+        const nextStepButton = document.getElementById('next_step_button_swm_max');
+
+        const arrayElementsDisplay = document.getElementById('array_elements_swm_max');
+        const windowHighlightDisplay = document.getElementById('window_highlight_swm_max');
+        const dequeElementsDisplay = document.getElementById('deque_elements_swm_max');
+        const currentMaxValDisplay = document.getElementById('current_max_val_swm');
+        const resultsListDisplay = document.getElementById('results_list_swm_max');
+        const currentActionDisplay = document.getElementById('current_action_swm');
+        const logOutput = document.getElementById('log_output_swm_max');
+
+        // --- Animation Constants ---
+        const ANIMATION_DELAY = 600; // General delay
+        const DEQUE_OP_DELAY = 400;  // Delay for individual deque operations
+
+        // --- State Variables ---
+        let N_SWM; // Array length
+        let K_SWM; // Window size
+        let inputArraySWM = [];
+        let domArrayElementsSWM = []; // To reference array DOM elements
+        
+        let dequeSWM = []; // Stores indices
+        let resultsSWM = [];
+        
+        let currentWindowRightIdx = -1; // Rightmost index of the current window being processed
+        let animationSubStep = 0; // For multi-part deque operations: 0: init, 1: remove_old, 2: remove_smaller, 3: add_new, 4: record_max
+
+        function logSWM_max(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearAllHighlights() {
+            domArrayElementsSWM.forEach(el => el.classList.remove('current-new-element', 'deque-max-element'));
+            dequeElementsDisplay.querySelectorAll('.deque-entry-swm').forEach(el => el.classList.remove('deque-front', 'highlight-compare'));
+            currentActionDisplay.textContent = '';
+        }
+
+        function renderInputArray() {
+            arrayElementsDisplay.innerHTML = ''; // Clear previous
+            arrayElementsDisplay.appendChild(windowHighlightDisplay); // Re-add highlight div
+            domArrayElementsSWM = [];
+            inputArraySWM.forEach((val, i) => {
+                const el = document.createElement('div');
+                el.classList.add('array-element-swm');
+                el.id = `arr-el-${i}`;
+                el.textContent = val;
+                
+                const indexLabel = document.createElement('span');
+                indexLabel.classList.add('index-label-swm');
+                indexLabel.textContent = i;
+                el.appendChild(indexLabel);
+
+                arrayElementsDisplay.appendChild(el);
+                domArrayElementsSWM.push(el);
+            });
+        }
+
+        function updateWindowHighlight() {
+            if (currentWindowRightIdx < 0) {
+                windowHighlightDisplay.style.display = 'none';
+                return;
+            }
+            windowHighlightDisplay.style.display = 'block';
+            
+            const windowLeftIdx = Math.max(0, currentWindowRightIdx - K_SWM + 1);
+            const firstEl = domArrayElementsSWM[windowLeftIdx];
+            const lastEl = domArrayElementsSWM[currentWindowRightIdx];
+            
+            if (!firstEl || !lastEl) {
+                 windowHighlightDisplay.style.display = 'none'; return;
+            }
+            const containerPaddingLeft = parseFloat(getComputedStyle(arrayElementsDisplay).paddingLeft);
+            windowHighlightDisplay.style.left = `${firstEl.offsetLeft - containerPaddingLeft - 2}px`; // -2 for border
+            windowHighlightDisplay.style.width = `${lastEl.offsetLeft + lastEl.offsetWidth - firstEl.offsetLeft + 4}px`; // +4 for borders
+        }
+
+        function renderDeque() {
+            dequeElementsDisplay.innerHTML = '';
+            dequeSWM.forEach((idx, i) => {
+                const entryDiv = document.createElement('div');
+                entryDiv.classList.add('deque-entry-swm');
+                entryDiv.id = `deque-idx-${idx}`; // ID based on stored index
+                entryDiv.innerHTML = `${idx} <strong>Val: ${inputArraySWM[idx]}</strong>`;
+                if (i === 0) entryDiv.classList.add('deque-front');
+                dequeElementsDisplay.appendChild(entryDiv);
+            });
+        }
+
+        function renderResults() {
+            resultsListDisplay.innerHTML = '';
+            resultsSWM.forEach(val => {
+                const resDiv = document.createElement('div');
+                resDiv.classList.add('result-value-swm');
+                resDiv.textContent = val;
+                resultsListDisplay.appendChild(resDiv);
+            });
+        }
+        
+        async function initializeAnimation() {
+            logSWM_max("Initializing...");
+            clearAllHighlights();
+            try {
+                inputArraySWM = arrayInput.value.split(',')
+                                 .map(s => parseInt(s.trim()))
+                                 .filter(n => !isNaN(n));
+                if (inputArraySWM.length === 0 && arrayInput.value.trim() !== "") throw "e";
+            } catch (e) {
+                alert("Invalid array input. Use comma-separated numbers."); return;
+            }
+            K_SWM = parseInt(kInput.value);
+            N_SWM = inputArraySWM.length;
+
+            if (isNaN(K_SWM) || K_SWM < 1 || K_SWM > N_SWM && N_SWM > 0) {
+                alert(`Invalid K. Must be 1 <= K <= ArrayLength (${N_SWM}).`); return;
+            }
+            
+            dequeSWM = [];
+            resultsSWM = [];
+            currentWindowRightIdx = -1;
+            animationSubStep = 0; // Start fresh
+
+            renderInputArray();
+            renderDeque();
+            renderResults();
+            currentMaxValDisplay.textContent = '-';
+            updateWindowHighlight();
+            
+            startButton.textContent = "Reset";
+            if (N_SWM > 0) {
+                nextStepButton.disabled = false;
+                logSWM_max(`Initialized. Array size ${N_SWM}, K=${K_SWM}. Click 'Next' to start.`);
+            } else {
+                logSWM_max("Empty array. Nothing to process.");
+                nextStepButton.disabled = true;
+            }
+        }
+
+        async function performNextStep() {
+            nextStepButton.disabled = true;
+            clearAllHighlights();
+
+            if (animationSubStep === 0) { // Start processing a new element or finish
+                currentWindowRightIdx++;
+                if (currentWindowRightIdx >= N_SWM) {
+                    currentActionDisplay.textContent = "All windows processed!";
+                    logSWM_max("Finished processing all windows.");
+                    nextStepButton.disabled = true;
+                    startButton.textContent = "Start/Reset";
+                    windowHighlightDisplay.style.display = 'none';
+                    return;
+                }
+                updateWindowHighlight();
+                if (domArrayElementsSWM[currentWindowRightIdx]) {
+                    domArrayElementsSWM[currentWindowRightIdx].classList.add('current-new-element');
+                }
+                currentActionDisplay.textContent = `Window slides. New element: ${inputArraySWM[currentWindowRightIdx]} (idx ${currentWindowRightIdx})`;
+                logSWM_max(`Processing window ending at index ${currentWindowRightIdx}. New element: ${inputArraySWM[currentWindowRightIdx]}`);
+                animationSubStep = 1; // Move to remove old elements from deque
+                 await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            }
+            
+            // Sub-steps for deque operations
+            if (animationSubStep === 1) { // Remove out-of-window elements from front
+                currentActionDisplay.textContent = "Deque: Removing out-of-window elements from front.";
+                logSWM_max("Deque: Checking front for out-of-window indices.");
+                let removed = false;
+                if (dequeSWM.length > 0 && dequeSWM[0] <= currentWindowRightIdx - K_SWM) {
+                    const oldIdx = dequeSWM[0];
+                    const dequeEl = document.getElementById(`deque-idx-${oldIdx}`);
+                    if (dequeEl) dequeEl.classList.add('removing-from-front');
+                    logSWM_max(`  Index ${oldIdx} (val ${inputArraySWM[oldIdx]}) is out of window. Removing from front.`);
+                    await new Promise(r => setTimeout(r, DEQUE_OP_DELAY));
+                    dequeSWM.shift();
+                    renderDeque();
+                    removed = true;
+                }
+                if (!removed) logSWM_max("  No elements removed from front.");
+                animationSubStep = 2; // Move to remove smaller elements from back
+                await new Promise(r => setTimeout(r, removed ? DEQUE_OP_DELAY : ANIMATION_DELAY/3));
+            }
+            
+            if (animationSubStep === 2) { // Remove smaller elements from back
+                currentActionDisplay.textContent = `Deque: Maintaining decreasing order. Comparing with ${inputArraySWM[currentWindowRightIdx]}.`;
+                logSWM_max(`Deque: Removing elements <= ${inputArraySWM[currentWindowRightIdx]} from back.`);
+                let removed = false;
+                while (dequeSWM.length > 0 && inputArraySWM[dequeSWM[dequeSWM.length - 1]] <= inputArraySWM[currentWindowRightIdx]) {
+                    const oldIdx = dequeSWM[dequeSWM.length - 1];
+                    const dequeEl = document.getElementById(`deque-idx-${oldIdx}`);
+                    if (dequeEl) {
+                        dequeEl.classList.add('highlight-compare'); // Highlight for comparison
+                        await new Promise(r => setTimeout(r, DEQUE_OP_DELAY/2));
+                        dequeEl.classList.add('removing-from-back');
+                        dequeEl.classList.remove('highlight-compare');
+                    }
+                    logSWM_max(`  Index ${oldIdx} (val ${inputArraySWM[oldIdx]}) <= ${inputArraySWM[currentWindowRightIdx]}. Removing from back.`);
+                    await new Promise(r => setTimeout(r, DEQUE_OP_DELAY));
+                    dequeSWM.pop();
+                    renderDeque();
+                    removed = true;
+                }
+                if (!removed) logSWM_max("  No elements removed from back.");
+                animationSubStep = 3; // Move to add new element's index
+                 await new Promise(r => setTimeout(r, removed ? DEQUE_OP_DELAY : ANIMATION_DELAY/3));
+            }
+
+            if (animationSubStep === 3) { // Add new element's index to back
+                currentActionDisplay.textContent = `Deque: Adding index ${currentWindowRightIdx} to back.`;
+                logSWM_max(`Deque: Adding index ${currentWindowRightIdx} (val ${inputArraySWM[currentWindowRightIdx]}) to back.`);
+                
+                // Create temporary element for animation if not already there
+                let tempEl = document.getElementById(`deque-idx-${currentWindowRightIdx}`);
+                if (!tempEl) {
+                     tempEl = document.createElement('div');
+                     tempEl.classList.add('deque-entry-swm', 'adding-to-back');
+                     tempEl.id = `deque-idx-${currentWindowRightIdx}`;
+                     tempEl.innerHTML = `${currentWindowRightIdx} <strong>Val: ${inputArraySWM[currentWindowRightIdx]}</strong>`;
+                     dequeElementsDisplay.appendChild(tempEl);
+                     await new Promise(r => setTimeout(r, 50)); // allow paint
+                     tempEl.style.transform = 'scale(1)'; tempEl.style.opacity = '1';
+                }
+                dequeSWM.push(currentWindowRightIdx);
+                await new Promise(r => setTimeout(r, DEQUE_OP_DELAY));
+                renderDeque(); // This will re-render correctly
+                animationSubStep = 4; // Move to record max
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY/2));
+            }
+            
+            if (animationSubStep === 4) { // Record max if window is full
+                if (currentWindowRightIdx >= K_SWM - 1) {
+                    const maxIdx = dequeSWM[0];
+                    const maxVal = inputArraySWM[maxIdx];
+                    currentActionDisplay.textContent = `Window Max (idx ${maxIdx}): ${maxVal}`;
+                    logSWM_max(`Window [${currentWindowRightIdx - K_SWM + 1}...${currentWindowRightIdx}] max is ${maxVal} (from index ${maxIdx}).`);
+                    resultsSWM.push(maxVal);
+                    renderResults(); // Appends new max with animation
+                    currentMaxValDisplay.textContent = maxVal;
+                    if(domArrayElementsSWM[maxIdx]) domArrayElementsSWM[maxIdx].classList.add('deque-max-element');
+                    const dequeEl = document.getElementById(`deque-idx-${maxIdx}`);
+                    if(dequeEl) dequeEl.classList.add('deque-front'); // Ensure front is styled
+                } else {
+                    currentActionDisplay.textContent = "Window not full yet.";
+                    logSWM_max("Window not yet full. No max recorded.");
+                    currentMaxValDisplay.textContent = '-';
+                }
+                animationSubStep = 0; // Reset for next element
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            }
+            
+            if (currentWindowRightIdx < N_SWM && animationSubStep !== 0) { // If sub-steps remain for current element
+                 nextStepButton.disabled = false;
+            } else if (currentWindowRightIdx < N_SWM -1 && animationSubStep === 0) { // Ready for next full element
+                 nextStepButton.disabled = false;
+            } else if (currentWindowRightIdx >= N_SWM -1 && animationSubStep === 0) { // Last element processed
+                logSWM_max("Finished processing all windows.");
+                currentActionDisplay.textContent = "All windows processed!";
+                nextStepButton.disabled = true;
+                startButton.textContent = "Start/Reset";
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', performNextStep);
+        initializeAnimation(); 
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smallest Chair Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 98%;
+            max-width: 1300px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls label { font-weight: bold; margin-right: 5px; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .controls input[type="number"] { width: 60px; }
+        .controls input[type="text"] { width: 300px; }
+        .controls button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-layout-sc {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr; /* Friends | Chairs | PQs */
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .friends-list-area-sc, .chairs-display-area-sc, .queues-area-sc, .info-panel-sc, .log-container-sc {
+            padding: 15px;
+            background-color: #fdfdfd;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+        }
+        .friends-list-area-sc { grid-column: 1 / 2; min-height: 300px; }
+        .chairs-display-area-sc { grid-column: 2 / 3; }
+        .queues-area-sc { grid-column: 3 / 4; }
+        .info-panel-sc, .log-container-sc { grid-column: 1 / -1; }
+
+
+        .friend-item-sc {
+            background-color: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 4px;
+            padding: 8px; margin-bottom: 5px; font-size: 0.9em;
+            transition: background-color 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+        }
+        .friend-item-sc strong { color: #2980b9; }
+        .friend-item-sc.processing-friend { background-color: #f1c40f; transform: scale(1.03); font-weight: bold; }
+        .friend-item-sc.target-friend-item { border: 2px dashed #e67e22; }
+        .friend-item-sc.processed-friend { opacity: 0.6; background-color: #f8f9f9; }
+
+        .chairs-container-sc {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            min-height: 100px; /* To show empty state */
+        }
+        .chair-sc {
+            background-color: #f0f0f0; /* Default for not-yet-used chair */
+            border: 2px solid #ccc;
+            border-radius: 5px; padding: 10px; text-align: center;
+            min-height: 80px;
+            display: flex; flex-direction: column; justify-content: space-around;
+            align-items: center;
+            transition: background-color 0.4s ease, border-color 0.4s ease, transform 0.3s ease;
+        }
+        .chair-sc .chair-id-sc { font-weight: bold; font-size: 1em; }
+        .chair-sc .chair-occupant-sc { font-size: 0.85em; color: #333; min-height: 1.2em;}
+        .chair-sc.occupied-chair { background-color: #fadde1; border-color: #f4a7b9; }
+        .chair-sc.available-chair { background-color: #e6ffe6; border-color: #a8dba8; } /* Available after use */
+        .chair-sc.target-found-chair {
+            animation: targetChairFlash 1s infinite;
+            border-width: 3px !important;
+        }
+        @keyframes targetChairFlash { 0%, 100% { border-color: #2ecc71; box-shadow: 0 0 12px #2ecc71;} 50% { border-color: #f1c40f; box-shadow: 0 0 12px #f1c40f;} }
+        .chair-sc.highlight-assign { transform: scale(1.05); box-shadow: 0 0 8px lightgreen; }
+        .chair-sc.highlight-free { transform: scale(1.05); box-shadow: 0 0 8px lightblue; }
+
+
+        .pq-area-sc {
+            min-height: 120px; border: 1px dashed #ccc; border-radius: 4px;
+            padding: 10px; margin-bottom: 10px;
+            display: flex; flex-direction: column; gap: 5px;
+            overflow-y: auto; max-height: 180px;
+        }
+        .pq-item-sc {
+            background-color: #d6eaf8; border: 1px solid #aed6f1;
+            padding: 5px 8px; border-radius: 3px; font-size: 0.85em;
+            text-align: center;
+            transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+        }
+        .pq-item-sc.highlight-active-pq { background-color: #f9e79f !important; border-color: #f1c40f !important; transform: scale(1.05); font-weight: bold;}
+        .pq-item-sc.removing-pq { opacity: 0; transform: translateY(-10px); }
+
+        #current_time_sc { font-weight: bold; color: #e67e22; }
+        #next_chair_val_sc { font-weight: bold; color: #3498db; }
+        #result_chair_sc { font-size: 1.2em; font-weight: bold; color: #27ae60; }
+
+        .log-container-sc { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        #log_output_sc { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+
+        <h1>Smallest Chair Animation</h1>
+
+        <div class="controls">
+            <label for="times_input_sc">Times [[a,l],[a,l]]:</label>
+            <input type="text" id="times_input_sc" value="[[1,4],[2,3],[4,6]]">
+            <label for="target_friend_sc">Target Friend (0-indexed):</label>
+            <input type="number" id="target_friend_sc" value="1" min="0">
+            <button id="start_button_sc">Start/Reset</button>
+            <button id="next_step_button_sc" disabled>Next Friend</button>
+        </div>
+
+        <div class="info-panel-sc">
+            <p>Current Time (Friend Arrival): <span id="current_time_sc">0</span></p>
+            <p>Next New Chair Index: <span id="next_chair_val_sc">0</span></p>
+            <p>Target Friend (ID: <span id="target_friend_id_sc">-</span>) Chair: <span id="result_chair_sc">-</span></p>
+        </div>
+
+        <div class="main-layout-sc">
+            <div class="friends-list-area-sc">
+                <h2>Friends (Sorted by Arrival)</h2>
+                <div id="friends_list_display_sc"></div>
+            </div>
+
+            <div class="chairs-display-area-sc">
+                <h2>Chairs</h2>
+                <div id="chairs_container_sc" class="chairs-container-sc"></div>
+            </div>
+
+            <div class="queues-area-sc">
+                <h2>Occupied Chairs (PQ by LeaveTime)</h2>
+                <div id="occupied_pq_sc" class="pq-area-sc"></div>
+                <h2>Available Chairs (PQ by Chair#)</h2>
+                <div id="available_chairs_pq_sc" class="pq-area-sc"></div>
+            </div>
+        </div>
+
+        <div class="log-container-sc">
+            <h2>Log</h2>
+            <pre id="log_output_sc"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const timesInput = document.getElementById('times_input_sc');
+        const targetFriendInput = document.getElementById('target_friend_sc');
+        const startButton = document.getElementById('start_button_sc');
+        const nextStepButton = document.getElementById('next_step_button_sc');
+        const currentTimeDisplay = document.getElementById('current_time_sc');
+        const nextChairValDisplay = document.getElementById('next_chair_val_sc');
+        const targetFriendIdDisplay = document.getElementById('target_friend_id_sc');
+        const resultChairDisplay = document.getElementById('result_chair_sc');
+        const friendsListDisplay = document.getElementById('friends_list_display_sc');
+        const chairsContainer = document.getElementById('chairs_container_sc');
+        const occupiedPqDisplay = document.getElementById('occupied_pq_sc');
+        const availableChairsPqDisplay = document.getElementById('available_chairs_pq_sc');
+        const logOutput = document.getElementById('log_output_sc');
+
+        // --- Animation Constants ---
+        const ANIMATION_DELAY = 800;
+        const HIGHLIGHT_PEEK_DELAY = ANIMATION_DELAY / 1.8;
+
+        // --- State Variables ---
+        let N_FRIENDS;
+        let TARGET_FRIEND_IDX;
+        let friendsData = []; // { arrival, leave, originalIndex, domElement }
+        let occupiedPQ = []; // Simulated PQ: array of [leaveTime, chairNumber]
+        let availableChairsPQ = []; // Simulated PQ: array of chair numbers
+        let nextNewChairIndex = 0;
+        let chairAssignments = {}; // chairNumber -> { friendOriginalIndex, leaveTime }
+        let domChairElements = {}; // chairNumber -> domElement
+
+        let currentFriendProcessingIdx = 0;
+        let currentTime = 0; 
+        let simulationComplete = false;
+
+        function logSC(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        // --- PQ & Display Functions ---
+        function renderOccupiedPQ() {
+            occupiedPqDisplay.innerHTML = '';
+            occupiedPQ.sort((a, b) => a[0] - b[0] || a[1] - b[1]); // Sort by leaveTime, then chairNum
+            occupiedPQ.forEach(entry => {
+                const item = document.createElement('div'); item.classList.add('pq-item-sc');
+                item.textContent = `Chair ${entry[1]} (Free at: ${entry[0]})`;
+                occupiedPqDisplay.appendChild(item);
+            });
+        }
+        async function addToOccupiedPQ(leaveTime, chairNum) {
+            logSC(`Chair ${chairNum} occupied until T=${leaveTime}. Adding to Occupied PQ.`);
+            occupiedPQ.push([leaveTime, chairNum]); renderOccupiedPQ();
+            // Visual cue could be added if needed
+        }
+        async function pollFromOccupiedPQ() {
+            if (occupiedPQ.length === 0) return null;
+            occupiedPQ.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+            const entry = occupiedPQ.shift();
+            
+            const items = occupiedPqDisplay.querySelectorAll('.pq-item-sc');
+            let visualItem = Array.from(items).find(el => el.textContent === `Chair ${entry[1]} (Free at: ${entry[0]})`);
+            if (visualItem) { visualItem.classList.add('removing-pq'); await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));}
+            renderOccupiedPQ();
+            return entry;
+        }
+
+        function renderAvailableChairsPQ() {
+            availableChairsPqDisplay.innerHTML = '';
+            availableChairsPQ.sort((a, b) => a - b); // Sort by chair number
+            availableChairsPQ.forEach(chairNum => {
+                const item = document.createElement('div'); item.classList.add('pq-item-sc');
+                item.textContent = `Chair ${chairNum}`;
+                availableChairsPqDisplay.appendChild(item);
+            });
+        }
+        async function addToAvailableChairsPQ(chairNum) {
+            logSC(`Chair ${chairNum} now available. Adding to Available PQ.`);
+            availableChairsPQ.push(chairNum); renderAvailableChairsPQ();
+        }
+        async function pollFromAvailableChairsPQ() {
+            if (availableChairsPQ.length === 0) return null;
+            availableChairsPQ.sort((a, b) => a - b);
+            const chairNum = availableChairsPQ.shift();
+
+            const items = availableChairsPqDisplay.querySelectorAll('.pq-item-sc');
+            let visualItem = Array.from(items).find(el => el.textContent === `Chair ${chairNum}`);
+            if (visualItem) { visualItem.classList.add('removing-pq'); await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));}
+            renderAvailableChairsPQ();
+            return chairNum;
+        }
+        
+        function findAndTogglePQItemHighlight(pqDisplayArea, textContentToFind, addClass = true) {
+            const visualPQItem = Array.from(pqDisplayArea.children).find(el => el.textContent === textContentToFind);
+            if (visualPQItem) {
+                if (addClass) visualPQItem.classList.add('highlight-active-pq');
+                else visualPQItem.classList.remove('highlight-active-pq');
+            }
+        }
+
+
+        function renderFriendsList() {
+            friendsListDisplay.innerHTML = '';
+            friendsData.forEach((f, idx) => {
+                const item = document.createElement('div');
+                item.classList.add('friend-item-sc');
+                item.id = `friend-${f.originalIndex}`;
+                item.innerHTML = `F${f.originalIndex} (A: ${f.arrival}, L: ${f.leave})`;
+                if (f.originalIndex === TARGET_FRIEND_IDX) {
+                    item.classList.add('target-friend-item');
+                    item.innerHTML += ` <strong>TARGET</strong>`;
+                }
+                if (idx < currentFriendProcessingIdx) {
+                    item.classList.add('processed-friend');
+                }
+                friendsListDisplay.appendChild(item);
+                f.domElement = item; // Store ref
+            });
+        }
+
+        function ensureChairDOMExists(chairNum) {
+            if (!domChairElements[chairNum]) {
+                const chairDiv = document.createElement('div');
+                chairDiv.classList.add('chair-sc');
+                chairDiv.id = `chair-${chairNum}`;
+                
+                const idSpan = document.createElement('span');
+                idSpan.classList.add('chair-id-sc');
+                idSpan.textContent = `Chair ${chairNum}`;
+                
+                const occupantSpan = document.createElement('span');
+                occupantSpan.classList.add('chair-occupant-sc');
+                occupantSpan.textContent = `Available`;
+                
+                chairDiv.appendChild(idSpan);
+                chairDiv.appendChild(occupantSpan);
+                chairsContainer.appendChild(chairDiv);
+                domChairElements[chairNum] = chairDiv;
+
+                // Sort chairs visually by number (simple re-append)
+                const chairKeys = Object.keys(domChairElements).map(Number).sort((a,b) => a-b);
+                chairsContainer.innerHTML = ''; // Clear
+                chairKeys.forEach(key => chairsContainer.appendChild(domChairElements[key]));
+            }
+            return domChairElements[chairNum];
+        }
+
+        function updateChairVisual(chairNum, isOccupied, friendOriginalIndex = null, leaveTime = null) {
+            const chairDiv = ensureChairDOMExists(chairNum);
+            chairDiv.classList.remove('occupied-chair', 'available-chair', 'highlight-assign', 'highlight-free');
+            const occupantSpan = chairDiv.querySelector('.chair-occupant-sc');
+
+            if (isOccupied) {
+                chairDiv.classList.add('occupied-chair');
+                occupantSpan.textContent = `Friend ${friendOriginalIndex} (until ${leaveTime})`;
+            } else {
+                chairDiv.classList.add('available-chair'); // Mark as available after being used
+                occupantSpan.textContent = `Available`;
+            }
+        }
+
+
+        async function nextStep() {
+            nextStepButton.disabled = true;
+            if (simulationComplete) return;
+
+            if (currentFriendProcessingIdx >= friendsData.length) {
+                logSC("All friends processed. Target friend might not have been found if k was too large (shouldn't happen with valid inputs).");
+                simulationComplete = true;
+                nextStepButton.disabled = true;
+                if (resultChairDisplay.textContent === '-') resultChairDisplay.textContent = "Not Found (Error)";
+                return;
+            }
+
+            const friend = friendsData[currentFriendProcessingIdx];
+            if (friend.domElement) friend.domElement.classList.add('processing-friend');
+            
+            currentTime = friend.arrival;
+            currentTimeDisplay.textContent = currentTime;
+            logSC(`--- Processing Friend ${friend.originalIndex} (Arrival: ${friend.arrival}, Leave: ${friend.leave}) ---`);
+            logSC(`Current Time updated to: ${currentTime}`);
+
+            // Free up chairs
+            logSC("Checking Occupied PQ for chairs to free...");
+            let visualCueFreedChair = null;
+            while (occupiedPQ.length > 0 && occupiedPQ[0][0] <= currentTime) {
+                const peekEntry = occupiedPQ[0];
+                const textToFind = `Chair ${peekEntry[1]} (Free at: ${peekEntry[0]})`;
+                findAndTogglePQItemHighlight(occupiedPqDisplay, textToFind, true);
+                logSC(`  Chair ${peekEntry[1]} (leaves ${peekEntry[0]}) is eligible to be freed.`);
+                await new Promise(r => setTimeout(r, HIGHLIGHT_PEEK_DELAY));
+                
+                const freedEntry = await pollFromOccupiedPQ(); // [leaveTime, chairNum]
+                await addToAvailableChairsPQ(freedEntry[1]);
+                updateChairVisual(freedEntry[1], false); // Mark chair as available
+                delete chairAssignments[freedEntry[1]];
+                visualCueFreedChair = freedEntry[1]; // For single visual cue
+            }
+            if (visualCueFreedChair && domChairElements[visualCueFreedChair]) {
+                domChairElements[visualCueFreedChair].classList.add('highlight-free');
+                setTimeout(()=>domChairElements[visualCueFreedChair].classList.remove('highlight-free'), ANIMATION_DELAY);
+            }
+            if (!visualCueFreedChair) logSC("No chairs became free at this time.");
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 3));
+
+            // Assign a chair
+            let assignedChair;
+            if (availableChairsPQ.length > 0) {
+                availableChairsPQ.sort((a,b)=>a-b);
+                const peekChair = availableChairsPQ[0];
+                findAndTogglePQItemHighlight(availableChairsPqDisplay, `Chair ${peekChair}`, true);
+                logSC(`  Available chairs found. Peeking Chair ${peekChair} (smallest available).`);
+                await new Promise(r => setTimeout(r, HIGHLIGHT_PEEK_DELAY));
+
+                assignedChair = await pollFromAvailableChairsPQ();
+                logSC(`Friend ${friend.originalIndex} takes previously used Chair ${assignedChair}.`);
+            } else {
+                assignedChair = nextNewChairIndex;
+                logSC(`No available chairs. Friend ${friend.originalIndex} takes new Chair ${assignedChair}.`);
+                nextNewChairIndex++;
+                nextChairValDisplay.textContent = nextNewChairIndex;
+            }
+            
+            ensureChairDOMExists(assignedChair); // Make sure its DOM element exists
+            updateChairVisual(assignedChair, true, friend.originalIndex, friend.leave);
+            chairAssignments[assignedChair] = { friendOriginalIndex: friend.originalIndex, leaveTime: friend.leave };
+            await addToOccupiedPQ(friend.leave, assignedChair);
+            
+            if (domChairElements[assignedChair]) {
+                domChairElements[assignedChair].classList.add('highlight-assign');
+                 setTimeout(()=>domChairElements[assignedChair].classList.remove('highlight-assign'), ANIMATION_DELAY);
+            }
+
+
+            if (friend.originalIndex === TARGET_FRIEND_IDX) {
+                logSC(`!!! Target Friend ${TARGET_FRIEND_IDX} assigned to Chair ${assignedChair} !!!`);
+                resultChairDisplay.textContent = `${assignedChair}`;
+                simulationComplete = true;
+                nextStepButton.disabled = true;
+                if(friend.domElement) friend.domElement.classList.add('processed-friend'); // Mark as processed
+                if(domChairElements[assignedChair]) domChairElements[assignedChair].classList.add('target-found-chair');
+                return; // End simulation
+            }
+
+            if (friend.domElement) {
+                friend.domElement.classList.remove('processing-friend');
+                friend.domElement.classList.add('processed-friend');
+            }
+            currentFriendProcessingIdx++;
+            
+            if (!simulationComplete && currentFriendProcessingIdx < friendsData.length) {
+                nextStepButton.disabled = false;
+            } else if (!simulationComplete) {
+                logSC("All friends processed, target not found (this shouldn't happen in problem constraints).");
+                resultChairDisplay.textContent = "Target Not Found";
+                simulationComplete = true;
+                nextStepButton.disabled = true;
+            }
+        }
+
+        function initializeAnimation() {
+            logSC("Initializing Smallest Chair animation...");
+            try {
+                const rawTimes = JSON.parse(timesInput.value.replace(/(\w+)\s*:/g, '"$1":'));
+                if (!Array.isArray(rawTimes) || !rawTimes.every(m => Array.isArray(m) && m.length === 2)) {
+                    throw new Error("Invalid times format.");
+                }
+                N_FRIENDS = rawTimes.length;
+                friendsData = rawTimes.map((time, index) => ({
+                    arrival: time[0],
+                    leave: time[1],
+                    originalIndex: index,
+                    domElement: null
+                }));
+            } catch (e) {
+                alert("Invalid times input. Use JSON like [[1,4],[2,3]]. Error: " + e.message); return;
+            }
+
+            TARGET_FRIEND_IDX = parseInt(targetFriendInput.value);
+            if (isNaN(TARGET_FRIEND_IDX) || TARGET_FRIEND_IDX < 0 || TARGET_FRIEND_IDX >= N_FRIENDS) {
+                alert(`Target friend index must be between 0 and ${N_FRIENDS - 1}.`); return;
+            }
+            targetFriendIdDisplay.textContent = TARGET_FRIEND_IDX;
+
+            // Sort friends by arrival time
+            friendsData.sort((a, b) => a.arrival - b.arrival);
+            
+            occupiedPQ = [];
+            availableChairsPQ = [];
+            nextNewChairIndex = 0;
+            chairAssignments = {};
+            domChairElements = {}; // Clear old chair DOM elements map
+            chairsContainer.innerHTML = ''; // Clear visual chairs
+
+            currentFriendProcessingIdx = 0;
+            currentTime = 0;
+            simulationComplete = false;
+
+            logOutput.innerHTML = '';
+            resultChairDisplay.textContent = '-';
+            currentTimeDisplay.textContent = '0';
+            nextChairValDisplay.textContent = '0';
+
+            renderFriendsList();
+            renderOccupiedPQ();
+            renderAvailableChairsPQ();
+            // Chairs are rendered on demand by ensureChairDOMExists
+
+            if (N_FRIENDS === 0) {
+                logSC("No friends to process.");
+                nextStepButton.disabled = true;
+                startButton.textContent = "Start/Reset";
+                resultChairDisplay.textContent = "N/A";
+                return;
+            }
+            
+            nextStepButton.disabled = false;
+            startButton.textContent = "Reset";
+            logSC(`Initialized. ${N_FRIENDS} friends. Target: Friend ${TARGET_FRIEND_IDX}. Click 'Next Friend'.`);
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', nextStep);
+        initializeAnimation(); 
+    });
+    </script>
+</body>
+</html>

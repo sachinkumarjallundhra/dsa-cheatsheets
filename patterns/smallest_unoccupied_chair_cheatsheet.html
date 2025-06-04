@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Number of the Smallest Unoccupied Chair Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+    <h1>📚 The Number of the Smallest Unoccupied Chair – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves finding the smallest unoccupied chair for a specific friend arriving at a party. Each friend has an arrival and departure time, and chairs are assigned in increasing order starting from 0. When a chair becomes unoccupied, it can be reassigned to another friend.</p>
+    <p>To solve this efficiently, we use two heaps:</p>
+    <ul>
+      <li><b>Min-Heap 1</b>: Tracks the smallest available chairs.</li>
+      <li><b>Min-Heap 2</b>: Tracks the departure times of occupied chairs.</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int smallestChair(int[][] times, int targetFriend) {
+        int n = times.length;
+        int targetArrival = times[targetFriend][0];
+
+        // Step 1: Sort times by arrival time
+        int[][] indexedTimes = new int[n][3];
+        for (int i = 0; i < n; i++) {
+            indexedTimes[i][0] = times[i][0]; // Arrival time
+            indexedTimes[i][1] = times[i][1]; // Departure time
+            indexedTimes[i][2] = i; // Friend index
+        }
+        Arrays.sort(indexedTimes, (a, b) -> a[0] - b[0]);
+
+        // Step 2: Initialize heaps
+        PriorityQueue<Integer> availableChairs = new PriorityQueue<>();
+        PriorityQueue<int[]> occupiedChairs = new PriorityQueue<>((a, b) -> a[0] - b[0]); // [departureTime, chair]
+
+        // Add all chairs to the availableChairs heap
+        for (int i = 0; i < n; i++) {
+            availableChairs.offer(i);
+        }
+
+        // Step 3: Process each friend
+        for (int[] time : indexedTimes) {
+            int arrival = time[0];
+            int departure = time[1];
+            int friendIndex = time[2];
+
+            // Free up chairs that have been vacated
+            while (!occupiedChairs.isEmpty() && occupiedChairs.peek()[0] <= arrival) {
+                availableChairs.offer(occupiedChairs.poll()[1]);
+            }
+
+            // Assign the smallest available chair
+            int chair = availableChairs.poll();
+            if (friendIndex == targetFriend) {
+                return chair;
+            }
+
+            // Mark the chair as occupied
+            occupiedChairs.offer(new int[]{departure, chair});
+        }
+
+        return -1; // Should never reach here
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Sorting Times</b>: <code>O(n log n)</code> – Sorting the arrival times.</li>
+      <li><b>Heap Operations</b>: <code>O(n log n)</code> – Adding and removing elements from heaps for <code>n</code> friends.</li>
+      <li><b>Overall Complexity</b>: <code>O(n log n)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Scheduling problems with limited resources</li>
+      <li>Efficiently assigning resources based on availability</li>
+      <li>Applications in event management and resource allocation</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/the-number-of-the-smallest-unoccupied-chair/" target="_blank" rel="noopener noreferrer">1942. The Number of the Smallest Unoccupied Chair</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: The Number of the Smallest Unoccupied Chair</h2>
+    <pre><code>Input: times = [[1,4],[2,3],[4,6]], targetFriend = 1
+Output: 1
+
+Explanation:
+- Friend 0 arrives at 1 and takes chair 0.
+- Friend 1 arrives at 2 and takes chair 1.
+- Friend 0 leaves at 4, freeing chair 0.
+- Friend 2 arrives at 4 and takes chair 0.
+- Target friend (1) is assigned chair 1.</code></pre>
+    <button onclick="window.open('../animations/smallestUnoccupiedChair.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the smallest available chairs.</li>
+      <li>Edge cases: overlapping arrival and departure times, single friend.</li>
+      <li>Ensure the heaps are updated correctly when chairs are vacated.</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Rooms III Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+    <h1>📚 Meeting Rooms III – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves scheduling meetings in a set of meeting rooms such that the number of meetings held in each room is minimized. If a meeting room is free, it can be reused for another meeting. If multiple rooms are free, the room with the smallest index is chosen.</p>
+    <p>To solve this efficiently, we use two heaps:</p>
+    <ul>
+      <li><b>Min-Heap 1</b>: Tracks the end times of meetings currently scheduled in rooms.</li>
+      <li><b>Min-Heap 2</b>: Tracks the available room indices.</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int mostBooked(int n, int[][] meetings) {
+        // Step 1: Sort meetings by start time
+        Arrays.sort(meetings, (a, b) -> a[0] - b[0]);
+
+        // Step 2: Initialize heaps
+        PriorityQueue&lt;Integer&gt; availableRooms = new PriorityQueue&lt;&gt;(); // Room indices
+        PriorityQueue&lt;int[]&gt; ongoingMeetings = new PriorityQueue&lt;&gt;((a, b) -> a[0] - b[0]); // [endTime, roomIndex]
+        int[] roomUsage = new int[n]; // Tracks the number of meetings held in each room
+
+        // Add all rooms to the availableRooms heap
+        for (int i = 0; i < n; i++) {
+            availableRooms.offer(i);
+        }
+
+        // Step 3: Process each meeting
+        for (int[] meeting : meetings) {
+            int start = meeting[0];
+            int end = meeting[1];
+
+            // Free up rooms that have completed their meetings
+            while (!ongoingMeetings.isEmpty() && ongoingMeetings.peek()[0] <= start) {
+                availableRooms.offer(ongoingMeetings.poll()[1]);
+            }
+
+            // If no rooms are available, delay the meeting in the earliest finishing room
+            if (availableRooms.isEmpty()) {
+                int[] earliest = ongoingMeetings.poll();
+                int delayedRoom = earliest[1];
+                int newEnd = earliest[0] + (end - start);
+                ongoingMeetings.offer(new int[]{newEnd, delayedRoom});
+                roomUsage[delayedRoom]++;
+            } else {
+                // Assign the meeting to the smallest available room
+                int room = availableRooms.poll();
+                ongoingMeetings.offer(new int[]{end, room});
+                roomUsage[room]++;
+            }
+        }
+
+        // Step 4: Find the room with the maximum usage
+        int maxUsage = 0, resultRoom = 0;
+        for (int i = 0; i < n; i++) {
+            if (roomUsage[i] > maxUsage) {
+                maxUsage = roomUsage[i];
+                resultRoom = i;
+            }
+        }
+
+        return resultRoom;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Sorting Meetings</b>: <code>O(m log m)</code> – Sorting the meetings by start time, where <code>m</code> is the number of meetings.</li>
+      <li><b>Heap Operations</b>: <code>O(m log n)</code> – Adding and removing elements from heaps for <code>m</code> meetings and <code>n</code> rooms.</li>
+      <li><b>Overall Complexity</b>: <code>O(m log m + m log n)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Scheduling meetings in limited rooms</li>
+      <li>Finding the most used room in a meeting schedule</li>
+      <li>Applications in resource allocation and scheduling</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/meeting-rooms-iii/" target="_blank" rel="noopener noreferrer">2402. Meeting Rooms III</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Meeting Rooms III</h2>
+    <pre><code>Input: n = 2, meetings = [[0, 10], [1, 5], [2, 7], [3, 4]]
+Output: 0
+
+Explanation:
+- Room 0: [0, 10]
+- Room 1: [1, 5], [5, 7]
+- Room 0 is used the most (1 meeting).</code></pre>
+    <button onclick="window.open('../animations/MeetingRoom3V2.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Sort meetings by start time to process them in chronological order.</li>
+      <li>Use two heaps to efficiently track available rooms and ongoing meetings.</li>
+      <li>Edge cases: overlapping meetings, no available rooms, large input sizes.</li>
+    </ul>
+  </div>
+</body>
+</html>

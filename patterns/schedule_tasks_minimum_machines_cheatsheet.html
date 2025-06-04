@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule Tasks on Minimum Machines Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+    <h1>📚 Schedule Tasks on Minimum Machines – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves scheduling tasks on the minimum number of machines such that no two tasks overlap on the same machine. Each task has a start time and an end time.</p>
+    <p>To solve this efficiently, we use a <b>min-heap</b> to track the end times of tasks currently assigned to machines:</p>
+    <ul>
+      <li>Sort the tasks by their start times.</li>
+      <li>Use a min-heap to keep track of the earliest end time of tasks currently running on machines.</li>
+      <li>If a task can reuse a machine (its start time is greater than or equal to the earliest end time), update the heap.</li>
+      <li>Otherwise, allocate a new machine.</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int minMachines(int[][] tasks) {
+        // Step 1: Sort tasks by start time
+        Arrays.sort(tasks, (a, b) -> a[0] - b[0]);
+
+        // Step 2: Use a min-heap to track end times of tasks
+        PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+
+        for (int[] task : tasks) {
+            int start = task[0];
+            int end = task[1];
+
+            // Step 3: If the current task can reuse a machine, remove the earliest end time
+            if (!minHeap.isEmpty() && minHeap.peek() <= start) {
+                minHeap.poll();
+            }
+
+            // Step 4: Add the current task's end time to the heap
+            minHeap.offer(end);
+        }
+
+        // Step 5: The size of the heap is the minimum number of machines required
+        return minHeap.size();
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Sorting Tasks</b>: <code>O(n log n)</code> – Sorting the tasks by start time.</li>
+      <li><b>Heap Operations</b>: <code>O(n log n)</code> – Adding and removing elements from the heap for <code>n</code> tasks.</li>
+      <li><b>Overall Complexity</b>: <code>O(n log n)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Scheduling tasks on limited resources (e.g., machines, rooms)</li>
+      <li>Finding the minimum number of resources required for non-overlapping intervals</li>
+      <li>Applications in job scheduling, meeting room allocation, etc.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/meeting-rooms-ii/" target="_blank" rel="noopener noreferrer">253. Meeting Rooms II</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/the-number-of-the-smallest-unoccupied-chair/" target="_blank" rel="noopener noreferrer">1942. The Number of the Smallest Unoccupied Chair</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Min Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Schedule Tasks on Minimum Machines</h2>
+    <pre><code>Input: tasks = [[0, 30], [5, 10], [15, 20]]
+Output: 2
+
+Explanation:
+- Task 1: [0, 30] requires a machine.
+- Task 2: [5, 10] requires a second machine.
+- Task 3: [15, 20] can reuse the second machine after Task 2 ends.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Sort tasks by start time to process them in chronological order.</li>
+      <li>Use a min-heap to efficiently track the earliest end time of tasks.</li>
+      <li>Edge cases: overlapping tasks, tasks with the same start and end times, empty input.</li>
+    </ul>
+  </div>
+</body>
+</html>

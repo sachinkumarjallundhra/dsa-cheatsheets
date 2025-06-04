@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maximum Average Pass Ratio Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+    <h1>📚 Maximum Average Pass Ratio – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves maximizing the average pass ratio of a set of classes after distributing a given number of extra students. Each class has a pass ratio defined as <code>passed / total</code>. Adding an extra student to a class increases its pass ratio, but the goal is to maximize the overall average pass ratio.</p>
+    <p>To solve this efficiently, we use a <b>max-heap</b> to prioritize classes where adding an extra student results in the largest increase in the pass ratio.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public double maxAverageRatio(int[][] classes, int extraStudents) {
+        PriorityQueue&lt;double[]&gt; maxHeap = new PriorityQueue&lt;&gt;((a, b) -> Double.compare(b[0], a[0]));
+
+        // Step 1: Calculate the initial gain for each class and add to the heap
+        for (int[] cls : classes) {
+            int passed = cls[0], total = cls[1];
+            double gain = gainIfAddStudent(passed, total);
+            maxHeap.offer(new double[]{gain, passed, total});
+        }
+
+        // Step 2: Distribute extra students
+        while (extraStudents > 0) {
+            double[] top = maxHeap.poll();
+            int passed = (int) top[1];
+            int total = (int) top[2];
+            passed++;
+            total++;
+            extraStudents--;
+            double newGain = gainIfAddStudent(passed, total);
+            maxHeap.offer(new double[]{newGain, passed, total});
+        }
+
+        // Step 3: Calculate the final average pass ratio
+        double totalRatio = 0.0;
+        while (!maxHeap.isEmpty()) {
+            double[] cls = maxHeap.poll();
+            totalRatio += cls[1] / cls[2];
+        }
+
+        return totalRatio / classes.length;
+    }
+
+    private double gainIfAddStudent(int passed, int total) {
+        return ((double) (passed + 1) / (total + 1)) - ((double) passed / total);
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Initialization</b>: <code>O(n log n)</code> – Adding all classes to the heap.</li>
+      <li><b>Heap Operations</b>: <code>O(extraStudents × log n)</code> – Distributing extra students involves heap operations.</li>
+      <li><b>Overall Complexity</b>: <code>O((n + extraStudents) log n)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Maximizing averages in resource allocation problems</li>
+      <li>Optimizing ratios or percentages with constraints</li>
+      <li>Applications in education and performance metrics</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/maximum-average-pass-ratio/" target="_blank" rel="noopener noreferrer">1792. Maximum Average Pass Ratio</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Maximum Average Pass Ratio</h2>
+    <pre><code>Input: classes = [[1,2],[3,5],[2,2]], extraStudents = 2
+Output: 0.78333
+
+Explanation:
+- Add one student to class [1,2], making it [2,3].
+- Add one student to class [3,5], making it [4,6].
+- Final pass ratios: [2/3, 4/6, 2/2].
+- Average pass ratio = (2/3 + 4/6 + 2/2) / 3 = 0.78333.</code></pre>
+    <button onclick="window.open('../animations/maximum_average_pass_ratio_cheatsheet_animation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a max-heap to prioritize classes with the largest potential gain in pass ratio.</li>
+      <li>Edge cases: no extra students, all classes with the same pass ratio.</li>
+      <li>Ensure calculations are precise to avoid floating-point errors.</li>
+    </ul>
+  </div>
+</body>
+</html>

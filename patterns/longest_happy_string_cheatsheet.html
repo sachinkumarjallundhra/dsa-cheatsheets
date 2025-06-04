@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Longest Happy String Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+    <h1>📚 Longest Happy String – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves constructing the longest "happy" string using a given number of 'a', 'b', and 'c' characters. A "happy" string is defined as a string where no three consecutive characters are the same.</p>
+    <p>To solve this efficiently, we use a <b>max-heap</b> to always pick the character with the highest remaining count, ensuring the string remains "happy."</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public String longestDiverseString(int a, int b, int c) {
+        PriorityQueue&lt;int[]&gt; maxHeap = new PriorityQueue&lt;&gt;((x, y) -> y[0] - x[0]);
+        if (a > 0) maxHeap.offer(new int[]{a, 'a'});
+        if (b > 0) maxHeap.offer(new int[]{b, 'b'});
+        if (c > 0) maxHeap.offer(new int[]{c, 'c'});
+
+        StringBuilder result = new StringBuilder();
+
+        while (!maxHeap.isEmpty()) {
+            int[] first = maxHeap.poll(); // Character with the highest count
+            if (result.length() >= 2 && result.charAt(result.length() - 1) == first[1] && result.charAt(result.length() - 2) == first[1]) {
+                if (maxHeap.isEmpty()) break; // No other character to use
+                int[] second = maxHeap.poll(); // Use the next highest character
+                result.append((char) second[1]);
+                second[0]--;
+                if (second[0] > 0) maxHeap.offer(second);
+                maxHeap.offer(first); // Put the first character back
+            } else {
+                result.append((char) first[1]);
+                first[0]--;
+                if (first[0] > 0) maxHeap.offer(first);
+            }
+        }
+
+        return result.toString();
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Initialization</b>: <code>O(1)</code> – Adding up to three characters to the heap.</li>
+      <li><b>Heap Operations</b>: <code>O(n log 3)</code> – For a total of <code>n</code> characters, each heap operation takes <code>O(log 3)</code>.</li>
+      <li><b>Overall Complexity</b>: <code>O(n)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Constructing strings with specific constraints</li>
+      <li>Maximizing the length of a string while adhering to rules</li>
+      <li>Applications in combinatorics and string manipulation</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/longest-happy-string/" target="_blank" rel="noopener noreferrer">1405. Longest Happy String</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Longest Happy String</h2>
+    <pre><code>Input: a = 1, b = 1, c = 7
+Output: "ccbccacc"
+
+Explanation:
+- Use 'c' as much as possible, but avoid three consecutive 'c's.
+- Alternate with 'b' and 'a' to maintain the "happy" condition.</code></pre>
+    <button onclick="window.open('../animations/longestHappyStringAnimation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a max-heap to always pick the character with the highest remaining count.</li>
+      <li>Edge cases: one or more counts are zero, all counts are equal.</li>
+      <li>Ensure the result string adheres to the "no three consecutive characters" rule.</li>
+    </ul>
+  </div>
+</body>
+</html>

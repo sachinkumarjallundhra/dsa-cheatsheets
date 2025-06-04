@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Right Interval Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls label { font-weight: bold; margin-right: 5px; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 300px; }
+        .controls button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .visualization-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Left for intervals/results, Right for TreeMap */
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .intervals-results-col, .treemap-col {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+
+        .display-area {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            min-height: 80px;
+        }
+        .display-flex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .interval-item, .treemap-entry, .result-item {
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            text-align: center;
+            border: 1px solid #bdc3c7;
+            background-color: #ecf0f1;
+            transition: background-color 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+        }
+        .interval-item strong, .treemap-entry strong { display: block; font-size: 0.8em; color: #555; }
+
+        /* Highlighting States */
+        .interval-item.current-source { background-color: #f9e79f; border-color: #f1c40f; transform: scale(1.05); }
+        .interval-item.found-right { background-color: #a9dfbf; border-color: #27ae60; transform: scale(1.05); }
+        .treemap-entry.current-scan { background-color: #d2b4de; border-color: #8e44ad; }
+        .treemap-entry.found-ceiling { background-color: #82e0aa; border-color: #2ecc71; font-weight: bold; transform: scale(1.1);}
+        .result-item.updated { background-color: #85c1e9; border-color: #3498db; font-weight: bold;}
+
+        .log-container { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        #log_output_fri { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Add this button to all animation files -->
+        <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+        <h1>Find Right Interval Animation</h1>
+        <p style="text-align:center;">For each interval <code>i</code>, find interval <code>j</code> where <code>j.start >= i.end</code> and <code>j.start</code> is minimized.</p>
+
+        <div class="controls">
+            <label for="intervals_input_fri">Intervals [[s,e],[s,e]]:</label>
+            <input type="text" id="intervals_input_fri" value="[[1,2],[2,3],[0,1],[3,4]]">
+            <button id="start_button_fri">Start/Reset</button>
+            <button id="next_step_button_fri" disabled>Next Step</button>
+        </div>
+
+        <div class="visualization-area">
+            <div class="intervals-results-col">
+                <h2>Input Intervals</h2>
+                <div id="intervals_display_fri" class="display-area display-flex"></div>
+                <h2>Result Array</h2>
+                <div id="result_array_fri" class="display-area display-flex"></div>
+            </div>
+            <div class="treemap-col">
+                <h2>TreeMap (Start Time -> Original Index)</h2>
+                <div id="treemap_display_fri" class="display-area display-flex"></div>
+                <p style="font-size:0.8em; text-align:center; color:#777;">(Visually sorted by Start Time)</p>
+            </div>
+        </div>
+        
+        <div id="current_action_fri" style="text-align:center; margin-bottom:10px; font-weight:bold; min-height:1.2em;"></div>
+
+        <div class="log-container">
+            <h2>Log</h2>
+            <pre id="log_output_fri"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const intervalsInput = document.getElementById('intervals_input_fri');
+        const startButton = document.getElementById('start_button_fri');
+        const nextStepButton = document.getElementById('next_step_button_fri');
+
+        const intervalsDisplay = document.getElementById('intervals_display_fri');
+        const resultArrayDisplay = document.getElementById('result_array_fri');
+        const treeMapDisplay = document.getElementById('treemap_display_fri');
+        const currentActionDisplay = document.getElementById('current_action_fri');
+        const logOutput = document.getElementById('log_output_fri');
+
+        const ANIMATION_DELAY = 700;
+        const SCAN_DELAY = 300;
+
+        let originalIntervals = []; // Store original array with original indices
+        let treeMapData = []; // Array of {start: S, index: I} to simulate TreeMap, kept sorted by start
+        let resultData = [];
+        
+        let animationStep = 0; // 0: init, 1: populating map, 2: finding intervals
+        let mapPopulationIdx = 0;
+        let findIntervalIdx = 0; // Index of interval we are finding right interval FOR
+        let treeMapScanIdx = 0; // Index for scanning the treeMapData
+
+        function logFRI(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.interval-item, .treemap-entry, .result-item').forEach(el => {
+                el.classList.remove('current-source', 'found-right', 'current-scan', 'found-ceiling', 'updated');
+            });
+            currentActionDisplay.textContent = '';
+        }
+
+        function renderIntervals() {
+            intervalsDisplay.innerHTML = '';
+            originalIntervals.forEach(interval => {
+                const item = document.createElement('div');
+                item.classList.add('interval-item');
+                item.id = `interval-${interval.originalIndex}`;
+                item.innerHTML = `[${interval.start}, ${interval.end}] <strong>Idx: ${interval.originalIndex}</strong>`;
+                intervalsDisplay.appendChild(item);
+            });
+        }
+
+        function renderTreeMap() {
+            treeMapDisplay.innerHTML = '';
+            // TreeMap is inherently sorted by key (start time)
+            treeMapData.sort((a, b) => a.start - b.start || a.index - b.index); // Sort by start, then original index for stability
+            treeMapData.forEach(entry => {
+                const item = document.createElement('div');
+                item.classList.add('treemap-entry');
+                item.id = `mapentry-s${entry.start}-i${entry.index}`;
+                item.innerHTML = `(${entry.start} &rarr; ${entry.index})`;
+                treeMapDisplay.appendChild(item);
+            });
+        }
+
+        function renderResultArray() {
+            resultArrayDisplay.innerHTML = '';
+            for (let i = 0; i < originalIntervals.length; i++) {
+                const item = document.createElement('div');
+                item.classList.add('result-item');
+                item.id = `result-${i}`;
+                item.textContent = resultData[i] !== undefined ? resultData[i] : '_';
+                resultArrayDisplay.appendChild(item);
+            }
+        }
+        
+        async function initializeAnimation() {
+            logFRI("Initializing...");
+            clearHighlights();
+            try {
+                const rawIntervals = JSON.parse(intervalsInput.value.replace(/(\w+)\s*:/g, '"$1":'));
+                if (!Array.isArray(rawIntervals) || !rawIntervals.every(m => Array.isArray(m) && m.length === 2)) {
+                    throw new Error();
+                }
+                originalIntervals = rawIntervals.map((interval, index) => ({
+                    start: interval[0],
+                    end: interval[1],
+                    originalIndex: index
+                }));
+            } catch (e) {
+                alert("Invalid intervals format. Use JSON like [[1,2],[3,4]].");
+                return;
+            }
+
+            if (originalIntervals.length === 0) {
+                logFRI("No intervals to process.");
+                renderIntervals(); renderTreeMap(); renderResultArray();
+                startButton.textContent = "Start/Reset";
+                nextStepButton.disabled = true;
+                return;
+            }
+
+            treeMapData = [];
+            resultData = new Array(originalIntervals.length).fill(undefined);
+            
+            animationStep = 1; // Start with populating map
+            mapPopulationIdx = 0;
+            findIntervalIdx = 0;
+            treeMapScanIdx = 0;
+
+            renderIntervals();
+            renderTreeMap();
+            renderResultArray();
+            
+            startButton.textContent = "Reset";
+            nextStepButton.disabled = false;
+            logFRI("Initialized. Click 'Next Step' to populate TreeMap.");
+        }
+
+        async function nextStep() {
+            nextStepButton.disabled = true; // Disable during step
+            clearHighlights(); // Clear previous step's highlights
+
+            if (animationStep === 1) { // Populating TreeMap
+                if (mapPopulationIdx < originalIntervals.length) {
+                    const current = originalIntervals[mapPopulationIdx];
+                    currentActionDisplay.textContent = `Adding [${current.start}, ${current.end}] (Idx ${current.originalIndex}) to TreeMap.`;
+                    logFRI(`TreeMap: Adding (${current.start} -> Index ${current.originalIndex})`);
+                    
+                    const intervalEl = document.getElementById(`interval-${current.originalIndex}`);
+                    if (intervalEl) intervalEl.classList.add('current-source'); // Highlight source interval
+
+                    treeMapData.push({ start: current.start, index: current.originalIndex });
+                    renderTreeMap(); // Re-render and sort visual TreeMap
+                    
+                    // Briefly highlight the newly added/sorted entry in TreeMap visual
+                    const mapEntryEl = document.getElementById(`mapentry-s${current.start}-i${current.originalIndex}`);
+                    if (mapEntryEl) mapEntryEl.classList.add('found-ceiling'); // Use a distinct highlight
+
+                    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                     if (mapEntryEl) mapEntryEl.classList.remove('found-ceiling');
+                     if (intervalEl) intervalEl.classList.remove('current-source');
+
+                    mapPopulationIdx++;
+                    if (mapPopulationIdx < originalIntervals.length) {
+                        nextStepButton.disabled = false;
+                    } else {
+                        animationStep = 2; // Move to finding right intervals
+                        findIntervalIdx = 0; // Reset for next phase
+                        logFRI("TreeMap populated. Click 'Next Step' to find right intervals.");
+                        nextStepButton.disabled = false;
+                    }
+                }
+            } else if (animationStep === 2) { // Finding Right Interval
+                if (findIntervalIdx >= originalIntervals.length) {
+                    currentActionDisplay.textContent = "All intervals processed!";
+                    logFRI("All right intervals found.");
+                    animationStep = 3; // Done
+                    nextStepButton.disabled = true;
+                    startButton.textContent = "Start/Reset";
+                    return;
+                }
+
+                const sourceInterval = originalIntervals[findIntervalIdx];
+                const sourceIntervalEl = document.getElementById(`interval-${sourceInterval.originalIndex}`);
+                if (sourceIntervalEl) sourceIntervalEl.classList.add('current-source');
+
+                const targetEndTime = sourceInterval.end;
+                currentActionDisplay.textContent = `For Interval ${sourceInterval.originalIndex} [${sourceInterval.start},${sourceInterval.end}], searching for start >= ${targetEndTime}`;
+                logFRI(`Processing Interval ${findIntervalIdx} [${sourceInterval.start},${sourceInterval.end}]. Target end: ${targetEndTime}`);
+                
+                treeMapScanIdx = 0; // Start scan from beginning of sorted TreeMap data
+                animationStep = 2.1; // Sub-step for scanning
+                nextStepButton.disabled = false;
+
+            } else if (animationStep === 2.1) { // Scanning TreeMap
+                const sourceInterval = originalIntervals[findIntervalIdx]; // Get current source again
+                const targetEndTime = sourceInterval.end;
+                
+                if (treeMapScanIdx < treeMapData.length) {
+                    const mapEntry = treeMapData[treeMapScanIdx];
+                    const mapEntryEl = document.getElementById(`mapentry-s${mapEntry.start}-i${mapEntry.index}`);
+                    if(mapEntryEl) mapEntryEl.classList.add('current-scan');
+                    currentActionDisplay.textContent = `Comparing targetEnd ${targetEndTime} with TreeMap entry (${mapEntry.start} -> ${mapEntry.index})`;
+                    logFRI(`  Scanning TreeMap: Entry (${mapEntry.start} -> ${mapEntry.index})`);
+
+                    await new Promise(r => setTimeout(r, SCAN_DELAY));
+
+                    if (mapEntry.start >= targetEndTime) { // Found ceiling entry
+                        logFRI(`    Found ceiling! (${mapEntry.start} >= ${targetEndTime}). Right interval is Index ${mapEntry.index}.`);
+                        currentActionDisplay.textContent = `Found right interval: Index ${mapEntry.index} (Start: ${mapEntry.start})`;
+                        if(mapEntryEl) {
+                            mapEntryEl.classList.remove('current-scan');
+                            mapEntryEl.classList.add('found-ceiling');
+                        }
+                        const rightIntervalEl = document.getElementById(`interval-${mapEntry.index}`);
+                        if(rightIntervalEl) rightIntervalEl.classList.add('found-right');
+
+                        resultData[findIntervalIdx] = mapEntry.index;
+                        const resultEl = document.getElementById(`result-${findIntervalIdx}`);
+                        if(resultEl) {
+                            resultEl.textContent = mapEntry.index;
+                            resultEl.classList.add('updated');
+                        }
+                        
+                        await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                        findIntervalIdx++; // Move to next source interval
+                        animationStep = 2; // Back to picking a source interval
+                        if (findIntervalIdx < originalIntervals.length) {
+                             logFRI("Click 'Next Step' for the next interval.");
+                        }
+
+                    } else { // Not a ceiling yet, continue scan
+                        treeMapScanIdx++;
+                         if (treeMapScanIdx >= treeMapData.length) { // End of map, no ceiling found
+                            logFRI(`    No ceiling entry found in rest of map.`);
+                            currentActionDisplay.textContent = `No right interval found.`;
+                            resultData[findIntervalIdx] = -1;
+                            const resultEl = document.getElementById(`result-${findIntervalIdx}`);
+                            if(resultEl) {
+                                resultEl.textContent = -1;
+                                resultEl.classList.add('updated');
+                            }
+                            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                            findIntervalIdx++;
+                            animationStep = 2;
+                             if (findIntervalIdx < originalIntervals.length) {
+                                 logFRI("Click 'Next Step' for the next interval.");
+                            }
+                        }
+                    }
+                } else { // Scanned whole map, no ceiling found (should be caught above)
+                    logFRI(`  Reached end of TreeMap scan. No ceiling entry found.`);
+                    currentActionDisplay.textContent = `No right interval found.`;
+                    resultData[findIntervalIdx] = -1;
+                    const resultEl = document.getElementById(`result-${findIntervalIdx}`);
+                    if(resultEl) {
+                        resultEl.textContent = -1;
+                        resultEl.classList.add('updated');
+                    }
+                    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                    findIntervalIdx++;
+                    animationStep = 2;
+                     if (findIntervalIdx < originalIntervals.length) {
+                         logFRI("Click 'Next Step' for the next interval.");
+                    }
+                }
+                 nextStepButton.disabled = false;
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', nextStep);
+        initializeAnimation(); // Auto-initialize on load
+    });
+    </script>
+</body>
+</html>

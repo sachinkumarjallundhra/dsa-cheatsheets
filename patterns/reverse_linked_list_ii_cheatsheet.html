@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reverse Linked List II Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Reverse Linked List II – Java Cheat Sheet (One Page)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The Reverse Linked List II problem involves reversing a portion of a linked list between two given positions <code>left</code> and <code>right</code>. The rest of the list remains unchanged.</p>
+    <ul>
+      <li>Reverse a sublist of a linked list</li>
+      <li>Handle edge cases like reversing the entire list or a single node</li>
+      <li>Use pointers to manipulate the list in-place</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>public ListNode reverseBetween(ListNode head, int left, int right) {
+    if (head == null || left == right) return head;
+
+    // Dummy node to simplify edge cases
+    ListNode dummy = new ListNode(0);
+    dummy.next = head;
+
+    // Move to the node before the 'left' position
+    ListNode prev = dummy;
+    for (int i = 1; i < left; i++) {
+        prev = prev.next;
+    }
+
+    // Reverse the sublist
+    ListNode curr = prev.next;
+    ListNode next = null;
+    for (int i = 0; i < right - left; i++) {
+        next = curr.next;
+        curr.next = next.next;
+        next.next = prev.next;
+        prev.next = next;
+    }
+
+    return dummy.next;
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Reversing a portion of a linked list</li>
+      <li>Manipulating linked lists in-place</li>
+      <li>Handling edge cases like reversing the entire list or a single node</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/reverse-linked-list-ii/" target="_blank" rel="noopener noreferrer">92: Reverse Linked List II</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Linked List</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/reverse-linked-list/" target="_blank" rel="noopener noreferrer">206: Reverse Linked List</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Linked List</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Reverse Linked List II</h2>
+    <pre><code>Input: head = [1,2,3,4,5], left = 2, right = 4
+Output: [1,4,3,2,5]
+Explanation: The sublist [2,3,4] is reversed.</code></pre>
+<button onclick="window.open('../animations/reverse_linked_list_ii_animation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a dummy node to simplify edge cases</li>
+      <li>Reverse the sublist in-place using pointers</li>
+      <li>Edge cases: single node, reversing the entire list, or invalid positions</li>
+    </ul>
+  </div>
+</body>
+</html>

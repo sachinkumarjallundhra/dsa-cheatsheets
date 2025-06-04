@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Heap Pattern Cheatsheet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="hide-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔺 Heap Pattern</h1>
+
+    <h2>🧠 When to Use</h2>
+    <ul>
+      <li>Find Kth smallest/largest elements</li>
+      <li>Maintain a dynamic top-K list</li>
+      <li>Merge multiple sorted arrays/lists</li>
+      <li>Continuously track min/max while streaming</li>
+      <li>Scheduling problems or cost optimization</li>
+    </ul>
+
+    <h2>⚙️ Java Syntax</h2>
+    <pre><code>// Min-heap
+PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+
+// Max-heap
+PriorityQueue&lt;Integer&gt; maxHeap = new PriorityQueue&lt;&gt;(Collections.reverseOrder());
+</code></pre>
+
+    <h2>📌 Common Techniques</h2>
+    <ul>
+      <li><code>poll()</code> – removes and returns top (min or max)</li>
+      <li><code>offer(val)</code> – adds a new element</li>
+      <li>Use minHeap when you want the smallest item at top</li>
+      <li>Use maxHeap to keep largest at top (e.g., for Kth smallest)</li>
+    </ul>
+
+    <h2>🔥 Popular Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/top-k-frequent-elements/" target="_blank">347. Top K Frequent Elements</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/merge-k-sorted-lists/" target="_blank">23. Merge k Sorted Lists</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+      <li>
+        <a href="find_median_from_data_stream_cheatsheet.html" target="_blank">295. Find Median from Data Stream</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Two Heaps</span>
+      </li>
+      <li>
+        <a href="sliding_window_median_cheatsheet.html" target="_blank">480. Sliding Window Median</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Two Heaps</span>
+      </li>
+      <li>
+        <a href="meeting_rooms_iii_cheatsheet.html" target="_blank">2402. Meeting Rooms III</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+      <li>
+        <a href="largest_number_after_digit_swaps_by_parity_cheatsheet.html" target="_blank">2231. Largest Number After Digit Swaps by Parity</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Sorting</span>
+      </li>
+      <li>
+        <a href="find_right_interval_cheatsheet.html" target="_blank">436. Find Right Interval</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">TreeMap</span>
+      </li>
+      <li>
+        <a href="longest_happy_string_cheatsheet.html" target="_blank">1405. Longest Happy String</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Max Heap</span>
+      </li>
+      <li>
+        <a href="maximum_average_pass_ratio_cheatsheet.html" target="_blank">1792. Maximum Average Pass Ratio</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Max Heap</span>
+      </li>
+      <li>
+        <a href="smallest_unoccupied_chair_cheatsheet.html" target="_blank">1942. The Number of the Smallest Unoccupied Chair</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Min Heap</span>
+      </li>
+      <li>
+        <a href="minimum_cost_to_connect_sticks_cheatsheet.html" target="_blank">1167. Minimum Cost to Connect Sticks</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+      <li>
+        <a href="ipo_cheatsheet.html" target="_blank">502. IPO</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+      <li>
+        <a href="schedule_tasks_minimum_machines_cheatsheet.html" target="_blank">Schedule Tasks on Minimum Machines</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><code>offer()</code>: O(log n)</li>
+      <li><code>poll()</code>: O(log n)</li>
+      <li><code>peek()</code>: O(1)</li>
+    </ul>
+
+    <h2>🧠 Pro Tips</h2>
+    <ul>
+      <li>Use max-heap when you need to discard smaller elements</li>
+      <li>Use a custom comparator for complex objects</li>
+      <li>Always track heap size if using for top-K</li>
+    </ul>
+  </div>
+</body>
+</html>

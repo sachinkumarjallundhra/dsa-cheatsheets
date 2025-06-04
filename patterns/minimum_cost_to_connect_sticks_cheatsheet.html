@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimum Cost to Connect Sticks Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+    <h1>📚 Minimum Cost to Connect Sticks – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves connecting a set of sticks into one stick. The cost of connecting two sticks is equal to the sum of their lengths. The goal is to minimize the total cost of connecting all the sticks.</p>
+    <p>To solve this efficiently, we use a <b>min-heap</b> to always connect the two smallest sticks first, minimizing the cost at each step.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int connectSticks(int[] sticks) {
+        // Step 1: Add all sticks to a min-heap
+        PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+        for (int stick : sticks) {
+            minHeap.offer(stick);
+        }
+
+        int totalCost = 0;
+
+        // Step 2: Combine sticks until only one stick remains
+        while (minHeap.size() > 1) {
+            int stick1 = minHeap.poll(); // Smallest stick
+            int stick2 = minHeap.poll(); // Second smallest stick
+            int cost = stick1 + stick2; // Cost to combine them
+            totalCost += cost;
+            minHeap.offer(cost); // Add the combined stick back to the heap
+        }
+
+        return totalCost;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Initialization</b>: <code>O(n log n)</code> – Adding all sticks to the heap.</li>
+      <li><b>Heap Operations</b>: <code>O(n log n)</code> – Combining sticks involves <code>n-1</code> heap operations.</li>
+      <li><b>Overall Complexity</b>: <code>O(n log n)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Minimizing costs in resource allocation problems</li>
+      <li>Efficiently combining elements with a cost function</li>
+      <li>Applications in Huffman coding and data compression</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/minimum-cost-to-connect-sticks/" target="_blank" rel="noopener noreferrer">1167. Minimum Cost to Connect Sticks</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Minimum Cost to Connect Sticks</h2>
+    <pre><code>Input: sticks = [2, 4, 3]
+Output: 14
+
+Explanation:
+- Combine sticks 2 and 3 for a cost of 5. Sticks = [5, 4].
+- Combine sticks 5 and 4 for a cost of 9. Sticks = [9].
+- Total cost = 5 + 9 = 14.</code></pre>
+    <button onclick="window.open('../animations/minimum_cost_to_connect_sticks_cheatsheet_animation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Always combine the two smallest sticks to minimize the cost.</li>
+      <li>Edge cases: single stick (cost is 0), all sticks of the same length.</li>
+      <li>Use a min-heap to efficiently retrieve the smallest sticks.</li>
+    </ul>
+  </div>
+</body>
+</html>

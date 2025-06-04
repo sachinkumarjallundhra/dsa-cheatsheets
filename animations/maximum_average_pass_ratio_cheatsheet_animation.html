@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maximum Average Pass Ratio Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1000px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls label { font-weight: bold; margin-right: 5px; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .controls input[type="number"] { width: 80px; }
+        .controls input[type="text"] { width: 300px; }
+        .controls button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .visualization-area-mapr {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Classes | Heap + Info */
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .classes-display-mapr, .heap-info-col-mapr {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .heap-info-col-mapr { display: flex; flex-direction: column; gap: 15px; }
+        
+        .classes-container-mapr {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        .class-item-mapr {
+            padding: 10px; border: 1px solid #bdc3c7; border-radius: 5px;
+            background-color: #ecf0f1; text-align: center;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .class-item-mapr strong { display: block; margin-bottom: 3px; }
+        .class-item-mapr .class-ratio { font-size: 0.9em; color: #555; }
+        .class-item-mapr .class-gain-calc { font-size: 0.75em; color: #7f8c8d; margin-top: 5px; }
+        .class-item-mapr.highlight-selected { background-color: #f1c40f; transform: scale(1.05); }
+        .class-item-mapr.updated-class { animation: pulse-green-mapr 0.6s; }
+        @keyframes pulse-green-mapr { 0%,100% {background-color: #d4efdf;} 50% {background-color: #a9dfbf;}}
+
+
+        .heap-area-mapr {
+            min-height: 150px;
+            padding: 10px;
+            border: 1px dashed #c0392b; /* Reddish for MaxHeap */
+            background-color: #fdedec;
+            display: flex;
+            flex-direction: column; /* Stack items vertically */
+            gap: 5px;
+            overflow-y: auto; max-height: 250px;
+        }
+        .heap-entry-mapr {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            text-align: left;
+            border: 1px solid #d98880;
+            background-color: #fadbd8;
+            transition: background-color 0.3s ease, transform 0.4s ease, opacity 0.4s ease;
+        }
+        .heap-entry-mapr strong { color: #78281f; }
+        .heap-entry-mapr.highlight-polled { background-color: #f5b041 !important; border-color: #f39c12 !important; transform: scale(1.05); }
+        .heap-entry-mapr.fading-out { opacity: 0; transform: translateX(-20px) scale(0.8); }
+        .heap-entry-mapr.re-added { animation: popInHeapEntry 0.5s; }
+        @keyframes popInHeapEntry { from {opacity:0; transform: translateY(10px) scale(0.8);} to {opacity:1; transform: translateY(0) scale(1);} }
+
+
+        .info-values-mapr { text-align: center; }
+        #extra_students_mapr, #avg_pass_ratio_mapr { font-size: 1.2em; font-weight: bold; }
+        #extra_students_mapr { color: #2980b9; }
+        #avg_pass_ratio_mapr { color: #27ae60; }
+
+        #current_action_mapr { text-align:center; margin-bottom:10px; font-weight:bold; min-height:1.2em; color: #8e44ad;}
+        .log-container-mapr { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 10px; grid-column: 1 / -1;}
+        #log_output_mapr { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+        <h1>Maximum Average Pass Ratio Animation</h1>
+
+        <div class="controls">
+            <label for="classes_input_mapr">Classes [[p,t],[p,t]]:</label>
+            <input type="text" id="classes_input_mapr" value="[[1,2],[2,3],[1,4]]">
+            <label for="extra_students_input_mapr">Extra Students:</label>
+            <input type="number" id="extra_students_input_mapr" value="2" min="0">
+            <button id="start_button_mapr">Start/Reset</button>
+            <button id="next_step_button_mapr" disabled>Next Step</button>
+        </div>
+
+        <div class="visualization-area-mapr">
+            <div class="classes-display-mapr">
+                <h2>Classes (Pass / Total)</h2>
+                <div id="classes_container_mapr" class="classes-container-mapr"></div>
+            </div>
+            <div class="heap-info-col-mapr">
+                <div>
+                    <h2>Max-Heap (by Gain, Class Index)</h2>
+                    <div id="heap_area_mapr" class="heap-area-mapr"></div>
+                </div>
+                <div class="info-values-mapr">
+                    <p>Extra Students Remaining: <span id="extra_students_mapr">_</span></p>
+                    <p>Current Avg. Pass Ratio: <span id="avg_pass_ratio_mapr">_</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="current_action_mapr"></div>
+        <div class="log-container-mapr">
+            <h2>Log</h2>
+            <pre id="log_output_mapr"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const classesInput = document.getElementById('classes_input_mapr');
+        const extraStudentsInput = document.getElementById('extra_students_input_mapr');
+        const startButton = document.getElementById('start_button_mapr');
+        const nextStepButton = document.getElementById('next_step_button_mapr');
+
+        const classesContainer = document.getElementById('classes_container_mapr');
+        const heapArea = document.getElementById('heap_area_mapr');
+        const extraStudentsDisplay = document.getElementById('extra_students_mapr');
+        const avgPassRatioDisplay = document.getElementById('avg_pass_ratio_mapr');
+        const currentActionDisplay = document.getElementById('current_action_mapr');
+        const logOutput = document.getElementById('log_output_mapr');
+
+        const ANIMATION_DELAY = 800;
+        const SHORT_DELAY = 400;
+
+        let classesData = []; // Array of { pass, total, originalIndex, domElement, currentRatio, currentGain }
+        let extraStudentsRemaining;
+        let maxHeapData = []; // Array of { gain, classIndex, id } for PQ
+        
+        let animationStep = 0; // 0: init, 1: populating heap, 2: main assignment loop
+        let heapPopulationIdx = 0;
+
+        class HeapEntryMAPR { // To give unique IDs to heap entries
+            constructor(gain, classIndex) {
+                this.gain = gain;
+                this.classIndex = classIndex;
+                this.id = `heap-entry-c${classIndex}-${Math.random().toString(16).slice(2,8)}`;
+            }
+        }
+
+        function logMAPR(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.class-item-mapr.highlight-selected').forEach(el => el.classList.remove('highlight-selected'));
+            // More specific highlight removals if needed
+            currentActionDisplay.textContent = '';
+        }
+
+        function calculateGain(pass, total) {
+            if (pass >= total) return 0; // No gain if already 100% or more
+            return ((pass + 1) / (total + 1)) - (pass / total);
+        }
+
+        function calculateOverallAverageRatio() {
+            if (classesData.length === 0) return 0;
+            let totalRatioSum = 0;
+            classesData.forEach(c => {
+                totalRatioSum += c.pass / c.total;
+            });
+            return totalRatioSum / classesData.length;
+        }
+        
+        function renderClasses() {
+            classesContainer.innerHTML = '';
+            classesData.forEach((cls, index) => {
+                const item = document.createElement('div');
+                item.classList.add('class-item-mapr');
+                item.id = `class-item-${index}`;
+                cls.domElement = item; // Store DOM ref
+
+                const ratio = cls.total > 0 ? (cls.pass / cls.total) : 0;
+                cls.currentRatio = ratio;
+                const gain = calculateGain(cls.pass, cls.total);
+                cls.currentGain = gain;
+
+                item.innerHTML = `
+                    <strong>Class ${index}</strong>
+                    <span class="class-pass-total">${cls.pass} / ${cls.total}</span><br>
+                    <span class="class-ratio">Ratio: ${ratio.toFixed(4)}</span>
+                    <div class="class-gain-calc">Potential Gain: ${gain > 0 ? gain.toFixed(4) : 'N/A'}</div>
+                `;
+                classesContainer.appendChild(item);
+            });
+            avgPassRatioDisplay.textContent = calculateOverallAverageRatio().toFixed(5);
+        }
+
+        function renderMaxHeap() {
+            heapArea.innerHTML = '';
+            // Max-heap: sort by gain descending
+            maxHeapData.sort((a, b) => b.gain - a.gain); 
+            
+            maxHeapData.forEach(entry => {
+                const item = document.createElement('div');
+                item.classList.add('heap-entry-mapr');
+                item.id = entry.id; // Use unique ID
+                item.innerHTML = `Gain: <strong>${entry.gain.toFixed(4)}</strong> (Class ${entry.classIndex})`;
+                heapArea.appendChild(item);
+            });
+        }
+
+        async function addToHeapVisual(heapEntry, isReOffer = false) {
+            maxHeapData.push(heapEntry);
+            renderMaxHeap(); // Sorts and renders
+
+            const itemEl = document.getElementById(heapEntry.id);
+            if (itemEl) {
+                itemEl.style.transform = 'scale(0.5) translateY(10px)';
+                itemEl.style.opacity = '0';
+                await new Promise(r => setTimeout(r, 50)); 
+                itemEl.style.transform = 'scale(1) translateY(0)';
+                itemEl.style.opacity = '1';
+                if (isReOffer) itemEl.classList.add('re-added'); // CSS keyframe animation
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            }
+        }
+
+        async function pollFromHeapVisual() {
+            if (maxHeapData.length === 0) return null;
+            maxHeapData.sort((a, b) => b.gain - a.gain); 
+            const entry = maxHeapData.shift(); 
+
+            const itemEl = document.getElementById(entry.id);
+            if (itemEl) {
+                itemEl.classList.add('fading-out');
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            }
+            renderMaxHeap(); 
+            return entry;
+        }
+        
+        function updateDisplays() {
+            extraStudentsDisplay.textContent = extraStudentsRemaining;
+            avgPassRatioDisplay.textContent = calculateOverallAverageRatio().toFixed(5);
+             // Re-render classes to show updated ratios and potential gains
+            renderClasses(); // This might be too much if only one class changes, but simple for now
+        }
+
+
+        async function initializeAnimation() {
+            logMAPR("Initializing...");
+            clearHighlights();
+            try {
+                const rawClasses = JSON.parse(classesInput.value.replace(/(\w+)\s*:/g, '"$1":'));
+                if (!Array.isArray(rawClasses) || !rawClasses.every(c => Array.isArray(c) && c.length === 2 && typeof c[0] === 'number' && typeof c[1] === 'number' && c[0] <= c[1])) {
+                    throw new Error("Invalid classes format. Must be array of [pass, total] pairs, pass <= total.");
+                }
+                classesData = rawClasses.map((cls, index) => ({
+                    pass: cls[0], total: cls[1], originalIndex: index, 
+                    domElement: null, currentRatio: 0, currentGain: 0
+                }));
+                extraStudentsRemaining = parseInt(extraStudentsInput.value);
+                if (isNaN(extraStudentsRemaining) || extraStudentsRemaining < 0) throw new Error("Invalid extra students.");
+
+            } catch (e) {
+                alert("Input Error: " + e.message); return;
+            }
+
+            maxHeapData = [];
+            animationStep = 1; 
+            heapPopulationIdx = 0;
+
+            renderClasses(); // Renders classes and calculates initial ratios/gains
+            renderMaxHeap();
+            updateDisplays(); // Update student/avg ratio display
+            
+            startButton.textContent = "Reset";
+            nextStepButton.disabled = false;
+            logMAPR("Initialized. Click 'Next Step' to populate Max-Heap with initial gains.");
+        }
+
+        async function nextStep() {
+            nextStepButton.disabled = true; 
+            clearHighlights();
+
+            if (animationStep === 1) { // Populating Max-Heap with initial gains
+                if (heapPopulationIdx < classesData.length) {
+                    const cls = classesData[heapPopulationIdx];
+                    currentActionDisplay.textContent = `Calculating initial gain for Class ${cls.originalIndex} ([${cls.pass},${cls.total}]).`;
+                    logMAPR(`Heap: Calculating initial gain for Class ${cls.originalIndex}`);
+                    
+                    if (cls.domElement) cls.domElement.classList.add('highlight-selected');
+                    
+                    const gain = cls.currentGain; // Already calculated in renderClasses
+                    if (gain > 0) { // Only add if there's potential gain (pass < total)
+                        const heapEntry = new HeapEntryMAPR(gain, cls.originalIndex);
+                        await addToHeapVisual(heapEntry);
+                        logMAPR(`  Added (Gain: ${gain.toFixed(4)}, Class: ${cls.originalIndex}) to Max-Heap.`);
+                    } else {
+                        logMAPR(`  Class ${cls.originalIndex} already at max ratio or no gain. Not added to heap.`);
+                    }
+                    
+                    await new Promise(r => setTimeout(r, SHORT_DELAY));
+                    if (cls.domElement) cls.domElement.classList.remove('highlight-selected');
+                    heapPopulationIdx++;
+
+                    if (heapPopulationIdx < classesData.length) {
+                        nextStepButton.disabled = false;
+                    } else {
+                        animationStep = 2; 
+                        logMAPR("Max-Heap populated. Click 'Next Step' to assign extra students.");
+                        currentActionDisplay.textContent = "Heap populated. Ready to assign students.";
+                        nextStepButton.disabled = (extraStudentsRemaining === 0 || maxHeapData.length === 0);
+                    }
+                }
+            } else if (animationStep === 2) { // Main assignment loop
+                if (extraStudentsRemaining === 0 || maxHeapData.length === 0) {
+                    currentActionDisplay.textContent = "No more students or no beneficial classes. Process complete.";
+                    logMAPR(extraStudentsRemaining === 0 ? "All extra students assigned." : "No more classes to improve in heap.");
+                    animationStep = 3; // Done
+                    nextStepButton.disabled = true;
+                    startButton.textContent = "Start/Reset";
+                    return;
+                }
+
+                currentActionDisplay.textContent = "Polling class with max gain from heap...";
+                const bestEntry = await pollFromHeapVisual();
+                if (!bestEntry) { animationStep = 3; nextStepButton.disabled = true; return; } 
+
+                const classToUpdate = classesData[bestEntry.classIndex];
+                logMAPR(`Polled (Gain: ${bestEntry.gain.toFixed(4)}, Class: ${classToUpdate.originalIndex}). Assigning student.`);
+                currentActionDisplay.textContent = `Assigning student to Class ${classToUpdate.originalIndex} (Max Gain: ${bestEntry.gain.toFixed(4)})`;
+                if (classToUpdate.domElement) classToUpdate.domElement.classList.add('highlight-selected');
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+                // Assign student
+                classToUpdate.pass++;
+                classToUpdate.total++;
+                extraStudentsRemaining--;
+                logMAPR(`  Class ${classToUpdate.originalIndex} is now ${classToUpdate.pass}/${classToUpdate.total}. Students left: ${extraStudentsRemaining}.`);
+                
+                // Update class visual (will trigger animation if class for it exists)
+                if(classToUpdate.domElement) classToUpdate.domElement.classList.add('updated-class');
+                updateDisplays(); // This re-renders all classes, updating the specific one
+
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY/1.5));
+                if(classToUpdate.domElement) {
+                     classToUpdate.domElement.classList.remove('highlight-selected');
+                     // updated-class animation is one-shot via CSS
+                }
+
+
+                // Re-calculate gain for this class and re-offer
+                const newGain = calculateGain(classToUpdate.pass, classToUpdate.total); // classToUpdate.currentGain will be updated by renderClasses in updateDisplays
+                classToUpdate.currentGain = newGain; // Explicitly update for re-offer logic
+                if (newGain > 0) {
+                    currentActionDisplay.textContent = `Re-calculating gain for Class ${classToUpdate.originalIndex}: ${newGain.toFixed(4)}. Re-offering.`;
+                    logMAPR(`  New gain for Class ${classToUpdate.originalIndex} is ${newGain.toFixed(4)}. Re-offering to heap.`);
+                    const newHeapEntry = new HeapEntryMAPR(newGain, classToUpdate.originalIndex);
+                    await addToHeapVisual(newHeapEntry, true);
+                } else {
+                    logMAPR(`  Class ${classToUpdate.originalIndex} has no further gain. Not re-offered.`);
+                }
+                
+                if (extraStudentsRemaining > 0 && maxHeapData.length > 0) {
+                    nextStepButton.disabled = false;
+                } else {
+                    currentActionDisplay.textContent = "Process complete.";
+                    logMAPR(extraStudentsRemaining === 0 ? "All extra students assigned." : "No more classes to improve in heap.");
+                    animationStep = 3;
+                    nextStepButton.disabled = true;
+                    startButton.textContent = "Start/Reset";
+                }
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', nextStep);
+        initializeAnimation(); 
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Rooms III Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 98%;
+            max-width: 1300px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls label { font-weight: bold; margin-right: 5px; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .controls input[type="number"] { width: 60px; }
+        .controls input[type="text"] { width: 300px; }
+        .controls button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr; /* Meetings | Rooms | PQs */
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .meetings-list-area, .rooms-display-area, .queues-area, .info-panel, .log-container {
+            padding: 15px;
+            background-color: #fdfdfd;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+        }
+        .meetings-list-area { grid-column: 1 / 2; min-height: 300px; }
+        .rooms-display-area { grid-column: 2 / 3; }
+        .queues-area { grid-column: 3 / 4; }
+        .info-panel, .log-container { grid-column: 1 / -1; }
+
+
+        .meeting-item {
+            background-color: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 4px;
+            padding: 8px; margin-bottom: 5px; font-size: 0.9em;
+            transition: background-color 0.3s ease, opacity 0.3s ease;
+        }
+        .meeting-item.current-processing { background-color: #f1c40f; font-weight: bold; }
+        .meeting-item.assigned { background-color: #d4efdf; } /* Light green for assigned */
+        .meeting-item.delayed { background-color: #fdedec; } /* Light red for delayed */
+        .meeting-item.completed { opacity: 0.6; background-color: #f8f9f9; text-decoration: line-through;}
+
+        .rooms-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 10px;
+        }
+        .room {
+            background-color: #e6ffe6; 
+            border: 2px solid #a8dba8;
+            border-radius: 5px; padding: 10px; text-align: center;
+            transition: background-color 0.5s ease, border-color 0.5s ease;
+            min-height: 95px; /* Adjusted height */
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; /* Space out content vertically */
+            align-items: center;
+        }
+        .room .room-id { font-weight: bold; font-size: 1.1em; margin-bottom: 5px;}
+        .room .room-status { font-size: 0.8em; color: #555; margin-bottom: 5px; min-height: 2em; /* Ensure space for status text */}
+        .room .room-count { 
+            font-size: 1em; /* Adjusted size */
+            font-weight: bold; 
+            color: #c0392b; /* Red for emphasis */
+        }
+        .room.busy { background-color: #fadde1; border-color: #f4a7b9; }
+        .room.highlight-assign { animation: flash-green 0.8s; }
+        .room.highlight-free { animation: flash-blue 0.8s; }
+        .room.most-booked { 
+            border-width: 4px; 
+            border-color: #f39c12 !important; /* Orange border */
+            box-shadow: 0 0 10px #f39c12;
+        }
+
+
+        @keyframes flash-green { 
+            0%, 100% { background-color: #e6ffe6; transform: scale(1); } 
+            50% { background-color: #90ee90; transform: scale(1.05); } 
+        }
+        @keyframes flash-blue {  
+            0%, 100% { /* Target current busy color or a neutral if freeing */ } 
+            50% { background-color: #add8e6; transform: scale(1.05); } 
+        }
+
+
+        .pq-area {
+            min-height: 150px; border: 1px dashed #ccc; border-radius: 4px;
+            padding: 10px; margin-bottom: 10px;
+            display: flex; flex-direction: column; gap: 5px;
+            overflow-y: auto; max-height: 200px;
+        }
+        .pq-item {
+            background-color: #d6eaf8; border: 1px solid #aed6f1;
+            padding: 5px 8px; border-radius: 3px; font-size: 0.85em;
+            text-align: center;
+            transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+        }
+        .pq-item.adding { transform: scale(1.1); background-color: #a9dfbf;}
+        .pq-item.removing { opacity: 0; transform: translateY(-10px); }
+
+
+        #current_time_mr3 { font-weight: bold; color: #e67e22; }
+        #result_room_mr3 { font-size: 1.2em; font-weight: bold; color: #27ae60; }
+
+        .log-container { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        #log_output_mr3 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+
+        <h1>Meeting Rooms III Animation</h1>
+
+        <div class="controls">
+            <label for="n_rooms_mr3">Rooms (n):</label>
+            <input type="number" id="n_rooms_mr3" value="2" min="1">
+            <label for="meetings_input_mr3">Meetings [[s,e],[s,e]]:</label>
+            <input type="text" id="meetings_input_mr3" value="[[0,10],[1,5],[2,7],[3,4]]">
+            <button id="start_button_mr3">Start/Reset</button>
+            <button id="next_step_button_mr3" disabled>Next Meeting</button>
+        </div>
+
+        <div class="info-panel">
+            <p>Current Time: <span id="current_time_mr3">0</span></p>
+            <p>Processing Meeting: <span id="current_meeting_info_mr3">-</span></p>
+            <p>Most Booked Room: <span id="result_room_mr3">-</span></p>
+        </div>
+
+        <div class="main-layout">
+            <div class="meetings-list-area">
+                <h2>Upcoming Meetings (Sorted)</h2>
+                <div id="meetings_list_display_mr3"></div>
+            </div>
+
+            <div class="rooms-display-area">
+                <h2>Meeting Rooms</h2>
+                <div id="rooms_container_mr3" class="rooms-container"></div>
+            </div>
+
+            <div class="queues-area">
+                <h2>Available Rooms (PQ by Index)</h2>
+                <div id="available_pq_mr3" class="pq-area"></div>
+                <h2>Busy Rooms (PQ by EndTime, Index)</h2>
+                <div id="busy_pq_mr3" class="pq-area"></div>
+            </div>
+        </div>
+
+        <div class="log-container">
+            <h2>Log</h2>
+            <pre id="log_output_mr3"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const nRoomsInput = document.getElementById('n_rooms_mr3');
+        const meetingsInput = document.getElementById('meetings_input_mr3');
+        const startButton = document.getElementById('start_button_mr3');
+        const nextStepButton = document.getElementById('next_step_button_mr3');
+
+        const currentTimeDisplay = document.getElementById('current_time_mr3');
+        const currentMeetingInfoDisplay = document.getElementById('current_meeting_info_mr3');
+        const resultRoomDisplay = document.getElementById('result_room_mr3');
+        
+        const meetingsListDisplay = document.getElementById('meetings_list_display_mr3');
+        const roomsContainer = document.getElementById('rooms_container_mr3');
+        const availablePqDisplay = document.getElementById('available_pq_mr3');
+        const busyPqDisplay = document.getElementById('busy_pq_mr3');
+        const logOutput = document.getElementById('log_output_mr3');
+
+        const ANIMATION_DELAY = 800;
+
+        let N_ROOMS;
+        let meetingsData = []; 
+        let sortedMeetings = []; 
+        
+        let roomUsageCounts = [];
+        let availableRoomsPQ; 
+        let busyRoomsPQ;      
+
+        let currentMeetingIdx = 0;
+        let currentTime = 0;
+        let domMeetingItems = {}; 
+        let domRoomItems = [];    
+
+        function logMR3(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function renderAvailablePQ() {
+            availablePqDisplay.innerHTML = '';
+            // Ensure availableRoomsPQ is sorted before rendering
+            availableRoomsPQ.sort((a, b) => a - b);
+            availableRoomsPQ.forEach(roomIdx => {
+                const item = document.createElement('div');
+                item.classList.add('pq-item');
+                item.textContent = `Room ${roomIdx}`;
+                availablePqDisplay.appendChild(item);
+            });
+        }
+        async function addToAvailablePQ(roomIdx, fromBusy = false) {
+            logMR3(`Room ${roomIdx} becoming available.${fromBusy ? ' (Freed)' : ''}`);
+            availableRoomsPQ.push(roomIdx);
+            // Sorting is done in renderAvailablePQ or before polling
+            
+            const item = document.createElement('div');
+            item.classList.add('pq-item'); // No 'adding' class needed if re-rendered immediately
+            item.textContent = `Room ${roomIdx}`;
+            
+            // Temporarily add to display for effect if desired, then full re-render
+            // availablePqDisplay.appendChild(item); 
+            // item.classList.add('adding');
+            // await new Promise(r => setTimeout(r, ANIMATION_DELAY / 3));
+            // item.classList.remove('adding');
+            
+            renderAvailablePQ(); // This will sort and render
+        }
+        async function pollFromAvailablePQ() {
+            if (availableRoomsPQ.length === 0) return null;
+            availableRoomsPQ.sort((a, b) => a - b); // Ensure it's sorted before taking the first
+            const roomIdx = availableRoomsPQ.shift(); 
+            logMR3(`Polling Room ${roomIdx} from available PQ.`);
+            
+            // Visual removal effect
+            const items = availablePqDisplay.querySelectorAll('.pq-item');
+            let foundItemVisual = null;
+            for(let i=0; i<items.length; i++){
+                if(items[i].textContent === `Room ${roomIdx}`){
+                    foundItemVisual = items[i];
+                    break;
+                }
+            }
+            if (foundItemVisual) {
+                 foundItemVisual.classList.add('removing');
+                 await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+            }
+            renderAvailablePQ(); // Re-render after actual removal
+            return roomIdx;
+        }
+
+        function renderBusyPQ() {
+            busyPqDisplay.innerHTML = '';
+            // Ensure busyRoomsPQ is sorted
+            busyRoomsPQ.sort((a, b) => a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]);
+            busyRoomsPQ.forEach(busyEntry => {
+                const item = document.createElement('div');
+                item.classList.add('pq-item');
+                item.textContent = `R${busyEntry[1]} (Ends: ${busyEntry[0]})`;
+                busyPqDisplay.appendChild(item);
+            });
+        }
+        async function addToBusyPQ(endTime, roomIdx, meetingId = null) {
+            logMR3(`Room ${roomIdx} busy until ${endTime}${meetingId !== null ? ` for M${meetingId}`: ''}.`);
+            busyRoomsPQ.push([endTime, roomIdx]);
+            // Sorting is done in renderBusyPQ or before polling
+            
+            // const item = document.createElement('div');
+            // item.classList.add('pq-item', 'adding');
+            // item.textContent = `R${roomIdx} (Ends: ${endTime})`;
+            // busyPqDisplay.appendChild(item);
+            // await new Promise(r => setTimeout(r, ANIMATION_DELAY / 3));
+            // item.classList.remove('adding');
+            renderBusyPQ();
+        }
+        async function pollFromBusyPQ() {
+            if (busyRoomsPQ.length === 0) return null;
+            busyRoomsPQ.sort((a, b) => a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]);
+            const busyEntry = busyRoomsPQ.shift(); 
+            logMR3(`Polling Room ${busyEntry[1]} (busy until ${busyEntry[0]}) from busy PQ.`);
+
+            const items = busyPqDisplay.querySelectorAll('.pq-item');
+            let foundItemVisual = null;
+             for(let i=0; i<items.length; i++){
+                if(items[i].textContent === `R${busyEntry[1]} (Ends: ${busyEntry[0]})`){
+                    foundItemVisual = items[i];
+                    break;
+                }
+            }
+            if (foundItemVisual) {
+                 foundItemVisual.classList.add('removing');
+                 await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+            }
+            renderBusyPQ();
+            return busyEntry;
+        }
+
+        function renderMeetingsList() {
+            meetingsListDisplay.innerHTML = '';
+            domMeetingItems = {};
+            sortedMeetings.forEach((meet, sortedIdx) => {
+                const item = document.createElement('div');
+                item.classList.add('meeting-item');
+                item.id = `meeting-orig-${meet.originalIndex}`;
+                item.textContent = `M${meet.originalIndex}: [${meet.start}, ${meet.end}] (Dur: ${meet.end - meet.start})`;
+                if (sortedIdx < currentMeetingIdx) { // Meeting already fully processed
+                     item.classList.add('completed');
+                } else if (meet.assignedToRoom !== undefined) { // Check if processed and has assignment info
+                    if(meet.wasDelayed) item.classList.add('delayed');
+                    else item.classList.add('assigned');
+                }
+                meetingsListDisplay.appendChild(item);
+                domMeetingItems[meet.originalIndex] = item;
+            });
+        }
+
+        function renderRooms() {
+            roomsContainer.innerHTML = '';
+            domRoomItems = [];
+            for (let i = 0; i < N_ROOMS; i++) {
+                const roomDiv = document.createElement('div');
+                roomDiv.classList.add('room');
+                roomDiv.id = `room-${i}`;
+                
+                const idSpan = document.createElement('span');
+                idSpan.classList.add('room-id');
+                idSpan.textContent = `Room ${i}`;
+                
+                const statusSpan = document.createElement('span');
+                statusSpan.classList.add('room-status');
+                statusSpan.textContent = 'Available'; 
+                
+                const countSpan = document.createElement('span');
+                countSpan.classList.add('room-count');
+                countSpan.textContent = `Bookings: ${roomUsageCounts[i]}`;
+
+                roomDiv.appendChild(idSpan);
+                roomDiv.appendChild(statusSpan);
+                roomDiv.appendChild(countSpan);
+                roomsContainer.appendChild(roomDiv);
+                domRoomItems.push(roomDiv);
+            }
+            updateRoomVisualStatus(); 
+        }
+
+        function updateRoomVisualStatus(assignedRoom = null, assignedEndTime = null, freedRoom = null) {
+            domRoomItems.forEach((roomDiv, i) => {
+                roomDiv.classList.remove('busy');
+                roomDiv.querySelector('.room-status').textContent = 'Available';
+            });
+
+            busyRoomsPQ.forEach(busyEntry => {
+                const roomIdx = busyEntry[1];
+                const endTime = busyEntry[0];
+                if (domRoomItems[roomIdx]) {
+                    domRoomItems[roomIdx].classList.add('busy');
+                    domRoomItems[roomIdx].querySelector('.room-status').textContent = `Busy until ${endTime}`;
+                }
+            });
+             if (assignedRoom !== null && domRoomItems[assignedRoom]) {
+                domRoomItems[assignedRoom].classList.add('highlight-assign');
+                setTimeout(() => domRoomItems[assignedRoom].classList.remove('highlight-assign'), ANIMATION_DELAY);
+            }
+            if (freedRoom !== null && domRoomItems[freedRoom]) {
+                // Check if it's now truly available before flashing blue
+                if (!domRoomItems[freedRoom].classList.contains('busy')) {
+                    domRoomItems[freedRoom].classList.add('highlight-free');
+                    setTimeout(() => domRoomItems[freedRoom].classList.remove('highlight-free'), ANIMATION_DELAY);
+                }
+            }
+        }
+        
+        function updateRoomCountDisplay(roomIdx) {
+            if (domRoomItems[roomIdx]) {
+                const countSpan = domRoomItems[roomIdx].querySelector('.room-count');
+                if (countSpan) {
+                    countSpan.textContent = `Bookings: ${roomUsageCounts[roomIdx]}`;
+                }
+            }
+        }
+
+        async function nextMeetingStep() {
+            nextStepButton.disabled = true;
+
+            if (currentMeetingIdx >= sortedMeetings.length) {
+                logMR3("All meetings processed.");
+                finalizeResult();
+                return;
+            }
+
+            const currentMeet = sortedMeetings[currentMeetingIdx];
+            currentMeet.assignedToRoom = undefined; // Reset assignment status for re-processing if any
+            currentMeet.wasDelayed = false;
+
+            const originalMeetingItem = domMeetingItems[currentMeet.originalIndex];
+            if (originalMeetingItem) {
+                originalMeetingItem.classList.remove('completed', 'assigned', 'delayed'); // Clear previous states
+                originalMeetingItem.classList.add('current-processing');
+            }
+            
+            currentMeetingInfoDisplay.textContent = `M${currentMeet.originalIndex}: [${currentMeet.start}, ${currentMeet.end}]`;
+            logMR3(`--- Processing Meeting M${currentMeet.originalIndex}: [${currentMeet.start}, ${currentMeet.end}] ---`);
+            
+            currentTime = currentMeet.start;
+            currentTimeDisplay.textContent = currentTime;
+            logMR3(`Current time is meeting start: ${currentTime}`);
+
+            logMR3("Checking for rooms to free up...");
+            let roomFreedVisualCue = null;
+            while (busyRoomsPQ.length > 0 && busyRoomsPQ[0][0] <= currentTime) {
+                const freedBusyEntry = await pollFromBusyPQ(); 
+                await addToAvailablePQ(freedBusyEntry[1], true);
+                roomFreedVisualCue = freedBusyEntry[1]; // For single visual update
+            }
+            updateRoomVisualStatus(null, null, roomFreedVisualCue); // Update visuals after all freeing
+            if (roomFreedVisualCue === null) logMR3("No rooms became free at this time.");
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 3));
+
+
+            let roomToBook;
+            if (availableRoomsPQ.length > 0) {
+                roomToBook = await pollFromAvailablePQ();
+                logMR3(`M${currentMeet.originalIndex} assigned to available Room ${roomToBook}.`);
+                const meetingEndTime = currentMeet.end;
+                await addToBusyPQ(meetingEndTime, roomToBook, currentMeet.originalIndex);
+                currentMeet.assignedToRoom = roomToBook; 
+                if (originalMeetingItem) originalMeetingItem.classList.add('assigned');
+            } else {
+                logMR3("No rooms available. Meeting will be delayed.");
+                const earliestFreeingRoomEntry = await pollFromBusyPQ(); 
+                roomToBook = earliestFreeingRoomEntry[1];
+                const roomFreeTime = earliestFreeingRoomEntry[0];
+                
+                const meetingDuration = currentMeet.end - currentMeet.start;
+                const newMeetingStartTime = roomFreeTime; // Meeting starts when room is free
+                const newMeetingEndTime = newMeetingStartTime + meetingDuration;
+
+                logMR3(`M${currentMeet.originalIndex} delayed to Room ${roomToBook}. Starts at ${newMeetingStartTime}, New end: ${newMeetingEndTime}.`);
+                
+                await addToBusyPQ(newMeetingEndTime, roomToBook, currentMeet.originalIndex);
+                currentMeet.assignedToRoom = roomToBook;
+                currentMeet.wasDelayed = true;
+                if (originalMeetingItem) originalMeetingItem.classList.add('delayed');
+            }
+            
+            roomUsageCounts[roomToBook]++;
+            updateRoomCountDisplay(roomToBook);
+            updateRoomVisualStatus(roomToBook); // Highlight assigned room
+
+            if (originalMeetingItem) originalMeetingItem.classList.remove('current-processing');
+            // Mark as completed in the list only after it's fully processed for this step
+            // The visual state (assigned/delayed) will persist
+            
+            currentMeetingIdx++;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            
+            // Re-render meeting list to update any completed status (though 'assigned'/'delayed' are more specific here)
+            // For the *next* step, the previous one will be 'completed'.
+            // For now, just ensure the current processed one is no longer 'current-processing'.
+            // The `completed` class will be applied when `renderMeetingsList` is called and `sortedIdx < currentMeetingIdx`.
+            renderMeetingsList(); // To update states based on currentMeetingIdx
+
+            if (currentMeetingIdx < sortedMeetings.length) {
+                nextStepButton.disabled = false;
+            } else {
+                logMR3("All meetings processed. Click Next to finalize or will auto-finalize.");
+                finalizeResult(); 
+            }
+        }
+        
+        function finalizeResult() {
+            logMR3("Finalizing results...");
+            let maxBookings = -1;
+            let mostBookedRoom = -1;
+            
+            // Ensure all meetings are marked as completed visually if not already
+            sortedMeetings.forEach(meet => {
+                if (domMeetingItems[meet.originalIndex]) {
+                    domMeetingItems[meet.originalIndex].classList.remove('current-processing', 'assigned', 'delayed');
+                    domMeetingItems[meet.originalIndex].classList.add('completed');
+                }
+            });
+
+
+            for (let i = 0; i < N_ROOMS; i++) {
+                if (domRoomItems[i]) domRoomItems[i].classList.remove('most-booked'); 
+                if (roomUsageCounts[i] > maxBookings) {
+                    maxBookings = roomUsageCounts[i];
+                    mostBookedRoom = i;
+                } else if (roomUsageCounts[i] === maxBookings && mostBookedRoom !== -1 && i < mostBookedRoom) {
+                    // If counts are equal, choose the smaller room index (as per typical problem constraints)
+                    // This part of the logic was missing from the problem statement but common.
+                    // The provided Java solution correctly handles this implicitly by iterating and updating max.
+                    mostBookedRoom = i;
+                }
+            }
+
+            if (mostBookedRoom !== -1) {
+                logMR3(`Room ${mostBookedRoom} has the most bookings: ${maxBookings}.`);
+                resultRoomDisplay.textContent = `Room ${mostBookedRoom} (${maxBookings} bookings)`;
+                if (domRoomItems[mostBookedRoom]) domRoomItems[mostBookedRoom].classList.add('most-booked');
+            } else {
+                logMR3("No meetings booked or no rooms.");
+                resultRoomDisplay.textContent = "N/A";
+            }
+            currentMeetingInfoDisplay.textContent = "All Done";
+            nextStepButton.disabled = true;
+        }
+
+
+        function initializeMR3() {
+            logMR3("Initializing Meeting Rooms III animation...");
+            N_ROOMS = parseInt(nRoomsInput.value);
+            try {
+                const rawMeetings = JSON.parse(meetingsInput.value.replace(/(\w+)\s*:/g, '"$1":')); // Allow for unquoted keys
+                if (!Array.isArray(rawMeetings) || !rawMeetings.every(m => Array.isArray(m) && m.length === 2 && typeof m[0] === 'number' && typeof m[1] === 'number')) {
+                    throw new Error("Invalid meetings format. Must be array of [start, end] pairs.");
+                }
+                meetingsData = rawMeetings.map((m, idx) => ({ start: m[0], end: m[1], originalIndex: idx, assignedToRoom: undefined, wasDelayed: false }));
+            } catch (e) {
+                alert("Invalid meetings input. Use JSON array format: [[s1,e1],[s2,e2]] Error: " + e.message);
+                return;
+            }
+
+            if (isNaN(N_ROOMS) || N_ROOMS < 1) {
+                alert("Invalid number of rooms (must be >= 1)."); return;
+            }
+
+            sortedMeetings = [...meetingsData].sort((a,b) => a.start - b.start);
+            
+            roomUsageCounts = new Array(N_ROOMS).fill(0);
+            availableRoomsPQ = [];
+            busyRoomsPQ = [];
+
+            for (let i = 0; i < N_ROOMS; i++) {
+                availableRoomsPQ.push(i); 
+            }
+            // PQs will be sorted on demand or by render functions
+
+            currentMeetingIdx = 0;
+            currentTime = 0;
+            logOutput.innerHTML = '';
+            currentMeetingInfoDisplay.textContent = "-";
+            resultRoomDisplay.textContent = "-";
+            currentTimeDisplay.textContent = "0";
+
+            renderMeetingsList();
+            renderRooms();
+            renderAvailablePQ();
+            renderBusyPQ();
+
+            if (sortedMeetings.length === 0) {
+                logMR3("No meetings to schedule.");
+                finalizeResult(); 
+                nextStepButton.disabled = true;
+                startButton.textContent = "Start/Reset";
+                return;
+            }
+            
+            nextStepButton.disabled = false;
+            startButton.textContent = "Reset"; 
+            logMR3(`Initialized: ${N_ROOMS} rooms. Processing ${sortedMeetings.length} meetings. Click 'Next Meeting'.`);
+        }
+
+        startButton.addEventListener('click', initializeMR3);
+        nextStepButton.addEventListener('click', nextMeetingStep);
+
+        initializeMR3(); 
+    });
+    </script>
+</body>
+</html>

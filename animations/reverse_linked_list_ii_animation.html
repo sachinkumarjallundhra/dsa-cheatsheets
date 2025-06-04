@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reverse Linked List II Animation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f9fafb;
+      padding: 20px;
+    }
+    svg {
+      margin-top: 20px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+    }
+    .node {
+      fill: #3b82f6;
+      stroke: white;
+      stroke-width: 2px;
+    }
+    .text {
+      fill: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .arrow {
+      stroke: #6b7280;
+      stroke-width: 2px;
+      marker-end: url(#arrow);
+    }
+    .pointer {
+      font-size: 0.85rem;
+      font-weight: bold;
+      fill: #1f2937;
+    }
+    .controls {
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 0 10px;
+      font-size: 1rem;
+      background-color: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #4f46e5;
+    }
+  </style>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <h1>🎬 Reverse Linked List II Animation</h1>
+  <p><a href="../patterns/reverse_linked_list_ii_cheatsheet.html">← Back to Cheat Sheet</a></p>
+  <svg id="canvas" width="800" height="200"></svg>
+  <div class="controls">
+    <button onclick="nextStep()">▶️ Next Step</button>
+    <button onclick="reset()">🔄 Reset</button>
+  </div>
+  <div id="log">Click "Next Step" to start the animation.</div>
+
+  <script>
+    const svg = d3.select("#canvas");
+    const log = d3.select("#log");
+    const nodeData = [1, 2, 3, 4, 5];
+    const left = 2;
+    const right = 4;
+    const spacing = 130;
+    const radius = 25;
+    let step = 0;
+    let links = [];
+    let mode = "init";
+
+    // Arrowhead marker
+    svg.append("defs").append("marker")
+      .attr("id", "arrow")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 10)
+      .attr("refY", 0)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "#6b7280");
+
+    const nodeGroup = svg.append("g");
+    const linkGroup = svg.append("g").lower();
+
+    function drawNodes() {
+      nodeGroup.selectAll("*").remove();
+      nodeData.forEach((val, i) => {
+        nodeGroup.append("circle")
+          .attr("cx", 100 + i * spacing)
+          .attr("cy", 100)
+          .attr("r", radius)
+          .attr("class", "node")
+          .attr("id", "node" + i);
+        nodeGroup.append("text")
+          .attr("x", 100 + i * spacing)
+          .attr("y", 105)
+          .attr("class", "text")
+          .attr("text-anchor", "middle")
+          .text(val);
+      });
+    }
+
+    function drawLinks() {
+      linkGroup.selectAll("*").remove();
+      links.forEach(([from, to], i) => {
+        const fromX = 100 + from * spacing;
+        const toX = 100 + to * spacing;
+        const dir = to > from ? 1 : -1;
+        linkGroup.append("line")
+          .attr("x1", fromX + dir * radius)
+          .attr("y1", 100)
+          .attr("x2", toX - dir * radius)
+          .attr("y2", 100)
+          .attr("class", "arrow");
+      });
+    }
+
+    function nextStep() {
+      if (step === 0 && mode === "init") {
+        links = [];
+        for (let i = 0; i < nodeData.length - 1; i++) {
+          links.push([i, i + 1]);
+        }
+        mode = "reverse";
+        drawLinks();
+        log.textContent = "Initialized list with .next pointers.";
+        return;
+      }
+
+      if (step >= right - left + 1) {
+        log.textContent = "✅ Sublist reversed!";
+        return;
+      }
+
+      // Reverse sublist
+      const start = left - 1;
+      const end = right - 1;
+      if (step < end - start) {
+        const temp = links[start + step];
+        links[start + step] = links[start + step + 1];
+        links[start + step + 1] = temp;
+        drawLinks();
+        log.textContent = `Step ${step + 1}: Reversed node ${nodeData[start + step + 1]}.`;
+        step++;
+      }
+    }
+
+    function reset() {
+      step = 0;
+      links = [];
+      mode = "init";
+      drawNodes();
+      drawLinks();
+      log.textContent = "Click 'Next Step' to start the animation.";
+    }
+
+    reset();
+  </script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Median from Data Stream Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
+    <h1>📚 Find Median from Data Stream – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves finding the median of a stream of integers in real-time. The median is the middle value in a sorted list of numbers, or the average of the two middle values if the list has an even number of elements.</p>
+    <p>To solve this efficiently, we use two heaps:</p>
+    <ul>
+      <li><b>Max-Heap</b>: Stores the smaller half of the numbers (largest number at the top).</li>
+      <li><b>Min-Heap</b>: Stores the larger half of the numbers (smallest number at the top).</li>
+    </ul>
+    <p>The heaps are balanced such that the size difference between them is at most 1. This allows us to calculate the median in constant time by looking at the top elements of the heaps.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class MedianFinder {
+    private PriorityQueue&lt;Integer&gt; maxHeap; // Stores the smaller half
+    private PriorityQueue&lt;Integer&gt; minHeap; // Stores the larger half
+
+    public MedianFinder() {
+        maxHeap = new PriorityQueue&lt;&gt;(Collections.reverseOrder());
+        minHeap = new PriorityQueue&lt;&gt;();
+    }
+
+    public void addNum(int num) {
+        // Add to maxHeap first
+        maxHeap.offer(num);
+
+        // Balance heaps: Ensure all elements in maxHeap are <= elements in minHeap
+        minHeap.offer(maxHeap.poll());
+
+        // Maintain size property: maxHeap can have at most one more element than minHeap
+        if (maxHeap.size() < minHeap.size()) {
+            maxHeap.offer(minHeap.poll());
+        }
+    }
+
+    public double findMedian() {
+        if (maxHeap.size() > minHeap.size()) {
+            return maxHeap.peek();
+        } else {
+            return (maxHeap.peek() + minHeap.peek()) / 2.0;
+        }
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>addNum()</b>: <code>O(log n)</code> – Adding a number to a heap and balancing the heaps both take logarithmic time.</li>
+      <li><b>findMedian()</b>: <code>O(1)</code> – Retrieving the median is a constant-time operation as it only involves peeking at the top elements of the heaps.</li>
+      <li><b>Overall Complexity</b>: Efficient for real-time median calculation in dynamic data streams.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Real-time median calculation</li>
+      <li>Dynamic data streams</li>
+      <li>Efficiently handling large datasets</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-median-from-data-stream/" target="_blank" rel="noopener noreferrer">295. Find Median from Data Stream</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Two Heaps</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Find Median from Data Stream</h2>
+    <pre><code>Input:
+["MedianFinder", "addNum", "addNum", "findMedian", "addNum", "findMedian"]
+[[], [1], [2], [], [3], []]
+
+Output:
+[null, null, null, 1.5, null, 2.0]
+
+Explanation:
+MedianFinder medianFinder = new MedianFinder();
+medianFinder.addNum(1);    // arr = [1]
+medianFinder.addNum(2);    // arr = [1, 2]
+medianFinder.findMedian(); // return 1.5 (median of [1, 2])
+medianFinder.addNum(3);    // arr = [1, 2, 3]
+medianFinder.findMedian(); // return 2.0 (median of [1, 2, 3])</code></pre>
+    <button onclick="window.open('../animations/find_median_from_data_stream_animation.html', '_blank')">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a max-heap for the smaller half and a min-heap for the larger half</li>
+      <li>Always balance the heaps to maintain the size property</li>
+      <li>Edge cases: empty stream, single element, large datasets</li>
+    </ul>
+  </div>
+</body>
+</html>
