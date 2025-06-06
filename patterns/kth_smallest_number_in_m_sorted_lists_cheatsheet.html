@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kth Smallest Number in M Sorted Lists Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Kth Smallest Number in M Sorted Lists – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves finding the <code>Kth</code> smallest number in <code>M</code> sorted lists. This is a classic problem that can be solved efficiently using the <b>K-Way Merge Pattern</b> with a <b>min-heap</b>.</p>
+    <p>The min-heap helps us efficiently track the smallest elements across all lists, ensuring we can extract the <code>Kth</code> smallest element.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int findKthSmallest(List&lt;int[]&gt; lists, int k) {
+        PriorityQueue&lt;int[]&gt; minHeap = new PriorityQueue&lt;&gt;((a, b) -&gt; a[0] - b[0]);
+
+        // Step 1: Add the first element of each list to the heap
+        for (int i = 0; i &lt; lists.size(); i++) {
+            if (lists.get(i).length &gt; 0) {
+                minHeap.offer(new int[]{lists.get(i)[0], i, 0}); // [value, listIndex, elementIndex]
+            }
+        }
+
+        // Step 2: Extract the smallest element from the heap k times
+        int number = -1;
+        while (k &gt; 0 && !minHeap.isEmpty()) {
+            int[] smallest = minHeap.poll();
+            number = smallest[0];
+            int listIndex = smallest[1];
+            int elementIndex = smallest[2];
+
+            // Add the next element from the same list to the heap
+            if (elementIndex + 1 &lt; lists.get(listIndex).length) {
+                minHeap.offer(new int[]{lists.get(listIndex)[elementIndex + 1], listIndex, elementIndex + 1});
+            }
+
+            k--;
+        }
+
+        return number;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Initialization</b>: <code>O(M log M)</code> – Adding the first element of each list to the heap.</li>
+      <li><b>Heap Operations</b>: <code>O(K log M)</code> – Extracting and adding elements to the heap, where <code>K</code> is the number of elements processed.</li>
+      <li><b>Overall Complexity</b>: <code>O(K log M)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the <code>Kth</code> smallest/largest element in multiple sorted lists</li>
+      <li>Efficiently combining sorted data streams</li>
+      <li>Applications in external sorting and database systems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-k-pairs-with-smallest-sums/" target="_blank" rel="noopener noreferrer">373. Find K Pairs with Smallest Sums</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/kth-smallest-element-in-a-sorted-matrix/" target="_blank" rel="noopener noreferrer">378. Kth Smallest Element in a Sorted Matrix</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Kth Smallest Number in M Sorted Lists</h2>
+    <pre><code>Input: lists = [[2, 6, 8], [3, 6, 7], [1, 3, 4]], k = 5
+Output: 4
+
+Explanation:
+- Add the first element of each list to the heap: [2, 3, 1].
+- Extract the smallest (1) and add the next element from the same list.
+- Repeat until the 5th smallest element (4) is extracted.</code></pre>
+<button onclick="window.location.href='../animations/kth_smallest_number_in_m_sorted_lists_cheatsheet_animation.html'">▶️ View Animation</button>
+
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the smallest element among the lists.</li>
+      <li>Edge cases: empty lists, lists of unequal lengths.</li>
+      <li>Ensure the heap stores enough information to track the source of each element.</li>
+    </ul>
+  </div>
+</body>
+</html>

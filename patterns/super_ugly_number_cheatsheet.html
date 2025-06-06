@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Ugly Number Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Super Ugly Number – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves finding the <code>n-th</code> super ugly number. A super ugly number is a positive integer whose prime factors are in a given list of primes.</p>
+    <p>This problem can be efficiently solved using a <b>min-heap</b> to track the smallest multiples of the primes.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int nthSuperUglyNumber(int n, int[] primes) {
+        int[] ugly = new int[n];
+        ugly[0] = 1;
+
+        // Each entry: [nextVal, prime, index_in_ugly_array]
+        PriorityQueue&lt;long[]&gt; pq = new PriorityQueue&lt;&gt;(Comparator.comparingLong(a -&gt; a[0]));
+
+        for (int prime : primes) {
+            pq.offer(new long[]{prime, prime, 0});
+        }
+
+        for (int i = 1; i &lt; n; ) {
+            long[] top = pq.poll();
+            long nextVal = top[0];
+            long prime = top[1];
+            int idx = (int) top[2];
+
+            if (nextVal != ugly[i - 1]) {
+                ugly[i++] = (int) nextVal;
+            }
+
+            long newVal = prime * ugly[idx + 1];
+            pq.offer(new long[]{newVal, prime, idx + 1});
+        }
+
+        return ugly[n - 1];
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Initialization</b>: <code>O(k log k)</code> – Adding the first multiples of each prime to the heap, where <code>k</code> is the number of primes.</li>
+      <li><b>Heap Operations</b>: <code>O(n log k)</code> – Extracting and adding elements to the heap for <code>n</code> iterations.</li>
+      <li><b>Overall Complexity</b>: <code>O(n log k)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the n-th smallest number with specific prime factors</li>
+      <li>Efficiently generating sequences of numbers with constraints</li>
+      <li>Applications in optimization and scheduling problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/super-ugly-number/" target="_blank" rel="noopener noreferrer">313. Super Ugly Number</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Super Ugly Number</h2>
+    <pre><code>Input: n = 12, primes = [2,7,13,19]
+Output: 32
+
+Explanation:
+- The sequence of super ugly numbers is [1, 2, 7, 13, 14, 19, 26, 28, 32, ...].
+- The 12th super ugly number is 32.</code></pre>
+    <button onclick="window.location.href='../animations/super_ugly_number_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the smallest multiples of the primes.</li>
+      <li>Edge cases: <code>n = 1</code>, primes with duplicates.</li>
+      <li>Ensure the heap stores enough information to track the prime and its current multiple.</li>
+    </ul>
+  </div>
+</body>
+</html>

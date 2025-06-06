@@ -3,116 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimum Cost to Connect Sticks Animation</title>
+    <title>Mobile-Friendly Min Cost to Connect Sticks</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 10px; /* Reduced padding for smaller screens */
             background-color: #f4f7f6;
             color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            font-size: 15px; /* Slightly smaller base for mobile */
         }
         .container {
-            width: 95%;
-            max-width: 900px;
+            width: 100%; /* Full width on mobile */
+            max-width: 900px; /* Max width for larger screens */
+            margin: 0 auto; /* Center on larger screens */
             background-color: #fff;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        h1, h2 {
+        h1 { font-size: 1.5em; }
+        h2 {
+            font-size: 1.2em; /* Adjusted */
             color: #2c3e50;
             text-align: center;
-            margin-bottom: 15px;
-        }
-        h2 {
-            font-size: 1.1em;
+            margin-bottom: 10px;
             border-bottom: 1px solid #eee;
             padding-bottom: 5px;
-            margin-top: 10px;
+            margin-top: 15px;
         }
 
         .controls {
-            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
-            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+            display: flex; 
+            flex-direction: column; /* Stack controls on mobile */
+            gap: 10px; 
+            margin-bottom: 20px; 
+            padding: 10px;
+            background-color: #e8f0fe; 
+            border-radius: 5px; 
         }
-        .controls label { font-weight: bold; margin-right: 5px; }
-        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls label { 
+            font-weight: bold; 
+            margin-bottom: 3px; /* Space below label */
+            display: block; /* Make label take full width */
+        }
+        .controls input[type="text"] { 
+            padding: 10px; /* Larger padding for touch */
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            width: 100%; /* Full width input */
+            box-sizing: border-box; /* Include padding in width */
+        }
         .controls button {
-            padding: 10px 15px; background-color: #3498db; color: white;
-            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+            padding: 12px 15px; /* Larger buttons */
+            background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%; /* Full width buttons */
         }
-        .controls button:hover { background-color: #2980b9; }
+        .controls button:hover:not(:disabled) { background-color: #2980b9; }
         .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
 
         .visualization-area-mcs {
-            display: grid;
-            grid-template-columns: 1fr; /* Single column for simplicity */
-            gap: 20px;
+            display: flex; /* Changed to flex for stacking */
+            flex-direction: column; 
+            gap: 15px;
             margin-bottom: 20px;
         }
         .sticks-display-mcs, .heap-display-mcs, .operation-display-mcs, .cost-display-mcs {
-            padding: 15px; background-color: #fdfdfd;
+            padding: 10px; background-color: #fdfdfd;
             border: 1px solid #e0e0e0; border-radius: 5px;
         }
         
         .sticks-initial-area, .heap-area-mcs, .connecting-sticks-area-mcs {
-            min-height: 60px;
-            padding: 10px;
+            min-height: 50px; /* Adjusted min-height */
+            padding: 8px;
             border: 1px dashed #ccc;
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+            flex-wrap: wrap; /* Allow items to wrap */
+            gap: 6px; /* Adjusted gap */
             align-items: center;
-            justify-content: center; /* Center items */
+            justify-content: center; 
         }
-        .heap-area-mcs { border-color: #27ae60; background-color: #e8f8f5; } /* Greenish for MinHeap */
-        .connecting-sticks-area-mcs { border-color: #f39c12; background-color: #fef9e7; min-height: 70px;}
+        .heap-area-mcs { border-color: #27ae60; background-color: #e8f8f5; } 
+        .connecting-sticks-area-mcs { border-color: #f39c12; background-color: #fef9e7; min-height: 60px;}
 
 
         .stick-item-mcs, .heap-entry-mcs {
-            padding: 8px 12px;
+            padding: 6px 10px; /* Adjusted padding */
             border-radius: 4px;
-            font-size: 1em;
+            font-size: 0.95em; /* Adjusted font size */
             font-weight: bold;
             text-align: center;
             border: 1px solid #bdc3c7;
             background-color: #ecf0f1;
             transition: background-color 0.3s ease, transform 0.4s ease, opacity 0.4s ease;
-            min-width: 40px; /* Ensure some width */
+            min-width: 35px; 
         }
         .heap-entry-mcs { background-color: #a9dfbf; border-color: #7dcea0; }
         
-        /* Highlighting States */
         .stick-item-mcs.current-add-to-heap { background-color: #f1c40f; transform: scale(1.1); }
-        .heap-entry-mcs.polling-stick1 { background-color: #f5b041; border-color: #f39c12; transform:translateX(-15px) scale(1.1); }
-        .heap-entry-mcs.polling-stick2 { background-color: #f5b041; border-color: #f39c12; transform:translateX(15px) scale(1.1); }
-        .heap-entry-mcs.newly-combined { background-color: #82e0aa; border-color: #2ecc71; animation: popInStick 0.5s; }
+        .heap-entry-mcs.polling-stick1 { background-color: #f5b041; border-color: #f39c12; transform:translateX(-10px) scale(1.05); }
+        .heap-entry-mcs.polling-stick2 { background-color: #f5b041; border-color: #f39c12; transform:translateX(10px) scale(1.05); }
+        .heap-entry-mcs.newly-combined { background-color: #82e0aa; border-color: #2ecc71; animation: popInStick-mcs 0.5s; }
         .heap-entry-mcs.fading-out { opacity: 0; transform: scale(0.5); }
 
+        @keyframes popInStick-mcs { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
 
-        @keyframes popInStick { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
-
-        #total_cost_mcs { font-size: 1.4em; font-weight: bold; color: #e74c3c; }
+        #total_cost_mcs { font-size: 1.3em; font-weight: bold; color: #e74c3c; }
         #current_action_mcs { text-align:center; margin-bottom:10px; font-weight:bold; min-height:1.2em; color: #2980b9;}
-        .log-container-mcs { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 10px; }
-        #log_output_mcs { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+        .log-container-mcs { background-color: #2c3e50; color: #ecf0f1; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        #log_output_mcs { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.85em; }
+
+        /* Media Queries for larger screens */
+        @media (min-width: 600px) {
+            body { padding: 20px; font-size: 16px; }
+            .container { padding: 20px; }
+            .controls { 
+                flex-direction: row; /* Horizontal layout for controls */
+                justify-content: center; align-items: center;
+            }
+            .controls label { display: inline-block; margin-bottom: 0; }
+            .controls input[type="text"] { width: 250px; }
+            .controls button { width: auto; } /* Auto width for buttons on larger screens */
+
+            .visualization-area-mcs {
+                /* Optionally revert to grid for more complex layouts on desktop if needed */
+                /* For this one, flex column might still be okay or a simple 2-col grid */
+            }
+             h1 { font-size: 1.8em; }
+             h2 { font-size: 1.3em; }
+        }
+         @media (min-width: 768px) {
+            .visualization-area-mcs {
+                grid-template-columns: 1fr 1fr; /* Two columns for heap and (initial sticks + operations) */
+                gap: 20px;
+            }
+            .sticks-display-mcs { grid-column: 1 / 2; }
+            .heap-display-mcs { grid-column: 2 / 3; grid-row: 1 / 2;} /* Heap on right, top */
+            .operation-display-mcs { grid-column: 1 / 2; grid-row: 2 / 3; } /* Operation below sticks */
+            .cost-display-mcs { grid-column: 2 / 3; grid-row: 2 / 3; } /* Cost below heap */
+         }
+
+
     </style>
 </head>
 <body>
     <div class="container">
-        <p class="no-print"><a href="../patterns/heap_cheatsheet.html">← Back to Heap Pattern</a></p>
-
-        <h1>Minimum Cost to Connect Sticks Animation</h1>
+        <h1>Minimum Cost to Connect Sticks (Mobile Friendly)</h1>
 
         <div class="controls">
-            <label for="sticks_input_mcs">Sticks (comma-separated lengths):</label>
-            <input type="text" id="sticks_input_mcs" value="2,4,3">
-            <button id="start_button_mcs">Start/Reset</button>
-            <button id="next_step_button_mcs" disabled>Next Step</button>
+            <div> <!-- Wrap label and input for better flex control if needed -->
+                <label for="sticks_input_mcs">Sticks (comma-separated lengths):</label>
+                <input type="text" id="sticks_input_mcs" value="2,4,3">
+            </div>
+            <div>
+                <button id="start_button_mcs">Start/Reset</button>
+            </div>
+            <div>
+                <button id="next_step_button_mcs" disabled>Next Step</button>
+            </div>
         </div>
 
         <div class="visualization-area-mcs">
@@ -142,6 +192,9 @@
     </div>
 
     <script>
+    // JavaScript logic remains IDENTICAL to the previous "Minimum Cost to Connect Sticks"
+    // The HTML structure and CSS are responsible for the responsiveness.
+    // Paste the previous JavaScript here.
     document.addEventListener('DOMContentLoaded', () => {
         const sticksInput = document.getElementById('sticks_input_mcs');
         const startButton = document.getElementById('start_button_mcs');
@@ -172,8 +225,12 @@
 
         function clearHighlightsAndActions() {
             connectingSticksArea.innerHTML = ''; // Clear connecting area
-            // More specific highlight removal can be added if needed for heap elements
             currentActionDisplay.textContent = '';
+            // Remove specific highlights from heap/initial sticks if any persistent ones were added
+            document.querySelectorAll('.stick-item-mcs.current-add-to-heap').forEach(el => el.classList.remove('current-add-to-heap'));
+            document.querySelectorAll('.heap-entry-mcs.polling-stick1').forEach(el => el.classList.remove('polling-stick1'));
+            document.querySelectorAll('.heap-entry-mcs.polling-stick2').forEach(el => el.classList.remove('polling-stick2'));
+
         }
 
         function renderInitialSticks() {
@@ -189,13 +246,13 @@
 
         function renderMinHeap() {
             heapArea.innerHTML = '';
-            // Min-heap: sort numerically ascending
             minHeapData.sort((a, b) => a - b); 
             
             minHeapData.forEach((length, index) => {
                 const item = document.createElement('div');
                 item.classList.add('heap-entry-mcs');
-                item.id = `heap-entry-${length}-${index}`; // Attempt at unique ID
+                // Create a more unique ID if there can be duplicate lengths in heap often
+                item.id = `heap-entry-val${length}-idx${index}`; 
                 item.textContent = length;
                 heapArea.appendChild(item);
             });
@@ -203,33 +260,30 @@
 
         async function addToHeapVisual(length, isCombined = false) {
             minHeapData.push(length);
-            renderMinHeap(); // Sorts and renders
+            renderMinHeap(); 
 
-            // Find the newly added element to animate it
-            // This is tricky if there are duplicate lengths. We'll animate the last one for simplicity.
             const heapEntries = heapArea.querySelectorAll('.heap-entry-mcs');
             let newEntryEl = null;
-            for(let i = heapEntries.length -1; i>=0; i--){ // Search from end as sort puts it there
-                if(parseInt(heapEntries[i].textContent) === length) {
-                    let alreadyAnimated = false; // Try to avoid re-animating existing similar values if possible
-                    // A more robust way would be to assign unique IDs to sticks.
-                    // For this visual, finding the last one that matches is usually good enough.
-                    if (!heapEntries[i].classList.contains('newly-combined') && !heapEntries[i].classList.contains('polling-stick1') && !heapEntries[i].classList.contains('polling-stick2')){
-                         newEntryEl = heapEntries[i];
-                         break;
+            // Try to find the specific element that was just added, especially if it's combined
+            // For initial population, the effect is less critical if it highlights any of the same value
+            if(isCombined){ // For combined, it's likely the only one of that (newly summed) value or the largest
+                for(let entry of heapEntries){
+                    if(parseInt(entry.textContent) === length && !entry.dataset.animatedOnce){
+                        newEntryEl = entry;
+                        entry.dataset.animatedOnce = "true"; // Mark it to avoid re-animating same value if another is added
+                        break;
                     }
                 }
-            }
-             if (!newEntryEl && heapEntries.length > 0 && parseInt(heapEntries[0].textContent) === length) {
-                // Fallback for single element or if it became the new minimum
-                newEntryEl = heapEntries[0];
+                 if (!newEntryEl && heapEntries.length > 0) newEntryEl = heapEntries[heapEntries.length-1]; // Fallback
+            } else { // Initial population
+                 if (heapEntries.length > 0) newEntryEl = heapEntries[heapEntries.length-1]; // Simplistic: animate last
             }
 
 
             if (newEntryEl) {
                 if (isCombined) {
-                    newEntryEl.classList.add('newly-combined'); // Uses popInStick animation
-                } else { // Initial population
+                    newEntryEl.classList.add('newly-combined'); 
+                } else { 
                     newEntryEl.style.transform = 'scale(0.5)';
                     newEntryEl.style.opacity = '0';
                     await new Promise(r => setTimeout(r, 50)); 
@@ -237,16 +291,15 @@
                     newEntryEl.style.opacity = '1';
                 }
                 await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
-                // newEntryEl.classList.remove('newly-combined'); // Animation is one-shot
+                if (newEntryEl.dataset.animatedOnce) delete newEntryEl.dataset.animatedOnce;
             }
         }
 
         async function pollFromHeapVisual(isStick1) {
             if (minHeapData.length === 0) return null;
-            minHeapData.sort((a, b) => a - b); // Ensure sorted
-            const length = minHeapData.shift(); // Remove from internal data
+            minHeapData.sort((a, b) => a - b); 
+            const length = minHeapData.shift(); 
 
-            // Find the DOM element to animate (the first one, as it's a min-heap)
             const heapEntries = heapArea.querySelectorAll('.heap-entry-mcs');
             if (heapEntries.length > 0 && parseInt(heapEntries[0].textContent) === length) {
                 const polledEl = heapEntries[0];
@@ -255,7 +308,7 @@
                 polledEl.classList.add('fading-out');
                 await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
             }
-            renderMinHeap(); // Re-render PQ display without the polled item
+            renderMinHeap(); 
             return length;
         }
 
@@ -269,7 +322,7 @@
 
         async function initializeAnimation() {
             logMCS("Initializing...");
-            clearHighlightsAndActions();
+            
             try {
                 initialSticksData = sticksInput.value.split(',')
                                      .map(s => parseInt(s.trim()))
@@ -278,10 +331,12 @@
                 alert("Invalid sticks input. Use comma-separated positive numbers.");
                 return;
             }
+            clearHighlightsAndActions(); // Clear before processing new input
 
             if (initialSticksData.length === 0) {
                 logMCS("No sticks to connect.");
                 totalCostDisplay.textContent = "0";
+                renderInitialSticks(); renderMinHeap(); // Render empty states
                 startButton.textContent = "Start/Reset";
                 nextStepButton.disabled = true;
                 return;
@@ -289,7 +344,7 @@
 
             minHeapData = [];
             totalCost = 0;
-            animationStep = 1; // Start with populating heap
+            animationStep = 1; 
             heapPopulationIdx = 0;
             polledStick1 = null; polledStick2 = null;
 
@@ -304,9 +359,9 @@
 
         async function nextStep() {
             nextStepButton.disabled = true; 
-            clearHighlightsAndActions();
+            // No full clearHighlightsAndActions() here to preserve connecting sticks briefly
 
-            if (animationStep === 1) { // Populating Min-Heap
+            if (animationStep === 1) { 
                 if (heapPopulationIdx < initialSticksData.length) {
                     const stickLength = initialSticksData[heapPopulationIdx];
                     currentActionDisplay.textContent = `Adding stick of length ${stickLength} to Min-Heap.`;
@@ -326,14 +381,15 @@
                         animationStep = 2; 
                         logMCS("Min-Heap populated. Click 'Next Step' to connect sticks.");
                         currentActionDisplay.textContent = "Heap populated. Ready to connect.";
-                        nextStepButton.disabled = false;
+                        nextStepButton.disabled = (minHeapData.length <=1); // Disable if not enough to connect
                     }
                 }
-            } else if (animationStep === 2) { // Main connection loop
+            } else if (animationStep === 2) { 
+                connectingSticksArea.innerHTML = ''; // Clear from previous connection
                 if (minHeapData.length <= 1) {
                     currentActionDisplay.textContent = "Process complete. Final cost calculated.";
                     logMCS("Only one (or zero) stick left in heap. Process finished.");
-                    animationStep = 3; // Done
+                    animationStep = 3; 
                     nextStepButton.disabled = true;
                     startButton.textContent = "Start/Reset";
                     if(minHeapData.length === 1) {
@@ -342,20 +398,18 @@
                     return;
                 }
 
-                // Poll stick1
                 currentActionDisplay.textContent = "Polling shortest stick (stick1)...";
                 polledStick1 = await pollFromHeapVisual(true);
-                if (polledStick1 === null) { animationStep = 3; nextStepButton.disabled = true; return; } // Should not happen if size > 1
+                if (polledStick1 === null) { animationStep = 3; nextStepButton.disabled = true; return; } 
                 logMCS(`Polled stick1: ${polledStick1}`);
                 const stick1El = document.createElement('div');
-                stick1El.classList.add('heap-entry-mcs'); // Use heap-entry style for consistency
+                stick1El.classList.add('heap-entry-mcs'); 
                 stick1El.textContent = polledStick1;
                 connectingSticksArea.appendChild(stick1El);
                 currentActionDisplay.textContent = `Polled stick1: ${polledStick1}. Polling stick2...`;
                 await new Promise(r => setTimeout(r, SHORT_DELAY));
 
 
-                // Poll stick2
                 polledStick2 = await pollFromHeapVisual(false);
                 if (polledStick2 === null) { animationStep = 3; nextStepButton.disabled = true; return; }
                 logMCS(`Polled stick2: ${polledStick2}`);
@@ -366,30 +420,26 @@
                 currentActionDisplay.textContent = `Connecting ${polledStick1} and ${polledStick2}.`;
                 await new Promise(r => setTimeout(r, ANIMATION_DELAY));
 
-                // Calculate cost and new stick
                 const currentCost = polledStick1 + polledStick2;
                 totalCost += currentCost;
-                const newCombinedStick = currentCost; // Length of new stick is the cost of this connection
+                const newCombinedStick = currentCost; 
 
                 logMCS(`Cost of this connection: ${currentCost}. New Total Cost: ${totalCost}.`);
                 logMCS(`New combined stick of length ${newCombinedStick} formed.`);
                 currentActionDisplay.textContent = `Cost: ${currentCost}. Total: ${totalCost}. New stick: ${newCombinedStick}.`;
                 updateTotalCostVisual();
 
-                // Visually "merge"
-                connectingSticksArea.innerHTML = ''; // Clear individual sticks
+                connectingSticksArea.innerHTML = ''; 
                 const combinedEl = document.createElement('div');
-                combinedEl.classList.add('heap-entry-mcs', 'newly-combined'); // Style as if it's from heap
+                combinedEl.classList.add('heap-entry-mcs', 'newly-combined'); 
                 combinedEl.textContent = newCombinedStick;
-                connectingSticksArea.appendChild(combinedEl); // Show combined stick briefly
+                connectingSticksArea.appendChild(combinedEl); 
                 await new Promise(r => setTimeout(r, ANIMATION_DELAY));
 
-
-                // Add new stick to heap
                 currentActionDisplay.textContent = `Adding combined stick ${newCombinedStick} back to heap.`;
                 logMCS(`Adding combined stick ${newCombinedStick} to heap.`);
                 await addToHeapVisual(newCombinedStick, true);
-                connectingSticksArea.innerHTML = ''; // Clear combined stick from connecting area
+                // connectingSticksArea.innerHTML = ''; // Clear after adding back to heap
                 
                 polledStick1 = null; polledStick2 = null;
                 

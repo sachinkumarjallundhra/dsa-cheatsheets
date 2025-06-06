@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Way Merge Animation (Mobile Friendly)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f4f7f6;
+            color: #333;
+            font-size: 15px;
+        }
+        .container-kwm {
+            width: 100%;
+            max-width: 1000px; /* Can adjust based on complexity */
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 { font-size: 1.6em; text-align: center; color: #2c3e50; margin-bottom: 15px;}
+        h2 {
+            font-size: 1.2em;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+
+        .controls-kwm {
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+            padding: 10px;
+            background-color: #e8f0fe; 
+            border-radius: 5px; 
+        }
+        .controls-kwm label { 
+            font-weight: bold; 
+            margin-bottom: 3px;
+            display: block;
+        }
+        .controls-kwm textarea { 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            width: 100%; 
+            box-sizing: border-box;
+            min-height: 80px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .controls-kwm button {
+            padding: 12px 15px; 
+            background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%; 
+        }
+        .controls-kwm button:hover:not(:disabled) { background-color: #2980b9; }
+        .controls-kwm button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .visualization-main-kwm {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .input-lists-container-kwm, .heap-display-container-kwm, .merged-result-container-kwm {
+            padding: 10px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+
+        .input-list-kwm {
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+        }
+        .input-list-kwm strong { display: block; margin-bottom: 5px; font-size: 0.9em; color: #555;}
+        .list-elements-kwm {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .list-element-kwm {
+            padding: 6px 10px;
+            background-color: #ecf0f1;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-weight: bold;
+            min-width: 30px; text-align: center;
+            transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+        }
+        .list-element-kwm.current-ptr { /* Element pointed to by list's current index */
+            border-color: #f39c12; /* Orange */
+            box-shadow: 0 0 5px #f39c12;
+        }
+        .list-element-kwm.used-in-heap { /* Element currently in heap or just taken */
+            background-color: #d2b4de; /* Light purple */
+            border-color: #8e44ad;
+        }
+        .list-element-kwm.processed-from-list {
+            opacity: 0.5;
+            background-color: #e0e0e0;
+        }
+
+
+        .heap-area-kwm {
+            min-height: 50px;
+            padding: 8px;
+            border: 1px dashed #27ae60; /* Green for MinHeap */
+            background-color: #e8f8f5;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: center; 
+        }
+        .heap-entry-kwm {
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 0.85em; 
+            text-align: center;
+            border: 1px solid #7dcea0;
+            background-color: #a9dfbf;
+            transition: background-color 0.3s ease, transform 0.4s ease, opacity 0.4s ease;
+            min-width: 60px; /* To show (val, list, el_idx) */
+        }
+        .heap-entry-kwm strong { font-weight: bold; color: #145a32; }
+        .heap-entry-kwm .details { font-size: 0.8em; color: #555; display: block; }
+        .heap-entry-kwm.polling-from-heap { background-color: #f5b041 !important; transform: scale(1.1); }
+        .heap-entry-kwm.fading-out-heap { opacity: 0; transform: scale(0.5) translateY(-10px); }
+        .heap-entry-kwm.added-to-heap { animation: popInHeapEntry-kwm 0.5s; }
+        @keyframes popInHeapEntry-kwm { from {transform: scale(0.5) translateY(10px); opacity:0;} to {transform: scale(1) translateY(0); opacity:1;} }
+
+
+        .merged-list-area-kwm {
+            min-height: 40px;
+            padding: 10px;
+            border: 1px solid #3498db;
+            background-color: #eaf2f8;
+            border-radius: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .merged-element-kwm {
+            padding: 8px 12px;
+            background-color: #d6eaf8;
+            border: 1px solid #aed6f1;
+            border-radius: 4px;
+            font-weight: bold;
+            animation: popInMerged-kwm 0.4s ease-out;
+        }
+        @keyframes popInMerged-kwm { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
+
+        #current_action_kwm { text-align:center; margin-bottom:10px; font-weight:bold; min-height:1.2em; color: #8e44ad;}
+        .log-container-kwm { background-color: #2c3e50; color: #ecf0f1; padding: 10px; border-radius: 5px; margin-top: 15px; }
+        #log_output_kwm { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.85em; }
+        
+        /* Larger screen adjustments */
+        @media (min-width: 768px) {
+            body { padding: 20px; font-size: 16px; }
+            .container-kwm { padding: 20px; }
+            .controls-kwm { flex-direction: row; justify-content: space-between; align-items: center;}
+            .controls-kwm div { flex-grow: 1; } /* Allow items to take space */
+            .controls-kwm label { display: inline-block; margin-bottom: 0; margin-right: 5px;}
+            .controls-kwm textarea { width: auto; min-width: 300px; flex-grow: 2; }
+            .controls-kwm button { width: auto; }
+
+            .visualization-main-kwm {
+                grid-template-columns: 1fr 1fr; /* Two columns for main content */
+                gap: 25px;
+                /* Re-assign grid areas for desktop if needed for a more complex layout */
+                /* For now, default flow within flex column is fine or simple grid */
+            }
+            .input-lists-container-kwm { grid-column: 1 / 2; }
+            .heap-and-result-col { display: flex; flex-direction: column; gap: 20px; grid-column: 2 / 3;}
+
+            /* If you want input lists and heap side by side, then result below: */
+            /* .visualization-main-kwm {
+                display: grid;
+                grid-template-areas: 
+                    "lists heap"
+                    "result result";
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            .input-lists-container-kwm { grid-area: lists; }
+            .heap-display-container-kwm { grid-area: heap; }
+            .merged-result-container-kwm { grid-area: result; }
+            */
+        }
+    </style>
+</head>
+<body>
+    <div class="container-kwm">
+        <h1>K-Way Merge Animation</h1>
+
+        <div class="controls-kwm">
+            <div>
+                <label for="k_lists_input_kwm">Input K Sorted Lists (JSON array of arrays, e.g., [[1,4,5],[1,3,4],[2,6]]):</label>
+                <textarea id="k_lists_input_kwm">[[1,4,5],[1,3,4],[2,6]]</textarea>
+            </div>
+            <div>
+                <button id="start_button_kwm">Start/Reset</button>
+                <button id="next_step_button_kwm" disabled style="margin-top:5px;">Next Step</button>
+            </div>
+        </div>
+
+        <div class="visualization-main-kwm">
+            <div class="input-lists-container-kwm">
+                <h2>Input Sorted Lists</h2>
+                <div id="input_lists_area_kwm"></div>
+            </div>
+            
+            <!-- For larger screens, you might want heap and result in a separate column -->
+            <div class="heap-and-result-col"> <!-- Wrapper for better desktop layout -->
+                <div class="heap-display-container-kwm">
+                    <h2>Min-Heap (Value, ListIdx, ElemIdxInList)</h2>
+                    <div id="heap_area_kwm" class="heap-area-kwm"></div>
+                </div>
+
+                <div class="merged-result-container-kwm">
+                    <h2>Merged Result List</h2>
+                    <div id="merged_list_area_kwm" class="merged-list-area-kwm"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="current_action_kwm"></div>
+        <div class="log-container-kwm">
+            <h2>Log</h2>
+            <pre id="log_output_kwm"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const kListsInput = document.getElementById('k_lists_input_kwm');
+        const startButton = document.getElementById('start_button_kwm');
+        const nextStepButton = document.getElementById('next_step_button_kwm');
+
+        const inputListsArea = document.getElementById('input_lists_area_kwm');
+        const heapArea = document.getElementById('heap_area_kwm');
+        const mergedListArea = document.getElementById('merged_list_area_kwm');
+        const currentActionDisplay = document.getElementById('current_action_kwm');
+        const logOutput = document.getElementById('log_output_kwm');
+
+        const ANIMATION_DELAY = 700;
+        const SHORT_DELAY = 350;
+
+        let inputListsData = []; // Array of arrays (the k lists)
+        // Store additional info for each list: { list: [], currentIndex: 0, domElements: [] }
+        let processedInputLists = []; 
+        let minHeapData = []; // Stores { value, listIndex, elementIndexInList, id }
+        let mergedResultData = [];
+        
+        let animationStep = 0; // 0: init, 1: populating initial heap, 2: main merging loop
+        let heapPopulationListIdx = 0;
+
+        // Unique ID generator for heap entries
+        let nextHeapEntryId = 0;
+        function getUniqueHeapEntryId() { return `heap-entry-${nextHeapEntryId++}`; }
+
+
+        function logKWM(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearVisuals() {
+            // Clear highlights, specific classes etc. from list elements and heap entries
+            document.querySelectorAll('.list-element-kwm.current-ptr, .list-element-kwm.used-in-heap').forEach(el => {
+                el.classList.remove('current-ptr', 'used-in-heap');
+            });
+            // Heap entries are re-rendered, so specific highlight removal there isn't as critical
+            currentActionDisplay.textContent = '';
+        }
+        
+        function renderInputLists() {
+            inputListsArea.innerHTML = '';
+            processedInputLists.forEach((listObj, listIdx) => {
+                const listContainer = document.createElement('div');
+                listContainer.classList.add('input-list-kwm');
+                listContainer.innerHTML = `<strong>List ${listIdx}:</strong>`;
+                
+                const elementsWrapper = document.createElement('div');
+                elementsWrapper.classList.add('list-elements-kwm');
+                listObj.domElements = []; // Reset DOM element references
+
+                listObj.list.forEach((val, elIdx) => {
+                    const item = document.createElement('div');
+                    item.classList.add('list-element-kwm');
+                    item.id = `list${listIdx}-el${elIdx}`;
+                    item.textContent = val;
+                    elementsWrapper.appendChild(item);
+                    listObj.domElements.push(item);
+
+                    if (elIdx < listObj.currentIndex) { // Elements already processed from this list
+                        item.classList.add('processed-from-list');
+                    }
+                });
+                listContainer.appendChild(elementsWrapper);
+                inputListsArea.appendChild(listContainer);
+            });
+        }
+
+        function highlightCurrentListPointers() {
+            processedInputLists.forEach((listObj) => {
+                // Clear previous pointer if any for this list
+                listObj.domElements.forEach(el => el.classList.remove('current-ptr', 'used-in-heap'));
+
+                if (listObj.currentIndex < listObj.list.length) {
+                    const currentEl = listObj.domElements[listObj.currentIndex];
+                    if (currentEl) {
+                        currentEl.classList.add('current-ptr');
+                        // If this element is also the one just added to heap, mark it
+                        if (minHeapData.some(he => he.listIndex === listObj.originalListIndex && he.elementIndexInList === listObj.currentIndex)) {
+                           currentEl.classList.add('used-in-heap');
+                        }
+                    }
+                }
+            });
+        }
+
+
+        function renderMinHeap() {
+            heapArea.innerHTML = '';
+            // Min-heap: sort by value, then listIndex (for stability if values are same)
+            minHeapData.sort((a, b) => a.value - b.value || a.listIndex - b.listIndex); 
+            
+            minHeapData.forEach(entry => {
+                const item = document.createElement('div');
+                item.classList.add('heap-entry-kwm');
+                item.id = entry.id; 
+                item.innerHTML = `Val: <strong>${entry.value}</strong> <span class="details">(L:${entry.listIndex}, Idx:${entry.elementIndexInList})</span>`;
+                heapArea.appendChild(item);
+            });
+        }
+
+        async function addToHeapVisual(heapEntry, isInitialFill = false) {
+            minHeapData.push(heapEntry);
+            renderMinHeap(); 
+
+            const itemEl = document.getElementById(heapEntry.id);
+            if (itemEl) {
+                if (!isInitialFill) itemEl.classList.add('added-to-heap'); // Apply pop-in animation
+                else { // For initial fill, just appear
+                    itemEl.style.opacity = '0';
+                    await new Promise(r => setTimeout(r, 20));
+                    itemEl.style.transition = 'opacity 0.3s ease';
+                    itemEl.style.opacity = '1';
+                }
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY / (isInitialFill ? 2 : 1.5) ));
+            }
+            highlightCurrentListPointers(); // After adding to heap, update list pointers
+        }
+
+        async function pollFromHeapVisual() {
+            if (minHeapData.length === 0) return null;
+            minHeapData.sort((a, b) => a.value - b.value || a.listIndex - b.listIndex); 
+            const entry = minHeapData.shift(); 
+
+            const itemEl = document.getElementById(entry.id);
+            if (itemEl) {
+                itemEl.classList.add('polling-from-heap'); // Highlight before removing
+                await new Promise(r => setTimeout(r, SHORT_DELAY));
+                itemEl.classList.add('fading-out-heap');
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            }
+            renderMinHeap(); 
+            return entry;
+        }
+
+        function renderMergedResult() {
+            mergedListArea.innerHTML = '';
+            mergedResultData.forEach(val => {
+                const item = document.createElement('div');
+                item.classList.add('merged-element-kwm');
+                item.textContent = val;
+                mergedListArea.appendChild(item);
+            });
+        }
+        async function appendToMergedResultVisual(value) {
+            mergedResultData.push(value);
+            // Animate only the last added element
+            const item = document.createElement('div');
+            item.classList.add('merged-element-kwm'); // Has popIn animation
+            item.textContent = value;
+            mergedListArea.appendChild(item);
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+        }
+
+
+        async function initializeAnimation() {
+            logKWM("Initializing K-Way Merge...");
+            clearVisuals();
+            nextHeapEntryId = 0; // Reset unique ID counter
+            try {
+                const rawLists = JSON.parse(kListsInput.value);
+                if (!Array.isArray(rawLists) || !rawLists.every(list => Array.isArray(list))) {
+                    throw new Error("Input must be an array of arrays.");
+                }
+                inputListsData = rawLists;
+            } catch (e) {
+                alert("Invalid K-Lists input. Use JSON array of arrays format, e.g., [[1,4,5],[1,3,4],[2,6]]. Error: " + e.message);
+                return;
+            }
+
+            processedInputLists = inputListsData.map((list, index) => ({
+                list: [...list].sort((a,b) => a-b), // Ensure each list is sorted, work with a copy
+                currentIndex: 0,
+                domElements: [],
+                originalListIndex: index // Keep track of original index if needed for complex display
+            }));
+
+            minHeapData = [];
+            mergedResultData = [];
+            animationStep = 1; 
+            heapPopulationListIdx = 0;
+
+            renderInputLists();
+            highlightCurrentListPointers();
+            renderMinHeap();
+            renderMergedResult();
+            
+            startButton.textContent = "Reset";
+            if (processedInputLists.some(l => l.list.length > 0)) { // Only enable if there's data
+                 nextStepButton.disabled = false;
+                 logKWM("Initialized. Click 'Next Step' to populate Min-Heap with first elements.");
+            } else {
+                 nextStepButton.disabled = true;
+                 logKWM("Initialized with empty lists or no lists.");
+            }
+        }
+
+        async function nextStep() {
+            nextStepButton.disabled = true; 
+            clearVisuals(); // Clear general highlights
+
+            if (animationStep === 1) { // Populating Min-Heap with first elements
+                if (heapPopulationListIdx < processedInputLists.length) {
+                    const currentListObj = processedInputLists[heapPopulationListIdx];
+                    currentActionDisplay.textContent = `Checking List ${heapPopulationListIdx} for initial element.`;
+                    
+                    if (currentListObj.currentIndex < currentListObj.list.length) {
+                        const val = currentListObj.list[currentListObj.currentIndex];
+                        logKWM(`Heap: Adding (${val}, List: ${heapPopulationListIdx}, ElIdx: ${currentListObj.currentIndex}) from List ${heapPopulationListIdx}`);
+                        
+                        // Highlight element in list
+                        if(currentListObj.domElements[currentListObj.currentIndex]) {
+                            currentListObj.domElements[currentListObj.currentIndex].classList.add('used-in-heap');
+                        }
+
+                        const heapEntry = { value: val, listIndex: heapPopulationListIdx, elementIndexInList: currentListObj.currentIndex, id: getUniqueHeapEntryId() };
+                        await addToHeapVisual(heapEntry, true); // true for initial fill for different animation
+                    } else {
+                        logKWM(`List ${heapPopulationListIdx} is empty or already processed. Skipping.`);
+                    }
+                    
+                    heapPopulationListIdx++;
+                    if (heapPopulationListIdx < processedInputLists.length) {
+                        nextStepButton.disabled = false;
+                    } else {
+                        animationStep = 2; 
+                        logKWM("Initial Min-Heap populated. Click 'Next Step' to start merging.");
+                        currentActionDisplay.textContent = "Heap populated. Ready to merge.";
+                        nextStepButton.disabled = (minHeapData.length === 0); // Disable if heap is empty
+                    }
+                }
+            } else if (animationStep === 2) { // Main merging loop
+                if (minHeapData.length === 0) {
+                    currentActionDisplay.textContent = "Merge complete! Min-Heap is empty.";
+                    logKWM("Min-Heap empty. Merging process finished.");
+                    animationStep = 3; // Done
+                    nextStepButton.disabled = true;
+                    startButton.textContent = "Start/Reset";
+                    return;
+                }
+
+                currentActionDisplay.textContent = "Polling smallest element from Min-Heap...";
+                const smallestEntry = await pollFromHeapVisual();
+                if (!smallestEntry) { animationStep = 3; nextStepButton.disabled = true; return; } 
+
+                logKWM(`Polled (${smallestEntry.value}, L:${smallestEntry.listIndex}, EI:${smallestEntry.elementIndexInList}). Adding ${smallestEntry.value} to result.`);
+                currentActionDisplay.textContent = `Smallest is ${smallestEntry.value} (from List ${smallestEntry.listIndex}). Adding to result.`;
+                await appendToMergedResultVisual(smallestEntry.value);
+                
+                // Mark the element in the input list as fully processed
+                const sourceListObj = processedInputLists[smallestEntry.listIndex];
+                if (sourceListObj && sourceListObj.domElements[smallestEntry.elementIndexInList]) {
+                    sourceListObj.domElements[smallestEntry.elementIndexInList].classList.remove('current-ptr', 'used-in-heap');
+                    sourceListObj.domElements[smallestEntry.elementIndexInList].classList.add('processed-from-list');
+                }
+
+                // Advance pointer for that list and add next element to heap if exists
+                sourceListObj.currentIndex++;
+                currentActionDisplay.textContent = `Advanced pointer in List ${smallestEntry.listIndex}.`;
+                logKWM(`Advanced pointer for List ${smallestEntry.listIndex} to element index ${sourceListObj.currentIndex}.`);
+                highlightCurrentListPointers(); // Update all pointers after advancing one
+                await new Promise(r => setTimeout(r, SHORT_DELAY));
+
+
+                if (sourceListObj.currentIndex < sourceListObj.list.length) {
+                    const nextVal = sourceListObj.list[sourceListObj.currentIndex];
+                    currentActionDisplay.textContent = `Adding next element ${nextVal} from List ${smallestEntry.listIndex} to heap.`;
+                    logKWM(`Heap: Adding next from List ${smallestEntry.listIndex}: (${nextVal}, L:${smallestEntry.listIndex}, EI:${sourceListObj.currentIndex})`);
+                    
+                    if(sourceListObj.domElements[sourceListObj.currentIndex]) {
+                       sourceListObj.domElements[sourceListObj.currentIndex].classList.add('used-in-heap');
+                    }
+
+                    const newHeapEntry = { value: nextVal, listIndex: smallestEntry.listIndex, elementIndexInList: sourceListObj.currentIndex, id: getUniqueHeapEntryId() };
+                    await addToHeapVisual(newHeapEntry);
+                } else {
+                    logKWM(`List ${smallestEntry.listIndex} is now exhausted.`);
+                    currentActionDisplay.textContent = `List ${smallestEntry.listIndex} exhausted.`;
+                }
+                
+                nextStepButton.disabled = (minHeapData.length === 0 && animationStep === 2);
+                if (minHeapData.length === 0 && animationStep === 2) { // About to finish
+                    currentActionDisplay.textContent = "Heap is now empty. Merge complete on next click.";
+                    nextStepButton.disabled = false; // Allow one more click to hit the finish condition
+                }
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', nextStep);
+        initializeAnimation(); 
+    });
+    </script>
+</body>
+</html>

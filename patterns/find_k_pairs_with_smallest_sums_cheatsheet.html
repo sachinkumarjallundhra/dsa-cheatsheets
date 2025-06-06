@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find K Pairs with Smallest Sums Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Find K Pairs with Smallest Sums – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves finding the <code>K</code> pairs with the smallest sums from two sorted arrays. Each pair consists of one element from each array.</p>
+    <p>This problem can be efficiently solved using a <b>min-heap</b> to track the smallest sums and their corresponding pairs.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; kSmallestPairs(int[] nums1, int[] nums2, int k) {
+        PriorityQueue&lt;int[]&gt; minHeap = new PriorityQueue&lt;&gt;((a, b) -&gt; (nums1[a[0]] + nums2[a[1]]) - (nums1[b[0]] + nums2[b[1]]));
+        List&lt;List&lt;Integer&gt;&gt; result = new ArrayList&lt;&gt;();
+
+        // Step 1: Add the first pair from each element in nums1 with the first element in nums2
+        for (int i = 0; i &lt; Math.min(nums1.length, k); i++) {
+            minHeap.offer(new int[]{i, 0}); // [index in nums1, index in nums2]
+        }
+
+        // Step 2: Extract the smallest pairs from the heap
+        while (!minHeap.isEmpty() && k &gt; 0) {
+            int[] smallest = minHeap.poll();
+            int i = smallest[0];
+            int j = smallest[1];
+            result.add(List.of(nums1[i], nums2[j]));
+
+            // Add the next pair from nums2 for the same element in nums1
+            if (j + 1 &lt; nums2.length) {
+                minHeap.offer(new int[]{i, j + 1});
+            }
+
+            k--;
+        }
+
+        return result;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Initialization</b>: <code>O(min(n, k) log k)</code> – Adding the first <code>k</code> pairs to the heap.</li>
+      <li><b>Heap Operations</b>: <code>O(k log k)</code> – Extracting and adding elements to the heap for <code>k</code> pairs.</li>
+      <li><b>Overall Complexity</b>: <code>O(k log k)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the smallest or largest sums in two sorted arrays</li>
+      <li>Efficiently combining sorted data streams</li>
+      <li>Applications in optimization and scheduling problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-k-pairs-with-smallest-sums/" target="_blank" rel="noopener noreferrer">373. Find K Pairs with Smallest Sums</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Find K Pairs with Smallest Sums</h2>
+    <pre><code>Input: nums1 = [1,7,11], nums2 = [2,4,6], k = 3
+Output: [[1,2],[1,4],[1,6]]
+
+Explanation:
+- The pairs with the smallest sums are:
+  1. (1,2) with sum 3
+  2. (1,4) with sum 5
+  3. (1,6) with sum 7</code></pre>
+    <button onclick="window.location.href='../animations/find_k_pairs_with_smallest_sums_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the smallest sums and their corresponding pairs.</li>
+      <li>Edge cases: empty arrays, <code>k</code> greater than the total number of pairs.</li>
+      <li>Ensure the heap stores enough information to track the indices of the elements in both arrays.</li>
+    </ul>
+  </div>
+</body>
+</html>

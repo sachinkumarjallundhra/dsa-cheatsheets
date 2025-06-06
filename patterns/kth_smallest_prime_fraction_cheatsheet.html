@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K-th Smallest Prime Fraction Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 K-th Smallest Prime Fraction – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves finding the <code>K-th</code> smallest fraction formed by two elements from a sorted array of prime numbers. Each fraction is of the form <code>A[i] / A[j]</code> where <code>i &lt; j</code>.</p>
+    <p>This problem can be efficiently solved using a <b>min-heap</b> to track the smallest fractions.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int[] kthSmallestPrimeFraction(int[] arr, int k) {
+        PriorityQueue&lt;int[]&gt; minHeap = new PriorityQueue&lt;&gt;((a, b) -&gt; 
+            arr[a[0]] * arr[b[1]] - arr[b[0]] * arr[a[1]]);
+
+        // Step 1: Add the first fraction from each element in arr with the last element
+        for (int i = 0; i &lt; arr.length - 1; i++) {
+            minHeap.offer(new int[]{i, arr.length - 1}); // [numeratorIndex, denominatorIndex]
+        }
+
+        // Step 2: Extract the smallest fractions from the heap
+        while (--k &gt; 0) {
+            int[] smallest = minHeap.poll();
+            int i = smallest[0];
+            int j = smallest[1];
+
+            // Add the next fraction with the same numerator but a smaller denominator
+            if (j - 1 &gt; i) {
+                minHeap.offer(new int[]{i, j - 1});
+            }
+        }
+
+        int[] result = minHeap.poll();
+        return new int[]{arr[result[0]], arr[result[1]]};
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Initialization</b>: <code>O(n log n)</code> – Adding the first fractions to the heap.</li>
+      <li><b>Heap Operations</b>: <code>O(k log n)</code> – Extracting and adding elements to the heap for <code>k</code> fractions.</li>
+      <li><b>Overall Complexity</b>: <code>O(k log n)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the smallest or largest fractions in a sorted array</li>
+      <li>Efficiently combining sorted data streams</li>
+      <li>Applications in optimization and scheduling problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/k-th-smallest-prime-fraction/" target="_blank" rel="noopener noreferrer">786. K-th Smallest Prime Fraction</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: K-th Smallest Prime Fraction</h2>
+    <pre><code>Input: arr = [1, 2, 3, 5], k = 3
+Output: [2, 5]
+
+Explanation:
+- The fractions are [1/5, 1/3, 1/2, 2/5, 3/5].
+- The 3rd smallest fraction is 2/5.</code></pre>
+    <button onclick="window.location.href='../animations/kth_smallest_prime_fraction_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the smallest fractions.</li>
+      <li>Edge cases: empty arrays, <code>k</code> greater than the total number of fractions.</li>
+      <li>Ensure the heap stores enough information to track the indices of the numerator and denominator.</li>
+    </ul>
+  </div>
+</body>
+</html>

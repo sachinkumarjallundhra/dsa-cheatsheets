@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kth Smallest in M Sorted Lists Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            margin-top: 15px; background-color: #eef1f5; color: #333; line-height: 1.6;
+        }
+        .container {
+            background-color: #fff; padding: 20px; border-radius: 12px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.1); width: 95%; max-width: 1200px;
+        }
+        h1, h2, h3 { color: #2c3e50; margin-top: 0; text-align: center; }
+        h3 { margin-bottom: 8px; font-size: 1.1em; text-align: left;}
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center;
+            padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dce4ec;
+        }
+        .controls label { margin-right: 3px; font-size: 0.9em;}
+        .controls textarea {
+            padding: 8px; border-radius: 5px; border: 1px solid #ced4da; font-size:0.9em;
+            width: 100%; min-height: 60px; box-sizing: border-box;
+        }
+        .controls input[type="number"] { padding: 9px; border-radius: 5px; border: 1px solid #ced4da; font-size:0.9em; }
+        .controls button {
+            padding: 9px 16px; border: none; border-radius: 5px; cursor: pointer;
+            background-color: #007bff; color: white; font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+        .controls button:hover { background-color: #0056b3; }
+        .controls button:disabled { background-color: #adb5bd; cursor: not-allowed; }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr; /* Input Lists vs Heap/Result */
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .input-lists-section, .process-section {
+             padding: 15px; border: 1px solid #dce4ec;
+            border-radius: 8px; background-color: #fdfdff;
+        }
+
+        .list-display-container { margin-bottom: 10px; }
+        .list-label { font-weight: bold; margin-right: 5px; display: inline-block; min-width:50px;}
+        .block-array {
+            display: flex; flex-wrap: wrap; gap: 5px;
+            min-height: 38px; padding: 3px 0;
+        }
+        .element-block { /* Renamed from node-block */
+            padding: 8px 12px; border: 1px solid #777; border-radius: 5px;
+            background-color: #e0e7ff; color: #313a75; /* Light purple-blue */
+            font-weight: bold; text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); min-width: 35px;
+        }
+
+        .heap-item-display {
+            background-color: #e9ecef; border-color: #ced4da; color: #495057;
+            padding: 7px 10px; margin: 4px 3px; border: 1px solid #d6dadf; border-radius: 4px;
+            font-size: 0.85em; display: inline-block;
+        }
+         #heap-container { min-height: 40px; display: flex; flex-wrap: wrap; align-content: flex-start;}
+
+
+        .result-area {
+            padding: 12px; text-align: center; font-size: 1.15em; font-weight: bold;
+            background-color: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; color: #0c5460;
+            margin-top: 10px;
+        }
+        
+        .highlight-element-consider { /* Element from input list being considered for heap */
+            background-color: #ffeeba !important;
+            border-color: #ffdf7e !important;
+            transform: scale(1.1);
+        }
+        .highlight-heap-item-pre-pop {
+            background-color: #ffe082 !important; border-color: #ffca28 !important;
+            box-shadow: 0 0 10px #ffca28 !important; transform: scale(1.08);
+        }
+        .highlight-heap-item-add {
+            background-color: #c3e6cb !important; border-color: #80b78a !important;
+            transform: scale(1.05);
+        }
+        #popped-element-display-area {
+            padding: 10px; margin-top:10px; border: 1px dashed #ccc; border-radius:5px; text-align:center;
+        }
+        .popped-element-content {
+            background-color: #fff3cd; border-color: #ffeeba; color: #856404;
+            display: inline-block; padding: 8px 12px; border-radius: 5px; font-weight:bold;
+        }
+
+
+        #status-message { margin-top: 15px; font-style: italic; color: #495057; min-height: 22px; text-align: center;}
+        .pseudo-code-container { margin-top: 20px; }
+        .pseudo-code {
+            padding: 15px; background-color: #2c3e50; color: #ecf0f1;
+            border-radius: 8px; text-align: left; font-family: 'Consolas', 'Courier New', monospace;
+            white-space: pre; font-size: 0.85em; line-height: 1.7; max-height: 300px; overflow-y: auto;
+        }
+        .pseudo-code .line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s ease; }
+        .pseudo-code .highlight-code { background-color: #3498db; color: white; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kth Smallest Number in M Sorted Lists</h1>
+
+        <div class="controls">
+            <label for="lists-input">Input M Sorted Lists (one list per line, comma-separated numbers):</label>
+            <textarea id="lists-input" rows="4">10,20,30,40&#10;15,25,35&#10;27,29,37,48,50&#10;32,33</textarea>
+            <label for="k-input">K:</label>
+            <input type="number" id="k-input" value="7" min="1">
+            <button id="reset-btn">Reset</button>
+            <button id="next-step-btn">Next Step</button>
+            <button id="auto-play-btn">Auto Play</button>
+            <label for="speed-slider">Speed:</label>
+            <input type="range" id="speed-slider" min="100" max="2000" value="1000" step="100">
+        </div>
+
+        <div class="main-layout">
+            <div class="input-lists-section">
+                <h3>Input M Sorted Lists:</h3>
+                <div id="input-lists-master-container"></div>
+                <h3>Target K: <span id="k-value-display"></span></h3>
+                <h3>Elements Popped: <span id="pop-count-display">0</span></h3>
+            </div>
+            <div class="process-section">
+                <h3>Min-Heap (Value, ListIdx, ElementIdx):</h3>
+                <div id="heap-container"></div>
+                 <div id="popped-element-display-area">
+                     <h3>Popped Element:</h3>
+                     <span class="popped-element-content" style="opacity:0;">None</span>
+                </div>
+            </div>
+        </div>
+         <div class="result-area">
+            <h3>K-th Smallest Number: <span id="result-number-display">Pending...</span></h3>
+        </div>
+        <div id="status-message">Enter lists and K, then click Reset.</div>
+
+        <div class="pseudo-code-container">
+            <h3>Algorithm Steps:</h3>
+            <div class="pseudo-code">
+<div class="line" id="code-0">count = 0, result = null</div>
+<div class="line" id="code-1">min_heap = new MinHeap()</div>
+<div class="line" id="code-2">For list_idx from 0 to m-1:</div>
+<div class="line" id="code-3">&nbsp;&nbsp;If lists[list_idx] is not empty:</div>
+<div class="line" id="code-4">&nbsp;&nbsp;&nbsp;&nbsp;element = lists[list_idx][0]</div>
+<div class="line" id="code-5">&nbsp;&nbsp;&nbsp;&nbsp;heap.push( (element, list_idx, 0) )</div>
+<div class="line" id="code-6">While heap is not empty AND count < k:</div>
+<div class="line" id="code-7">&nbsp;&nbsp;Peek min_item from heap. Highlight it.</div>
+<div class="line" id="code-8">&nbsp;&nbsp;val, list_idx, element_idx = heap.pop(). Display popped.</div>
+<div class="line" id="code-9">&nbsp;&nbsp;count++</div>
+<div class="line" id="code-10">&nbsp;&nbsp;If count == k: result = val; break;</div>
+<div class="line" id="code-11">&nbsp;&nbsp;If element_idx + 1 < lists[list_idx].length:</div>
+<div class="line" id="code-12">&nbsp;&nbsp;&nbsp;&nbsp;next_element = lists[list_idx][element_idx + 1]</div>
+<div class="line" id="code-13">&nbsp;&nbsp;&nbsp;&nbsp;heap.push( (next_element, list_idx, element_idx + 1) )</div>
+<div class="line" id="code-14">Return result</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // DOM Elements
+    const listsInputEl = document.getElementById('lists-input');
+    const kInputEl = document.getElementById('k-input');
+    const resetBtn = document.getElementById('reset-btn');
+    const nextStepBtn = document.getElementById('next-step-btn');
+    const autoPlayBtn = document.getElementById('auto-play-btn');
+    const speedSlider = document.getElementById('speed-slider');
+    const inputListsMasterContainer = document.getElementById('input-lists-master-container');
+    const kValueDisplay = document.getElementById('k-value-display');
+    const popCountDisplay = document.getElementById('pop-count-display');
+    const heapContainer = document.getElementById('heap-container');
+    const poppedElementDisplay = document.getElementById('popped-element-display-area').querySelector('.popped-element-content');
+    const resultNumberDisplay = document.getElementById('result-number-display');
+    const statusMessage = document.getElementById('status-message');
+
+    // State
+    let animationSpeed = 1000;
+    let isAutoPlaying = false;
+    let autoPlayTimeoutId = null;
+    let algorithmGen = null;
+    let currentStepState = null;
+
+    let mLists = []; // Array of arrays, each sub-array is a list of numbers
+    let targetK = 0;
+
+    // Item: { val: number, listIdx: number, elementIdxInList: number, key: string }
+    class MinHeap {
+        constructor() { this.heap = []; }
+        push(item) {
+            item.key = `L${item.listIdx}-E${item.elementIdxInList}-${Date.now()}${Math.random().toString(36).substr(2,5)}`;
+            this.heap.push(item);
+            this.heap.sort((a, b) => a.val - b.val || a.listIdx - b.listIdx || a.elementIdxInList - b.elementIdxInList);
+        }
+        pop() { return this.heap.shift(); }
+        peek() { return this.heap.length > 0 ? this.heap[0] : null; }
+        isEmpty() { return this.heap.length === 0; }
+        clear() { this.heap = []; }
+        getElements() { return [...this.heap]; }
+    }
+    const minHeap = new MinHeap();
+
+    // --- Rendering Functions ---
+    function renderInputLists(lists, highlightInfo = null) { // highlightInfo = { listIdx, elementIdx }
+        inputListsMasterContainer.innerHTML = '';
+        lists.forEach((list, listIndex) => {
+            const listDiv = document.createElement('div');
+            listDiv.className = 'list-display-container';
+            
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'list-label';
+            labelSpan.textContent = `List ${listIndex}:`;
+            listDiv.appendChild(labelSpan);
+
+            const arrayDiv = document.createElement('div');
+            arrayDiv.className = 'block-array';
+            arrayDiv.id = `input-list-${listIndex}`;
+            
+            list.forEach((val, elementIndex) => {
+                const elBlock = document.createElement('div');
+                elBlock.className = 'element-block';
+                elBlock.textContent = val;
+                elBlock.id = `el-L${listIndex}-E${elementIndex}`;
+                if (highlightInfo && highlightInfo.listIdx === listIndex && highlightInfo.elementIdx === elementIndex) {
+                    elBlock.classList.add('highlight-element-consider');
+                }
+                arrayDiv.appendChild(elBlock);
+            });
+            listDiv.appendChild(arrayDiv);
+            inputListsMasterContainer.appendChild(listDiv);
+        });
+    }
+
+    function renderHeap(heapElements, action = null, itemKey = null) {
+        heapContainer.innerHTML = '';
+        heapElements.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'heap-item-display';
+            el.id = `heap-${item.key}`;
+            el.textContent = `Val: ${item.val} (L:${item.listIdx}, Idx:${item.elementIdxInList})`;
+            if (item.key === itemKey) {
+                if (action === 'PRE_POP') el.classList.add('highlight-heap-item-pre-pop');
+                else if (action === 'ADD') el.classList.add('highlight-heap-item-add');
+            }
+            heapContainer.appendChild(el);
+             if (item.key === itemKey && action === 'ADD') {
+                setTimeout(() => el.classList.remove('highlight-heap-item-add'), animationSpeed * 0.8);
+            }
+        });
+    }
+    
+    function renderPoppedElement(item) {
+        if (item) {
+            poppedElementDisplay.textContent = `Val: ${item.val} (from List ${item.listIdx}, Idx: ${item.elementIdxInList})`;
+            poppedElementDisplay.style.opacity = '1';
+        } else {
+            poppedElementDisplay.textContent = "None";
+            poppedElementDisplay.style.opacity = '0.5';
+        }
+    }
+
+    function highlightCodeLine(lineId) {
+        document.querySelectorAll('.pseudo-code .line').forEach(l => l.classList.remove('highlight-code'));
+        if (lineId) document.getElementById(lineId)?.classList.add('highlight-code');
+    }
+
+    function updateUI(state) {
+        currentStepState = state;
+        if (!state) return;
+
+        renderInputLists(mLists, state.highlight?.inputElement); 
+        kValueDisplay.textContent = targetK;
+        popCountDisplay.textContent = state.popCount || 0;
+        
+        renderHeap(state.heapElements || [], state.action, state.actionItemKey);
+        renderPoppedElement(state.poppedDisplayItem);
+        
+        if (state.kthSmallest !== null && state.kthSmallest !== undefined) {
+            resultNumberDisplay.textContent = state.kthSmallest;
+        } else {
+            resultNumberDisplay.textContent = "Pending...";
+        }
+        
+        statusMessage.textContent = state.statusText || "";
+        highlightCodeLine(state.codeLineId);
+
+        nextStepBtn.disabled = state.isDone || isAutoPlaying;
+        autoPlayBtn.disabled = state.isDone;
+        autoPlayBtn.textContent = isAutoPlaying ? "Pause" : "Auto Play";
+    }
+
+    // --- Generator for Algorithm Steps ---
+    function* kthSmallestInMSortedListsGenerator(lists, k) {
+        if (!lists || lists.some(l => !Array.isArray(l)) || k < 1) {
+            yield { statusText: "Invalid input.", isDone: true, heapElements: [], poppedDisplayItem: null, popCount:0, kthSmallest: null };
+            return;
+        }
+        minHeap.clear();
+        let popCount = 0;
+        let kthSmallest = null;
+
+        yield {
+            heapElements: [], poppedDisplayItem: null, popCount, kthSmallest,
+            statusText: "Algorithm initialized. Preparing to populate heap.",
+            codeLineId: 'code-0', isDone: false, highlight: {}
+        };
+        yield {
+            heapElements: [], poppedDisplayItem: null, popCount, kthSmallest,
+            statusText: "Initializing Min-Heap...", codeLineId: 'code-1', isDone: false, highlight: {}
+        };
+
+        for (let i = 0; i < lists.length; i++) {
+            yield { 
+                heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+                statusText: `Considering input list ${i}.`, codeLineId: 'code-2',
+                isDone: false, highlight: {}
+            };
+            if (lists[i] && lists[i].length > 0) {
+                const firstElementVal = lists[i][0];
+                const heapItem = { val: firstElementVal, listIdx: i, elementIdxInList: 0 };
+                
+                yield { 
+                    heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+                    statusText: `List ${i} not empty. Head element: ${firstElementVal}.`, codeLineId: 'code-4',
+                    isDone: false, highlight: { inputElement: { listIdx: i, elementIdx: 0 } }
+                };
+
+                minHeap.push(heapItem);
+                yield {
+                    heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+                    statusText: `Added (Val: ${firstElementVal}, List ${i}, Idx 0) to heap.`,
+                    codeLineId: 'code-5', isDone: false,
+                    highlight: {}, action: 'ADD', actionItemKey: heapItem.key
+                };
+            } else {
+                 yield {
+                    heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+                    statusText: `List ${i} is empty. Skipping.`, codeLineId: 'code-3',
+                    isDone: false, highlight: {}
+                };
+            }
+        }
+
+        yield { 
+            heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+            statusText: "Heap initialized. Starting to find Kth smallest.",
+            codeLineId: 'code-6', isDone: false, highlight: {}
+        };
+
+        while (!minHeap.isEmpty() && popCount < k) {
+            const itemToPop = minHeap.peek();
+            yield { // PRE_POP
+                heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+                statusText: `Smallest in heap: ${itemToPop.val} (from L:${itemToPop.listIdx}). Preparing to pop.`,
+                codeLineId: 'code-7', isDone: false,
+                highlight: {}, action: 'PRE_POP', actionItemKey: itemToPop.key
+            };
+
+            const popped = minHeap.pop();
+            yield { // POST_POP
+                heapElements: minHeap.getElements(), poppedDisplayItem: popped, popCount, kthSmallest,
+                statusText: `Popped Val: ${popped.val} (from L:${popped.listIdx}, Idx:${popped.elementIdxInList}).`,
+                codeLineId: 'code-8', isDone: false, highlight: {}
+            };
+            
+            popCount++;
+            yield { // Update pop count
+                heapElements: minHeap.getElements(), poppedDisplayItem: popped, popCount, kthSmallest,
+                statusText: `Pop count is now ${popCount}.`,
+                codeLineId: 'code-9', isDone: false, highlight: {}
+            };
+
+
+            if (popCount === k) {
+                kthSmallest = popped.val;
+                yield {
+                    heapElements: minHeap.getElements(), poppedDisplayItem: popped, popCount, kthSmallest,
+                    statusText: `Found Kth (${k}) smallest: ${kthSmallest}.`,
+                    codeLineId: 'code-10', isDone: true, 
+                    highlight: {}
+                };
+                break; 
+            }
+
+            const originalList = lists[popped.listIdx];
+            const nextElementIdx = popped.elementIdxInList + 1;
+
+            if (nextElementIdx < originalList.length) {
+                const nextElementVal = originalList[nextElementIdx];
+                const nextHeapItem = { val: nextElementVal, listIdx: popped.listIdx, elementIdxInList: nextElementIdx };
+                
+                yield { 
+                    heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+                    statusText: `List ${popped.listIdx} has next element (${nextElementVal}). Preparing to add.`,
+                    codeLineId: 'code-12', isDone: false,
+                    highlight: { inputElement: { listIdx: popped.listIdx, elementIdx: nextElementIdx } }
+                };
+
+                minHeap.push(nextHeapItem);
+                yield {
+                    heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+                    statusText: `Added (Val: ${nextElementVal}, L:${popped.listIdx}, Idx:${nextElementIdx}) to heap.`,
+                    codeLineId: 'code-13', isDone: false,
+                    highlight: {}, action: 'ADD', actionItemKey: nextHeapItem.key
+                };
+            } else {
+                 yield {
+                    heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+                    statusText: `List ${popped.listIdx} has no more elements.`,
+                    codeLineId: 'code-11', isDone: false, highlight: {}
+                };
+            }
+            if (!minHeap.isEmpty() && popCount < k) {
+                yield { 
+                    heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest,
+                    statusText: "Checking heap for next smallest...",
+                    codeLineId: 'code-6', isDone: false, highlight: {}
+                };
+            }
+        }
+        
+        if (popCount < k && kthSmallest === null) { // Should only happen if k is too large
+             yield {
+                heapElements: minHeap.getElements(), poppedDisplayItem: null, popCount, kthSmallest: 'Not Found',
+                statusText: `Processed all elements (${popCount}), but K (${k}) was larger.`,
+                codeLineId: 'code-14', isDone: true, highlight: {}
+            };
+        } else if (kthSmallest === null && minHeap.isEmpty() && popCount > 0 && popCount < k) {
+            // This case implies k was larger than total elements. The last popped element before heap became empty
+            // would have been set to kthSmallest if popCount matched k.
+            // This is effectively handled by the above if condition.
+        } else if (kthSmallest !== null && !currentStepState.isDone) { // Ensure final state if loop broken by k match
+             yield {
+                heapElements: minHeap.getElements(), poppedDisplayItem: currentStepState.poppedDisplayItem, popCount, kthSmallest,
+                statusText: `Kth (${k}) smallest: ${kthSmallest}. Process complete.`,
+                codeLineId: 'code-14', isDone: true, highlight: {}
+            };
+        }
+    }
+
+
+    // --- Control Functions ---
+    function parseInputs() {
+        const inputText = listsInputEl.value.trim();
+        if (!inputText) { mLists = []; return; }
+        mLists = inputText.split('\n')
+            .map(line => line.trim().split(',')
+                .map(s => parseInt(s.trim()))
+                .filter(n => !isNaN(n))
+            )
+            .filter(list => list.length > 0); 
+        mLists.forEach(list => list.sort((a,b) => a-b)); // Ensure each list is sorted
+        targetK = parseInt(kInputEl.value);
+    }
+
+    function initializeAlgorithm() {
+        stopAutoPlay();
+        parseInputs(); 
+        let totalElements = mLists.reduce((sum, list) => sum + list.length, 0);
+        if (mLists.length === 0 && listsInputEl.value.trim() !== "" ) {
+            statusMessage.textContent = "Invalid list input. Please check format.";
+            // Reset visuals
+            renderInputLists([]); renderHeap([]); renderPoppedElement(null); resultNumberDisplay.textContent = 'Error';
+            kValueDisplay.textContent = ''; popCountDisplay.textContent = '0';
+            highlightCodeLine(null);
+            nextStepBtn.disabled = true; autoPlayBtn.disabled = true;
+            return;
+        }
+         if (targetK < 1 || (totalElements > 0 && targetK > totalElements)) {
+            statusMessage.textContent = `K (${targetK}) is out of bounds (1 to ${totalElements || 'N/A'}). Total elements: ${totalElements}.`;
+            renderInputLists(mLists); kValueDisplay.textContent = targetK; popCountDisplay.textContent = '0';
+            renderHeap([]); renderPoppedElement(null); resultNumberDisplay.textContent = 'Error';
+            highlightCodeLine(null);
+            nextStepBtn.disabled = true; autoPlayBtn.disabled = true;
+            return;
+        }
+
+        algorithmGen = kthSmallestInMSortedListsGenerator(mLists, targetK); 
+        handleNextStep();
+        listsInputEl.disabled = true; kInputEl.disabled = true;
+        resetBtn.disabled = false;
+    }
+
+    function handleNextStep() { /* ... (standard) ... */
+        if (!algorithmGen) { initializeAlgorithm(); return; }
+        const step = algorithmGen.next();
+        if (step.value) updateUI(step.value);
+        if (step.done) {
+            algorithmGen = null; listsInputEl.disabled = false; kInputEl.disabled = false;
+        }
+    }
+    function startAutoPlay() { /* ... (standard) ... */
+        if (!algorithmGen || currentStepState?.isDone) {
+            initializeAlgorithm();
+            if (currentStepState?.isDone) return;
+        }
+        isAutoPlaying = true;
+        autoPlayBtn.textContent = "Pause";
+        nextStepBtn.disabled = true;
+
+        function autoStep() {
+            if (!isAutoPlaying) return;
+            const step = algorithmGen.next();
+            if (step.value) updateUI(step.value);
+            if (step.done || !step.value || step.value.isDone) {
+                stopAutoPlay(); algorithmGen = null; listsInputEl.disabled = false; kInputEl.disabled = false;
+                if(step.value && step.value.isDone) updateUI(step.value);
+            } else {
+                autoPlayTimeoutId = setTimeout(autoStep, animationSpeed);
+            }
+        }
+        autoStep();
+    }
+    function stopAutoPlay() { /* ... (standard) ... */
+        isAutoPlaying = false;
+        if (autoPlayTimeoutId) clearTimeout(autoPlayTimeoutId);
+        autoPlayBtn.textContent = "Auto Play";
+        if (currentStepState) nextStepBtn.disabled = currentStepState.isDone;
+    }
+    function reset() { /* ... (standard, ensure kLists is cleared or re-parsed for display) ... */
+        stopAutoPlay(); algorithmGen = null; currentStepState = null; minHeap.clear();
+        listsInputEl.disabled = false; kInputEl.disabled = false;
+        resetBtn.disabled = true; nextStepBtn.disabled = false; autoPlayBtn.disabled = false;
+        autoPlayBtn.textContent = "Auto Play";
+
+        parseInputs(); 
+        renderInputLists(mLists);
+        kValueDisplay.textContent = targetK;
+        popCountDisplay.textContent = '0';
+        renderHeap([]); renderPoppedElement(null); resultNumberDisplay.textContent = 'Pending...';
+        statusMessage.textContent = "Enter lists and K, then click Reset.";
+        highlightCodeLine(null);
+    }
+
+    resetBtn.addEventListener('click', reset);
+    nextStepBtn.addEventListener('click', handleNextStep);
+    autoPlayBtn.addEventListener('click', () => { if (isAutoPlaying) stopAutoPlay(); else startAutoPlay(); });
+    speedSlider.addEventListener('input', e => animationSpeed = 2100 - parseInt(e.target.value));
+    window.addEventListener('load', () => { animationSpeed = 2100 - parseInt(speedSlider.value); reset(); });
+    window.addEventListener('resize', () => { if(currentStepState) updateUI(currentStepState); else reset(); });
+</script>
+</body>
+</html>

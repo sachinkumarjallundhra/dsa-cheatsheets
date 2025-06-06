@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Merge Sorted Array Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Merge Sorted Array – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The problem involves merging two sorted arrays into one sorted array in-place. The first array has enough space to hold the elements of both arrays.</p>
+    <p>This is a classic two-pointer problem where we start merging from the end of the arrays to avoid overwriting elements in the first array.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public void merge(int[] nums1, int m, int[] nums2, int n) {
+        int i = m - 1; // Pointer for nums1
+        int j = n - 1; // Pointer for nums2
+        int k = m + n - 1; // Pointer for the merged array
+
+        // Merge nums1 and nums2 from the end
+        while (i >= 0 && j >= 0) {
+            if (nums1[i] > nums2[j]) {
+                nums1[k--] = nums1[i--];
+            } else {
+                nums1[k--] = nums2[j--];
+            }
+        }
+
+        // Copy remaining elements from nums2, if any
+        while (j >= 0) {
+            nums1[k--] = nums2[j--];
+        }
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity</b>: <code>O(m + n)</code> – We iterate through both arrays once.</li>
+      <li><b>Space Complexity</b>: <code>O(1)</code> – The merge is done in-place.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Merging two sorted arrays in-place</li>
+      <li>Efficiently combining sorted data streams</li>
+      <li>Applications in external sorting and database systems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/merge-sorted-array/" target="_blank" rel="noopener noreferrer">88. Merge Sorted Array</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Two Pointers</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Merge Sorted Array</h2>
+    <pre><code>Input: nums1 = [1,2,3,0,0,0], m = 3, nums2 = [2,5,6], n = 3
+Output: [1,2,2,3,5,6]
+
+Explanation:
+- Start merging from the end of nums1 and nums2.
+- Compare elements and place the larger one at the end of nums1.
+- Continue until all elements are merged.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Start merging from the end to avoid overwriting elements in nums1.</li>
+      <li>Handle edge cases: empty nums2, nums1 with extra space but no elements.</li>
+      <li>Use two pointers to efficiently merge the arrays.</li>
+    </ul>
+  </div>
+</body>
+</html>

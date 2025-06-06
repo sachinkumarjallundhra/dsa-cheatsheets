@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nth Super Ugly Number Animation (Min-Heap)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            margin-top: 15px; background-color: #eef1f5; color: #333; line-height: 1.6;
+        }
+        .container {
+            background-color: #fff; padding: 20px; border-radius: 12px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.1); width: 95%; max-width: 1200px; /* Adjusted for more content */
+        }
+        h1, h2, h3 { color: #2c3e50; margin-top: 0; text-align: center; }
+        h3 { margin-bottom: 8px; font-size: 1.1em; text-align: left;}
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center;
+            padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dce4ec;
+        }
+        .controls label { margin-right: 3px; font-size: 0.9em;}
+        .controls input { padding: 9px; border-radius: 5px; border: 1px solid #ced4da; font-size:0.9em; }
+        .controls button {
+            padding: 9px 16px; border: none; border-radius: 5px; cursor: pointer;
+            background-color: #007bff; color: white; font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+        .controls button:hover { background-color: #0056b3; }
+        .controls button:disabled { background-color: #adb5bd; cursor: not-allowed; }
+        
+        .main-content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr; /* Primes/Ugly vs Heap/Popped */
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        .left-column, .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .data-section {
+            padding: 15px; border: 1px solid #dce4ec;
+            border-radius: 8px; background-color: #fdfdff;
+        }
+
+        .block-array {
+            display: flex; flex-wrap: wrap; gap: 6px;
+            min-height: 40px; padding: 5px 0; align-items: center;
+        }
+        .block, .heap-item-display, .popped-item-content {
+            padding: 8px 12px; border: 1px solid; border-radius: 5px;
+            font-weight: bold; text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); min-width: 40px;
+        }
+        .prime-el { background-color: #a0d2eb; border-color: #4a7c94; color: #2c3e50;}
+        .ugly-el { background-color: #d4edda; border-color: #80b78a; color: #155724;}
+        .heap-item-display {
+            background-color: #e9ecef; border-color: #ced4da; color: #495057;
+            margin-bottom: 5px; font-size: 0.9em; display: block; 
+        }
+        .popped-item-content {
+            background-color: #fff9c4; border-color: #fbc02d; color: #212529;
+            display: inline-block; /* So it sizes to content */
+        }
+         #popped-item-container {
+            min-height: 40px; /* To match block height roughly */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+
+        #heap-visual-container { max-height: 250px; overflow-y: auto; padding-right: 5px;}
+
+
+        .highlight { transform: scale(1.12) translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,0.15) !important; z-index: 10;}
+        .highlight-prime { background-color: #4a7c94 !important; color: white !important; }
+        .highlight-ugly-source { background-color: #80b78a !important; color: white !important;}
+        
+        .highlight-heap-item-pre-pop { /* For item about to be popped */
+            background-color: #ffe082 !important; /* Brighter yellow */
+            border-color: #ffca28 !important;
+            box-shadow: 0 0 10px #ffca28 !important;
+            transform: scale(1.08);
+        }
+        .highlight-heap-item-add { background-color: #c3e6cb !important; border-color: #80b78a !important; transform: scale(1.05);}
+        .highlight-new-ugly { background-color: #28a745 !important; color: white !important; border-color: #1e7e34 !important;}
+        .highlight-duplicate-item { /* When highlighting the duplicate in heap before re-pop */
+             background-color: #ffab91 !important; /* Light orange/red */
+             border-color: #ff7043 !important;
+        }
+
+
+        #status-message { margin-top: 15px; font-style: italic; color: #495057; min-height: 22px; text-align: center;}
+
+        .pseudo-code-container { margin-top: 20px; }
+        .pseudo-code {
+            padding: 15px; background-color: #2c3e50; color: #ecf0f1;
+            border-radius: 8px; text-align: left; font-family: 'Consolas', 'Courier New', monospace;
+            white-space: pre; font-size: 0.85em; line-height: 1.7; max-height: 350px; overflow-y: auto;
+        }
+        .pseudo-code .line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s ease; }
+        .pseudo-code .highlight-code { background-color: #3498db; color: white; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nth Super Ugly Number (Min-Heap)</h1>
+
+        <div class="controls">
+            <label for="n-input">N:</label>
+            <input type="number" id="n-input" value="12" min="1">
+            <label for="primes-input">Primes (comma-sep):</label>
+            <input type="text" id="primes-input" value="2,7,13,19">
+            <button id="reset-btn">Reset</button>
+            <button id="next-step-btn">Next Step</button>
+            <button id="auto-play-btn">Auto Play</button>
+            <label for="speed-slider">Speed:</label>
+            <input type="range" id="speed-slider" min="100" max="2000" value="1000" step="100">
+        </div>
+
+        <div class="main-content-grid">
+            <div class="left-column">
+                <div class="data-section">
+                    <h3>Input N: <span id="n-value-display"></span></h3>
+                    <h3>Primes Array:</h3>
+                    <div id="primes-container" class="block-array"></div>
+                </div>
+                <div class="data-section">
+                    <h3>Super Ugly Numbers Found:</h3>
+                    <div id="ugly-numbers-container" class="block-array"></div>
+                </div>
+            </div>
+            <div class="right-column">
+                <div class="data-section">
+                    <h3>Min-Heap (Value, PrimeNo, UglyIdx):</h3>
+                    <div id="heap-visual-container"></div>
+                </div>
+                <div class="data-section">
+                    <h3>Currently Popped Item:</h3>
+                    <div id="popped-item-container">
+                        <span class="popped-item-content" style="opacity:0;">None</span> <!-- Placeholder -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="status-message">Enter N and Primes, then click Reset.</div>
+
+        <div class="pseudo-code-container">
+            <h3>Algorithm Steps:</h3>
+            <div class="pseudo-code">
+<div class="line" id="code-0">ugly_numbers = array of size n; ugly_numbers[0] = 1</div>
+<div class="line" id="code-1">min_heap = new MinHeap()</div>
+<div class="line" id="code-2">For each p in primes:</div>
+<div class="line" id="code-3">&nbsp;&nbsp;heap.push( (p * ugly_numbers[0], p, 0) )</div>
+<div class="line" id="code-4">For i from 1 to n-1:</div>
+<div class="line" id="code-5">&nbsp;&nbsp;Peek min_item from heap. Highlight it.</div>
+<div class="line" id="code-5b">&nbsp;&nbsp;next_ugly, prime_no_used, ugly_idx = heap.pop(). Display popped.</div>
+<div class="line" id="code-6">&nbsp;&nbsp;While next_ugly == ugly_numbers[i-1]: // Handle duplicates</div>
+<div class="line" id="code-6b">&nbsp;&nbsp;&nbsp;&nbsp;Peek min_item. Highlight as duplicate.</div>
+<div class="line" id="code-7">&nbsp;&nbsp;&nbsp;&nbsp;next_ugly, prime_no_used, ugly_idx = heap.pop(). Display popped.</div>
+<div class="line" id="code-8">&nbsp;&nbsp;ugly_numbers[i] = next_ugly</div>
+<div class="line" id="code-9">&nbsp;&nbsp;next_val_for_prime = prime_no_used * ugly_numbers[ugly_idx + 1]</div>
+<div class="line" id="code-10">&nbsp;&nbsp;heap.push( (next_val_for_prime, prime_no_used, ugly_idx + 1) )</div>
+<div class="line" id="code-11">Return ugly_numbers[n-1]</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // DOM Elements
+    const nInputEl = document.getElementById('n-input');
+    const primesInputEl = document.getElementById('primes-input');
+    const resetBtn = document.getElementById('reset-btn');
+    const nextStepBtn = document.getElementById('next-step-btn');
+    const autoPlayBtn = document.getElementById('auto-play-btn');
+    const speedSlider = document.getElementById('speed-slider');
+    const nValueDisplay = document.getElementById('n-value-display');
+    const primesContainer = document.getElementById('primes-container');
+    const uglyNumbersContainer = document.getElementById('ugly-numbers-container');
+    const heapVisualContainer = document.getElementById('heap-visual-container');
+    const poppedItemContainer = document.getElementById('popped-item-container');
+    const statusMessage = document.getElementById('status-message');
+
+    // State
+    let animationSpeed = 1000;
+    let isAutoPlaying = false;
+    let autoPlayTimeoutId = null;
+    let algorithmGen = null;
+    let currentStepState = null;
+
+    let targetN = 0;
+    let inputPrimes = [];
+
+    class MinHeap { 
+        constructor() { this.heap = []; }
+        // item: {value: number, primeNo: number, indexInUgly: number, key: string}
+        push(item) {
+            item.key = `${item.primeNo}-${item.indexInUgly}-${Date.now()}${Math.random().toString(36).substr(2, 5)}`; 
+            this.heap.push(item);
+            this.heap.sort((a, b) => a.value - b.value || a.primeNo - b.primeNo || a.indexInUgly - b.indexInUgly);
+        }
+        pop() { return this.heap.shift(); }
+        peek() { return this.heap.length > 0 ? this.heap[0] : null; }
+        isEmpty() { return this.heap.length === 0; }
+        clear() { this.heap = []; }
+        getElements() { return [...this.heap]; }
+    }
+    const minHeap = new MinHeap();
+
+    function renderBlocks(container, arr, baseClass, idPrefix, highlightIndices = [], highlightClass = '') {
+        container.innerHTML = '';
+        arr.forEach((val, index) => {
+            const block = document.createElement('div');
+            block.className = `block ${baseClass}`;
+            block.textContent = val;
+            block.id = `${idPrefix}-${index}`;
+            if (highlightIndices.includes(index)) {
+                block.classList.add('highlight');
+                if (highlightClass) block.classList.add(highlightClass);
+            }
+            container.appendChild(block);
+        });
+    }
+
+    function renderHeapVisual(heapElements, action = null, itemKey = null) {
+        heapVisualContainer.innerHTML = '';
+        heapElements.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'heap-item-display';
+            el.id = `heap-${item.key}`;
+            // Updated text content to use "PrimeNo"
+            el.textContent = `Val: ${item.value} (PrimeNo: ${item.primeNo}, UglyIdx: ${item.indexInUgly})`;
+            if (item.key === itemKey) {
+                if (action === 'PRE_POP') el.classList.add('highlight-heap-item-pre-pop');
+                else if (action === 'ADD') el.classList.add('highlight-heap-item-add');
+                else if (action === 'DUPLICATE_PRE_POP') el.classList.add('highlight-duplicate-item');
+            }
+            heapVisualContainer.appendChild(el);
+            if (item.key === itemKey && action === 'ADD') {
+                setTimeout(() => el.classList.remove('highlight-heap-item-add'), animationSpeed * 0.8);
+            }
+        });
+    }
+    
+    function renderPoppedItem(item) {
+        poppedItemContainer.innerHTML = '';
+        const contentSpan = document.createElement('span');
+        contentSpan.className = 'popped-item-content';
+
+        if (item) {
+            // Updated text content to use "PrimeNo"
+            contentSpan.textContent = `Value: ${item.value} (PrimeNo: ${item.primeNo}, UglyIdx: ${item.indexInUgly})`;
+            contentSpan.style.opacity = '1';
+        } else {
+            contentSpan.textContent = "None";
+            contentSpan.style.opacity = '0.5';
+        }
+        poppedItemContainer.appendChild(contentSpan);
+    }
+
+
+    function highlightCodeLine(lineId) {
+        document.querySelectorAll('.pseudo-code .line').forEach(l => l.classList.remove('highlight-code'));
+        if (lineId) document.getElementById(lineId)?.classList.add('highlight-code');
+    }
+    
+    function updateUI(state) {
+        currentStepState = state;
+        if (!state) return;
+
+        nValueDisplay.textContent = targetN;
+        renderBlocks(primesContainer, inputPrimes, 'prime-el', 'prime', state.highlight?.primeIndices || [], 'highlight-prime');
+        renderBlocks(uglyNumbersContainer, state.ugly_numbers || [], 'ugly-el', 'ugly', state.highlight?.uglySourceIndices || [], 'highlight-ugly-source');
+        
+        if (state.highlight?.newUglyIndex !== undefined && state.highlight.newUglyIndex !== -1) {
+            const newUglyEl = document.getElementById(`ugly-${state.highlight.newUglyIndex}`);
+            if(newUglyEl) {
+                newUglyEl.classList.remove('highlight-new-ugly'); 
+                void newUglyEl.offsetWidth; 
+                newUglyEl.classList.add('highlight-new-ugly');
+            }
+        }
+        
+        renderHeapVisual(state.heapElements || [], state.action, state.actionItemKey);
+        renderPoppedItem(state.poppedDisplayItem);
+        statusMessage.textContent = state.statusText || "";
+        highlightCodeLine(state.codeLineId);
+
+        nextStepBtn.disabled = state.isDone || isAutoPlaying;
+        autoPlayBtn.disabled = state.isDone;
+        autoPlayBtn.textContent = isAutoPlaying ? "Pause" : "Auto Play";
+    }
+
+    // Generator: item properties are value, primeNo, indexInUgly
+    function* nthSuperUglyNumberHeapGenerator(n, primes) {
+        if (n <= 0 || primes.length === 0) {
+            yield { statusText: "N must be > 0 and primes array cannot be empty.", isDone: true, ugly_numbers: [], heapElements: [], poppedDisplayItem: null };
+            return;
+        }
+
+        let ugly_numbers = new Array(n);
+        ugly_numbers[0] = 1;
+        minHeap.clear();
+
+        yield {
+            ugly_numbers: [1], heapElements: minHeap.getElements(), poppedDisplayItem: null,
+            statusText: "Initialized: ugly_numbers[0] = 1.", codeLineId: 'code-0',
+            isDone: false, highlight: { newUglyIndex: 0 }
+        };
+        yield {
+            ugly_numbers: [1], heapElements: minHeap.getElements(), poppedDisplayItem: null,
+            statusText: "Initializing Min-Heap...", codeLineId: 'code-1',
+            isDone: false, highlight: { newUglyIndex: 0 }
+        };
+
+        for (let i = 0; i < primes.length; i++) {
+            const p = primes[i];
+            const initialCandidate = { value: p * ugly_numbers[0], primeNo: p, indexInUgly: 0 };
+            minHeap.push(initialCandidate);
+            yield {
+                ugly_numbers: [1], heapElements: minHeap.getElements(), poppedDisplayItem: null,
+                statusText: `Adding ${p}*${ugly_numbers[0]} = ${initialCandidate.value} to heap (from PrimeNo ${p}).`,
+                codeLineId: 'code-3', isDone: false,
+                highlight: { primeIndices: [i], uglySourceIndices: [0] },
+                action: 'ADD', actionItemKey: initialCandidate.key
+            };
+        }
+
+        for (let i = 1; i < n; i++) {
+            let poppedItem;
+            let next_ugly_val;
+            let isDuplicateStep = false; 
+
+            while (true) { 
+                if (minHeap.isEmpty()) {
+                     yield { 
+                        ugly_numbers: [...ugly_numbers].slice(0,i), heapElements: minHeap.getElements(), poppedDisplayItem: null,
+                        statusText: "Heap is empty, cannot find more ugly numbers.", codeLineId: 'code-5', isDone: true,
+                        highlight: { newUglyIndex: i-1}
+                    }; return;
+                }
+
+                const itemToPop = minHeap.peek();
+                yield { 
+                    ugly_numbers: [...ugly_numbers].slice(0,i), heapElements: minHeap.getElements(), poppedDisplayItem: null,
+                    statusText: `Smallest in heap: ${itemToPop.value}. Preparing to pop.`,
+                    codeLineId: isDuplicateStep ? 'code-6b' : 'code-5', isDone: false,
+                    highlight: { newUglyIndex: i-1 },
+                    action: isDuplicateStep ? 'DUPLICATE_PRE_POP' : 'PRE_POP', actionItemKey: itemToPop.key
+                };
+                
+                poppedItem = minHeap.pop();
+                next_ugly_val = poppedItem.value;
+
+                yield { 
+                    ugly_numbers: [...ugly_numbers].slice(0,i), heapElements: minHeap.getElements(), poppedDisplayItem: poppedItem,
+                    statusText: `Popped ${next_ugly_val} (from PrimeNo:${poppedItem.primeNo}, UI:${poppedItem.indexInUgly}).`,
+                    codeLineId: isDuplicateStep ? 'code-7' : 'code-5b', isDone: false,
+                    highlight: { newUglyIndex: i-1 }
+                };
+
+                if (i > 0 && next_ugly_val === ugly_numbers[i-1]) {
+                    isDuplicateStep = true; 
+                    yield {
+                        ugly_numbers: [...ugly_numbers].slice(0,i), heapElements: minHeap.getElements(), poppedDisplayItem: poppedItem,
+                        statusText: `Duplicate (${next_ugly_val} == ${ugly_numbers[i-1]}). Need to pop again.`,
+                        codeLineId: 'code-6', isDone: false,
+                        highlight: { newUglyIndex: i-1 }
+                    };
+                } else {
+                    break; 
+                }
+            }
+
+            ugly_numbers[i] = next_ugly_val;
+            yield {
+                ugly_numbers: [...ugly_numbers].slice(0,i+1), heapElements: minHeap.getElements(), poppedDisplayItem: poppedItem,
+                statusText: `Found ${i+1}-th ugly number: ${ugly_numbers[i]}.`,
+                codeLineId: 'code-8', isDone: false,
+                highlight: { newUglyIndex: i }
+            };
+
+            const primeNoUsed = poppedItem.primeNo;
+            const prevUglyIdxForPrime = poppedItem.indexInUgly;
+            const nextUglyIdxForPrime = prevUglyIdxForPrime + 1;
+
+            if (nextUglyIdxForPrime < n && ugly_numbers[nextUglyIdxForPrime] !== undefined) {
+                const nextValFromPrime = primeNoUsed * ugly_numbers[nextUglyIdxForPrime];
+                const newItemForHeap = { value: nextValFromPrime, primeNo: primeNoUsed, indexInUgly: nextUglyIdxForPrime };
+                minHeap.push(newItemForHeap);
+                yield {
+                    ugly_numbers: [...ugly_numbers].slice(0,i+1), heapElements: minHeap.getElements(), poppedDisplayItem: null,
+                    statusText: `Adding next from PrimeNo ${primeNoUsed}: ${primeNoUsed}*${ugly_numbers[nextUglyIdxForPrime]} = ${nextValFromPrime}.`,
+                    codeLineId: 'code-10', isDone: false,
+                    highlight: { primeIndices: [inputPrimes.indexOf(primeNoUsed)], uglySourceIndices: [nextUglyIdxForPrime] },
+                    action: 'ADD', actionItemKey: newItemForHeap.key
+                };
+            } else {
+                 yield {
+                    ugly_numbers: [...ugly_numbers].slice(0,i+1), heapElements: minHeap.getElements(), poppedDisplayItem: null,
+                    statusText: `No valid next ugly number to multiply with PrimeNo ${primeNoUsed} (idx ${nextUglyIdxForPrime}).`,
+                    codeLineId: 'code-9', isDone: false,
+                    highlight: { primeIndices: [inputPrimes.indexOf(primeNoUsed)], newUglyIndex: i}
+                };
+            }
+            if (i < n - 1) { 
+                yield { 
+                    ugly_numbers: [...ugly_numbers].slice(0,i+1), heapElements: minHeap.getElements(), poppedDisplayItem: null,
+                    statusText: "Preparing for next ugly number...",
+                    codeLineId: 'code-4', isDone: false, highlight: {newUglyIndex: i}
+                };
+            }
+        }
+
+        yield {
+            ugly_numbers: [...ugly_numbers], heapElements: minHeap.getElements(), poppedDisplayItem: null,
+            statusText: `Algorithm finished. The ${n}-th super ugly number is ${ugly_numbers[n-1]}.`,
+            codeLineId: 'code-11', isDone: true,
+            highlight: { newUglyIndex: n-1 }
+        };
+    }
+
+    function parseInputs() { 
+        targetN = parseInt(nInputEl.value);
+        inputPrimes = primesInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0).sort((a,b)=>a-b);
+        inputPrimes = [...new Set(inputPrimes)];
+        primesInputEl.value = inputPrimes.join(',');
+        return { n: targetN, primes: inputPrimes };
+    }
+    function initializeAlgorithm() { 
+        stopAutoPlay();
+        const inputs = parseInputs();
+        if (inputs.n <=0 || inputs.primes.length === 0) {
+            statusMessage.textContent = "N must be > 0 and primes list cannot be empty.";
+            renderBlocks(primesContainer, [], 'prime-el', 'prime');
+            renderBlocks(uglyNumbersContainer, [], 'ugly-el', 'ugly');
+            renderHeapVisual([]); renderPoppedItem(null);
+            highlightCodeLine(null); nValueDisplay.textContent = '';
+            nextStepBtn.disabled = true; autoPlayBtn.disabled = true;
+            return;
+        }
+        algorithmGen = nthSuperUglyNumberHeapGenerator(inputs.n, inputs.primes);
+        handleNextStep(); 
+        [nInputEl, primesInputEl].forEach(el => el.disabled = true);
+        resetBtn.disabled = false;
+    }
+    function handleNextStep() { 
+        if (!algorithmGen) {
+            initializeAlgorithm(); return;
+        }
+        const step = algorithmGen.next();
+        if (step.value) updateUI(step.value);
+        if (step.done) {
+            algorithmGen = null; 
+            [nInputEl, primesInputEl].forEach(el => el.disabled = false);
+        }
+    }
+    function startAutoPlay() { 
+        if (!algorithmGen || currentStepState?.isDone) {
+            initializeAlgorithm();
+            if (currentStepState?.isDone) return; 
+        }
+        isAutoPlaying = true;
+        autoPlayBtn.textContent = "Pause";
+        nextStepBtn.disabled = true;
+
+        function autoStep() {
+            if (!isAutoPlaying) return;
+            const step = algorithmGen.next();
+            if (step.value) {
+                updateUI(step.value);
+            }
+            if (step.done || !step.value || step.value.isDone) {
+                stopAutoPlay(); algorithmGen = null;
+                [nInputEl, primesInputEl].forEach(el => el.disabled = false);
+                if(step.value && step.value.isDone) updateUI(step.value);
+            } else {
+                autoPlayTimeoutId = setTimeout(autoStep, animationSpeed);
+            }
+        }
+        autoStep();
+    }
+    function stopAutoPlay() { 
+        isAutoPlaying = false;
+        if (autoPlayTimeoutId) clearTimeout(autoPlayTimeoutId);
+        autoPlayBtn.textContent = "Auto Play";
+        if (currentStepState) nextStepBtn.disabled = currentStepState.isDone;
+    }
+    function reset() { 
+        stopAutoPlay(); algorithmGen = null; currentStepState = null; minHeap.clear();
+        [nInputEl, primesInputEl].forEach(el => el.disabled = false);
+        resetBtn.disabled = true; nextStepBtn.disabled = false; autoPlayBtn.disabled = false;
+        autoPlayBtn.textContent = "Auto Play";
+
+        const inputs = parseInputs();
+        nValueDisplay.textContent = inputs.n;
+        renderBlocks(primesContainer, inputs.primes, 'prime-el', 'prime');
+        renderBlocks(uglyNumbersContainer, [], 'ugly-el', 'ugly');
+        renderHeapVisual([]); renderPoppedItem(null);
+        statusMessage.textContent = "Enter N and Primes, then click Reset, then Next Step or Auto Play.";
+        highlightCodeLine(null);
+    }
+
+    resetBtn.addEventListener('click', reset);
+    nextStepBtn.addEventListener('click', handleNextStep);
+    autoPlayBtn.addEventListener('click', () => { if (isAutoPlaying) stopAutoPlay(); else startAutoPlay(); });
+    speedSlider.addEventListener('input', e => animationSpeed = 2100 - parseInt(e.target.value));
+    window.addEventListener('load', () => { animationSpeed = 2100 - parseInt(speedSlider.value); reset(); });
+    window.addEventListener('resize', () => { if(currentStepState) updateUI(currentStepState); else reset(); });
+</script>
+</body>
+</html>
