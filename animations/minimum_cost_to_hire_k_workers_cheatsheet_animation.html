@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Min Cost to Hire K Workers Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            margin-top: 15px; background-color: #eef1f5; color: #333; line-height: 1.6;
+        }
+        .container {
+            background-color: #fff; padding: 20px; border-radius: 12px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.1); width: 95%; max-width: 1200px;
+        }
+        h1, h2, h3 { color: #2c3e50; margin-top: 0; text-align: center; }
+        h3 { margin-bottom: 10px; font-size: 1.1em; text-align: left;}
+        h4 { margin-top: 5px; margin-bottom: 5px; font-size: 1em; color: #495057;}
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center;
+            padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dce4ec;
+        }
+        .controls label { margin-right: 3px; font-size: 0.9em;}
+        .controls input { padding: 9px; border-radius: 5px; border: 1px solid #ced4da; font-size:0.9em; }
+        .controls button {
+            padding: 9px 16px; border: none; border-radius: 5px; cursor: pointer;
+            background-color: #007bff; color: white; font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+        .controls button:hover { background-color: #0056b3; }
+        .controls button:disabled { background-color: #adb5bd; cursor: not-allowed; }
+        
+        .main-content { display: grid; grid-template-columns: 1fr 1.3fr; gap: 20px; }
+        .data-display-section, .process-visualization-section {
+            padding: 15px; border: 1px solid #dce4ec; border-radius: 8px; background-color: #fdfdff;
+        }
+
+        .worker-list-container { display: flex; flex-direction: column; gap: 5px; max-height: 250px; overflow-y:auto; padding-right:5px;}
+        .worker-item, .heap-quality-item {
+            padding: 6px 10px; border: 1px solid #ccc; border-radius: 5px;
+            font-size: 0.85em; display: flex; justify-content: space-around; align-items: center;
+            background-color: #e9ecef; transition: all 0.3s ease;
+        }
+        .worker-item span, .heap-quality-item span { margin: 0 3px; }
+        .worker-item .label { font-weight: normal; color: #555; font-size:0.9em;}
+
+        .heap-container-visual { display: flex; flex-wrap: wrap; gap: 5px; min-height:30px; align-items: center;}
+        .heap-quality-item { background-color: #ffe8cc; border-color: #ffd3a0; color: #8c5a20; font-weight:bold;}
+
+        .highlight-processing-worker { background-color: #cce5ff !important; border-color: #b8daff !important; transform: scale(1.03); box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+        .highlight-heap-add { background-color: #d4edda !important; border-color: #c3e6cb !important; transform: scale(1.1);}
+        .highlight-heap-pop { background-color: #f8d7da !important; border-color: #f5c6cb !important; transform: scale(0.9) translateX(-5px); opacity: 0.6;}
+        
+        .metrics-display div { margin-bottom: 5px; font-size: 0.95em;}
+        .metrics-display span { font-weight: bold; color: #007bff; }
+        .highlight-cost-update { color: #28a745 !important; font-size: 1.1em;}
+
+
+        #status-message { margin-top: 15px; font-style: italic; color: #495057; min-height: 22px; text-align: center;}
+        .pseudo-code-container { margin-top: 20px; }
+        .pseudo-code {
+            padding: 15px; background-color: #2c3e50; color: #ecf0f1;
+            border-radius: 8px; text-align: left; font-family: 'Consolas', 'Courier New', monospace;
+            white-space: pre; font-size: 0.85em; line-height: 1.7; max-height: 380px; overflow-y: auto;
+        }
+        .pseudo-code .line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s ease; }
+        .pseudo-code .highlight-code { background-color: #3498db; color: white; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minimum Cost to Hire K Workers</h1>
+
+        <div class="controls">
+            <label for="quality-input">Qualities (comma-sep):</label>
+            <input type="text" id="quality-input" value="10,20,5">
+            <label for="wage-input">Wages (comma-sep):</label>
+            <input type="text" id="wage-input" value="70,50,30">
+            <label for="k-input">K:</label>
+            <input type="number" id="k-input" value="2" min="1">
+            <button id="reset-btn">Reset</button>
+            <button id="next-step-btn">Next Step</button>
+            <button id="auto-play-btn">Auto Play</button>
+            <label for="speed-slider">Speed:</label>
+            <input type="range" id="speed-slider" min="100" max="2000" value="1000" step="100">
+        </div>
+
+        <div class="main-content">
+            <div class="data-display-section">
+                <h3>Input K: <span id="k-value-display"></span></h3>
+                <h3>Workers (Quality, Wage, Ratio = Wage/Quality):</h3>
+                <div id="workers-initial-container" class="worker-list-container"></div>
+                <h3>Sorted Workers (by Ratio):</h3>
+                <div id="workers-sorted-container" class="worker-list-container"></div>
+            </div>
+            <div class="process-visualization-section">
+                <h3>Max-Heap (of Qualities, size <= K):</h3>
+                <div id="quality-heap-container" class="heap-container-visual"></div>
+                <div class="metrics-display" style="margin-top: 15px;">
+                    <div>Current Quality Sum in Heap: <span id="current-quality-sum">0</span></div>
+                    <div>Current Captain's Ratio: <span id="current-captain-ratio">-</span></div>
+                    <div>Current Group Cost: <span id="current-group-cost">-</span></div>
+                    <div>Min Cost Found: <span id="min-cost-found">Infinity</span></div>
+                </div>
+            </div>
+        </div>
+        <div id="status-message">Enter inputs, then click Reset.</div>
+
+        <div class="pseudo-code-container">
+            <h3>Algorithm Steps:</h3>
+            <div class="pseudo-code">
+<div class="line" id="code-0">Create worker objects: (quality, wage, ratio = wage/quality).</div>
+<div class="line" id="code-1">Sort workers by their ratio in ascending order.</div>
+<div class="line" id="code-2">min_cost = Infinity, current_quality_sum = 0, quality_heap = MaxHeap()</div>
+<div class="line" id="code-3">For each worker in sorted_workers:</div>
+<div class="line" id="code-4">&nbsp;&nbsp;Add worker.quality to quality_heap.</div>
+<div class="line" id="code-5">&nbsp;&nbsp;current_quality_sum += worker.quality.</div>
+<div class="line" id="code-6">&nbsp;&nbsp;If quality_heap.size() > k:</div>
+<div class="line" id="code-7">&nbsp;&nbsp;&nbsp;&nbsp;popped_quality = quality_heap.pop() (largest quality).</div>
+<div class="line" id="code-8">&nbsp;&nbsp;&nbsp;&nbsp;current_quality_sum -= popped_quality.</div>
+<div class="line" id="code-9">&nbsp;&nbsp;If quality_heap.size() == k:</div>
+<div class="line" id="code-10">&nbsp;&nbsp;&nbsp;&nbsp;captain_ratio = current_worker.ratio.</div>
+<div class="line" id="code-11">&nbsp;&nbsp;&nbsp;&nbsp;current_cost = current_quality_sum * captain_ratio.</div>
+<div class="line" id="code-12">&nbsp;&nbsp;&nbsp;&nbsp;min_cost = min(min_cost, current_cost).</div>
+<div class="line" id="code-13">Return min_cost.</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // DOM Elements
+    const qualityInputEl = document.getElementById('quality-input');
+    const wageInputEl = document.getElementById('wage-input');
+    const kInputEl = document.getElementById('k-input');
+    const resetBtn = document.getElementById('reset-btn');
+    const nextStepBtn = document.getElementById('next-step-btn');
+    const autoPlayBtn = document.getElementById('auto-play-btn');
+    const speedSlider = document.getElementById('speed-slider');
+
+    const kValueDisplay = document.getElementById('k-value-display');
+    const workersInitialContainer = document.getElementById('workers-initial-container');
+    const workersSortedContainer = document.getElementById('workers-sorted-container');
+    const qualityHeapContainer = document.getElementById('quality-heap-container');
+    const currentQualitySumDisplay = document.getElementById('current-quality-sum');
+    const currentCaptainRatioDisplay = document.getElementById('current-captain-ratio');
+    const currentGroupCostDisplay = document.getElementById('current-group-cost');
+    const minCostFoundDisplay = document.getElementById('min-cost-found');
+    const statusMessage = document.getElementById('status-message');
+
+    // State
+    let animationSpeed = 1000;
+    let isAutoPlaying = false;
+    let autoPlayTimeoutId = null;
+    let algorithmGen = null;
+    let currentStepState = null;
+
+    let inputQualities = [];
+    let inputWages = [];
+    let targetK = 0;
+
+    // MaxHeap for qualities, stores { val: quality_value, key: string }
+    class MaxHeap {
+        constructor() { this.heap = []; }
+        push(quality) { // Pushes quality value
+            const item = { val: quality, key: `q${quality}-${Date.now()}${Math.random().toString(36).substr(2,5)}` };
+            this.heap.push(item);
+            this.heap.sort((a, b) => b.val - a.val); // Sort descending for MaxHeap behavior
+        }
+        pop() { return this.heap.shift(); } // Removes and returns the largest
+        peek() { return this.heap.length > 0 ? this.heap[0] : null; }
+        size() { return this.heap.length; }
+        clear() { this.heap = []; }
+        getElements() { return [...this.heap]; } // Returns array of {val, key}
+    }
+    const qualityHeap = new MaxHeap();
+
+    // --- Rendering Functions ---
+    function renderWorkerList(container, workers, highlightIdx = -1, isSortedList = false) {
+        container.innerHTML = '';
+        workers.forEach((worker, index) => {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'worker-item';
+            itemEl.id = `${isSortedList ? 'sworker' : 'worker'}-${index}`;
+            itemEl.innerHTML = `
+                <span><span class="label">Q:</span> ${worker.quality}</span>
+                <span><span class="label">W:</span> ${worker.wage}</span>
+                <span><span class="label">Ratio:</span> ${worker.ratio.toFixed(3)}</span>
+                ${isSortedList ? `<span><span class="label">OrigIdx:</span> ${worker.originalIndex}</span>` : ''}
+            `;
+            if (isSortedList && index === highlightIdx) {
+                itemEl.classList.add('highlight-processing-worker');
+            }
+            container.appendChild(itemEl);
+        });
+    }
+
+    function renderQualityHeap(heapElements, action = null, itemKey = null) {
+        qualityHeapContainer.innerHTML = '';
+        heapElements.forEach(item => { // item is {val: quality, key: string}
+            const el = document.createElement('div');
+            el.className = 'heap-quality-item';
+            el.id = `heap-${item.key}`;
+            el.textContent = `${item.val}`; // Just display the quality
+            if (item.key === itemKey) {
+                if (action === 'POP') el.classList.add('highlight-heap-pop');
+                else if (action === 'ADD') el.classList.add('highlight-heap-add');
+            }
+            qualityHeapContainer.appendChild(el);
+            if (item.key === itemKey && action === 'ADD') {
+                setTimeout(() => el.classList.remove('highlight-heap-add'), animationSpeed * 0.7);
+            }
+             if (item.key === itemKey && action === 'POP') {
+                setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'scale(0.8) translateX(-10px)';}, animationSpeed * 0.1);
+            }
+        });
+    }
+    
+    function updateMetrics(qualitySum, captainRatio, groupCost, minCost, costUpdated = false) {
+        currentQualitySumDisplay.textContent = qualitySum;
+        currentCaptainRatioDisplay.textContent = captainRatio === null ? '-' : captainRatio.toFixed(3);
+        currentGroupCostDisplay.textContent = groupCost === null ? '-' : groupCost.toFixed(2);
+        minCostFoundDisplay.textContent = minCost === Infinity ? 'Infinity' : minCost.toFixed(2);
+        
+        minCostFoundDisplay.classList.remove('highlight-cost-update');
+        if(costUpdated) {
+            void minCostFoundDisplay.offsetWidth; // trigger reflow
+            minCostFoundDisplay.classList.add('highlight-cost-update');
+        }
+    }
+
+    function highlightCodeLine(lineId) {
+        document.querySelectorAll('.pseudo-code .line').forEach(l => l.classList.remove('highlight-code'));
+        if (lineId) document.getElementById(lineId)?.classList.add('highlight-code');
+    }
+    
+    function updateUI(state) {
+        currentStepState = state;
+        if (!state) return;
+
+        kValueDisplay.textContent = targetK;
+        renderWorkerList(workersInitialContainer, state.initialWorkers || [], -1, false);
+        renderWorkerList(workersSortedContainer, state.sortedWorkers || [], state.highlight?.currentSortedWorkerIdx, true);
+        
+        renderQualityHeap(state.heapQualities || [], state.action, state.actionItemKey);
+        updateMetrics(
+            state.currentQualitySum || 0,
+            state.captainRatio === undefined ? null : state.captainRatio, // Handle undefined initial state
+            state.currentGroupCost === undefined ? null : state.currentGroupCost,
+            state.minCostFound === undefined ? Infinity : state.minCostFound,
+            state.minCostWasUpdated
+        );
+        
+        statusMessage.textContent = state.statusText || "";
+        highlightCodeLine(state.codeLineId);
+
+        nextStepBtn.disabled = state.isDone || isAutoPlaying;
+        autoPlayBtn.disabled = state.isDone;
+        autoPlayBtn.textContent = isAutoPlaying ? "Pause" : "Auto Play";
+    }
+
+    // --- Generator for Algorithm Steps ---
+    function* minCostToHireKWorkersGenerator(qualities, wages, k) {
+        if (qualities.length !== wages.length || qualities.length < k || k < 1) {
+            yield { statusText: "Invalid inputs or K.", isDone: true, initialWorkers:[], sortedWorkers:[], heapQualities:[] };
+            return;
+        }
+
+        let workers = [];
+        for (let i = 0; i < qualities.length; i++) {
+            workers.push({
+                quality: qualities[i],
+                wage: wages[i],
+                ratio: wages[i] / qualities[i],
+                originalIndex: i, // Keep track for display if needed
+                key: `iw-${i}` // For initial list rendering
+            });
+        }
+        yield {
+            initialWorkers: [...workers], sortedWorkers: [], heapQualities: [],
+            statusText: "1. Created worker objects with ratios.", codeLineId: 'code-0', isDone: false
+        };
+
+        // Create a new array for sorting to not mutate the 'workers' used for initial display
+        let sortedWorkers = [...workers].sort((a, b) => a.ratio - b.ratio || a.quality - b.quality);
+        yield {
+            initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: [],
+            statusText: "2. Sorted workers by ratio.", codeLineId: 'code-1', isDone: false
+        };
+
+        qualityHeap.clear();
+        let minCost = Infinity;
+        let currentQualitySum = 0;
+
+        yield {
+            initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: [],
+            currentQualitySum, minCostFound: minCost,
+            statusText: "3. Initialized variables (min_cost, quality_sum, heap).", codeLineId: 'code-2', isDone: false
+        };
+
+        for (let i = 0; i < sortedWorkers.length; i++) {
+            const currentWorker = sortedWorkers[i];
+            yield {
+                initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+                currentQualitySum, minCostFound: minCost, captainRatio: currentWorker.ratio,
+                statusText: `Processing worker (Q:${currentWorker.quality}, R:${currentWorker.ratio.toFixed(3)}).`,
+                codeLineId: 'code-3', isDone: false, highlight: { currentSortedWorkerIdx: i }
+            };
+
+            qualityHeap.push(currentWorker.quality);
+            const addedHeapItem = qualityHeap.getElements().find(h_item => h_item.val === currentWorker.quality); // Simple find, assumes unique qualities for key match
+            yield {
+                initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+                currentQualitySum, minCostFound: minCost, captainRatio: currentWorker.ratio,
+                statusText: `Added quality ${currentWorker.quality} to Max-Heap.`,
+                codeLineId: 'code-4', isDone: false, highlight: { currentSortedWorkerIdx: i },
+                action: 'ADD', actionItemKey: addedHeapItem ? addedHeapItem.key : null
+            };
+
+            currentQualitySum += currentWorker.quality;
+            yield {
+                initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+                currentQualitySum, minCostFound: minCost, captainRatio: currentWorker.ratio,
+                statusText: `Updated quality_sum = ${currentQualitySum}.`,
+                codeLineId: 'code-5', isDone: false, highlight: { currentSortedWorkerIdx: i }
+            };
+
+
+            if (qualityHeap.size() > k) {
+                yield {
+                    initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+                    currentQualitySum, minCostFound: minCost, captainRatio: currentWorker.ratio,
+                    statusText: `Heap size (${qualityHeap.size()}) > K (${k}). Popping largest quality.`,
+                    codeLineId: 'code-6', isDone: false, highlight: { currentSortedWorkerIdx: i }
+                };
+                const poppedHeapItem = qualityHeap.pop(); // This is {val: quality, key: string}
+                yield { // Show pop animation
+                    initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], 
+                    heapQualities: [poppedHeapItem, ...qualityHeap.getElements()], // Show popped briefly
+                    currentQualitySum, minCostFound: minCost, captainRatio: currentWorker.ratio,
+                    statusText: `Popped quality ${poppedHeapItem.val} from heap.`,
+                    codeLineId: 'code-7', isDone: false, highlight: { currentSortedWorkerIdx: i },
+                    action: 'POP', actionItemKey: poppedHeapItem.key
+                };
+
+                currentQualitySum -= poppedHeapItem.val;
+                yield {
+                    initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+                    currentQualitySum, minCostFound: minCost, captainRatio: currentWorker.ratio,
+                    statusText: `Updated quality_sum = ${currentQualitySum} after pop.`,
+                    codeLineId: 'code-8', isDone: false, highlight: { currentSortedWorkerIdx: i }
+                };
+            }
+
+            if (qualityHeap.size() === k) {
+                let minCostUpdatedThisStep = false;
+                yield {
+                    initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+                    currentQualitySum, minCostFound: minCost, captainRatio: currentWorker.ratio,
+                    statusText: `Heap size is K. Calculating cost for current group. Captain's ratio: ${currentWorker.ratio.toFixed(3)}.`,
+                    codeLineId: 'code-9', isDone: false, highlight: { currentSortedWorkerIdx: i }
+                };
+                
+                const currentGroupCost = currentQualitySum * currentWorker.ratio;
+                yield { // Show current cost calculation
+                    initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+                    currentQualitySum, minCostFound: minCost, captainRatio: currentWorker.ratio, currentGroupCost,
+                    statusText: `Current group cost = ${currentQualitySum} * ${currentWorker.ratio.toFixed(3)} = ${currentGroupCost.toFixed(2)}.`,
+                    codeLineId: 'code-11', isDone: false, highlight: { currentSortedWorkerIdx: i }
+                };
+
+                if (currentGroupCost < minCost) {
+                    minCost = currentGroupCost;
+                    minCostUpdatedThisStep = true;
+                }
+                yield {
+                    initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+                    currentQualitySum, minCostFound: minCost, captainRatio: currentWorker.ratio, currentGroupCost,
+                    minCostWasUpdated: minCostUpdatedThisStep,
+                    statusText: `Min cost updated to ${minCost.toFixed(2)}.`,
+                    codeLineId: 'code-12', isDone: false, highlight: { currentSortedWorkerIdx: i }
+                };
+            }
+             // Clear current group cost if not exactly K items or before next iteration
+            yield {
+                initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+                currentQualitySum, minCostFound: minCost, captainRatio: null, currentGroupCost: null,
+                statusText: "Preparing for next worker...",
+                codeLineId: 'code-3', isDone: false, highlight: { currentSortedWorkerIdx: i }
+            };
+        }
+
+        let finalStatusText = `Algorithm finished. Min cost: ${minCost === Infinity ? 'Not Found (e.g. K > N)' : minCost.toFixed(2)}.`;
+        if (k > qualities.length && minCost === Infinity) {
+            finalStatusText = `Algorithm finished. K (${k}) is greater than number of workers (${qualities.length}). No valid group.`;
+        } else if (minCost === Infinity) {
+             finalStatusText = `Algorithm finished. No group of K workers found satisfying conditions. Min cost: Infinity.`;
+        }
+
+        yield {
+            initialWorkers: [...workers], sortedWorkers: [...sortedWorkers], heapQualities: qualityHeap.getElements(),
+            currentQualitySum, minCostFound: minCost, captainRatio: null, currentGroupCost: null,
+            minCostWasUpdated: false,
+            statusText: finalStatusText,
+            codeLineId: 'code-13', isDone: true, highlight: {}
+        };
+    }
+
+    // --- Control Functions (parseInputs, initializeAlgorithm, handleNextStep, etc.) ---
+    function parseInputs() {
+        inputQualities = qualityInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+        inputWages = wageInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+        targetK = parseInt(kInputEl.value);
+    }
+
+    function initializeAlgorithm() {
+        stopAutoPlay();
+        parseInputs();
+        if (inputQualities.length !== inputWages.length || inputQualities.length === 0 || targetK < 1) {
+            statusMessage.textContent = "Invalid inputs: Qualities and Wages must have same non-zero length, K >= 1.";
+            // Clear UI
+            kValueDisplay.textContent = ''; renderWorkerList(workersInitialContainer,[]); renderWorkerList(workersSortedContainer,[]);
+            renderQualityHeap([]); updateMetrics(0,null,null,Infinity); highlightCodeLine(null);
+            nextStepBtn.disabled = true; autoPlayBtn.disabled = true;
+            return;
+        }
+        algorithmGen = minCostToHireKWorkersGenerator(inputQualities, inputWages, targetK);
+        handleNextStep();
+        [qualityInputEl, wageInputEl, kInputEl].forEach(el => el.disabled = true);
+        resetBtn.disabled = false;
+    }
+    
+    function handleNextStep() { /* Standard, uses initializeAlgorithm */
+        if (!algorithmGen) { initializeAlgorithm(); return; }
+        const step = algorithmGen.next();
+        if (step.value) updateUI(step.value);
+        if (step.done) {
+            algorithmGen = null;
+            [qualityInputEl, wageInputEl, kInputEl].forEach(el => el.disabled = false);
+        }
+    }
+    function startAutoPlay() { /* Standard, uses initializeAlgorithm */
+        if (!algorithmGen || currentStepState?.isDone) {
+            initializeAlgorithm();
+            if (!algorithmGen || (currentStepState && currentStepState.isDone)) return;
+        }
+        isAutoPlaying = true;
+        autoPlayBtn.textContent = "Pause"; nextStepBtn.disabled = true;
+        function autoStep() {
+            if (!isAutoPlaying || !algorithmGen) return;
+            const step = algorithmGen.next();
+            if (step.value) updateUI(step.value);
+            if (step.done || !step.value || step.value.isDone) {
+                stopAutoPlay(); algorithmGen = null;
+                [qualityInputEl, wageInputEl, kInputEl].forEach(el => el.disabled = false);
+                if(step.value && step.value.isDone) updateUI(step.value);
+            } else {
+                autoPlayTimeoutId = setTimeout(autoStep, animationSpeed);
+            }
+        }
+        autoStep();
+    }
+    function stopAutoPlay() { /* Standard */
+        isAutoPlaying = false;
+        if (autoPlayTimeoutId) clearTimeout(autoPlayTimeoutId);
+        autoPlayBtn.textContent = "Auto Play";
+        if (currentStepState) nextStepBtn.disabled = currentStepState.isDone;
+    }
+    function reset() { /* Standard */
+        stopAutoPlay(); algorithmGen = null; currentStepState = null; qualityHeap.clear();
+        [qualityInputEl, wageInputEl, kInputEl].forEach(el => el.disabled = false);
+        resetBtn.disabled = true; nextStepBtn.disabled = false; autoPlayBtn.disabled = false;
+        autoPlayBtn.textContent = "Auto Play";
+        parseInputs();
+        kValueDisplay.textContent = targetK;
+        renderWorkerList(workersInitialContainer, []);
+        renderWorkerList(workersSortedContainer, []);
+        renderQualityHeap([]);
+        updateMetrics(0, null, null, Infinity);
+        statusMessage.textContent = "Enter inputs, then click Reset to prepare, or Next/Auto Play to start.";
+        highlightCodeLine(null);
+    }
+
+    resetBtn.addEventListener('click', reset);
+    nextStepBtn.addEventListener('click', handleNextStep);
+    autoPlayBtn.addEventListener('click', () => { if (isAutoPlaying) stopAutoPlay(); else startAutoPlay(); });
+    speedSlider.addEventListener('input', e => animationSpeed = 2100 - parseInt(e.target.value));
+    window.addEventListener('load', () => { animationSpeed = 2100 - parseInt(speedSlider.value); reset(); });
+    window.addEventListener('resize', () => { if(currentStepState) updateUI(currentStepState); else reset(); });
+</script>
+</body>
+</html>

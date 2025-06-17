@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K Maximum Sum Combinations From Two Arrays Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 K Maximum Sum Combinations From Two Arrays – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>K Maximum Sum Combinations From Two Arrays</b> problem involves finding the top <code>K</code> largest sums that can be formed by picking one element from each of two arrays.</p>
+    <p>This problem can be solved using a <b>max-heap</b> to track the largest sums.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public List&lt;Integer&gt; kMaxSumCombinations(int[] nums1, int[] nums2, int k) {
+        PriorityQueue&lt;int[]&gt; maxHeap = new PriorityQueue&lt;&gt;(
+            (a, b) -&gt; b[0] - a[0]
+        );
+
+        Arrays.sort(nums1);
+        Arrays.sort(nums2);
+
+        for (int i = nums1.length - 1; i &gt;= 0; i--) {
+            maxHeap.offer(new int[]{nums1[i] + nums2[nums2.length - 1], i, nums2.length - 1});
+        }
+
+        List&lt;Integer&gt; result = new ArrayList&lt;&gt;();
+        while (k &gt; 0 && !maxHeap.isEmpty()) {
+            int[] top = maxHeap.poll();
+            result.add(top[0]);
+            k--;
+
+            int i = top[1], j = top[2];
+            if (j &gt; 0) {
+                maxHeap.offer(new int[]{nums1[i] + nums2[j - 1], i, j - 1});
+            }
+        }
+
+        return result;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Sorting Arrays</b>: <code>O(N log N + M log M)</code> – Sorting both arrays.</li>
+      <li><b>Heap Operations</b>: <code>O(K log K)</code> – Adding and removing elements from the heap.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log N + M log M + K log K)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the largest sums from combinations of two datasets</li>
+      <li>Applications in optimization problems</li>
+      <li>Efficiently processing large datasets</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-k-pairs-with-smallest-sums/" target="_blank" rel="noopener noreferrer">373. Find K Pairs with Smallest Sums</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: K Maximum Sum Combinations From Two Arrays</h2>
+    <pre><code>Input: nums1 = [1, 4, 2], nums2 = [3, 5], k = 3
+Output: [9, 8, 7]
+
+Explanation:
+- The top 3 sums are [9, 8, 7].</code></pre>
+    <button onclick="window.location.href='../animations/k_maximum_sum_combinations_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Sort both arrays to efficiently find the largest sums.</li>
+      <li>Use a max-heap to track the largest sums.</li>
+      <li>Edge cases: arrays with duplicate elements, arrays of unequal lengths.</li>
+    </ul>
+  </div>
+</body>
+</html>

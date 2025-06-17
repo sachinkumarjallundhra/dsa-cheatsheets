@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top K Elements Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Top K Elements – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Top K Elements</b> pattern is used to find the top or bottom <code>K</code> elements in a dataset. This is commonly solved using a <b>min-heap</b> or <b>max-heap</b> depending on the problem.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public List&lt;Integer&gt; findTopKElements(int[] nums, int k) {
+        PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+
+        // Step 1: Add elements to the heap
+        for (int num : nums) {
+            minHeap.offer(num);
+            if (minHeap.size() &gt; k) {
+                minHeap.poll(); // Remove the smallest element
+            }
+        }
+
+        // Step 2: Extract elements from the heap
+        List&lt;Integer&gt; result = new ArrayList&lt;&gt;(minHeap);
+        Collections.sort(result, Collections.reverseOrder()); // Optional: Sort in descending order
+        return result;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Operations</b>: <code>O(N log K)</code> – Adding and removing elements from the heap.</li>
+      <li><b>Sorting</b>: <code>O(K log K)</code> – Sorting the final list of top K elements.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log K)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the top K largest or smallest elements in an array</li>
+      <li>Efficiently processing large datasets</li>
+      <li>Applications in recommendation systems and ranking problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/top-k-frequent-elements/" target="_blank" rel="noopener noreferrer">347. Top K Frequent Elements</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="top_k_frequent_elements_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/kth-largest-element-in-an-array/" target="_blank" rel="noopener noreferrer">215. Kth Largest Element in an Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="kth_largest_element_in_array_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/third-maximum-number/" target="_blank" rel="noopener noreferrer">414. Third Maximum Number</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="third_maximum_number_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/reorganize-string/" target="_blank" rel="noopener noreferrer">767. Reorganize String</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="reorganize_string_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/k-closest-points-to-origin/" target="_blank" rel="noopener noreferrer">973. K Closest Points to Origin</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="k_closest_points_to_origin_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/find-subsequence-of-length-k-with-the-largest-sum/" target="_blank" rel="noopener noreferrer">2099. Find Subsequence of Length K With the Largest Sum</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="find_subsequence_with_largest_sum_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/minimum-cost-to-hire-k-workers/" target="_blank" rel="noopener noreferrer">857. Minimum Cost to Hire K Workers</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="minimum_cost_to_hire_k_workers_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/find-the-kth-largest-integer-in-the-array/" target="_blank" rel="noopener noreferrer">1985. Find the Kth Largest Integer in the Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="find_kth_largest_integer_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/smallest-range-covering-elements-from-k-lists/" target="_blank" rel="noopener noreferrer">632. Smallest Range Covering Elements from K Lists</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="smallest_range_covering_elements_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/maximum-performance-of-a-team/" target="_blank" rel="noopener noreferrer">1383. Maximum Performance of a Team</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="maximum_performance_of_team_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/find-k-pairs-with-smallest-sums/" target="_blank" rel="noopener noreferrer">373. Find K Pairs with Smallest Sums</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+        <a href="k_maximum_sum_combinations_cheatsheet.html">Cheat Sheet</a>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Top K Elements</h2>
+    <pre><code>Input: nums = [3, 2, 1, 5, 6, 4], k = 2
+Output: [6, 5]
+
+Explanation:
+- Add elements to the heap and maintain its size as K.
+- The top K elements are [6, 5].</code></pre>
+    <button onclick="window.location.href='../animations/top_k_elements_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the top K largest elements.</li>
+      <li>Edge cases: empty arrays, K greater than the array size.</li>
+      <li>Ensure the heap size is limited to K for optimal performance.</li>
+    </ul>
+  </div>
+</body>
+</html>

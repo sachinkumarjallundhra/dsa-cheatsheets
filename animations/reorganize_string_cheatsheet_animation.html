@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reorganize String Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls label { font-weight: bold; margin-right: 5px; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
+        .controls button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .visualization-area-reorg {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        .counts-display-reorg, .pq-display-reorg, .string-display-reorg, .prev-char-display-reorg, .info-panel-reorg {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+
+        .char-freq-item {
+            display: inline-block; padding: 8px 12px; margin: 5px;
+            background-color: #e9ecef; border-radius: 4px; font-size: 1em;
+        }
+        .char-freq-item strong { color: #007bff; }
+
+        .pq-area-reorg {
+            min-height: 60px; padding: 10px; border: 1px dashed #c0392b; /* Reddish for Max Heap */
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background-color: #fbeee6;
+        }
+        .pq-entry-reorg {
+            padding: 8px 10px; border-radius: 4px; font-size: 0.95em; text-align: center;
+            border: 1px solid #d98880; background-color: #f5b7b1; /* Light red */
+            transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+        }
+        .pq-entry-reorg.highlight-current { background-color: #f1c40f !important; border-color: #d39e00 !important; transform: scale(1.1); }
+        .pq-entry-reorg.re-added { animation: pulse-reorg-red 0.6s; }
+        .pq-entry-reorg.fading-out-pq { opacity: 0; transform: scale(0.8) translateY(-15px); }
+        
+        @keyframes pulse-reorg-red {
+            0% { background-color: #fab1a0; transform: scale(1); }
+            50% { background-color: #ff7675; transform: scale(1.05); }
+            100% { background-color: #f5b7b1; transform: scale(1); }
+        }
+
+        .result-string-area-reorg {
+            min-height: 40px; padding: 10px; border: 1px solid #27ae60;
+            background-color: #e8f8f5; border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace; font-size: 1.3em;
+            word-break: break-all; letter-spacing: 3px;
+        }
+        .result-string-area-reorg .appended-char-reorg {
+            animation: popInReorg 0.4s; display: inline-block;
+        }
+        @keyframes popInReorg { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+
+        .prev-char-box {
+            display: inline-block; padding: 10px 15px; border-radius: 5px;
+            background-color: #e8daef; border: 1px solid #c39bd3; /* Lavender */
+            font-size: 1em; min-width: 100px; text-align: center;
+        }
+        .prev-char-box.active { background-color: #d2b4de; font-weight: bold; }
+
+        #final_result_reorg { font-size: 1.3em; font-weight: bold; }
+        #current_action_reorg { text-align:center; margin-bottom:10px; font-weight:bold; min-height:1.2em; color: #d35400;}
+        .log-container-reorg { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        #log_output_reorg { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Menlo', 'Consolas', monospace; font-size: 0.9em; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Reorganize String Animation</h1>
+
+        <div class="controls">
+            <label for="s_input_reorg">Input String (s):</label>
+            <input type="text" id="s_input_reorg" value="aab">
+            <button id="start_button_reorg">Start/Reset</button>
+            <button id="next_step_button_reorg" disabled>Next Step</button>
+        </div>
+
+        <div class="visualization-area-reorg">
+            <div class="counts-display-reorg">
+                <h2>Character Frequencies</h2>
+                <div id="char_counts_display_reorg"></div>
+            </div>
+            <div class="pq-display-reorg">
+                <h2>Priority Queue (Max Heap by Count)</h2>
+                <div id="pq_area_reorg" class="pq-area-reorg"></div>
+            </div>
+            <div class="prev-char-display-reorg">
+                <h2>Previously Appended Char (Held Back)</h2>
+                <div id="prev_char_box_reorg" class="prev-char-box">-</div>
+            </div>
+            <div class="string-display-reorg">
+                <h2>Result String</h2>
+                <div id="result_string_reorg" class="result-string-area-reorg"></div>
+            </div>
+            <div class="info-panel-reorg" style="text-align:center;">
+                Final Reorganized String: <span id="final_result_reorg">-</span>
+            </div>
+        </div>
+        
+        <div id="current_action_reorg"></div>
+        <div class="log-container-reorg">
+            <h2>Log</h2>
+            <pre id="log_output_reorg"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sInput = document.getElementById('s_input_reorg');
+        const startButton = document.getElementById('start_button_reorg');
+        const nextStepButton = document.getElementById('next_step_button_reorg');
+
+        const charCountsDisplay = document.getElementById('char_counts_display_reorg');
+        const pqDisplayArea = document.getElementById('pq_area_reorg');
+        const prevCharBox = document.getElementById('prev_char_box_reorg');
+        const resultStringDisplay = document.getElementById('result_string_reorg');
+        const finalResultDisplay = document.getElementById('final_result_reorg');
+        const currentActionDisplay = document.getElementById('current_action_reorg');
+        const logOutput = document.getElementById('log_output_reorg');
+
+        const ANIMATION_DELAY = 700; 
+        const SUB_DELAY = ANIMATION_DELAY / 1.5;
+
+        let S_REORG = "";
+        let charFrequencies = {};
+        let pqDataReorg = []; 
+        let resultStringReorg = "";
+        let prevCharEntry = null; 
+        
+        let animationStepReorg = 0; 
+        let freqCountCharIdx = 0; 
+        let pqInitCharKeys = [];  
+        let pqInitIdx = 0;        
+
+        function logREORG(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearAllHighlightsREORG() {
+            document.querySelectorAll('.pq-entry-reorg').forEach(el => {
+                el.classList.remove('highlight-current');
+            });
+            prevCharBox.classList.remove('active');
+            // currentActionDisplay.textContent = ''; // Keep for context between sub-steps
+        }
+
+        function renderCharFrequencies() {
+            charCountsDisplay.innerHTML = '';
+            Object.entries(charFrequencies).forEach(([char, count]) => {
+                const item = document.createElement('span');
+                item.classList.add('char-freq-item');
+                item.innerHTML = `${char}: <strong>${count}</strong>`;
+                charCountsDisplay.appendChild(item);
+            });
+        }
+
+        function renderPQReorg(highlightId = null) {
+            pqDisplayArea.innerHTML = '';
+            pqDataReorg.sort((a, b) => b.count - a.count); 
+            
+            pqDataReorg.forEach(entry => {
+                const item = document.createElement('div');
+                item.classList.add('pq-entry-reorg');
+                item.id = entry.id;
+                item.textContent = `${entry.char} (${entry.count})`;
+                if (highlightId && entry.id === highlightId) {
+                    item.classList.add('highlight-current');
+                }
+                pqDisplayArea.appendChild(item);
+            });
+        }
+        
+        async function addToPQReorgVisual(entry, isReAddingPrev = false) {
+            pqDataReorg.push(entry);
+            renderPQReorg(); 
+
+            const itemEl = document.getElementById(entry.id);
+            if (itemEl) {
+                itemEl.style.transform = 'scale(0.5)'; itemEl.style.opacity = '0';
+                logREORG(`PQ: Offering ('${entry.char}', ${entry.count})${isReAddingPrev ? ' (from prevChar)' : ''}`);
+                currentActionDisplay.textContent = `Adding ('${entry.char}', ${entry.count}) to Max Heap.`;
+                await new Promise(r => setTimeout(r, 50)); 
+                itemEl.style.transform = 'scale(1)'; itemEl.style.opacity = '1';
+                if (isReAddingPrev) itemEl.classList.add('re-added');
+                
+                await new Promise(r => setTimeout(r, SUB_DELAY)); 
+                
+                const newTopId = pqDataReorg.length > 0 ? pqDataReorg[0].id : null;
+                renderPQReorg(newTopId);
+                if (isReAddingPrev && itemEl) itemEl.classList.remove('re-added'); 
+                await new Promise(r => setTimeout(r, SUB_DELAY));
+                if (newTopId) renderPQReorg(); 
+            } else { 
+                const newTopId = pqDataReorg.length > 0 ? pqDataReorg[0].id : null;
+                renderPQReorg(newTopId); 
+                await new Promise(r => setTimeout(r, SUB_DELAY));
+                if (newTopId) renderPQReorg();
+            }
+        }
+
+        async function pollFromPQReorgVisual() {
+            if (pqDataReorg.length === 0) return null;
+            pqDataReorg.sort((a, b) => b.count - a.count); 
+            const entry = pqDataReorg[0]; 
+
+            const itemEl = document.getElementById(entry.id);
+            if (itemEl) {
+                itemEl.classList.add('highlight-current'); 
+                currentActionDisplay.textContent = `Polling ('${entry.char}', ${entry.count}) from Max Heap.`;
+                logREORG(`PQ: Polling most frequent ('${entry.char}', ${entry.count})`);
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY)); 
+                itemEl.classList.add('fading-out-pq');
+                await new Promise(r => setTimeout(r, SUB_DELAY));
+            }
+            
+            pqDataReorg.shift(); 
+            const newTopId = pqDataReorg.length > 0 ? pqDataReorg[0].id : null;
+            renderPQReorg(newTopId); 
+            
+            await new Promise(r => setTimeout(r, SUB_DELAY));
+            if (newTopId) renderPQReorg(); 
+            return entry;
+        }
+
+        function renderResultStringReorg() {
+            resultStringDisplay.innerHTML = '';
+            for(let char of resultStringReorg){
+                const span = document.createElement('span');
+                span.className = 'appended-char-reorg';
+                span.textContent = char;
+                resultStringDisplay.appendChild(span);
+            }
+        }
+        async function appendToResultStringReorgVisual(char) {
+            resultStringReorg += char;
+            const span = document.createElement('span');
+            span.className = 'appended-char-reorg';
+            span.textContent = char;
+            resultStringDisplay.appendChild(span); 
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+        }
+
+        function updatePrevCharDisplay() {
+            if (prevCharEntry && prevCharEntry.count > 0) {
+                prevCharBox.textContent = `'${prevCharEntry.char}' (rem: ${prevCharEntry.count})`;
+                prevCharBox.classList.add('active');
+            } else {
+                prevCharBox.textContent = "-";
+                prevCharBox.classList.remove('active');
+            }
+        }
+        
+        async function initializeAnimationREORG() {
+            logREORG("Initializing Reorganize String animation...");
+            clearAllHighlightsREORG();
+            S_REORG = sInput.value.trim();
+            if (S_REORG === "") {
+                alert("Input string cannot be empty.");
+                startButton.disabled = false; nextStepButton.disabled = true;
+                return;
+            }
+
+            charFrequencies = {};
+            pqDataReorg = [];
+            resultStringReorg = "";
+            prevCharEntry = null;
+            
+            animationStepReorg = 1; 
+            freqCountCharIdx = 0;
+            pqInitCharKeys = [];
+            pqInitIdx = 0;
+
+            renderCharFrequencies();
+            renderPQReorg();
+            renderResultStringReorg();
+            updatePrevCharDisplay();
+            finalResultDisplay.textContent = "-";
+            finalResultDisplay.style.color = "#333"; // Reset color
+            logOutput.innerHTML = "";
+            currentActionDisplay.textContent = "Click Next Step to count frequencies.";
+            
+            startButton.textContent = "Reset";
+            nextStepButton.disabled = false;
+            logREORG(`Initialized. Input: "${S_REORG}".`);
+        }
+        
+        async function nextStepREORG() {
+            nextStepButton.disabled = true; 
+            clearAllHighlightsREORG(); 
+
+            if (animationStepReorg === 1) { 
+                if (freqCountCharIdx < S_REORG.length) {
+                    const char = S_REORG[freqCountCharIdx];
+                    charFrequencies[char] = (charFrequencies[char] || 0) + 1;
+                    currentActionDisplay.textContent = `Counting char '${char}'. Frequencies updated.`;
+                    logREORG(`Processing s[${freqCountCharIdx}]='${char}'. Counts: ${JSON.stringify(charFrequencies)}`);
+                    renderCharFrequencies();
+                    
+                    freqCountCharIdx++;
+                    if (freqCountCharIdx < S_REORG.length) {
+                        nextStepButton.disabled = false;
+                    } else {
+                        animationStepReorg = 2; 
+                        pqInitCharKeys = Object.keys(charFrequencies);
+                        pqInitIdx = 0;
+                        logREORG("Frequency counting complete. Click 'Next Step' to populate Max Heap.");
+                        currentActionDisplay.textContent = "Counts done. Click Next to build Heap.";
+                        nextStepButton.disabled = false;
+                    }
+                }
+            } else if (animationStepReorg === 2) { 
+                if (pqInitIdx < pqInitCharKeys.length) {
+                    const char = pqInitCharKeys[pqInitIdx];
+                    const count = charFrequencies[char];
+                    if (count > 0) {
+                        // Create a unique ID for each entry, even if char and count are same later
+                        const entry = {char, count, id: `pq-init-${char}-${count}-${Math.random().toString(16).slice(2)}`};
+                        await addToPQReorgVisual(entry, false);
+                    }
+                    pqInitIdx++;
+                    if (pqInitIdx < pqInitCharKeys.length) {
+                        nextStepButton.disabled = false;
+                    } else {
+                        animationStepReorg = 3;
+                        logREORG("Max Heap populated. Click 'Next Step' for main string building loop.");
+                        currentActionDisplay.textContent = "Heap built. Click Next to build string.";
+                        nextStepButton.disabled = false;
+                    }
+                } else { 
+                     animationStepReorg = 3; 
+                     currentActionDisplay.textContent = "Heap built (or no items). Click Next.";
+                     nextStepButton.disabled = false;
+                }
+            } else if (animationStepReorg === 3) { 
+                if (pqDataReorg.length === 0) { // Check if PQ is empty BEFORE trying to poll
+                    // If PQ is empty, we must check prevChar before deciding we are done
+                    animationStepReorg = 4; 
+                    logREORG("PQ is empty. Proceeding to final check for prevChar.");
+                    currentActionDisplay.textContent = "PQ empty. Click Next for final check.";
+                    nextStepButton.disabled = false; // Allow click to go to step 4
+                    // Do not return here, let step 4 handle it.
+                    // If we called nextStepREORG() recursively, it might skip user click for final step.
+                } else { // PQ is not empty, proceed to poll
+                    const current = await pollFromPQReorgVisual();
+                    // No need to check if !current here, pollFromPQReorgVisual would return null if it became empty during its own async ops,
+                    // but the initial pqDataReorg.length check should cover this.
+
+                    currentActionDisplay.textContent = `Appending '${current.char}' to result.`;
+                    await appendToResultStringReorgVisual(current.char);
+                    current.count--;
+
+                    if (prevCharEntry && prevCharEntry.count > 0) {
+                        logREORG(`Previous char ('${prevCharEntry.char}', ${prevCharEntry.count}) was held. Adding back to PQ.`);
+                        currentActionDisplay.textContent = `Re-adding prev char ('${prevCharEntry.char}', ${prevCharEntry.count}) to PQ.`;
+                        await addToPQReorgVisual(prevCharEntry, true); 
+                    }
+                    
+                    prevCharEntry = current; 
+                    updatePrevCharDisplay();
+                    logREORG(`'${current.char}' becomes prevChar (remaining count: ${current.count}).`);
+                    
+                    // If PQ is now empty AND prevChar is also exhausted, then we are truly done with building
+                    if (pqDataReorg.length === 0 && (!prevCharEntry || prevCharEntry.count === 0)) {
+                        animationStepReorg = 4;
+                        logREORG("PQ empty and prevChar exhausted. Moving to final result determination.");
+                        currentActionDisplay.textContent = "Building complete. Click Next for final result.";
+                    }
+                    nextStepButton.disabled = false;
+                }
+            } 
+            
+            if (animationStepReorg === 4) { // Final prevChar check & result
+                logREORG("Final check: Result length vs Original. PrevChar count.");
+                currentActionDisplay.textContent = "Final checks...";
+                await new Promise(r => setTimeout(r, SUB_DELAY));
+
+                // The Java solution's success condition is sb.length() == s.length()
+                // If prevChar still has items (prevChar.count > 0) AND the string isn't full,
+                // it means this prevChar couldn't be placed without violating the rule.
+                // Specifically, if prevChar.count > 1 at this stage, it's impossible.
+                // If prevChar.count == 1, it *could* be appended if it doesn't violate adjacency with the *very last* char.
+                // However, the problem asks to build the longest diverse string. If we can't use all chars,
+                // the built string is what it is. The condition is "no three same consecutive".
+                // The greedy approach ensures this. The final check is: is the built string valid, and did we use all chars?
+                // The original solution returns "" if length mismatch.
+
+                let finalString = resultStringReorg;
+                let possible = true;
+
+                if (prevCharEntry && prevCharEntry.count > 0) {
+                    if (resultStringReorg.length > 0 && resultStringReorg.charAt(resultStringReorg.length - 1) === prevCharEntry.char) {
+                        // Cannot append prevChar if it's same as last and its count > 0
+                        // This implies an issue if resultStringReorg.length < S_REORG.length
+                        logREORG(`Cannot append remaining prevChar ('${prevCharEntry.char}', count: ${prevCharEntry.count}) due to adjacency.`);
+                        if (resultStringReorg.length !== S_REORG.length) {
+                            possible = false; // Could not use all characters
+                        }
+                    } else if (prevCharEntry.count == 1) { // Only one left, can append
+                        logREORG(`Appending final prevChar ('${prevCharEntry.char}')`);
+                        await appendToResultStringReorgVisual(prevCharEntry.char);
+                        finalString = resultStringReorg; // Update finalString with last append
+                        prevCharEntry.count = 0; // Mark as used
+                        updatePrevCharDisplay();
+                    } else { // prevChar.count > 1, impossible to place without violating rule
+                        logREORG(`Remaining prevChar ('${prevCharEntry.char}') has count ${prevCharEntry.count} > 1. Impossible.`);
+                        possible = false;
+                    }
+                }
+                
+                // Final check based on length (as per original solution's implication)
+                if (finalString.length !== S_REORG.length) {
+                     possible = false; // If we couldn't use all characters, it means it's impossible.
+                     logREORG(`Length mismatch. Original: ${S_REORG.length}, Result: ${finalString.length}. Impossible.`);
+                }
+
+
+                if (possible) {
+                    finalResultDisplay.textContent = `"${finalString}"`;
+                    finalResultDisplay.style.color = "#28a745";
+                    logREORG(`Success! Reorganized string: "${finalString}"`);
+                    currentActionDisplay.textContent = "Success!";
+                } else {
+                    finalResultDisplay.textContent = '"" (Impossible)';
+                    finalResultDisplay.style.color = "#dc3545";
+                    logREORG(`Failed to reorganize. Result would be empty string.`);
+                    currentActionDisplay.textContent = "Reorganization Impossible!";
+                }
+                animationStepReorg = 99; // Done
+                nextStepButton.disabled = true;
+                startButton.textContent = "Start/Reset";
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimationREORG);
+        nextStepButton.addEventListener('click', nextStepREORG);
+        initializeAnimationREORG(); 
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Third Maximum Number Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Third Maximum Number – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Third Maximum Number</b> problem involves finding the third distinct maximum number in an array. If the third maximum does not exist, return the maximum number.</p>
+    <p>This problem can be solved using a <b>set</b> or a <b>min-heap</b> to track distinct maximum numbers.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int thirdMax(int[] nums) {
+        PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+        Set&lt;Integer&gt; seen = new HashSet&lt;&gt;();
+
+        for (int num : nums) {
+            if (!seen.contains(num)) {
+                seen.add(num);
+                minHeap.offer(num);
+                if (minHeap.size() &gt; 3) {
+                    minHeap.poll(); // Remove the smallest element
+                }
+            }
+        }
+
+        // If there are less than 3 distinct numbers, return the maximum
+        if (minHeap.size() &lt; 3) {
+            while (minHeap.size() &gt; 1) {
+                minHeap.poll();
+            }
+        }
+
+        return minHeap.peek();
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Operations</b>: <code>O(N log 3)</code> – Adding and removing elements from the heap.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log 3)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the third distinct maximum number in an array</li>
+      <li>Efficiently processing large datasets</li>
+      <li>Applications in ranking and leaderboard systems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/third-maximum-number/" target="_blank" rel="noopener noreferrer">414. Third Maximum Number</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Third Maximum Number</h2>
+    <pre><code>Input: nums = [3, 2, 1]
+Output: 1
+
+Explanation:
+- The distinct maximum numbers are [3, 2, 1].
+- The third maximum number is 1.</code></pre>
+    <button onclick="window.location.href='../animations/third_maximum_number_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a set to track distinct numbers and a min-heap to efficiently find the third maximum.</li>
+      <li>Edge cases: arrays with less than 3 distinct numbers.</li>
+      <li>Ensure the heap size is limited to 3 for optimal performance.</li>
+    </ul>
+  </div>
+</body>
+</html>

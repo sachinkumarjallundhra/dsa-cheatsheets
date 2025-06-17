@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top K Frequent Elements Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Top K Frequent Elements – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Top K Frequent Elements</b> problem involves finding the <code>K</code> most frequent elements in an array. This is commonly solved using a <b>min-heap</b> or <b>bucket sort</b> depending on the constraints.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+        Map&lt;Integer, Integer&gt; frequencyMap = new HashMap&lt;&gt;();
+        for (int num : nums) {
+            frequencyMap.put(num, frequencyMap.getOrDefault(num, 0) + 1);
+        }
+
+        PriorityQueue&lt;Map.Entry&lt;Integer, Integer&gt;&gt; minHeap = new PriorityQueue&lt;&gt;(
+            (a, b) -&gt; a.getValue() - b.getValue()
+        );
+
+        // Step 1: Add elements to the heap
+        for (Map.Entry&lt;Integer, Integer&gt; entry : frequencyMap.entrySet()) {
+            minHeap.offer(entry);
+            if (minHeap.size() &gt; k) {
+                minHeap.poll(); // Remove the least frequent element
+            }
+        }
+
+        // Step 2: Extract the top K frequent elements
+        int[] result = new int[k];
+        int index = 0;
+        while (!minHeap.isEmpty()) {
+            result[index++] = minHeap.poll().getKey();
+        }
+
+        return result;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Frequency Map Construction</b>: <code>O(N)</code> – Iterating through the array.</li>
+      <li><b>Heap Operations</b>: <code>O(N log K)</code> – Adding and removing elements from the heap.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log K)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the most frequent elements in a dataset</li>
+      <li>Applications in recommendation systems and search engines</li>
+      <li>Efficiently processing large datasets</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/top-k-frequent-elements/" target="_blank" rel="noopener noreferrer">347. Top K Frequent Elements</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/sort-characters-by-frequency/" target="_blank" rel="noopener noreferrer">451. Sort Characters By Frequency</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Top K Frequent Elements</h2>
+    <pre><code>Input: nums = [1,1,1,2,2,3], k = 2
+Output: [1,2]
+
+Explanation:
+- The frequency of 1 is 3, 2 is 2, and 3 is 1.
+- The top 2 frequent elements are [1, 2].</code></pre>
+    <button onclick="window.location.href='../animations/top_k_frequent_elements_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the top K frequent elements.</li>
+      <li>Edge cases: empty arrays, <code>K</code> greater than the number of unique elements.</li>
+      <li>Consider bucket sort for better performance when <code>K</code> is large.</li>
+    </ul>
+  </div>
+</body>
+</html>

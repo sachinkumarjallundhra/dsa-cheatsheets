@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sort Colors Animation (Dutch National Flag)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            background-color: #eef1f5; /* Lighter, softer background */
+            color: #333;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        #array-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            margin-bottom: 50px; /* More space for styled pointers */
+            min-height: 100px;
+            position: relative;
+            padding: 10px 0;
+        }
+
+        .color-block {
+            width: 55px;
+            height: 55px;
+            margin: 0 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            color: rgba(0,0,0,0.7);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55), 
+                        background-color 0.3s ease,
+                        box-shadow 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .color-0 { background-color: #e74c3c; border-color: #c0392b; color: white; } /* Red */
+        .color-1 { background-color: #ecf0f1; border-color: #bdc3c7; color: #2c3e50; } /* White/Silver */
+        .color-2 { background-color: #3498db; border-color: #2980b9; color: white; } /* Blue */
+
+        .current-mid {
+            box-shadow: 0 0 18px 7px #f1c40f; /* Gold glow */
+            transform: scale(1.15) translateY(-5px);
+            z-index: 10;
+        }
+
+        .swapping {
+            transform: translateY(-20px) scale(1.1) rotate(3deg);
+            box-shadow: 0 0 15px 5px #e91e63; /* Pinkish for swap */
+            z-index: 10;
+        }
+        
+        .pointer-container {
+            position: absolute;
+            bottom: -45px; /* Position below the array blocks */
+            left: 0;
+            width: 100%;
+            height: 40px;
+            display: flex; 
+        }
+
+        .pointer {
+            position: absolute;
+            font-size: 0.9em;
+            font-weight: bold;
+            width: 25px; /* Adjust if using icons */
+            text-align: center;
+            transition: left 0.4s ease-out, opacity 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0; /* Hidden by default, shown by JS */
+        }
+        .pointer .arrow {
+            width: 0; 
+            height: 0; 
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-top: 10px solid; /* Color set by specific pointer id */
+            margin-bottom: 2px;
+        }
+
+        #low-ptr { color: #27ae60; } /* Green */
+        #low-ptr .arrow { border-top-color: #27ae60; }
+        #mid-ptr { color: #f39c12; } /* Orange */
+        #mid-ptr .arrow { border-top-color: #f39c12; }
+        #high-ptr { color: #8e44ad; } /* Purple */
+        #high-ptr .arrow { border-top-color: #8e44ad; }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .controls button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            font-size: 0.95em;
+            transition: background-color 0.2s ease;
+            min-width: 100px;
+        }
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+        .controls button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .controls input[type="text"] {
+            padding: 9px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            width: 220px;
+            font-size: 0.9em;
+        }
+        .controls label {
+            font-size: 0.9em;
+            margin-right: 5px;
+        }
+        .speed-control { display: flex; align-items: center; }
+
+        #status-message {
+            margin-top: 20px;
+            font-style: italic;
+            color: #555;
+            min-height: 22px;
+            font-size: 0.95em;
+        }
+
+        .pseudo-code {
+            margin-top: 25px;
+            padding: 15px 20px;
+            background-color: #2c3e50; /* Darker background for code */
+            color: #ecf0f1;
+            border-radius: 8px;
+            text-align: left;
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            white-space: pre;
+            font-size: 0.9em;
+            line-height: 1.7;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .pseudo-code .line {
+            padding: 2px 5px;
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+        .pseudo-code .highlight-code {
+            background-color: #34495e; /* Slightly lighter for highlight */
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Sort Colors (Dutch National Flag)</h1>
+        
+        <div class="controls">
+            <label for="initial-array">Array:</label>
+            <input type="text" id="initial-array" value="2,0,2,1,1,0">
+            <button id="reset-btn">Reset</button>
+            <button id="next-step-btn">Next Step</button>
+            <button id="auto-play-btn">Auto Play</button>
+            <div class="speed-control">
+                <label for="speed-slider">Speed:</label>
+                <input type="range" id="speed-slider" min="100" max="2000" value="1200" step="100">
+            </div>
+        </div>
+
+        <div id="array-container">
+            <!-- Color blocks will be generated here -->
+            <div class="pointer-container">
+                <div id="low-ptr" class="pointer">L<div class="arrow"></div></div>
+                <div id="mid-ptr" class="pointer">M<div class="arrow"></div></div>
+                <div id="high-ptr" class="pointer">H<div class="arrow"></div></div>
+            </div>
+        </div>
+
+        <div id="status-message">Enter an array and click Reset, then Next Step or Auto Play.</div>
+
+        <div class="pseudo-code">
+            <div class="line" id="code-0">low = 0, mid = 0, high = n - 1</div>
+            <div class="line" id="code-1">while mid <= high:</div>
+            <div class="line" id="code-2">&nbsp;&nbsp;if nums[mid] == 0:</div>
+            <div class="line" id="code-3">&nbsp;&nbsp;&nbsp;&nbsp;swap(nums[low], nums[mid])</div>
+            <div class="line" id="code-4">&nbsp;&nbsp;&nbsp;&nbsp;low++; mid++</div>
+            <div class="line" id="code-5">&nbsp;&nbsp;else if nums[mid] == 1:</div>
+            <div class="line" id="code-6">&nbsp;&nbsp;&nbsp;&nbsp;mid++</div>
+            <div class="line" id="code-7">&nbsp;&nbsp;else (nums[mid] == 2):</div>
+            <div class="line" id="code-8">&nbsp;&nbsp;&nbsp;&nbsp;swap(nums[mid], nums[high])</div>
+            <div class="line" id="code-9">&nbsp;&nbsp;&nbsp;&nbsp;high--</div>
+            <div class="line" id="code-10">Algorithm Complete!</div>
+        </div>
+    </div>
+
+    <script>
+        const arrayContainer = document.getElementById('array-container');
+        const resetBtn = document.getElementById('reset-btn');
+        const nextStepBtn = document.getElementById('next-step-btn');
+        const autoPlayBtn = document.getElementById('auto-play-btn');
+        const initialArrayInput = document.getElementById('initial-array');
+        const statusMessage = document.getElementById('status-message');
+        const speedSlider = document.getElementById('speed-slider');
+
+        let baseArray = [];
+        let currentArrayState = { nums: [], low: 0, mid: 0, high: -1, n: 0 };
+        
+        let animationSpeed = 800; 
+        let isAutoPlaying = false;
+        let autoPlayTimeoutId = null;
+        let sorterGenerator = null;
+
+        function getBlockWidth() {
+            const firstBlock = arrayContainer.querySelector('.color-block');
+            return firstBlock ? firstBlock.offsetWidth + (2 * 6) : 61; // width + 2*margin
+        }
+
+        function renderArray(nums, midIndex = -1, swapIndices = []) {
+            const blockContainer = arrayContainer.querySelector('.pointer-container') ? 
+                                   arrayContainer : // if pointer-container exists, insert before it
+                                   null; // Should not happen if HTML is correct
+            
+            // Clear only blocks, not pointers
+            Array.from(arrayContainer.querySelectorAll('.color-block')).forEach(b => b.remove());
+
+            nums.forEach((val, index) => {
+                const block = document.createElement('div');
+                block.className = `color-block color-${val}`;
+                block.textContent = val;
+                block.dataset.index = index;
+                if (index === midIndex) {
+                    block.classList.add('current-mid');
+                }
+                if (swapIndices.includes(index)) {
+                    block.classList.add('swapping');
+                }
+                // Insert blocks before the pointer container
+                arrayContainer.insertBefore(block, arrayContainer.querySelector('.pointer-container'));
+            });
+        }
+
+        function updatePointers(low, mid, high, n) {
+            const blockWidth = getBlockWidth();
+            const arrayStartOffset = (arrayContainer.offsetWidth - (n * blockWidth)) / 2;
+
+            const lowP = document.getElementById('low-ptr');
+            const midP = document.getElementById('mid-ptr');
+            const highP = document.getElementById('high-ptr');
+            
+            const pointers = [
+                { el: lowP, val: low, label: 'L' },
+                { el: midP, val: mid, label: 'M' },
+                { el: highP, val: high, label: 'H' }
+            ];
+
+            pointers.forEach(p => {
+                if (p.val >= 0 && p.val < n) {
+                    p.el.style.left = `${arrayStartOffset + p.val * blockWidth + blockWidth / 2 - p.el.offsetWidth / 2}px`;
+                    p.el.style.opacity = '1';
+                } else {
+                    p.el.style.opacity = '0';
+                }
+            });
+            
+            // Basic overlap handling (can be improved for >2 overlaps)
+            if (low === mid && low < n) {
+                 midP.style.left = `${parseFloat(lowP.style.left) + 20}px`;
+            }
+            if (mid === high && mid < n) {
+                 highP.style.left = `${parseFloat(midP.style.left) + (low === mid ? 40 : 20)}px`;
+            } else if (low === high && low < n && low !== mid) { // low=high, mid is elsewhere
+                 highP.style.left = `${parseFloat(lowP.style.left) + 20}px`;
+            }
+        }
+        
+        function highlightCodeLine(lineId) {
+            document.querySelectorAll('.pseudo-code .line').forEach(line => {
+                line.classList.remove('highlight-code');
+            });
+            if (lineId) {
+                document.getElementById(lineId)?.classList.add('highlight-code');
+            }
+        }
+
+        function updateUI(state) {
+            currentArrayState = { ...currentArrayState, ...state }; // Persist relevant parts of state
+            renderArray(state.nums, state.midToHighlight, state.swapIndices);
+            updatePointers(state.low, state.mid, state.high, state.n);
+            highlightCodeLine(state.codeLineId);
+            statusMessage.textContent = state.statusText;
+
+            if (state.isDone) {
+                nextStepBtn.disabled = true;
+                autoPlayBtn.disabled = true; // Or change to "Restart"
+                autoPlayBtn.textContent = "Auto Play";
+                isAutoPlaying = false;
+                 if (autoPlayTimeoutId) clearTimeout(autoPlayTimeoutId);
+            } else {
+                nextStepBtn.disabled = isAutoPlaying;
+                autoPlayBtn.disabled = false;
+            }
+        }
+
+        function* sortColorsGenerator(initialNums) {
+            let nums = [...initialNums];
+            let low = 0, mid = 0, high = nums.length - 1;
+            const n = nums.length;
+
+            currentArrayState = { nums, low, mid, high, n }; // Initialize global state tracking
+
+            yield { 
+                nums: [...nums], low, mid, high, n, 
+                statusText: `Initial: low=${low}, mid=${mid}, high=${high}. (n=${n})`, 
+                codeLineId: 'code-0', midToHighlight: mid, swapIndices: [] 
+            };
+
+            yield { // Step to highlight while loop
+                nums: [...nums], low, mid, high, n,
+                statusText: `Checking loop condition: mid (${mid}) <= high (${high})`,
+                codeLineId: 'code-1', midToHighlight: mid, swapIndices: []
+            };
+
+            while (mid <= high) {
+                currentArrayState = { nums, low, mid, high, n };
+                yield { // Highlight current mid at start of loop iteration
+                    nums: [...nums], low, mid, high, n, 
+                    statusText: `Processing index ${mid} (value: ${nums[mid]}). low=${low}, mid=${mid}, high=${high}`,
+                    codeLineId: 'code-1', midToHighlight: mid, swapIndices: []
+                };
+
+                if (nums[mid] === 0) {
+                    yield { 
+                        nums: [...nums], low, mid, high, n, 
+                        statusText: `nums[${mid}] (is ${nums[mid]}) == 0. Prepare to swap with nums[${low}].`, 
+                        codeLineId: 'code-2', midToHighlight: mid, swapIndices: [low, mid] 
+                    };
+                    yield { 
+                        nums: [...nums], low, mid, high, n, 
+                        statusText: `Swapping nums[${low}] (${nums[low]}) with nums[${mid}] (${nums[mid]}).`, 
+                        codeLineId: 'code-3', midToHighlight: -1, swapIndices: [low, mid] 
+                    };
+                    
+                    [nums[low], nums[mid]] = [nums[mid], nums[low]];
+                    low++;
+                    mid++;
+                    currentArrayState = { nums, low, mid, high, n };
+                    yield { 
+                        nums: [...nums], low, mid, high, n, 
+                        statusText: `Swapped. New: low=${low}, mid=${mid}.`, 
+                        codeLineId: 'code-4', midToHighlight: mid <= high ? mid : -1 , swapIndices: [] 
+                    };
+
+                } else if (nums[mid] === 1) {
+                     yield { 
+                        nums: [...nums], low, mid, high, n, 
+                        statusText: `nums[${mid}] (is ${nums[mid]}) == 1. Increment mid.`, 
+                        codeLineId: 'code-5', midToHighlight: mid, swapIndices: [] 
+                    };
+                    mid++;
+                    currentArrayState = { nums, low, mid, high, n };
+                    yield { 
+                        nums: [...nums], low, mid, high, n, 
+                        statusText: `Mid incremented. New: mid=${mid}.`, 
+                        codeLineId: 'code-6', midToHighlight: mid <= high ? mid : -1, swapIndices: [] 
+                    };
+                } else { // nums[mid] === 2
+                    yield { 
+                        nums: [...nums], low, mid, high, n, 
+                        statusText: `nums[${mid}] (is ${nums[mid]}) == 2. Prepare to swap with nums[${high}].`, 
+                        codeLineId: 'code-7', midToHighlight: mid, swapIndices: [mid, high] 
+                    };
+                     yield { 
+                        nums: [...nums], low, mid, high, n, 
+                        statusText: `Swapping nums[${mid}] (${nums[mid]}) with nums[${high}] (${nums[high]}).`, 
+                        codeLineId: 'code-8', midToHighlight: -1, swapIndices: [mid, high] 
+                    };
+
+                    [nums[mid], nums[high]] = [nums[high], nums[mid]];
+                    high--;
+                    currentArrayState = { nums, low, mid, high, n };
+                    yield { 
+                        nums: [...nums], low, mid, high, n, 
+                        statusText: `Swapped. New: high=${high}.`, 
+                        codeLineId: 'code-9', midToHighlight: mid <= high ? mid : -1, swapIndices: [] 
+                    };
+                }
+                if (mid <= high) { // Only yield loop check if it continues
+                    yield { 
+                        nums: [...nums], low, mid, high, n,
+                        statusText: `Checking loop condition: mid (${mid}) <= high (${high})`,
+                        codeLineId: 'code-1', midToHighlight: mid, swapIndices: []
+                    };
+                }
+            }
+            
+            baseArray = [...nums]; // Store final sorted array
+            return { 
+                nums: [...nums], low, mid, high, n, 
+                statusText: 'Sorting Complete!', 
+                codeLineId: 'code-10', midToHighlight: -1, swapIndices: [], isDone: true 
+            };
+        }
+
+        function parseInputArray() {
+            let parsedArray;
+            try {
+                parsedArray = initialArrayInput.value.split(',')
+                                .map(s => parseInt(s.trim()))
+                                .filter(n => !isNaN(n) && n >= 0 && n <= 2);
+                if (parsedArray.length === 0 && initialArrayInput.value.trim() !== "") {
+                     throw new Error("Invalid input. Use 0s, 1s, 2s, comma-separated.");
+                } else if (parsedArray.length === 0 && initialArrayInput.value.trim() === "") {
+                    statusMessage.textContent = "Input array is empty. Using default.";
+                    initialArrayInput.value = "2,0,2,1,1,0"; // Default
+                    parsedArray = [2,0,2,1,1,0];
+                }
+            } catch (e) {
+                statusMessage.textContent = e.message + " Using default.";
+                initialArrayInput.value = "2,0,2,1,1,0"; // Default on error
+                parsedArray = [2,0,2,1,1,0];
+            }
+            return parsedArray;
+        }
+        
+        function initializeSorter() {
+            if (isAutoPlaying) stopAutoPlay();
+            baseArray = parseInputArray();
+            sorterGenerator = sortColorsGenerator(baseArray);
+            
+            // Perform the first step to show initial state
+            const initialState = sorterGenerator.next().value;
+            updateUI(initialState);
+
+            nextStepBtn.disabled = false;
+            autoPlayBtn.disabled = false;
+            autoPlayBtn.textContent = "Auto Play";
+            resetBtn.disabled = false;
+            initialArrayInput.disabled = true;
+        }
+
+        function handleNextStep() {
+            if (sorterGenerator) {
+                const stepResult = sorterGenerator.next();
+                updateUI(stepResult.value);
+                if (stepResult.done) {
+                    sorterGenerator = null; // Allow re-init
+                }
+            }
+        }
+
+        function startAutoPlay() {
+            if (!sorterGenerator) initializeSorter(); // Ensure generator is ready
+            if (!sorterGenerator || isAutoPlaying) return; // Or if it immediately finishes
+
+            isAutoPlaying = true;
+            autoPlayBtn.textContent = "Pause";
+            nextStepBtn.disabled = true;
+            initialArrayInput.disabled = true;
+
+            function autoStep() {
+                if (!isAutoPlaying || !sorterGenerator) return;
+                
+                const stepResult = sorterGenerator.next();
+                updateUI(stepResult.value);
+
+                if (stepResult.done) {
+                    isAutoPlaying = false;
+                    autoPlayBtn.textContent = "Auto Play";
+                    autoPlayBtn.disabled = true; // Or "Restart"
+                    sorterGenerator = null;
+                    initialArrayInput.disabled = false;
+                } else {
+                    autoPlayTimeoutId = setTimeout(autoStep, animationSpeed);
+                }
+            }
+            autoStep();
+        }
+
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            if (autoPlayTimeoutId) clearTimeout(autoPlayTimeoutId);
+            autoPlayBtn.textContent = "Auto Play";
+            nextStepBtn.disabled = sorterGenerator ? sorterGenerator.done : true; // Enable if not done
+        }
+
+        resetBtn.addEventListener('click', () => {
+            stopAutoPlay();
+            sorterGenerator = null;
+            baseArray = parseInputArray();
+
+            renderArray(baseArray);
+            updatePointers(-1, -1, -1, baseArray.length);
+            statusMessage.textContent = 'Array reset. Click Next Step or Auto Play.';
+            highlightCodeLine(null);
+
+            nextStepBtn.disabled = false;
+            autoPlayBtn.disabled = false;
+            autoPlayBtn.textContent = "Auto Play";
+            initialArrayInput.disabled = false;
+        });
+
+        nextStepBtn.addEventListener('click', () => {
+            if (!sorterGenerator) initializeSorter(); // If starting fresh with "Next"
+            handleNextStep();
+        });
+        
+        autoPlayBtn.addEventListener('click', () => {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+            } else {
+                if (!sorterGenerator || currentArrayState.isDone) { // If generator is null or finished
+                    initializeSorter(); // Reset and initialize
+                    if (currentArrayState.isDone) return; // Don't start autoplay if it's already done
+                }
+                startAutoPlay();
+            }
+        });
+        
+        speedSlider.addEventListener('input', (e) => {
+            animationSpeed = 2100 - parseInt(e.target.value); 
+        });
+
+        window.addEventListener('load', () => {
+            animationSpeed = 2100 - parseInt(speedSlider.value);
+            // Don't auto-initialize on load, let user click Reset or a play button.
+            baseArray = parseInputArray();
+            renderArray(baseArray);
+            updatePointers(-1,-1,-1, baseArray.length);
+            nextStepBtn.disabled = false; // Enable it for first step
+            autoPlayBtn.disabled = false;
+            initialArrayInput.disabled = false;
+        });
+        
+        window.addEventListener('resize', () => {
+            if (baseArray.length > 0) {
+                 // Re-render with current state if generator is active, else just base array
+                if (sorterGenerator && !currentArrayState.isDone) {
+                    updateUI(currentArrayState); // Use the last known state
+                } else {
+                    renderArray(baseArray);
+                    updatePointers(-1,-1,-1, baseArray.length);
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>

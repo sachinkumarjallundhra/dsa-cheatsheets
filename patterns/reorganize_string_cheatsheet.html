@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reorganize String Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Reorganize String – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Reorganize String</b> problem involves rearranging the characters of a string so that no two adjacent characters are the same. If it is not possible, return an empty string.</p>
+    <p>This problem can be efficiently solved using a <b>max-heap</b> to track the most frequent characters.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public String reorganizeString(String s) {
+        Map&lt;Character, Integer&gt; frequencyMap = new HashMap&lt;&gt;();
+        for (char c : s.toCharArray()) {
+            frequencyMap.put(c, frequencyMap.getOrDefault(c, 0) + 1);
+        }
+
+        PriorityQueue&lt;Map.Entry&lt;Character, Integer&gt;&gt; maxHeap = new PriorityQueue&lt;&gt;(
+            (a, b) -&gt; b.getValue() - a.getValue()
+        );
+        maxHeap.addAll(frequencyMap.entrySet());
+
+        StringBuilder result = new StringBuilder();
+        Map.Entry&lt;Character, Integer&gt; prev = null;
+
+        while (!maxHeap.isEmpty()) {
+            Map.Entry&lt;Character, Integer&gt; current = maxHeap.poll();
+            result.append(current.getKey());
+
+            if (prev != null && prev.getValue() &gt; 0) {
+                maxHeap.offer(prev);
+            }
+
+            current.setValue(current.getValue() - 1);
+            prev = current;
+        }
+
+        return result.length() == s.length() ? result.toString() : "";
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Operations</b>: <code>O(N log A)</code> – Adding and removing elements from the heap, where <code>A</code> is the number of unique characters.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log A)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Reorganizing strings to meet specific constraints</li>
+      <li>Applications in scheduling and resource allocation</li>
+      <li>Ensuring balanced distribution of elements</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/reorganize-string/" target="_blank" rel="noopener noreferrer">767. Reorganize String</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Reorganize String</h2>
+    <pre><code>Input: s = "aab"
+Output: "aba"
+
+Explanation:
+- The most frequent character is 'a'.
+- Alternate 'a' with 'b' to ensure no two adjacent characters are the same.</code></pre>
+    <button onclick="window.location.href='../animations/reorganize_string_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a max-heap to efficiently track the most frequent characters.</li>
+      <li>Edge cases: strings with only one character, strings where reorganization is impossible.</li>
+      <li>Ensure the heap stores enough information to track character frequencies.</li>
+    </ul>
+  </div>
+</body>
+</html>

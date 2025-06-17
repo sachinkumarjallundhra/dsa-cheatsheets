@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Subsequence of Length K With the Largest Sum Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Find Subsequence of Length K With the Largest Sum – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Find Subsequence of Length K With the Largest Sum</b> problem involves selecting <code>K</code> elements from an array such that their sum is maximized while maintaining their relative order.</p>
+    <p>This problem can be solved using a <b>max-heap</b> to track the largest elements and then sorting them by their original indices.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int[] maxSubsequence(int[] nums, int k) {
+        PriorityQueue&lt;int[]&gt; maxHeap = new PriorityQueue&lt;&gt;(
+            (a, b) -&gt; a[0] - b[0] // Min-heap based on values
+        );
+
+        // Step 1: Add elements to the heap and maintain size K
+        for (int i = 0; i &lt; nums.length; i++) {
+            maxHeap.offer(new int[]{nums[i], i});
+            if (maxHeap.size() &gt; k) {
+                maxHeap.poll(); // Remove the smallest element
+            }
+        }
+
+        // Step 2: Extract the top K elements
+        List&lt;int[]&gt; topK = new ArrayList&lt;&gt;(maxHeap);
+
+        // Step 3: Sort the elements by their original indices
+        topK.sort((a, b) -&gt; a[1] - b[1]);
+
+        // Step 4: Extract the values
+        int[] result = new int[k];
+        for (int i = 0; i &lt; k; i++) {
+            result[i] = topK.get(i)[0];
+        }
+
+        return result;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Operations</b>: <code>O(N log K)</code> – Adding elements to the heap.</li>
+      <li><b>Sorting</b>: <code>O(K log K)</code> – Sorting the top K elements by their indices.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log K)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding subsequences with maximum sums while preserving order</li>
+      <li>Applications in optimization problems</li>
+      <li>Efficiently processing large datasets</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-subsequence-of-length-k-with-the-largest-sum/" target="_blank" rel="noopener noreferrer">2099. Find Subsequence of Length K With the Largest Sum</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Find Subsequence of Length K With the Largest Sum</h2>
+    <pre><code>Input: nums = [2,1,3,3], k = 2
+Output: [3,3]
+
+Explanation:
+- The top 2 elements are [3, 3].
+- Sorting by their original indices gives [3, 3].</code></pre>
+    <button onclick="window.location.href='../animations/find_subsequence_with_largest_sum_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a max-heap to efficiently track the largest elements.</li>
+      <li>Edge cases: arrays with fewer than <code>K</code> elements.</li>
+      <li>Ensure the subsequence preserves the original order of elements.</li>
+    </ul>
+  </div>
+</body>
+</html>

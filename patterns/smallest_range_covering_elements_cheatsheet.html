@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smallest Range Covering Elements from K Lists Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Smallest Range Covering Elements from K Lists – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Smallest Range Covering Elements from K Lists</b> problem involves finding the smallest range [x, y] such that at least one number from each of the <code>K</code> lists is included in the range.</p>
+    <p>This problem can be solved using a <b>min-heap</b> to track the smallest elements across the lists.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int[] smallestRange(List&lt;List&lt;Integer&gt;&gt; nums) {
+        PriorityQueue&lt;int[]&gt; minHeap = new PriorityQueue&lt;&gt;(
+            (a, b) -&gt; nums.get(a[0]).get(a[1]) - nums.get(b[0]).get(b[1])
+        );
+
+        int max = Integer.MIN_VALUE;
+        int rangeStart = 0, rangeEnd = Integer.MAX_VALUE;
+
+        // Step 1: Add the first element of each list to the heap
+        for (int i = 0; i &lt; nums.size(); i++) {
+            minHeap.offer(new int[]{i, 0});
+            max = Math.max(max, nums.get(i).get(0));
+        }
+
+        // Step 2: Process the heap
+        while (minHeap.size() == nums.size()) {
+            int[] smallest = minHeap.poll();
+            int row = smallest[0], col = smallest[1];
+            int min = nums.get(row).get(col);
+
+            // Update the range
+            if (max - min &lt; rangeEnd - rangeStart) {
+                rangeStart = min;
+                rangeEnd = max;
+            }
+
+            // Add the next element from the same list to the heap
+            if (col + 1 &lt; nums.get(row).size()) {
+                minHeap.offer(new int[]{row, col + 1});
+                max = Math.max(max, nums.get(row).get(col + 1));
+            }
+        }
+
+        return new int[]{rangeStart, rangeEnd};
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Operations</b>: <code>O(N log K)</code> – Adding and removing elements from the heap, where <code>N</code> is the total number of elements across all lists.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log K)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding ranges that cover elements from multiple lists</li>
+      <li>Applications in scheduling and resource allocation</li>
+      <li>Efficiently processing large datasets</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/smallest-range-covering-elements-from-k-lists/" target="_blank" rel="noopener noreferrer">632. Smallest Range Covering Elements from K Lists</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Smallest Range Covering Elements from K Lists</h2>
+    <pre><code>Input: nums = [[4,10,15,24,26],[0,9,12,20],[5,18,22,30]]
+Output: [20,24]
+
+Explanation:
+- The range [20, 24] includes at least one number from each list.</code></pre>
+    <button onclick="window.location.href='../animations/smallest_range_covering_elements_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the smallest elements across lists.</li>
+      <li>Edge cases: lists with varying lengths, empty lists.</li>
+      <li>Ensure the heap stores enough information to track the source of each element.</li>
+    </ul>
+  </div>
+</body>
+</html>

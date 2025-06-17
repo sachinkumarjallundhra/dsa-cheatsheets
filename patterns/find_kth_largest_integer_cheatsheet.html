@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find the Kth Largest Integer in the Array Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Find the Kth Largest Integer in the Array – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Find the Kth Largest Integer in the Array</b> problem involves finding the <code>K</code>th largest integer in an array of strings, where each string represents an integer. The comparison is based on numerical values.</p>
+    <p>This problem can be solved using a <b>min-heap</b> to track the top <code>K</code> largest integers.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public String kthLargestNumber(String[] nums, int k) {
+        PriorityQueue&lt;String&gt; minHeap = new PriorityQueue&lt;&gt;(
+            (a, b) -&gt; {
+                if (a.length() == b.length()) {
+                    return a.compareTo(b); // Lexicographical comparison
+                }
+                return Integer.compare(a.length(), b.length()); // Compare by length
+            }
+        );
+
+        // Step 1: Add elements to the heap
+        for (String num : nums) {
+            minHeap.offer(num);
+            if (minHeap.size() &gt; k) {
+                minHeap.poll(); // Remove the smallest element
+            }
+        }
+
+        // Step 2: The root of the heap is the Kth largest integer
+        return minHeap.peek();
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Operations</b>: <code>O(N log K)</code> – Adding and removing elements from the heap.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log K)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the Kth largest integer in an array of strings</li>
+      <li>Efficiently processing large datasets</li>
+      <li>Applications in ranking and leaderboard systems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-the-kth-largest-integer-in-the-array/" target="_blank" rel="noopener noreferrer">1985. Find the Kth Largest Integer in the Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Find the Kth Largest Integer in the Array</h2>
+    <pre><code>Input: nums = ["3","6","7","10"], k = 2
+Output: "7"
+
+Explanation:
+- The integers are [3, 6, 7, 10].
+- The 2nd largest integer is "7".</code></pre>
+    <button onclick="window.location.href='../animations/find_kth_largest_integer_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the top K largest integers.</li>
+      <li>Edge cases: strings with varying lengths, duplicate integers.</li>
+      <li>Ensure numerical comparison for strings representing integers.</li>
+    </ul>
+  </div>
+</body>
+</html>

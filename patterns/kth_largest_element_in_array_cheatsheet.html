@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kth Largest Element in an Array Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Kth Largest Element in an Array – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Kth Largest Element in an Array</b> problem involves finding the <code>K</code>th largest element in an unsorted array. This is commonly solved using a <b>min-heap</b> or the <b>Quickselect algorithm</b>.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int findKthLargest(int[] nums, int k) {
+        PriorityQueue&lt;Integer&gt; minHeap = new PriorityQueue&lt;&gt;();
+
+        // Step 1: Add elements to the heap
+        for (int num : nums) {
+            minHeap.offer(num);
+            if (minHeap.size() &gt; k) {
+                minHeap.poll(); // Remove the smallest element
+            }
+        }
+
+        // Step 2: The root of the heap is the Kth largest element
+        return minHeap.peek();
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Operations</b>: <code>O(N log K)</code> – Adding and removing elements from the heap.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log K)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the Kth largest or smallest element in an array</li>
+      <li>Efficiently processing large datasets</li>
+      <li>Applications in ranking and leaderboard systems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/kth-largest-element-in-an-array/" target="_blank" rel="noopener noreferrer">215. Kth Largest Element in an Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/kth-smallest-element-in-a-sorted-matrix/" target="_blank" rel="noopener noreferrer">378. Kth Smallest Element in a Sorted Matrix</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Kth Largest Element in an Array</h2>
+    <pre><code>Input: nums = [3,2,1,5,6,4], k = 2
+Output: 5
+
+Explanation:
+- Add elements to the heap and maintain its size as K.
+- The 2nd largest element is 5.</code></pre>
+    <button onclick="window.location.href='../animations/kth_largest_element_in_array_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a min-heap to efficiently track the K largest elements.</li>
+      <li>Edge cases: empty arrays, <code>K</code> greater than the array size.</li>
+      <li>Consider Quickselect for better performance when <code>K</code> is large.</li>
+    </ul>
+  </div>
+</body>
+</html>

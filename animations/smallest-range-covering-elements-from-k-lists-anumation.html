@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smallest Range Covering Elements Animation (Enhanced Timeline)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 98%;
+            max-width: 1400px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls label { font-weight: bold; margin-right: 5px; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 350px; }
+        .controls button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+
+        .main-content-sr {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr; 
+            gap: 20px;
+        }
+        .left-panel-sr { 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .lists-display-area-sr, .pq-info-area-sr, .log-container-sr, .inputs-display-sr, .number-line-area-sr {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+         .inputs-display-sr, .log-container-sr { grid-column: 1 / -1; }
+        
+        .list-container-sr { margin-bottom: 10px; border-left: 3px solid #3498db; padding-left: 10px; }
+        .list-label-sr { font-weight: bold; margin-bottom: 5px; display: block; }
+        .list-elements-sr { display: flex; flex-wrap: wrap; gap: 5px; }
+        .list-element-sr {
+            padding: 6px 8px; border-radius: 3px; font-size: 0.9em;
+            border: 1px solid #bdc3c7; background-color: #ecf0f1;
+            position: relative; transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+        }
+        .list-element-sr.current-in-heap { background-color: #aed6f1; border-color: #7fb3d5; font-weight: bold; }
+        .list-element-sr.polled-element { background-color: #f9e79f !important; border-color: #f1c40f !important; transform: scale(1.1); }
+        .list-container-sr.exhausted .list-label-sr { color: #aaa; text-decoration: line-through; }
+        .list-container-sr.exhausted .list-elements-sr { opacity: 0.5; }
+
+        .pq-display-sr { min-height: 100px; padding: 10px; border: 1px dashed #27ae60; display: flex; flex-direction: column; gap: 5px; background-color: #e8f8f5; margin-bottom: 15px; overflow-y: auto; max-height: 200px;}
+        .pq-entry-sr { padding: 5px 8px; border-radius: 4px; font-size: 0.85em; text-align: left; border: 1px solid #a9dfbf; background-color: #d4efdf; transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease;}
+        .pq-entry-sr .val { font-weight:bold; color: #145a32; }
+        .pq-entry-sr .list-idx { color: #1abc9c; }
+        .pq-entry-sr .elem-idx { color: #5dade2; }
+        .pq-entry-sr.highlight-polled-pq { background-color: #f1c40f !important; border-color: #d39e00 !important; transform: scale(1.05); }
+        .pq-entry-sr.removing-pq { opacity: 0; transform: translateY(-10px); }
+        .pq-entry-sr.adding-pq { transform: scale(0.5); opacity: 0;}
+
+        .current-range-info-sr p { margin: 5px 0; }
+        .current-range-info-sr strong { color: #d35400; }
+        #smallest_range_val_sr { font-size: 1.2em; font-weight: bold; color: #2ecc71; }
+        #smallest_range_val_sr.updated-best-range { animation: pulse-best-range-sr 0.8s; }
+        @keyframes pulse-best-range-sr {0% { color: #2ecc71; transform: scale(1); } 50% { color: #27ae60; transform: scale(1.15); } 100% { color: #2ecc71; transform: scale(1); }}
+        
+        #current_action_sr { text-align:center; margin-bottom:10px; font-weight:bold; min-height:1.2em; color: #8e44ad;}
+        .log-container-sr { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 10px; }
+        #log_output_sr { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Menlo', 'Consolas', monospace; font-size: 0.9em; }
+        .param-item { 
+            display: inline-block; padding: 5px 10px; margin: 5px;
+            background-color: #e9ecef; border-radius: 4px; font-weight: bold;
+        }
+
+        /* --- Number Line / Timeline CSS --- */
+        .number-line-area-sr {
+            min-height: 140px; 
+            overflow-x: auto;
+            padding-top: 45px; /* Increased padding for markers above track */
+            position: relative;
+        }
+        .number-line-track-sr {
+            position: relative;
+            height: 10px; 
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 10px 10px 50px 10px; /* Top margin for list dots/markers, bottom for ticks */
+        }
+        .number-line-tick-sr {
+            position: absolute;
+            bottom: -5px; 
+            height: 15px; 
+            width: 1px;
+            background-color: #aaa;
+        }
+        .number-line-tick-sr span { 
+            position: absolute;
+            bottom: -20px; 
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75em;
+            color: #555;
+        }
+        .number-line-list-dot-sr { /* Dots representing numbers from lists */
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            top: 2px; /* Centered on the track line */
+            transform: translateX(-50%); 
+        }
+        .range-bar-sr { /* Bars for current and best range */
+            position: absolute;
+            top: 0px; /* Sit on top of the track */
+            height: 100%; /* Cover full track height */
+            opacity: 0.4; 
+            border-radius: 3px;
+            transition: left 0.3s ease, width 0.3s ease, background-color 0.3s ease;
+        }
+        .current-range-bar-sr { background-color: #f39c12; z-index: 10; } /* Orange */
+        .best-range-bar-sr { 
+            background-color: #2ecc71; /* Green */
+            z-index: 5; 
+            opacity: 0.55; 
+            height: 80%; 
+            top: 10%; /* Slightly thinner to differentiate */
+        }
+
+        .number-line-marker-sr { /* Min/Max value markers */
+            position: absolute;
+            width: 10px;   
+            height: 10px;
+            border-radius: 50%;
+            transform: translateX(-50%); 
+            z-index: 20; 
+            transition: left 0.3s ease, background-color 0.3s ease, opacity 0.3s ease; 
+            display: none; 
+            top: -18px; /* Position markers ABOVE the track (and list dots) */
+        }
+        .number-line-marker-sr .marker-label-sr {
+            position: absolute;
+            top: -20px; /* Position label ABOVE the marker */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8em;
+            background-color: rgba(255, 255, 255, 0.9); 
+            padding: 2px 4px; 
+            border-radius: 3px;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        #timeline_min_marker_sr {
+            background-color: #e74c3c; /* Red for Min */
+        }
+        #timeline_max_marker_sr {
+            background-color: #3498db; /* Blue for Max */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Smallest Range Covering Elements Animation (Enhanced Timeline)</h1>
+
+        <div class="controls">
+            <label for="lists_input_sr">Lists (e.g., [[4,10],[0,9],[5,18]]):</label>
+            <input type="text" id="lists_input_sr" value="[[4,10,15,24,26],[0,9,12,20],[5,18,22,30]]">
+            <button id="start_button_sr">Start/Reset</button>
+            <button id="next_step_button_sr" disabled>Next Step</button>
+        </div>
+        
+        <div class="inputs-display-sr">
+             K (Number of Lists): <span id="k_display_sr" class="param-item">-</span>
+        </div>
+
+        <div class="main-content-sr">
+            <div class="left-panel-sr">
+                <div class="lists-display-area-sr">
+                    <h2>Input Lists (Pointers show Heap elements)</h2>
+                    <div id="lists_container_sr"></div>
+                </div>
+                <div class="number-line-area-sr">
+                    <h2>Number Line Visualization</h2>
+                    <div id="number_line_track_sr" class="number-line-track-sr">
+                        <div id="current_range_bar_sr" class="range-bar-sr current-range-bar-sr" style="display:none;"></div>
+                        <div id="best_range_bar_sr" class="range-bar-sr best-range-bar-sr" style="display:none;"></div>
+                        <div id="timeline_min_marker_sr" class="number-line-marker-sr"><span class="marker-label-sr">Min: -</span></div>
+                        <div id="timeline_max_marker_sr" class="number-line-marker-sr"><span class="marker-label-sr">Max: -</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pq-info-area-sr">
+                <h2>Min-Heap ([Val, ListIdx, ElemIdxInList])</h2>
+                <div id="pq_display_sr" class="pq-display-sr"></div>
+                <div class="current-range-info-sr">
+                    <p>Max in Heap: <strong id="max_in_heap_sr">-</strong></p>
+                    <p>Polled Min from Heap: <strong id="polled_min_sr">-</strong></p>
+                    <p>Current Range Considered: <strong id="current_range_sr">-</strong></p>
+                    <p>Smallest Range Found: <strong id="smallest_range_val_sr">-</strong> (Size: <span id="smallest_range_size_sr">-</span>)</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="current_action_sr"></div>
+        <div class="log-container-sr">
+            <h2>Log</h2>
+            <pre id="log_output_sr"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const listsInput = document.getElementById('lists_input_sr');
+        const startButton = document.getElementById('start_button_sr');
+        const nextStepButton = document.getElementById('next_step_button_sr');
+        const kDisplay = document.getElementById('k_display_sr');
+        const listsContainer = document.getElementById('lists_container_sr');
+        const numberLineTrack = document.getElementById('number_line_track_sr');
+        const currentRangeBar = document.getElementById('current_range_bar_sr');
+        const bestRangeBar = document.getElementById('best_range_bar_sr');
+        const timelineMinMarker = document.getElementById('timeline_min_marker_sr'); 
+        const timelineMaxMarker = document.getElementById('timeline_max_marker_sr'); 
+        const pqDisplay = document.getElementById('pq_display_sr');
+        const maxInHeapDisplay = document.getElementById('max_in_heap_sr');
+        const polledMinDisplay = document.getElementById('polled_min_sr');
+        const currentRangeDisplay = document.getElementById('current_range_sr');
+        const smallestRangeValDisplay = document.getElementById('smallest_range_val_sr');
+        const smallestRangeSizeDisplay = document.getElementById('smallest_range_size_sr');
+        const currentActionDisplay = document.getElementById('current_action_sr');
+        const logOutput = document.getElementById('log_output_sr');
+
+        const ANIMATION_DELAY = 750; 
+        const SUB_DELAY = ANIMATION_DELAY / 1.5;
+        const LIST_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#d35400', '#8e44ad'];
+
+        let K_SR, allListsSR = [], listDomContainers = [];
+        let minHeapDataSR = [], currentPointersSR = [];
+        let maxValInHeap = -Infinity, bestRangeStart = -Infinity, bestRangeEnd = Infinity;
+        let animationStepSR = 0, initHeapListIdx = 0, polledEntrySR = null;
+        let numberLineMinVal = 0, numberLineMaxVal = 1, numberLineScale = 10;
+
+        function logSR(message) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; }
+        function clearAllHighlightsSR() {
+            document.querySelectorAll('.list-element-sr.current-in-heap, .list-element-sr.polled-element').forEach(el => el.classList.remove('current-in-heap', 'polled-element'));
+            document.querySelectorAll('.pq-entry-sr.highlight-polled-pq').forEach(el => el.classList.remove('highlight-polled-pq'));
+            smallestRangeValDisplay.classList.remove('updated-best-range');
+            currentRangeBar.style.display = 'none'; 
+            timelineMinMarker.style.display = 'none'; 
+            timelineMaxMarker.style.display = 'none';
+        }
+        function renderLists() { 
+            listsContainer.innerHTML = ''; listDomContainers = [];
+            allListsSR.forEach((list, listIdx) => {
+                const listDiv = document.createElement('div'); listDiv.classList.add('list-container-sr'); listDiv.id = `list-cont-${listIdx}`;
+                const label = document.createElement('span'); label.classList.add('list-label-sr'); label.textContent = `List ${listIdx}:`; listDiv.appendChild(label);
+                const elementsDiv = document.createElement('div'); elementsDiv.classList.add('list-elements-sr');
+                list.forEach((val, elemIdx) => {
+                    const el = document.createElement('div'); el.classList.add('list-element-sr'); el.id = `list-${listIdx}-elem-${elemIdx}`;
+                    el.textContent = val; elementsDiv.appendChild(el);
+                });
+                listDiv.appendChild(elementsDiv); listsContainer.appendChild(listDiv); listDomContainers.push(elementsDiv);
+            });
+        }
+        function highlightListPointers() { 
+            document.querySelectorAll('.list-element-sr.current-in-heap').forEach(el => el.classList.remove('current-in-heap'));
+            minHeapDataSR.forEach(heapEntry => {
+                const listElContainer = listDomContainers[heapEntry.listIdx];
+                if (listElContainer && heapEntry.elemIdx < listElContainer.children.length) {
+                    listElContainer.children[heapEntry.elemIdx].classList.add('current-in-heap');
+                }
+            });
+        }
+        function renderPQSR(highlightTopId = null) { 
+            pqDisplay.innerHTML = ''; minHeapDataSR.sort((a, b) => a.val - b.val || a.listIdx - b.listIdx);
+            minHeapDataSR.forEach(entry => { 
+                const item = document.createElement('div'); item.classList.add('pq-entry-sr'); item.id = entry.id;
+                item.innerHTML = `[<span class="val">${entry.val}</span>, L:<span class="list-idx">${entry.listIdx}</span>, EIdx:<span class="elem-idx">${entry.elemIdx}</span>]`;
+                if (highlightTopId && entry.id === highlightTopId) { item.classList.add('highlight-polled-pq'); }
+                pqDisplay.appendChild(item);
+            });
+        }
+        async function addToPQSRVisual(entry) { 
+            minHeapDataSR.push(entry); renderPQSR(); 
+            const itemEl = document.getElementById(entry.id);
+            if (itemEl) {
+                itemEl.classList.add('adding-pq'); currentActionDisplay.textContent = `Adding [${entry.val}, L:${entry.listIdx}, E:${entry.elemIdx}] to MinHeap.`;
+                logSR(`PQ: Adding [val:${entry.val}, L:${entry.listIdx}, EIdx:${entry.elemIdx}]`);
+                await new Promise(r => setTimeout(r, 50)); itemEl.style.transform = 'scale(1)'; itemEl.style.opacity = '1';
+                await new Promise(r => setTimeout(r, SUB_DELAY)); itemEl.classList.remove('adding-pq');
+                const newTopId = minHeapDataSR.length > 0 ? minHeapDataSR[0].id : null; renderPQSR(newTopId);
+                await new Promise(r => setTimeout(r, SUB_DELAY)); if (newTopId) renderPQSR();
+            } else { 
+                const newTopId = minHeapDataSR.length > 0 ? minHeapDataSR[0].id : null; renderPQSR(newTopId); 
+                await new Promise(r => setTimeout(r, SUB_DELAY)); if (newTopId) renderPQSR();
+            }
+            highlightListPointers();
+        }
+        async function pollFromPQSRVisual() {
+             if (minHeapDataSR.length === 0) return null;
+            minHeapDataSR.sort((a, b) => a.val - b.val || a.listIdx - b.listIdx); const entry = minHeapDataSR[0]; 
+            const itemEl = document.getElementById(entry.id);
+            if (itemEl) {
+                itemEl.classList.add('highlight-polled-pq'); 
+                currentActionDisplay.textContent = `Polling [${entry.val}, L:${entry.listIdx}, E:${entry.elemIdx}] from MinHeap.`;
+                logSR(`PQ: Polling smallest [val:${entry.val}, L:${entry.listIdx}, EIdx:${entry.elemIdx}]`);
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY)); itemEl.classList.add('removing-pq');
+                await new Promise(r => setTimeout(r, SUB_DELAY));
+            }
+            minHeapDataSR.shift(); const newTopId = minHeapDataSR.length > 0 ? minHeapDataSR[0].id : null;
+            renderPQSR(newTopId); 
+            await new Promise(r => setTimeout(r, SUB_DELAY)); if (newTopId) renderPQSR(); 
+            highlightListPointers(); return entry;
+        }
+        function updateInfoDisplays() { 
+            maxInHeapDisplay.textContent = maxValInHeap === -Infinity ? '-' : maxValInHeap;
+            polledMinDisplay.textContent = polledEntrySR ? polledEntrySR.val : '-';
+            if (polledEntrySR && maxValInHeap !== -Infinity) {
+                currentRangeDisplay.textContent = `[${polledEntrySR.val}, ${maxValInHeap}] (Size: ${maxValInHeap - polledEntrySR.val})`;
+            } else { currentRangeDisplay.textContent = '-'; }
+            if (bestRangeStart !== -Infinity) {
+                smallestRangeValDisplay.textContent = `[${bestRangeStart}, ${bestRangeEnd}]`;
+                smallestRangeSizeDisplay.textContent = (bestRangeEnd - bestRangeStart);
+            } else { smallestRangeValDisplay.textContent = '-'; smallestRangeSizeDisplay.textContent = '-'; }
+        }
+
+        function setupNumberLine() {
+            let allNumbersFlat = [];
+            allListsSR.forEach(list => allNumbersFlat.push(...list));
+            if (allNumbersFlat.length === 0) {
+                numberLineMinVal = 0; numberLineMaxVal = 10; 
+            } else {
+                numberLineMinVal = Math.min(...allNumbersFlat);
+                numberLineMaxVal = Math.max(...allNumbersFlat);
+            }
+            const range = numberLineMaxVal - numberLineMinVal;
+            numberLineMinVal -= Math.max(1, Math.floor(range * 0.1) || 1); 
+            numberLineMaxVal += Math.max(1, Math.floor(range * 0.1) || 1);
+            if (numberLineMinVal === numberLineMaxVal) { // Ensure there's always a range
+                 numberLineMinVal -= 2; 
+                 numberLineMaxVal += 3;
+            }
+            renderNumberLine();
+        }
+
+        function renderNumberLine() {
+            Array.from(numberLineTrack.querySelectorAll('.number-line-tick-sr, .number-line-list-dot-sr')).forEach(el => el.remove());
+            const trackWidth = numberLineTrack.clientWidth;
+            if (trackWidth === 0) { numberLineScale = 10; /* Default scale if not visible */ return; } 
+            numberLineScale = trackWidth / (numberLineMaxVal - numberLineMinVal);
+            if (!isFinite(numberLineScale) || numberLineScale <=0) numberLineScale = 10; // Fallback
+
+            const tickStep = Math.max(1, Math.ceil((numberLineMaxVal - numberLineMinVal) / 20)); 
+            for (let val = Math.ceil(numberLineMinVal / tickStep) * tickStep; val <= numberLineMaxVal; val += tickStep) {
+                const xPos = (val - numberLineMinVal) * numberLineScale;
+                if (xPos >= -5 && xPos <= trackWidth + 5) { 
+                    const tick = document.createElement('div'); tick.classList.add('number-line-tick-sr');
+                    tick.style.left = `${xPos}px`;
+                    const label = document.createElement('span'); label.textContent = Math.round(val); 
+                    tick.appendChild(label); numberLineTrack.appendChild(tick);
+                }
+            }
+            allListsSR.forEach((list, listIdx) => {
+                list.forEach(val => {
+                    const xPos = (val - numberLineMinVal) * numberLineScale;
+                     if (xPos >= 0 && xPos <= trackWidth) {
+                        const dot = document.createElement('div'); dot.classList.add('number-line-list-dot-sr');
+                        dot.style.left = `${xPos}px`;
+                        dot.style.backgroundColor = LIST_COLORS[listIdx % LIST_COLORS.length];
+                        dot.title = `List ${listIdx}: ${val}`; numberLineTrack.appendChild(dot);
+                    }
+                });
+            });
+        }
+
+        function updateNumberLineHighlights() {
+            const trackWidth = numberLineTrack.clientWidth;
+            if (trackWidth === 0 || !isFinite(numberLineScale) || numberLineScale <= 0) return; 
+
+            if (polledEntrySR && maxValInHeap !== -Infinity) {
+                const currentStart = polledEntrySR.val;
+                const currentEnd = maxValInHeap;
+                let x1 = (currentStart - numberLineMinVal) * numberLineScale;
+                let x2 = (currentEnd - numberLineMinVal) * numberLineScale;
+
+                currentRangeBar.style.left = `${Math.max(0, x1)}px`;
+                currentRangeBar.style.width = `${Math.max(2, x2 - x1)}px`;
+                currentRangeBar.style.display = 'block';
+
+                timelineMinMarker.style.left = `${Math.max(5, Math.min(trackWidth - 5, x1))}px`; 
+                timelineMinMarker.querySelector('.marker-label-sr').textContent = `Min: ${currentStart}`;
+                timelineMinMarker.style.display = 'block';
+
+                timelineMaxMarker.style.left = `${Math.max(5, Math.min(trackWidth - 5, x2))}px`;
+                timelineMaxMarker.querySelector('.marker-label-sr').textContent = `Max: ${currentEnd}`;
+                timelineMaxMarker.style.display = 'block';
+            } else {
+                currentRangeBar.style.display = 'none';
+                timelineMinMarker.style.display = 'none';
+                timelineMaxMarker.style.display = 'none';
+            }
+
+            if (bestRangeStart !== -Infinity) {
+                const x1 = (bestRangeStart - numberLineMinVal) * numberLineScale;
+                const x2 = (bestRangeEnd - numberLineMinVal) * numberLineScale;
+                bestRangeBar.style.left = `${Math.max(0,x1)}px`;
+                bestRangeBar.style.width = `${Math.max(2,x2 - x1)}px`;
+                bestRangeBar.style.display = 'block';
+            } else {
+                bestRangeBar.style.display = 'none';
+            }
+        }
+
+        async function initializeAnimationSR() { 
+            logSR("Initializing Smallest Range animation...");
+            clearAllHighlightsSR();
+            try {
+                const rawLists = JSON.parse(listsInput.value.replace(/(\w+)\s*:/g, '"$1":'));
+                if (!Array.isArray(rawLists) || !rawLists.every(list => Array.isArray(list))) {
+                    throw new Error("Input must be an array of arrays.");
+                }
+                allListsSR = rawLists.map(list => list.filter(n => !isNaN(parseInt(n))).map(Number).sort((a,b)=>a-b) );
+                K_SR = allListsSR.length;
+                if (K_SR === 0 || allListsSR.some(list => list.length === 0)) {
+                    throw new Error("All lists must be non-empty, and K > 0.");
+                }
+            } catch (e) {
+                alert("Invalid lists input. Error: " + e.message); return;
+            }
+
+            minHeapDataSR = []; currentPointersSR = new Array(K_SR).fill(0); 
+            maxValInHeap = -Infinity; bestRangeStart = -Infinity; bestRangeEnd = Infinity; 
+            polledEntrySR = null; animationStepSR = 1; initHeapListIdx = 0;
+
+            kDisplay.textContent = K_SR;
+            renderLists();
+            setupNumberLine(); 
+            renderPQSR();
+            updateInfoDisplays();
+            updateNumberLineHighlights(); 
+            logOutput.innerHTML = ""; currentActionDisplay.textContent = "Click Next to fill initial Heap.";
+            
+            startButton.textContent = "Reset"; nextStepButton.disabled = false;
+            logSR(`Initialized. K=${K_SR} lists. Click 'Next Step' to populate initial MinHeap.`);
+        }
+        
+        async function nextStepSR() { 
+            nextStepButton.disabled = true; 
+            clearAllHighlightsSR(); 
+
+            if (animationStepSR === 1) { 
+                if (initHeapListIdx < K_SR) {
+                    const listIdx = initHeapListIdx; const val = allListsSR[listIdx][0];
+                    const entry = {val, listIdx, elemIdx: 0, id: `pq-L${listIdx}-E0-${Math.random().toString(16).slice(2)}`};
+                    await addToPQSRVisual(entry);
+                    maxValInHeap = Math.max(maxValInHeap, val);
+                    updateInfoDisplays(); updateNumberLineHighlights(); 
+                    initHeapListIdx++;
+                    if (initHeapListIdx < K_SR) { nextStepButton.disabled = false; }
+                    else {
+                        animationStepSR = 2; logSR("Initial MinHeap populated. Main loop starts.");
+                        currentActionDisplay.textContent = "Heap filled. Click Next for main loop.";
+                        if (minHeapDataSR.length > 0) renderPQSR(minHeapDataSR[0].id);
+                        await new Promise(r => setTimeout(r, SUB_DELAY));
+                        if (minHeapDataSR.length > 0) renderPQSR();
+                        nextStepButton.disabled = false;
+                    }
+                }
+            } else if (animationStepSR === 2) { 
+                if (minHeapDataSR.length < K_SR || minHeapDataSR.length === 0) { 
+                    currentActionDisplay.textContent = "A list exhausted or PQ empty. Smallest range found.";
+                    logSR("Process finished."); animationStepSR = 99; 
+                    if (bestRangeStart !== -Infinity) smallestRangeValDisplay.classList.add('updated-best-range');
+                    updateNumberLineHighlights(); 
+                    nextStepButton.disabled = true; startButton.textContent = "Start/Reset"; return;
+                }
+                
+                polledEntrySR = await pollFromPQSRVisual();
+                if (!polledEntrySR) { animationStepSR = 99; nextStepButton.disabled = true; return; }
+
+                const polledListElCont = listDomContainers[polledEntrySR.listIdx];
+                if (polledListElCont && polledEntrySR.elemIdx < polledListElCont.children.length) {
+                    polledListElCont.children[polledEntrySR.elemIdx].classList.add('polled-element');
+                }
+                updateInfoDisplays(); updateNumberLineHighlights();
+                animationStepSR = 2.1; nextStepButton.disabled = false;
+
+            } else if (animationStepSR === 2.1) { 
+                if (!polledEntrySR) { animationStepSR = 2; nextStepButton.disabled = false; return; }
+                const currentVal = polledEntrySR.val; const currentRangeSize = maxValInHeap - currentVal;
+                const bestRangeSize = bestRangeEnd - bestRangeStart;
+                currentActionDisplay.textContent = `Current Range: [${currentVal}, ${maxValInHeap}], Size: ${currentRangeSize}.`;
+                logSR(`Current range considered: [${currentVal}, ${maxValInHeap}] (size ${currentRangeSize}).`);
+                updateInfoDisplays(); updateNumberLineHighlights();
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+                if (currentRangeSize < bestRangeSize || (currentRangeSize === bestRangeSize && currentVal < bestRangeStart)) {
+                    bestRangeStart = currentVal; bestRangeEnd = maxValInHeap;
+                    logSR(`*** New smallest range: [${bestRangeStart}, ${bestRangeEnd}], Size: ${currentRangeSize} ***`);
+                    currentActionDisplay.textContent = `New best range! [${bestRangeStart}, ${bestRangeEnd}]`;
+                    updateInfoDisplays(); smallestRangeValDisplay.classList.add('updated-best-range');
+                    updateNumberLineHighlights(); 
+                } else { logSR("Current range not smaller."); }
+                animationStepSR = 2.2; nextStepButton.disabled = false;
+                await new Promise(r => setTimeout(r, SUB_DELAY));
+
+            } else if (animationStepSR === 2.2) { 
+                if (!polledEntrySR) { animationStepSR = 2; nextStepButton.disabled = false; return; }
+                const listIdx = polledEntrySR.listIdx; const nextElemIdx = polledEntrySR.elemIdx + 1;
+                const polledListElCont = listDomContainers[polledEntrySR.listIdx];
+                if (polledListElCont && polledEntrySR.elemIdx < polledListElCont.children.length) {
+                    polledListElCont.children[polledEntrySR.elemIdx].classList.remove('polled-element');
+                }
+
+                if (nextElemIdx < allListsSR[listIdx].length) {
+                    const nextVal = allListsSR[listIdx][nextElemIdx];
+                    const newEntry = {val: nextVal, listIdx, elemIdx: nextElemIdx, id: `pq-L${listIdx}-E${nextElemIdx}-${Math.random().toString(16).slice(2)}`};
+                    currentActionDisplay.textContent = `Advancing in List ${listIdx}. Adding ${nextVal} to heap.`;
+                    await addToPQSRVisual(newEntry);
+                    maxValInHeap = Math.max(maxValInHeap, nextVal);
+                } else {
+                    logSR(`List ${listIdx} is now exhausted.`); currentActionDisplay.textContent = `List ${listIdx} exhausted.`;
+                    const listContEl = document.getElementById(`list-cont-${listIdx}`);
+                    if(listContEl) listContEl.classList.add('exhausted');
+                }
+                polledEntrySR = null; 
+                updateInfoDisplays(); updateNumberLineHighlights();
+                animationStepSR = 2; 
+                nextStepButton.disabled = false;
+                 if (minHeapDataSR.length > 0) { 
+                    renderPQSR(minHeapDataSR[0].id); await new Promise(r => setTimeout(r, SUB_DELAY)); renderPQSR();
+                }
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimationSR);
+        nextStepButton.addEventListener('click', nextStepSR);
+        window.addEventListener('resize', () => { if (K_SR !== undefined) { renderNumberLine(); updateNumberLineHighlights(); }});
+        initializeAnimationSR(); 
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maximum Performance of a Team Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Maximum Performance of a Team – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Maximum Performance of a Team</b> problem involves selecting up to <code>K</code> engineers from a pool of engineers, each with a given speed and efficiency, to maximize the team's performance. The performance is calculated as the sum of the selected engineers' speeds multiplied by the minimum efficiency among them.</p>
+    <p>This problem can be solved using a <b>max-heap</b> to track the engineers with the highest speeds.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int maxPerformance(int n, int[] speed, int[] efficiency, int k) {
+        int MOD = 1_000_000_007;
+
+        Engineer[] engineers = new Engineer[n];
+        for (int i = 0; i &lt; n; i++) {
+            engineers[i] = new Engineer(speed[i], efficiency[i]);
+        }
+
+        Arrays.sort(engineers, (a, b) -&gt; b.efficiency - a.efficiency);
+
+        PriorityQueue&lt;Integer&gt; speedHeap = new PriorityQueue&lt;&gt;();
+        long speedSum = 0, maxPerformance = 0;
+
+        for (Engineer engineer : engineers) {
+            speedHeap.offer(engineer.speed);
+            speedSum += engineer.speed;
+
+            if (speedHeap.size() &gt; k) {
+                speedSum -= speedHeap.poll();
+            }
+
+            maxPerformance = Math.max(maxPerformance, speedSum * engineer.efficiency);
+        }
+
+        return (int) (maxPerformance % MOD);
+    }
+
+    class Engineer {
+        int speed;
+        int efficiency;
+
+        Engineer(int speed, int efficiency) {
+            this.speed = speed;
+            this.efficiency = efficiency;
+        }
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Sorting Engineers</b>: <code>O(N log N)</code> – Sorting engineers by efficiency.</li>
+      <li><b>Heap Operations</b>: <code>O(N log K)</code> – Adding and removing elements from the heap.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log N + N log K)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Optimizing team performance in hiring scenarios</li>
+      <li>Applications in resource allocation problems</li>
+      <li>Efficiently processing large datasets</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/maximum-performance-of-a-team/" target="_blank" rel="noopener noreferrer">1383. Maximum Performance of a Team</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Maximum Performance of a Team</h2>
+    <pre><code>Input: n = 6, speed = [2,10,3,1,5,8], efficiency = [5,4,3,9,7,2], k = 2
+Output: 60
+
+Explanation:
+- Select engineers with speed [10, 5] and efficiency [4, 7].
+- The maximum performance is (10 + 5) * min(4, 7) = 60.</code></pre>
+    <button onclick="window.location.href='../animations/maximum_performance_of_team_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Sort engineers by efficiency to ensure the minimum efficiency is always valid.</li>
+      <li>Use a min-heap to efficiently track the lowest speeds among the selected engineers.</li>
+      <li>Edge cases: fewer than <code>K</code> engineers, engineers with identical efficiencies.</li>
+    </ul>
+  </div>
+</body>
+</html>
