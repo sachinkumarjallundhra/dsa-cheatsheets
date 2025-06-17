@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max Value at Index in Bounded Array Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            margin-top: 15px; background-color: #f0f4f8; color: #333; line-height: 1.6;
+        }
+        .container {
+            background-color: #fff; padding: 20px; border-radius: 12px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.1); width: 95%; max-width: 1000px;
+        }
+        h1, h2, h3 { color: #2c3e50; margin-top: 0; text-align: center; }
+        h3 { margin-bottom: 10px; font-size: 1.15em; text-align: left; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        h4 { margin-top: 8px; margin-bottom: 5px; font-size: 1em; color: #34495e;}
+
+
+        .controls { /* ... (same) ... */
+            display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; align-items: center;
+            padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dce4ec;
+        }
+        .controls label { margin-right: 5px; font-size: 0.9em;}
+        .controls input[type="number"] { padding: 8px; border-radius: 5px; border: 1px solid #ced4da; font-size:0.9em; width: 80px; }
+        .controls button {
+            padding: 9px 16px; border: none; border-radius: 5px; cursor: pointer;
+            background-color: #007bff; color: white; font-size: 0.9em;
+            transition: background-color 0.2s ease;
+        }
+        .controls button:hover { background-color: #0056b3; }
+        .controls button:disabled { background-color: #adb5bd; cursor: not-allowed; }
+        
+        .main-content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr; /* Single column for sections */
+            gap: 20px;
+        }
+
+        .visualization-section { /* For BS vars and Array Construction */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .data-section {
+            padding: 15px; border: 1px solid #dce4ec;
+            border-radius: 8px; background-color: #fdfdff;
+        }
+        .binary-search-vars div, .sum-calculation-details div { margin-bottom: 6px; font-size: 0.95em; }
+        .binary-search-vars span, .sum-calculation-details span.value { font-weight: bold; color: #007bff; padding: 2px 4px; background-color: #e9ecef; border-radius:3px;}
+        .sum-calculation-details span.label { color: #495057; }
+        .highlight-val { background-color: #ffe082 !important; border: 1px solid #ffca28; }
+        .highlight-ans-update { background-color: #c3e6cb !important; border: 1px solid #a3cfbb !important;}
+
+
+        #constructed-array-container {
+            display: flex; flex-wrap: wrap; gap: 5px;
+            min-height: 40px; padding: 10px; border: 1px dashed #ccc; border-radius: 5px;
+            margin-top: 10px; justify-content: center;
+        }
+        .array-cell {
+            width: 35px; height: 35px; display: flex;
+            justify-content: center; align-items: center;
+            border: 1px solid #adb5bd; background-color: #e9ecef;
+            font-weight: bold; border-radius: 4px;
+            transition: background-color 0.3s, transform 0.3s, border-color 0.3s;
+        }
+        .highlight-target-index-cell { background-color: #ffc107 !important; border-color: #ffaa00 !important; transform: scale(1.15); z-index:10;}
+        .highlight-left-segment { border-left: 3px solid #20c997; border-top: 3px solid #20c997; border-bottom: 3px solid #20c997;}
+        .highlight-right-segment { border-right: 3px solid #fd7e14; border-top: 3px solid #fd7e14; border-bottom: 3px solid #fd7e14;}
+        .cell-value-filled { background-color: #d1e7dd; border-color: #a3cfbb;}
+
+
+        #status-message { margin-top: 15px; font-style: italic; color: #495057; min-height: 22px; text-align: center; font-size:1.05em;}
+        .pseudo-code-container { margin-top: 20px; }
+        .pseudo-code { /* ... (same) ... */
+            padding: 15px; background-color: #2c3e50; color: #ecf0f1;
+            border-radius: 8px; text-align: left; font-family: 'Consolas', 'Courier New', monospace;
+            white-space: pre; font-size: 0.85em; line-height: 1.7; max-height: 380px; overflow-y: auto;
+        }
+        .pseudo-code .line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s ease; }
+        .pseudo-code .highlight-code { background-color: #3498db; color: white; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Max Value at Index in Bounded Array</h1>
+
+        <div class="controls">
+            <label for="n-input">n (length):</label>
+            <input type="number" id="n-input" value="4" min="1">
+            <label for="index-input">index (0-based):</label>
+            <input type="number" id="index-input" value="2" min="0">
+            <label for="maxSum-input">maxSum:</label>
+            <input type="number" id="maxSum-input" value="6" min="1">
+            <button id="reset-btn">Reset</button>
+            <button id="next-step-btn">Next Step</button>
+            <button id="auto-play-btn">Auto Play</button>
+            <label for="speed-slider">Speed:</label>
+            <input type="range" id="speed-slider" min="100" max="2000" value="1200" step="100">
+        </div>
+        
+        <div class="main-content-wrapper">
+            <div class="visualization-section">
+                <div class="data-section binary-search-vars">
+                    <h3>Binary Search for `nums[index]` Value:</h3>
+                    <div>Low: <span id="bs-low">-</span></div>
+                    <div>High: <span id="bs-high">-</span></div>
+                    <div>Mid (Candidate `nums[index]`): <span id="bs-mid">-</span></div>
+                    <div>Best `ans` found: <span id="bs-ans">-</span></div>
+                </div>
+                <div class="data-section sum-calculation-details">
+                    <h3>Sum Calculation Breakdown:</h3>
+                    <div><span class="label">Target `nums[index]` value:</span> <span class="value" id="calc-target-val">-</span></div>
+                    <div><span class="label">Left elements count:</span> <span class="value" id="calc-left-len">-</span></div>
+                    <div><span class="label">Sum of left part:</span> <span class="value" id="calc-left-sum">-</span></div>
+                    <div><span class="label">Right elements count:</span> <span class="value" id="calc-right-len">-</span></div>
+                    <div><span class="label">Sum of right part:</span> <span class="value" id="calc-right-sum">-</span></div>
+                    <hr>
+                    <div><span class="label">Total Min Array Sum:</span> <span class="value" id="calc-total-sum">-</span></div>
+                    <div><span class="label">Condition: `Total Sum <= maxSum` (<span class="value" id="maxSum-val-display">-</span>)?</span> <span class="value" id="condition-result">-</span></div>
+                </div>
+            </div>
+
+            <div class="data-section">
+                <h3>Visualizing Array Construction for Current `mid` (min sum):</h3>
+                <div id="constructed-array-container"></div>
+            </div>
+        </div>
+        <div id="status-message">Enter inputs, then click Reset.</div>
+
+        <div class="pseudo-code-container">
+             <h3>Algorithm Steps (Binary Search on Answer):</h3>
+            <div class="pseudo-code">
+<div class="line" id="code-0">low = 1, high = maxSum, ans = 1</div>
+<div class="line" id="code-1">While low <= high:</div>
+<div class="line" id="code-2">&nbsp;&nbsp;mid = low + (high - low) / 2  // Candidate for nums[index]</div>
+<div class="line" id="code-3">&nbsp;&nbsp;current_sum = calculateMinSum(value_at_index=mid, n, index)</div>
+<div class="line" id="code-4">&nbsp;&nbsp;&nbsp;&nbsp;  // calculateMinSum Breakdown:</div>
+<div class="line" id="code-5">&nbsp;&nbsp;&nbsp;&nbsp;  left_len = index; right_len = n - 1 - index</div>
+<div class="line" id="code-6">&nbsp;&nbsp;&nbsp;&nbsp;  sum_left = calculateSideSum(mid, left_len)</div>
+<div class="line" id="code-7">&nbsp;&nbsp;&nbsp;&nbsp;  sum_right = calculateSideSum(mid, right_len)</div>
+<div class="line" id="code-8">&nbsp;&nbsp;&nbsp;&nbsp;  total_sum = sum_left + mid + sum_right</div>
+<div class="line" id="code-9">&nbsp;&nbsp;If current_sum <= maxSum:</div>
+<div class="line" id="code-10">&nbsp;&nbsp;&nbsp;&nbsp;ans = mid</div>
+<div class="line" id="code-11">&nbsp;&nbsp;&nbsp;&nbsp;low = mid + 1  // Try for a larger nums[index]</div>
+<div class="line" id="code-12">&nbsp;&nbsp;Else (current_sum > maxSum):</div>
+<div class="line" id="code-13">&nbsp;&nbsp;&nbsp;&nbsp;high = mid - 1 // nums[index] is too large</div>
+<div class="line" id="code-14">Return ans</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // DOM Elements
+    const nInputEl = document.getElementById('n-input');
+    const indexInputEl = document.getElementById('index-input');
+    const maxSumInputEl = document.getElementById('maxSum-input');
+    const resetBtn = document.getElementById('reset-btn');
+    const nextStepBtn = document.getElementById('next-step-btn');
+    const autoPlayBtn = document.getElementById('auto-play-btn');
+    const speedSlider = document.getElementById('speed-slider');
+
+    const bsLowDisplay = document.getElementById('bs-low');
+    const bsHighDisplay = document.getElementById('bs-high');
+    const bsMidDisplay = document.getElementById('bs-mid');
+    const bsAnsDisplay = document.getElementById('bs-ans');
+    
+    const calcTargetValDisplay = document.getElementById('calc-target-val');
+    const calcLeftLenDisplay = document.getElementById('calc-left-len');
+    const calcLeftSumDisplay = document.getElementById('calc-left-sum');
+    const calcRightLenDisplay = document.getElementById('calc-right-len');
+    const calcRightSumDisplay = document.getElementById('calc-right-sum');
+    const calcTotalSumDisplay = document.getElementById('calc-total-sum');
+    const maxSumValDisplay = document.getElementById('maxSum-val-display'); // Also in sum calc details
+    const conditionResultDisplay = document.getElementById('condition-result');
+    
+    const constructedArrayContainer = document.getElementById('constructed-array-container');
+    const statusMessage = document.getElementById('status-message');
+
+    // State
+    let animationSpeed = 800;
+    let isAutoPlaying = false;
+    let autoPlayTimeoutId = null;
+    let algorithmGen = null;
+    let currentStepState = null;
+
+    let N = 0, TARGET_INDEX = 0, MAX_SUM = 0;
+
+    // --- Rendering Functions ---
+    function renderConstructedArray(arr, targetIndex, highlightSegment = null) { // highlightSegment: 'left' or 'right'
+        constructedArrayContainer.innerHTML = '';
+        if (!arr || arr.length === 0) {
+             const emptyMsg = document.createElement('div');
+             emptyMsg.textContent = "Array construction pending...";
+             emptyMsg.style.color = "#888";
+             constructedArrayContainer.appendChild(emptyMsg);
+             return;
+        }
+        arr.forEach((val, idx) => {
+            const cell = document.createElement('div');
+            cell.className = 'array-cell';
+            cell.textContent = val > 0 ? val : ''; // Show empty for 0/placeholder
+            if (val > 0) cell.classList.add('cell-value-filled');
+            if (idx === targetIndex) {
+                cell.classList.add('highlight-target-index-cell');
+            }
+            if (highlightSegment === 'left' && idx < targetIndex) {
+                cell.classList.add('highlight-left-segment');
+            } else if (highlightSegment === 'right' && idx > targetIndex) {
+                cell.classList.add('highlight-right-segment');
+            }
+            constructedArrayContainer.appendChild(cell);
+        });
+    }
+
+    function highlightCodeLine(lineId) {
+        document.querySelectorAll('.pseudo-code .line').forEach(l => l.classList.remove('highlight-code'));
+        if (lineId) document.getElementById(lineId)?.classList.add('highlight-code');
+    }
+    
+    function updateUI(state) {
+        currentStepState = state;
+        if (!state) return;
+
+        bsLowDisplay.textContent = state.low !== undefined ? state.low : '-';
+        bsHighDisplay.textContent = state.high !== undefined ? state.high : '-';
+        bsMidDisplay.textContent = state.mid !== undefined ? state.mid : '-';
+        if (state.highlightMid) bsMidDisplay.classList.add('highlight-val');
+        else bsMidDisplay.classList.remove('highlight-val');
+
+        bsAnsDisplay.textContent = state.ans !== undefined ? state.ans : '-';
+        if (state.ansUpdated) {
+            bsAnsDisplay.classList.add('highlight-ans-update');
+            setTimeout(() => bsAnsDisplay.classList.remove('highlight-ans-update'), animationSpeed * 0.8);
+        } else {
+            bsAnsDisplay.classList.remove('highlight-ans-update');
+        }
+
+        calcTargetValDisplay.textContent = state.val_at_index_for_sum_calc !== undefined ? state.val_at_index_for_sum_calc : '-';
+        calcLeftLenDisplay.textContent = state.left_len !== undefined ? state.left_len : '-';
+        calcLeftSumDisplay.textContent = state.sum_left !== undefined ? state.sum_left : '-';
+        calcRightLenDisplay.textContent = state.right_len !== undefined ? state.right_len : '-';
+        calcRightSumDisplay.textContent = state.sum_right !== undefined ? state.sum_right : '-';
+        calcTotalSumDisplay.textContent = state.total_sum_for_mid !== undefined ? state.total_sum_for_mid : '-';
+        if (state.total_sum_for_mid !== undefined) calcTotalSumDisplay.classList.add('highlight-val'); else calcTotalSumDisplay.classList.remove('highlight-val');
+
+        maxSumValDisplay.textContent = MAX_SUM;
+        conditionResultDisplay.textContent = state.condition_met !== undefined ? (state.condition_met ? 'TRUE' : 'FALSE') : '-';
+        conditionResultDisplay.style.color = state.condition_met === true ? 'green' : (state.condition_met === false ? 'red' : 'inherit');
+
+        renderConstructedArray(state.constructed_array || [], TARGET_INDEX, state.highlightSegment);
+        
+        statusMessage.textContent = state.statusText || "";
+        highlightCodeLine(state.codeLineId);
+
+        nextStepBtn.disabled = state.isDone || isAutoPlaying;
+        autoPlayBtn.disabled = state.isDone;
+        autoPlayBtn.textContent = isAutoPlaying ? "Pause" : "Auto Play";
+    }
+
+    // Helper for sum calculation (actual logic)
+    function calculateSideSum(peakValue, lengthOnSide) {
+        if (lengthOnSide <= 0) return 0;
+        let sum = 0;
+        // How many elements will be > 1 before potentially hitting 1
+        let countDescendingTo1 = Math.min(lengthOnSide, peakValue - 1);
+        
+        if (countDescendingTo1 > 0) {
+            // Sum of arithmetic series: (first + last) * count / 2
+            // first = peakValue - 1, last = peakValue - countDescendingTo1
+            sum += ( (peakValue - 1) + (peakValue - countDescendingTo1) ) * countDescendingTo1 / 2;
+        }
+        // Remaining elements (if any) will all be 1
+        if (lengthOnSide > countDescendingTo1) {
+            sum += (lengthOnSide - countDescendingTo1);
+        }
+        return sum;
+    }
+    
+    function constructArrayForVis(valAtIndex, n_len, targetIdx) {
+        let arr = new Array(n_len).fill(0); // Use 0 as placeholder for not-yet-filled
+        if (valAtIndex < 1) return arr; // Invalid peak
+        arr[targetIdx] = valAtIndex;
+        // Fill left
+        for (let i = targetIdx - 1; i >= 0; i--) {
+            arr[i] = Math.max(1, arr[i+1] - 1);
+        }
+        // Fill right
+        for (let i = targetIdx + 1; i < n_len; i++) {
+            arr[i] = Math.max(1, arr[i-1] - 1);
+        }
+        return arr;
+    }
+
+    // --- Generator for Algorithm Steps ---
+    function* maxValueAtIndexGenerator(n_len, targetIdx, maxSumLimit) {
+        let low = 1, high = maxSumLimit, ans = 1;
+
+        yield { // Initial state
+            low, high, ans, statusText: "1. Initialized binary search variables.",
+            codeLineId: 'code-0', isDone: false,
+            constructed_array: new Array(n_len).fill(0) // Show empty array
+        };
+
+        while (low <= high) {
+            yield { 
+                low, high, ans, statusText: `Looping: low (${low}) <= high (${high})?`,
+                codeLineId: 'code-1', isDone: false,
+                constructed_array: currentStepState?.constructed_array || new Array(n_len).fill(0) // Persist last array
+            };
+
+            let mid = low + Math.floor((high - low) / 2);
+            yield {
+                low, high, mid, ans, highlightMid: true,
+                statusText: `Calculated mid = ${mid} (candidate for nums[${targetIdx}]).`,
+                codeLineId: 'code-2', isDone: false,
+                constructed_array: currentStepState?.constructed_array || new Array(n_len).fill(0)
+            };
+
+            // Start getSum visualization
+            yield {
+                low, high, mid, ans, val_at_index_for_sum_calc: mid,
+                statusText: `Calculating min sum if nums[${targetIdx}] = ${mid}...`,
+                codeLineId: 'code-3', isDone: false, constructed_array: new Array(n_len).fill(0), // Clear for new construction
+                highlightMid: false
+            };
+            
+            let tempArray = constructArrayForVis(mid, n_len, targetIdx);
+            let left_len = targetIdx;
+            let right_len = n_len - 1 - targetIdx;
+
+            yield { // Show left_len, right_len
+                low, high, mid, ans, val_at_index_for_sum_calc: mid, left_len, right_len,
+                constructed_array: tempArray.map((v,i) => i === targetIdx ? v : 0), // Only peak shown initially
+                statusText: `Value at index ${targetIdx} is ${mid}. Left length: ${left_len}, Right length: ${right_len}.`,
+                codeLineId: 'code-5', isDone: false
+            };
+            
+            let sum_left = calculateSideSum(mid, left_len);
+            yield { // Show left sum calculation and highlight left part of array
+                low, high, mid, ans, val_at_index_for_sum_calc: mid, left_len, sum_left, right_len,
+                constructed_array: tempArray, highlightSegment: 'left',
+                statusText: `Calculated sum of left part = ${sum_left}.`,
+                codeLineId: 'code-6', isDone: false
+            };
+            
+            let sum_right = calculateSideSum(mid, right_len);
+            yield { // Show right sum calculation and highlight right part of array
+                low, high, mid, ans, val_at_index_for_sum_calc: mid, left_len, sum_left, right_len, sum_right,
+                constructed_array: tempArray, highlightSegment: 'right',
+                statusText: `Calculated sum of right part = ${sum_right}.`,
+                codeLineId: 'code-7', isDone: false
+            };
+
+            let currentSum = sum_left + mid + sum_right;
+            yield {
+                low, high, mid, ans, val_at_index_for_sum_calc: mid, left_len, sum_left, right_len, sum_right,
+                total_sum_for_mid: currentSum, constructed_array: tempArray,
+                statusText: `Total min sum = ${sum_left} + ${mid} + ${sum_right} = ${currentSum}.`,
+                codeLineId: 'code-8', isDone: false
+            };
+            
+            let conditionMet = currentSum <= maxSumLimit;
+            yield {
+                low, high, mid, ans, val_at_index_for_sum_calc: mid, left_len, sum_left, right_len, sum_right,
+                total_sum_for_mid: currentSum, constructed_array: tempArray,
+                condition_met: conditionMet,
+                statusText: `Condition: ${currentSum} <= ${maxSumLimit} is ${conditionMet}.`,
+                codeLineId: 'code-9', isDone: false
+            };
+
+            if (conditionMet) {
+                ans = mid;
+                let prevLow = low; // Store low before update for display
+                low = mid + 1;
+                yield {
+                    low: prevLow, high, mid, ans, val_at_index_for_sum_calc: mid, left_len, sum_left, right_len, sum_right,
+                    total_sum_for_mid: currentSum, constructed_array: tempArray,
+                    condition_met: conditionMet, ansUpdated: true,
+                    statusText: `${mid} is possible. Updated ans = ${ans}. Try larger: low = ${low}.`,
+                    codeLineId: 'code-11', isDone: false
+                };
+            } else {
+                let prevHigh = high; // Store high before update
+                high = mid - 1;
+                yield {
+                    low, high: prevHigh, mid, ans, val_at_index_for_sum_calc: mid, left_len, sum_left, right_len, sum_right,
+                    total_sum_for_mid: currentSum, constructed_array: tempArray,
+                    condition_met: conditionMet,
+                    statusText: `${mid} is too large. Try smaller: high = ${high}.`,
+                    codeLineId: 'code-13', isDone: false
+                };
+            }
+        }
+        
+        yield {
+            low, high, ans, statusText: `Binary search finished. low (${low}) > high (${high}).`,
+            codeLineId: 'code-1', isDone: false, // Point to loop condition being false
+            constructed_array: constructArrayForVis(ans, n_len, targetIdx) // Show final array based on ans
+        };
+        yield {
+            low, high, ans, statusText: `Maximized value for nums[${targetIdx}] is ${ans}.`,
+            codeLineId: 'code-14', isDone: true,
+            constructed_array: constructArrayForVis(ans, n_len, targetIdx)
+        };
+    }
+
+    // --- Control Functions ---
+    function parseInputs() {
+        N = parseInt(nInputEl.value);
+        TARGET_INDEX = parseInt(indexInputEl.value); // Changed from INDEX to avoid conflict
+        MAX_SUM = parseInt(maxSumInputEl.value);
+    }
+
+    function initializeAlgorithm() {
+        stopAutoPlay();
+        parseInputs();
+        if (isNaN(N) || N < 1 || isNaN(TARGET_INDEX) || TARGET_INDEX < 0 || TARGET_INDEX >= N || isNaN(MAX_SUM) || MAX_SUM < N) {
+            statusMessage.textContent = `Invalid inputs. Ensure: n (${N}) >= 1, 0 <= index (${TARGET_INDEX}) < n, maxSum (${MAX_SUM}) >= n.`;
+            updateUI({low: '-', high: '-', mid: '-', ans: '-', constructed_array: new Array(N || 1).fill(0)}); 
+            nextStepBtn.disabled = true; autoPlayBtn.disabled = true;
+            return;
+        }
+        algorithmGen = maxValueAtIndexGenerator(N, TARGET_INDEX, MAX_SUM);
+        handleNextStep();
+        [nInputEl, indexInputEl, maxSumInputEl].forEach(el => el.disabled = true);
+        resetBtn.disabled = false;
+    }
+
+    function handleNextStep() { 
+        if (!algorithmGen) { initializeAlgorithm(); return; }
+        const step = algorithmGen.next();
+        if (step.value) updateUI(step.value);
+        if (step.done) {
+            algorithmGen = null; 
+            [nInputEl, indexInputEl, maxSumInputEl].forEach(el => el.disabled = false);
+        }
+    }
+    function startAutoPlay() { 
+        if (!algorithmGen || currentStepState?.isDone) {
+            initializeAlgorithm();
+            if (!algorithmGen || (currentStepState && currentStepState.isDone)) return;
+        }
+        isAutoPlaying = true;
+        autoPlayBtn.textContent = "Pause"; nextStepBtn.disabled = true;
+        function autoStep() {
+            if (!isAutoPlaying || !algorithmGen) return;
+            const step = algorithmGen.next();
+            if (step.value) updateUI(step.value);
+            if (step.done || !step.value || step.value.isDone) {
+                stopAutoPlay(); algorithmGen = null;
+                [nInputEl, indexInputEl, maxSumInputEl].forEach(el => el.disabled = false);
+                if(step.value && step.value.isDone) updateUI(step.value);
+            } else {
+                autoPlayTimeoutId = setTimeout(autoStep, animationSpeed);
+            }
+        }
+        autoStep();
+    }
+    function stopAutoPlay() { 
+        isAutoPlaying = false;
+        if (autoPlayTimeoutId) clearTimeout(autoPlayTimeoutId);
+        autoPlayBtn.textContent = "Auto Play";
+        if (currentStepState) nextStepBtn.disabled = currentStepState.isDone;
+    }
+    function reset() { 
+        stopAutoPlay(); algorithmGen = null; currentStepState = null;
+        [nInputEl, indexInputEl, maxSumInputEl].forEach(el => el.disabled = false);
+        resetBtn.disabled = true; nextStepBtn.disabled = false; autoPlayBtn.disabled = false;
+        autoPlayBtn.textContent = "Auto Play";
+        
+        parseInputs(); 
+        updateUI({
+            low: '-', high: '-', mid: '-', ans: '-',
+            val_at_index_for_sum_calc: '-', left_len: '-', sum_left: '-', right_len: '-', sum_right: '-',
+            total_sum_for_mid: '-', condition_met: undefined,
+            constructed_array: new Array(N || 1).fill(0), 
+            statusText: "Enter inputs, then click Reset to prepare, or Next/Auto Play.",
+            codeLineId: null, isDone: false
+        });
+        maxSumValDisplay.textContent = MAX_SUM || '-'; 
+    }
+
+    resetBtn.addEventListener('click', reset);
+    nextStepBtn.addEventListener('click', handleNextStep);
+    autoPlayBtn.addEventListener('click', () => { if (isAutoPlaying) stopAutoPlay(); else startAutoPlay(); });
+    speedSlider.addEventListener('input', e => animationSpeed = 2100 - parseInt(e.target.value));
+    window.addEventListener('load', () => { animationSpeed = 2100 - parseInt(speedSlider.value); reset(); });
+    window.addEventListener('resize', () => { if(currentStepState) updateUI(currentStepState); else reset(); });
+</script>
+</body>
+</html>

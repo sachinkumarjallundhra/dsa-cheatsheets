@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max Value at Index (isValid Demo) Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .controls-mvgi {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-mvgi label { font-weight: bold; margin-right: 5px; }
+        .controls-mvgi input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 70px; }
+        .controls-mvgi button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-mvgi button:hover { background-color: #2980b9; }
+        .controls-mvgi button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .params-display-mvgi, .bs-vars-mvgi, .is-valid-calc-mvgi, .result-display-mvgi {
+            text-align: center; margin-bottom: 10px; padding: 10px;
+            background-color: #f9f9f9; border: 1px solid #eee; border-radius: 4px;
+        }
+        .bs-vars-mvgi span, .is-valid-calc-mvgi span, .result-display-mvgi span { font-weight: bold; }
+        #current_mid_value_mvgi { color: #f39c12; }
+        #is_valid_total_sum_mvgi { color: #8e44ad; }
+        #is_valid_result_mvgi { font-size: 1.1em; }
+        #current_ans_mvgi { color: #27ae60; font-size: 1.2em; }
+
+
+        .array-visualization-mvgi { margin-top: 5px; position: relative; padding-bottom: 10px; }
+        .conceptual-array-mvgi {
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 50px; gap: 3px; 
+            border: 1px solid #ccc; padding: 10px; overflow-x: auto;
+        }
+        .array-box-mvgi {
+            min-width: 35px; width: 35px; 
+            height: 35px; border: 1px solid #bdc3c7; background-color: #ecf0f1;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 0.9em; border-radius: 4px;
+            transition: background-color 0.3s ease, transform 0.2s ease, opacity 0.3s ease;
+            opacity: 0.3; 
+        }
+        .array-box-mvgi.filled { opacity: 1; }
+        .array-box-mvgi.at-index { background-color: #f1c40f; border-color: #d39e00; transform: scale(1.1); }
+        .array-box-mvgi.left-sum-el { background-color: #aed6f1; } 
+        .array-box-mvgi.right-sum-el { background-color: #abebc6; } 
+        .array-box-mvgi.current-fill { 
+            box-shadow: 0 0 8px 2px #5dade2;
+            transform: scale(1.05);
+        }
+        .array-box-mvgi.final-array-el { 
+            background-color: #d5f5e3 !important; 
+            border-color: #58d68d !important; 
+            opacity: 1 !important;
+        }
+
+        .log-container-mvgi { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        #log_output_mvgi { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Max Value at Index (isValid Demo) Animation</h1>
+
+        <div class="controls-mvgi">
+            <label for="n_input_mvgi">n:</label>
+            <input type="number" id="n_input_mvgi" value="4" min="1">
+            <label for="index_input_mvgi">index:</label>
+            <input type="number" id="index_input_mvgi" value="2" min="0">
+            <label for="max_sum_input_mvgi">maxSum:</label>
+            <input type="number" id="max_sum_input_mvgi" value="6" min="1">
+            <button id="start_button_mvgi">Start/Reset</button>
+            <button id="next_step_button_mvgi" disabled>Next BS Step</button>
+        </div>
+
+        <div class="params-display-mvgi">
+            n: <span id="disp_n"></span> | index: <span id="disp_index"></span> | maxSum: <span id="disp_max_sum"></span>
+        </div>
+        <div class="bs-vars-mvgi">
+            BS for Value at Index: [low: <span id="bs_low_mvgi">-</span>, high: <span id="bs_high_mvgi">-</span>] | Testing: <span id="current_mid_value_mvgi">-</span>
+        </div>
+        
+        <div class="array-visualization-mvgi">
+            <h2>Conceptual Array for Tested Value</h2>
+            <div id="conceptual_array_mvgi" class="conceptual-array-mvgi"></div>
+        </div>
+
+        <div class="is-valid-calc-mvgi">
+            <h3>isValid(<span id="is_valid_n_mvgi">-</span>, <span id="is_valid_index_mvgi">-</span>, <span id="is_valid_max_sum_mvgi">-</span>, <span id="is_valid_value_mvgi">-</span>) Check:</h3>
+            Sum Left (Formula): <span id="formula_sum_left_mvgi">-</span> | Value@Index: <span id="formula_val_at_index_mvgi">-</span> | Sum Right (Formula): <span id="formula_sum_right_mvgi">-</span> <br>
+            Total Sum (Formula): <span id="is_valid_total_sum_mvgi">-</span> | Result: <span id="is_valid_result_mvgi">-</span>
+        </div>
+        <div class="result-display-mvgi">
+            Max Possible Value (ans): <span id="current_ans_mvgi">-</span>
+        </div>
+
+        <div class="log-container-mvgi">
+            <h2>Log</h2>
+            <pre id="log_output_mvgi"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const nInput = document.getElementById('n_input_mvgi');
+        const indexInput = document.getElementById('index_input_mvgi');
+        const maxSumInput = document.getElementById('max_sum_input_mvgi');
+        const startButton = document.getElementById('start_button_mvgi');
+        const nextStepButton = document.getElementById('next_step_button_mvgi');
+
+        const dispN = document.getElementById('disp_n');
+        const dispIndex = document.getElementById('disp_index');
+        const dispMaxSum = document.getElementById('disp_max_sum');
+        const bsLowDisplay = document.getElementById('bs_low_mvgi');
+        const bsHighDisplay = document.getElementById('bs_high_mvgi');
+        const currentMidValueDisplay = document.getElementById('current_mid_value_mvgi');
+        const conceptualArrayDisplay = document.getElementById('conceptual_array_mvgi');
+        
+        const isValidNDisplay = document.getElementById('is_valid_n_mvgi');
+        const isValidIndexDisplay = document.getElementById('is_valid_index_mvgi');
+        const isValidMaxSumDisplay = document.getElementById('is_valid_max_sum_mvgi');
+        const isValidValueDisplay = document.getElementById('is_valid_value_mvgi');
+        const formulaSumLeftDisplay = document.getElementById('formula_sum_left_mvgi');
+        const formulaValAtIndexDisplay = document.getElementById('formula_val_at_index_mvgi');
+        const formulaSumRightDisplay = document.getElementById('formula_sum_right_mvgi');
+        const isValidTotalSumDisplay = document.getElementById('is_valid_total_sum_mvgi');
+        const isValidResultDisplay = document.getElementById('is_valid_result_mvgi');
+
+        const currentAnsDisplay = document.getElementById('current_ans_mvgi');
+        const logOutput = document.getElementById('log_output_mvgi');
+
+        const ANIMATION_DELAY = 700; 
+        const FILL_DELAY = 80;    
+
+        let N_MVGI, INDEX_MVGI, MAX_SUM_MVGI;
+        let domArrayBoxes = [];
+        let bsLow, bsHigh, bsMidValue; 
+        let currentAns;
+        let simulationRunning = false;
+
+        function logMVGI(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearArrayDisplay() {
+            conceptualArrayDisplay.innerHTML = '';
+            domArrayBoxes = new Array(N_MVGI); 
+        }
+        
+        function createArrayBox(idx, valueStr, isPlaceholder = false) {
+            const box = document.createElement('div');
+            box.classList.add('array-box-mvgi');
+            box.id = `arr-box-${idx}`;
+            box.textContent = valueStr; 
+            if (!isPlaceholder) {
+                box.classList.add('filled'); 
+            }
+            conceptualArrayDisplay.appendChild(box); 
+            domArrayBoxes[idx] = box; 
+            return box;
+        }
+
+        async function renderAndAnimateConceptualArrayForIsValid(valueAtIndex) {
+            clearArrayDisplay(); 
+            logMVGI(`  isValid: Constructing array for value = ${valueAtIndex} at index ${INDEX_MVGI}`);
+            
+            for (let i = 0; i < N_MVGI; i++) {
+                createArrayBox(i, ' ', true); 
+            }
+            await new Promise(r => setTimeout(r, 10)); 
+
+            if (INDEX_MVGI < 0 || INDEX_MVGI >= N_MVGI || !domArrayBoxes[INDEX_MVGI]) { return; }
+            
+            const mainBox = domArrayBoxes[INDEX_MVGI];
+            mainBox.textContent = valueAtIndex;
+            mainBox.classList.add('at-index', 'filled', 'current-fill');
+            mainBox.style.transform = 'scale(1.1)';
+            await new Promise(r => setTimeout(r, FILL_DELAY * 2)); 
+            mainBox.classList.remove('current-fill');
+
+            let currentLeftVal = valueAtIndex;
+            for (let i = INDEX_MVGI - 1; i >= 0; i--) {
+                currentLeftVal = Math.max(1, currentLeftVal - 1);
+                const box = domArrayBoxes[i];
+                if (box) { 
+                    box.textContent = currentLeftVal;
+                    box.classList.add('left-sum-el', 'filled', 'current-fill');
+                    await new Promise(r => setTimeout(r, FILL_DELAY));
+                    box.classList.remove('current-fill');
+                }
+            }
+
+            let currentRightVal = valueAtIndex;
+            for (let i = INDEX_MVGI + 1; i < N_MVGI; i++) {
+                currentRightVal = Math.max(1, currentRightVal - 1);
+                const box = domArrayBoxes[i];
+                 if (box) { 
+                    box.textContent = currentRightVal;
+                    box.classList.add('right-sum-el', 'filled', 'current-fill');
+                    await new Promise(r => setTimeout(r, FILL_DELAY));
+                    box.classList.remove('current-fill');
+                }
+            }
+        }
+        
+        function calculateSideSum(count, valueAtIndex) {
+            if (count === 0) return 0n; 
+            let val = BigInt(valueAtIndex - 1); 
+            let sum;
+            if (val <= 0n) { 
+                sum = BigInt(count);
+            } else if (val >= BigInt(count)) { 
+                let first = val;
+                let last = val - BigInt(count) + 1n;
+                sum = (first + last) * BigInt(count) / 2n;
+            } else { 
+                sum = val * (val + 1n) / 2n;
+                sum += BigInt(count) - val; 
+            }
+            return sum;
+        }
+        
+        async function simulateIsValidCall(n_p, idx_p, max_s_p, val_p) {
+            isValidNDisplay.textContent = n_p;
+            isValidIndexDisplay.textContent = idx_p;
+            isValidMaxSumDisplay.textContent = max_s_p;
+            isValidValueDisplay.textContent = val_p;
+            formulaValAtIndexDisplay.textContent = val_p;
+
+            await renderAndAnimateConceptualArrayForIsValid(val_p);
+            if (!simulationRunning) return false; 
+            
+            let leftSumFormula = calculateSideSum(idx_p, val_p); // Use idx_p as count for left
+            let rightSumFormula = calculateSideSum(n_p - 1 - idx_p, val_p); // Use n-1-idx as count for right
+            
+            formulaSumLeftDisplay.textContent = leftSumFormula.toString();
+            formulaSumRightDisplay.textContent = rightSumFormula.toString();
+            
+            const totalSumBigInt = BigInt(val_p) + leftSumFormula + rightSumFormula;
+            isValidTotalSumDisplay.textContent = totalSumBigInt.toString();
+
+            const isValidResult = totalSumBigInt <= BigInt(max_s_p);
+            isValidResultDisplay.textContent = isValidResult ? "True (Sum <= maxSum)" : "False (Sum > maxSum)";
+            isValidResultDisplay.style.color = isValidResult ? 'green' : 'red';
+            
+            logMVGI(`  isValid(${val_p}): LeftSum=${leftSumFormula}, RightSum=${rightSumFormula}, TotalSum=${totalSumBigInt}. Result: ${isValidResult}`);
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            if (!simulationRunning) return false; 
+            return isValidResult;
+        }
+
+        async function finalizeSimulationDisplay() { 
+            simulationRunning = false; 
+            nextStepButton.disabled = true; 
+            startButton.textContent = "Start/Reset";
+
+            bsLowDisplay.textContent = currentAns.toString(); 
+            bsHighDisplay.textContent = currentAns.toString();
+            currentMidValueDisplay.textContent = currentAns.toString(); 
+
+            logMVGI(`Binary search complete. Maximum value at index ${INDEX_MVGI} is ${currentAns}.`);
+            currentActionDisplay.textContent = `Result found: ${currentAns}`;
+            currentAnsDisplay.textContent = currentAns; 
+            
+            if (N_MVGI > 0 && currentAns >=1) { 
+                await renderAndAnimateConceptualArrayForIsValid(currentAns); 
+                domArrayBoxes.forEach(box => {
+                    if (box) box.classList.add('final-array-el');
+                });
+            }
+            isValidValueDisplay.textContent = currentAns.toString(); // Show final value in isValid area
+            formulaValAtIndexDisplay.textContent = currentAns.toString();
+            // Optionally re-calculate and show final sums in isValid area
+            let leftSumFormula = calculateSideSum(INDEX_MVGI, currentAns);
+            let rightSumFormula = calculateSideSum(N_MVGI - 1 - INDEX_MVGI, currentAns);
+            formulaSumLeftDisplay.textContent = leftSumFormula.toString();
+            formulaSumRightDisplay.textContent = rightSumFormula.toString();
+            isValidTotalSumDisplay.textContent = (BigInt(currentAns) + leftSumFormula + rightSumFormula).toString();
+            isValidResultDisplay.textContent = "Final Configuration";
+            isValidResultDisplay.style.color = "green";
+
+        }
+
+        function initializeMVGI() {
+            logMVGI("Initializing Max Value at Index Search...");
+            simulationRunning = false; 
+            nextStepButton.disabled = true; 
+            
+            N_MVGI = parseInt(nInput.value);
+            INDEX_MVGI = parseInt(indexInput.value);
+            MAX_SUM_MVGI = parseInt(maxSumInput.value);
+
+            if (isNaN(N_MVGI) || N_MVGI < 1 || isNaN(INDEX_MVGI) || INDEX_MVGI < 0 || INDEX_MVGI >= N_MVGI || isNaN(MAX_SUM_MVGI) || MAX_SUM_MVGI < N_MVGI) {
+                alert("Invalid input. Ensure n >= 1, 0 <= index < n, maxSum >= n.");
+                startButton.textContent = "Start/Reset";
+                return; 
+            }
+            
+            dispN.textContent = N_MVGI;
+            dispIndex.textContent = INDEX_MVGI;
+            dispMaxSum.textContent = MAX_SUM_MVGI;
+
+            bsLow = 1; 
+            bsHigh = MAX_SUM_MVGI; 
+            currentAns = 1; 
+            bsMidValue = -1; 
+            
+            bsLowDisplay.textContent = bsLow;
+            bsHighDisplay.textContent = bsHigh;
+            currentMidValueDisplay.textContent = '-';
+            isValidNDisplay.textContent = N_MVGI; isValidIndexDisplay.textContent = INDEX_MVGI; isValidMaxSumDisplay.textContent = MAX_SUM_MVGI; 
+            isValidValueDisplay.textContent = '-'; formulaSumLeftDisplay.textContent = '-'; formulaValAtIndexDisplay.textContent = '-';
+            formulaSumRightDisplay.textContent = '-'; isValidTotalSumDisplay.textContent = '-'; isValidResultDisplay.textContent = '-';
+            isValidResultDisplay.style.color = 'inherit';
+            currentAnsDisplay.textContent = currentAns; 
+            logOutput.innerHTML = "";
+            
+            clearArrayDisplay(); 
+            for(let i=0; i<N_MVGI; i++) {
+                createArrayBox(i, ' ', true); 
+            }
+
+            startButton.textContent = "Reset";
+            simulationRunning = true; 
+
+            if (bsLow <= bsHigh) { // Use <= here because loop is left < right, but left == right is the final state
+                nextStepButton.disabled = false;
+                logMVGI(`Initialized: n=${N_MVGI}, index=${INDEX_MVGI}, maxSum=${MAX_SUM_MVGI}.`);
+                logMVGI(`BS for value at index: low=${bsLow}, high=${bsHigh}`);
+                currentActionDisplay.textContent = "Ready. Click 'Next BS Step'.";
+            } else {
+                logMVGI(bsLow > bsHigh ? "Initial conditions prevent search (e.g., maxSum too small)." : "Ready.");
+                finalizeSimulationDisplay(); 
+            }
+        }
+
+        async function performNextStepMVGI() {
+            if (!simulationRunning) return; 
+            
+            nextStepButton.disabled = true; 
+            
+            domArrayBoxes.forEach(box => { 
+                if (box) { 
+                    box.classList.remove('at-index', 'left-sum-el', 'right-sum-el', 'filled', 'final-array-el', 'current-fill');
+                    box.textContent = ' '; 
+                    box.style.opacity = 0.3; 
+                    box.style.transform = 'scale(1)'; 
+                }
+            });
+            // Keep isValid section header, clear values
+            isValidValueDisplay.textContent = '-'; formulaSumLeftDisplay.textContent = '-'; formulaValAtIndexDisplay.textContent = '-';
+            formulaSumRightDisplay.textContent = '-'; isValidTotalSumDisplay.textContent = '-'; isValidResultDisplay.textContent = '-';
+            isValidResultDisplay.style.color = 'inherit';
+
+
+            // Loop condition for this problem: while (left < right)
+            // When left == right, that 'left' is the answer.
+            if (bsLow === bsHigh) {
+                currentAns = bsLow; // The final answer is found
+                await finalizeSimulationDisplay();
+                return; 
+            }
+            if (bsLow > bsHigh) { // Should technically not be hit if bsLow == bsHigh is the stop for loop
+                await finalizeSimulationDisplay(); // currentAns should already hold the best
+                return;
+            }
+
+
+            bsMidValue = Math.floor((bsLow + bsHigh + 1) / 2); 
+            
+            bsLowDisplay.textContent = bsLow; 
+            bsHighDisplay.textContent = bsHigh;
+            currentMidValueDisplay.textContent = bsMidValue;
+            
+            logMVGI(`Loop: low=${bsLow}, high=${bsHigh}. Testing midValue = ${bsMidValue} for nums[${INDEX_MVGI}].`);
+            currentActionDisplay.textContent = `Calling isValid with value = ${bsMidValue}.`;
+            
+            const isValidResult = await simulateIsValidCall(N_MVGI, INDEX_MVGI, MAX_SUM_MVGI, bsMidValue);
+            if (!simulationRunning) return; // Guard after await
+
+
+            if (isValidResult) {
+                logMVGI(`  isValid returned true. ${bsMidValue} is a possible value. currentAns = ${bsMidValue}. Try this or larger: low = ${bsMidValue}.`);
+                currentActionDisplay.textContent = `isValid=true. Candidate ${bsMidValue} OK. Trying this or higher.`;
+                currentAns = bsMidValue; 
+                currentAnsDisplay.textContent = currentAns;
+                bsLow = bsMidValue; 
+            } else {
+                logMVGI(`  isValid returned false. ${bsMidValue} is too large. Try smaller: high = ${bsMidValue - 1}.`);
+                currentActionDisplay.textContent = `isValid=false. Candidate ${bsMidValue} too large. Trying lower.`;
+                bsHigh = bsMidValue - 1;
+            }
+            
+            bsLowDisplay.textContent = bsLow; 
+            bsHighDisplay.textContent = bsHigh;
+
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            if (!simulationRunning) return;
+
+            // After all operations, check if simulation should continue
+            if (bsLow < bsHigh) { // If the binary search loop condition still holds
+                 nextStepButton.disabled = false; 
+            } else { // bsLow == bsHigh (or if something made bsLow > bsHigh, which means bsLow before this step was the answer)
+                 currentAns = bsLow; // Update ans to the converged value
+                 await finalizeSimulationDisplay(); 
+            }
+        }
+
+        startButton.addEventListener('click', initializeMVGI);
+        nextStepButton.addEventListener('click', performNextStepMVGI);
+        initializeMVGI(); 
+        
+    });
+    </script>
+</body>
+</html>

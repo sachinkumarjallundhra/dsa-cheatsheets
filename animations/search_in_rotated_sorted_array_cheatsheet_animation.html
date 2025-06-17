@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search in Rotated Sorted Array Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .controls-srsa {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-srsa label { font-weight: bold; margin-right: 5px; }
+        .controls-srsa input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .controls-srsa input[type="text"] { width: 200px; }
+        .controls-srsa input[type="number"] { width: 60px; }
+        .controls-srsa button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-srsa button:hover { background-color: #2980b9; }
+        .controls-srsa button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .array-visualization-srsa { margin-top: 20px; position: relative; }
+        .array-container-srsa {
+            display: flex; justify-content: center; align-items: flex-end; 
+            min-height: 120px; gap: 5px; padding-bottom: 60px; position: relative;
+        }
+        .search-space-highlight-srsa, .sorted-part-highlight-srsa, .other-part-highlight-srsa { 
+            position: absolute; z-index: 1; /* Above base array elements, below pointers/active highlights */
+            transition: left 0.5s ease, width 0.5s ease, opacity 0.3s ease;
+            pointer-events: none; border-radius: 4px;
+        }
+        .search-space-highlight-srsa { /* Overall search window */
+            top: -5px; bottom: 35px; 
+            background-color: rgba(200, 200, 200, 0.1); 
+            border-left: 3px solid rgba(150, 150, 150, 0.5);
+            border-right: 3px solid rgba(150, 150, 150, 0.5);
+        }
+        .sorted-part-highlight-srsa { /* For the identified sorted segment during BS step */
+            top: -2px; bottom: 38px; 
+            background-color: rgba(46, 204, 113, 0.25) !important; 
+            border: 2px dashed rgba(39, 174, 96, 0.8) !important; 
+            display: none; 
+        }
+        .other-part-highlight-srsa { /* For the segment NOT identified as sorted in this BS step */
+            top: -2px; bottom: 38px; 
+            background-color: rgba(231, 76, 60, 0.2) !important; 
+            border: 2px dotted rgba(192, 57, 43, 0.6) !important; 
+            display: none; 
+        }
+
+        .array-element-srsa {
+            width: 45px; height: 45px; border: 1px solid #bdc3c7; 
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 1.1em; border-radius: 4px;
+            transition: transform 0.4s ease, background-color 0.4s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative; z-index: 2; /* Above segment highlights, below pointers if needed */
+            color: #333; 
+        }
+        /* Colors for rotated parts */
+        .rotated-part-1 { background-color: #aed6f1; border-color: #85c1e9;} /* Light Blue */
+        .rotated-part-2 { background-color: #abebc6; border-color: #82e0aa;} /* Light Mint Green */
+        
+        /* Override rotation colors for specific highlights */
+        .array-element-srsa.highlight-compare-srsa {
+             background-color: #fdebd0 !important; /* Orangeish for compare */
+             border-color: #e67e22 !important;
+        }
+        .array-element-srsa.highlight-mid-check-srsa {
+            border-color: #f39c12 !important; /* Orange border for mid */
+            box-shadow: 0 0 8px #f39c12;
+            transform: scale(1.05); /* Keep scale for mid check */
+        }
+         .array-element-srsa.highlight-target-found-srsa {
+            background-color: #2ecc71 !important; color: white !important;
+            border-color: #27ae60 !important;
+            transform: scale(1.15) translateY(-5px); box-shadow: 0 0 15px #2ecc71;
+            animation: pulse-found-srsa 0.8s infinite alternate;
+        }
+
+
+        .array-element-srsa .index-label-srsa {
+            position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+            font-size: 0.7em; color: #777;
+        }
+        
+        .pointer-container-srsa {
+            position: absolute; bottom: 0px; left: 0; width: 100%; height: 50px; 
+            display: flex; align-items: center; 
+        }
+        .pointer-srsa {
+            position: absolute; bottom: 0; text-align: center; font-size: 0.9em; font-weight: bold;
+            width: 45px; transition: left 0.5s ease; padding-top: 5px; z-index: 5;
+        }
+        .pointer-srsa .arrow-srsa { display: block; font-size: 1.4em; line-height: 0.8; }
+        #low-pointer-srsa { color: #27ae60; } 
+        #mid-pointer-srsa { color: #f39c12; } 
+        #high-pointer-srsa { color: #c0392b; } 
+
+        @keyframes pulse-found-srsa {
+            from { transform: scale(1.15) translateY(-5px); }
+            to { transform: scale(1.20) translateY(-7px); }
+        }
+        
+        #current_action_srsa_display, #target_info_srsa { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; color: #2c3e50;}
+        .log-container-srsa { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        #log_output_srsa { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Search in Rotated Sorted Array Animation</h1>
+
+        <div class="controls-srsa">
+            <label for="array_input_srsa">Array (comma-separated):</label>
+            <input type="text" id="array_input_srsa" value="4,5,6,7,0,1,2">
+            <label for="target_input_srsa">Target:</label>
+            <input type="number" id="target_input_srsa" value="0">
+            <button id="start_button_srsa">Start/Reset</button>
+            <button id="next_step_button_srsa" disabled>Next Step</button>
+        </div>
+
+        <div id="target_info_srsa">Searching for: -</div>
+        <div class="array-visualization-srsa">
+            <div id="array_container_srsa" class="array-container-srsa">
+                <div id="search_space_highlight_srsa" class="search-space-highlight-srsa" style="display:none;"></div>
+                <div id="sorted_part_highlight_srsa" class="sorted-part-highlight-srsa" style="display:none;"></div>
+                <div id="other_part_highlight_srsa" class="other-part-highlight-srsa" style="display:none;"></div> 
+                <!-- Array elements will be rendered here -->
+            </div>
+            <div class="pointer-container-srsa">
+                <div id="low-pointer-srsa" class="pointer-srsa"><span class="arrow-srsa">▼</span>low</div>
+                <div id="mid-pointer-srsa" class="pointer-srsa"><span class="arrow-srsa">▼</span>mid</div>
+                <div id="high-pointer-srsa" class="pointer-srsa"><span class="arrow-srsa">▼</span>high</div>
+            </div>
+        </div>
+        
+        <div id="current_action_srsa_display"></div>
+        <div class="log-container-srsa">
+            <h2>Log</h2>
+            <pre id="log_output_srsa"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const arrayInput = document.getElementById('array_input_srsa');
+        const targetInput = document.getElementById('target_input_srsa');
+        const startButton = document.getElementById('start_button_srsa');
+        const nextStepButton = document.getElementById('next_step_button_srsa');
+        const arrayContainer = document.getElementById('array_container_srsa');
+        const searchSpaceHighlight = document.getElementById('search_space_highlight_srsa');
+        const sortedPartHighlight = document.getElementById('sorted_part_highlight_srsa');
+        const otherPartHighlight = document.getElementById('other_part_highlight_srsa'); 
+        const lowPointerEl = document.getElementById('low-pointer-srsa');
+        const midPointerEl = document.getElementById('mid-pointer-srsa');
+        const highPointerEl = document.getElementById('high-pointer-srsa');
+        const targetInfoDisplay = document.getElementById('target_info_srsa');
+        const currentActionDisplay = document.getElementById('current_action_srsa_display');
+        const logOutput = document.getElementById('log_output_srsa');
+
+        const ANIMATION_DELAY = 900; 
+
+        let numsSRSA = [];
+        let domElementsSRSA = [];
+        let lowSRSA, midSRSA, highSRSA;
+        let nSRSA;
+        let targetSRSA;
+        let targetFound = false;
+        let pivotIndexSRSA = -1; 
+
+        function logSRSA(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearAllHighlightsSRSA() {
+            domElementsSRSA.forEach(el => {
+                el.classList.remove('highlight-mid-check-srsa', 'highlight-compare-srsa', 'highlight-target-found-srsa');
+                // Base rotation colors are applied in renderArraySRSA, so they persist unless overridden
+            });
+            sortedPartHighlight.style.display = 'none';
+            otherPartHighlight.style.display = 'none'; 
+            currentActionDisplay.textContent = '';
+        }
+        
+        function findPivot(arr) {
+            if (!arr || arr.length === 0) return -1;
+            if (arr.length === 1 || arr[0] < arr[arr.length - 1]) return 0; 
+
+            let low = 0, high = arr.length - 1;
+            while (low < high) {
+                let mid = low + Math.floor((high - low) / 2);
+                if (arr[mid] > arr[high]) { 
+                    low = mid + 1;
+                } else { 
+                    high = mid;
+                }
+            }
+            return low; 
+        }
+
+        function renderArraySRSA() {
+            arrayContainer.innerHTML = ''; 
+            arrayContainer.appendChild(searchSpaceHighlight); 
+            arrayContainer.appendChild(sortedPartHighlight);
+            arrayContainer.appendChild(otherPartHighlight); 
+            domElementsSRSA = [];
+
+            numsSRSA.forEach((val, index) => {
+                const el = document.createElement('div');
+                el.classList.add('array-element-srsa');
+                el.id = `el-srsa-${index}`;
+                el.textContent = val;
+
+                if (pivotIndexSRSA === -1) { // Should not happen if initialized properly
+                     el.style.backgroundColor = '#ecf0f1'; // Default if pivot somehow not found
+                } else if (pivotIndexSRSA === 0) { 
+                    el.classList.add('rotated-part-1');
+                } else if (index < pivotIndexSRSA) {
+                    el.classList.add('rotated-part-1'); 
+                } else {
+                    el.classList.add('rotated-part-2'); 
+                }
+                
+                const indexLabel = document.createElement('span');
+                indexLabel.classList.add('index-label-srsa');
+                indexLabel.textContent = index;
+                el.appendChild(indexLabel);
+                arrayContainer.insertBefore(el, searchSpaceHighlight); 
+                domElementsSRSA.push(el);
+            });
+            if (nSRSA > 0) updatePointerVisualsSRSA();
+        }
+        
+        function updatePointerVisualsSRSA(highlightMid = false) {
+            if (nSRSA === 0 || domElementsSRSA.length === 0) return;
+        
+            const setPosition = (pointerElement, index) => {
+                if (index >= 0 && index < nSRSA && domElementsSRSA[index]) {
+                    pointerElement.style.left = `${domElementsSRSA[index].offsetLeft}px`;
+                    pointerElement.style.display = 'block';
+                } else {
+                    pointerElement.style.display = 'none';
+                }
+            };
+        
+            setPosition(lowPointerEl, lowSRSA);
+            setPosition(midPointerEl, midSRSA); 
+            setPosition(highPointerEl, highSRSA);
+
+            if (highlightMid && midSRSA >= 0 && midSRSA < nSRSA && domElementsSRSA[midSRSA]) {
+                domElementsSRSA[midSRSA].classList.add('highlight-mid-check-srsa');
+            }
+            updateSearchSpaceHighlightSRSA();
+        }
+
+        function updateSearchSpaceHighlightSRSA() { 
+             if (lowSRSA > highSRSA || lowSRSA < 0 || highSRSA >= nSRSA || !domElementsSRSA[lowSRSA] || !domElementsSRSA[highSRSA]) {
+                searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+            searchSpaceHighlight.style.display = 'block';
+            const firstEl = domElementsSRSA[lowSRSA];
+            const lastEl = domElementsSRSA[highSRSA];
+            searchSpaceHighlight.style.left = `${firstEl.offsetLeft - 2}px`;
+            searchSpaceHighlight.style.width = `${lastEl.offsetLeft + lastEl.offsetWidth - firstEl.offsetLeft + 4}px`;
+        }
+
+        function showPartHighlight(highlightElement, startIdx, endIdx) {
+             if (startIdx < 0 || endIdx >= nSRSA || startIdx > endIdx || !domElementsSRSA[startIdx] || !domElementsSRSA[endIdx]) {
+                highlightElement.style.display = 'none';
+                return;
+            }
+            highlightElement.style.display = 'block';
+            const firstEl = domElementsSRSA[startIdx];
+            const lastEl = domElementsSRSA[endIdx];
+            highlightElement.style.left = `${firstEl.offsetLeft - 1}px`; 
+            highlightElement.style.width = `${lastEl.offsetLeft + lastEl.offsetWidth - firstEl.offsetLeft + 2}px`; 
+        }
+
+        function initializeSearchSRSA() {
+            logSRSA("Initializing Search in Rotated Sorted Array...");
+            clearAllHighlightsSRSA(); 
+            try {
+                numsSRSA = arrayInput.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                targetSRSA = parseInt(targetInput.value);
+                if (isNaN(targetSRSA)) throw new Error("Target is not a number.");
+                if (numsSRSA.length === 0 && arrayInput.value.trim() !== "") {
+                    throw new Error("Filtered array is empty.");
+                }
+            } catch (e) {
+                alert("Invalid input. Array: comma-separated numbers. Target: a number. Error: " + e.message); return;
+            }
+            
+            nSRSA = numsSRSA.length;
+            targetFound = false;
+            targetInfoDisplay.textContent = `Searching for: ${targetSRSA}`;
+
+            if (nSRSA === 0) {
+                logSRSA("Empty array. Cannot search.");
+                pivotIndexSRSA = -1; 
+                renderArraySRSA(); 
+                startButton.textContent = "Start/Reset";
+                nextStepButton.disabled = true;
+                currentActionDisplay.textContent = "Empty array.";
+                lowPointerEl.style.display = 'none'; midPointerEl.style.display = 'none'; highPointerEl.style.display = 'none';
+                searchSpaceHighlight.style.display = 'none'; 
+                return;
+            }
+            
+            pivotIndexSRSA = findPivot(numsSRSA); // Pass the actual numsSRSA array
+            logSRSA(`Array pivot (smallest element index): ${pivotIndexSRSA}`);
+
+            lowSRSA = 0;
+            highSRSA = nSRSA - 1;
+            midSRSA = -1; 
+
+            renderArraySRSA(); 
+            
+            startButton.textContent = "Reset";
+            nextStepButton.disabled = false;
+            logSRSA(`Initialized. Array: [${numsSRSA.join(', ')}], Target: ${targetSRSA}. low=${lowSRSA}, high=${highSRSA}`);
+            currentActionDisplay.textContent = "Ready. Click 'Next Step'.";
+            updatePointerVisualsSRSA(); 
+        }
+
+        async function performNextStepSRSA() {
+            nextStepButton.disabled = true;
+            // Clear only transient highlights, keep base rotation colors
+            domElementsSRSA.forEach(el => el.classList.remove('highlight-mid-check-srsa', 'highlight-compare-srsa', 'highlight-target-found-srsa'));
+            sortedPartHighlight.style.display = 'none';
+            otherPartHighlight.style.display = 'none'; 
+            currentActionDisplay.textContent = '';
+
+
+            if (lowSRSA > highSRSA) {
+                currentActionDisplay.textContent = `Target ${targetSRSA} not found.`;
+                logSRSA(`low (${lowSRSA}) > high (${highSRSA}). Target not found.`);
+                startButton.textContent = "Start/Reset";
+                searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+
+            midSRSA = lowSRSA + Math.floor((highSRSA - lowSRSA) / 2);
+            updatePointerVisualsSRSA(true); 
+            
+            logSRSA(`Loop: low=${lowSRSA}, high=${highSRSA}. Calculated mid=${midSRSA}.`);
+            currentActionDisplay.textContent = `Checking nums[mid=${midSRSA}] = ${numsSRSA[midSRSA]}`;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+            if (numsSRSA[midSRSA] === targetSRSA) {
+                targetFound = true;
+                currentActionDisplay.textContent = `Target ${targetSRSA} found at index ${midSRSA}!`;
+                logSRSA(`Target ${targetSRSA} found at nums[${midSRSA}].`);
+                if (domElementsSRSA[midSRSA]) domElementsSRSA[midSRSA].classList.add('highlight-target-found-srsa');
+                startButton.textContent = "Start/Reset";
+                searchSpaceHighlight.style.opacity = '0.3'; 
+                return;
+            }
+
+            if (domElementsSRSA[lowSRSA]) domElementsSRSA[lowSRSA].classList.add('highlight-compare-srsa');
+            if (domElementsSRSA[midSRSA]) domElementsSRSA[midSRSA].classList.add('highlight-compare-srsa'); 
+            if (midSRSA < highSRSA && domElementsSRSA[highSRSA]) domElementsSRSA[highSRSA].classList.add('highlight-compare-srsa'); 
+            
+            logSRSA(`  Determining sorted half: Is nums[low=${lowSRSA}] (${numsSRSA[lowSRSA]}) <= nums[mid=${midSRSA}] (${numsSRSA[midSRSA]})?`);
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+            let newLow = lowSRSA, newHigh = highSRSA;
+
+            if (numsSRSA[lowSRSA] <= numsSRSA[midSRSA]) { 
+                currentActionDisplay.textContent = `Left half [${lowSRSA}..${midSRSA}] is sorted.`;
+                logSRSA(`    Yes, left half is sorted.`);
+                showPartHighlight(sortedPartHighlight, lowSRSA, midSRSA); 
+                showPartHighlight(otherPartHighlight, midSRSA + 1, highSRSA); 
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+                logSRSA(`    Is target ${targetSRSA} in sorted left [${numsSRSA[lowSRSA]}...${numsSRSA[midSRSA]})?`);
+                if (targetSRSA >= numsSRSA[lowSRSA] && targetSRSA < numsSRSA[midSRSA]) {
+                    currentActionDisplay.textContent = `Target in sorted left. high = ${midSRSA - 1}`;
+                    logSRSA(`      Yes. Search left: high = mid - 1.`);
+                    newHigh = midSRSA - 1;
+                } else {
+                    currentActionDisplay.textContent = `Target not in sorted left. low = ${midSRSA + 1}`;
+                    logSRSA(`      No. Search right: low = mid + 1.`);
+                    newLow = midSRSA + 1;
+                }
+            } else { 
+                currentActionDisplay.textContent = `Right half [${midSRSA}..${highSRSA}] is sorted.`;
+                logSRSA(`    No, right half must be sorted.`);
+                showPartHighlight(sortedPartHighlight, midSRSA, highSRSA); 
+                showPartHighlight(otherPartHighlight, lowSRSA, midSRSA - 1); 
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                
+                logSRSA(`    Is target ${targetSRSA} in (${numsSRSA[midSRSA]}...${numsSRSA[highSRSA]}]?`);
+                if (targetSRSA > numsSRSA[midSRSA] && targetSRSA <= numsSRSA[highSRSA]) {
+                    currentActionDisplay.textContent = `Target in sorted right. low = ${midSRSA + 1}`;
+                    logSRSA(`      Yes. Search right: low = mid + 1.`);
+                    newLow = midSRSA + 1;
+                } else {
+                    currentActionDisplay.textContent = `Target not in sorted right. high = ${midSRSA - 1}`;
+                    logSRSA(`      No. Search left: high = mid - 1.`);
+                    newHigh = midSRSA - 1;
+                }
+            }
+            
+            lowSRSA = newLow;
+            highSRSA = newHigh;
+            midSRSA = -1; 
+            
+            domElementsSRSA.forEach(el => el.classList.remove('highlight-compare-srsa', 'highlight-mid-check-srsa'));
+            sortedPartHighlight.style.display = 'none'; 
+            otherPartHighlight.style.display = 'none';
+
+            updatePointerVisualsSRSA(); 
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+
+            if (!targetFound && lowSRSA <= highSRSA) {
+                nextStepButton.disabled = false;
+            } else if (!targetFound) { 
+                performNextStepSRSA(); 
+            }
+        }
+
+        startButton.addEventListener('click', initializeSearchSRSA);
+        nextStepButton.addEventListener('click', performNextStepSRSA);
+        initializeSearchSRSA(); 
+        
+        window.addEventListener('resize', () => {
+            if (domElementsSRSA && domElementsSRSA.length > 0) {
+                 updatePointerVisualsSRSA();
+                 updateSearchSpaceHighlightSRSA(); 
+            }
+        });
+    });
+    </script>
+</body>
+</html>

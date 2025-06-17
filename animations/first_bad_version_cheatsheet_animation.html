@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First Bad Version Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .controls-fbv {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-fbv label { font-weight: bold; margin-right: 5px; }
+        .controls-fbv input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 80px; }
+        .controls-fbv button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-fbv button:hover { background-color: #2980b9; }
+        .controls-fbv button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .versions-visualization-fbv { margin-top: 20px; position: relative; padding-bottom: 70px; }
+        .versions-bar-fbv {
+            display: flex;
+            justify-content: flex-start; 
+            align-items: flex-end; 
+            min-height: 60px; 
+            gap: 3px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-x: auto; 
+            position: relative; 
+        }
+        .search-space-highlight-fbv {
+            position: absolute;
+            top: 0; bottom: 0; 
+            background-color: rgba(52, 152, 219, 0.1); 
+            border-left: 2px solid rgba(52, 152, 219, 0.5);
+            border-right: 2px solid rgba(52, 152, 219, 0.5);
+            z-index: 0;
+            transition: left 0.5s ease, width 0.5s ease;
+            pointer-events: none;
+            display: none; 
+        }
+
+        .version-box-fbv {
+            min-width: 35px; 
+            flex-basis: 35px; 
+            flex-grow: 1;
+            max-width: 50px;
+            height: 40px; 
+            border: 1px solid #bdc3c7; 
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 0.9em; border-radius: 4px;
+            transition: background-color 0.4s ease, transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            position: relative; z-index: 1;
+            cursor: default;
+        }
+        /* Base colors showing actual good/bad state (for user reference) */
+        .good-version-actual { background-color: #e8f8f5; border-color: #a9dfbf; color: #1e8449;} /* Light Greenish */
+        .bad-version-actual { background-color: #fdedec; border-color: #f5b7b1; color: #c0392b;} /* Light Reddish */
+
+        /* API call result highlights - these should override base colors */
+        .version-box-fbv.is-bad-true { background-color: #e74c3c !important; color:white !important; border-color: #c0392b !important;} 
+        .version-box-fbv.is-bad-false { background-color: #2ecc71 !important; color:white !important; border-color: #27ae60 !important;} 
+        
+        .version-box-fbv.highlight-api-call {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px #f39c12; 
+            animation: pulse-api-call 0.8s ease-in-out;
+        }
+        @keyframes pulse-api-call { 0%, 100% {transform: scale(1.1);} 50% {transform: scale(1.15);} }
+
+        .version-box-fbv.final-ans {
+            border-width: 3px;
+            animation: pulse-final-ans 1s infinite alternate;
+        }
+        .version-box-fbv.final-ans.is-bad-true, 
+        .version-box-fbv.final-ans.bad-version-actual:not(.is-bad-false) 
+        { 
+            border-color: #1d8348 !important; 
+            box-shadow: 0 0 15px #2ecc71 !important;
+        }
+
+
+        @keyframes pulse-final-ans { 
+            from {transform: scale(1.1) translateY(0px);} 
+            to {transform: scale(1.15) translateY(-2px); } 
+        }
+
+        .pointer-container-fbv {
+            position: absolute;
+            bottom: 0px; 
+            left: 0; 
+            width: 100%; 
+            height: 50px; 
+            display: flex;
+            align-items: center; 
+            padding-left: 10px; 
+            box-sizing: border-box;
+        }
+        .pointer-fbv {
+            position: absolute;
+            bottom: 0;
+            text-align: center;
+            font-size: 0.9em;
+            font-weight: bold;
+            width: auto; 
+            min-width: 35px; 
+            transition: left 0.5s ease;
+            padding-top: 5px; 
+            z-index: 5;
+            transform: translateX(-50%); 
+        }
+        .pointer-fbv .arrow-fbv { display: block; font-size: 1.4em; line-height: 0.8; }
+        #low-pointer-fbv { color: #27ae60; } 
+        #mid-pointer-fbv { color: #f39c12; } 
+        #high-pointer-fbv { color: #c0392b; } 
+        
+        .info-display-fbv { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; }
+        #api_call_display_fbv { color: #8e44ad; }
+        #ans_display_fbv { color: #2980b9; }
+        #result_fbv {color: #27ae60; font-size:1.2em;}
+
+        .log-container-fbv { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        #log_output_fbv { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>First Bad Version Animation</h1>
+
+        <div class="controls-fbv">
+            <label for="n_versions_fbv">Total Versions (n):</label>
+            <input type="number" id="n_versions_fbv" value="10" min="1">
+            <label for="first_bad_actual_fbv">Actual First Bad (1-indexed):</label>
+            <input type="number" id="first_bad_actual_fbv" value="4" min="1">
+            <button id="start_button_fbv">Start/Reset</button>
+            <button id="next_step_button_fbv" disabled>Next Step</button>
+        </div>
+
+        <div class="versions-visualization-fbv">
+            <div id="versions_bar_fbv" class="versions-bar-fbv">
+                <div id="search_space_highlight_fbv" class="search-space-highlight-fbv"></div>
+                <!-- Version boxes will be rendered here -->
+            </div>
+            <div id="pointer_container_fbv" class="pointer-container-fbv">
+                <div id="low-pointer-fbv" class="pointer-fbv"><span class="arrow-fbv">▲</span>low</div>
+                <div id="mid-pointer-fbv" class="pointer-fbv"><span class="arrow-fbv">▲</span>mid</div>
+                <div id="high-pointer-fbv" class="pointer-fbv"><span class="arrow-fbv">▲</span>high</div>
+            </div>
+        </div>
+        
+        <div class="info-display-fbv">
+            <div id="api_call_display_fbv">API Call: -</div>
+            <div id="ans_display_fbv">Potential First Bad (ans): -</div>
+            <div id="result_fbv">Result: -</div>
+        </div>
+        <div class="log-container-fbv">
+            <h2>Log</h2>
+            <pre id="log_output_fbv"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const nVersionsInput = document.getElementById('n_versions_fbv');
+        const firstBadActualInput = document.getElementById('first_bad_actual_fbv');
+        const startButton = document.getElementById('start_button_fbv');
+        const nextStepButton = document.getElementById('next_step_button_fbv');
+        const versionsBar = document.getElementById('versions_bar_fbv');
+        const searchSpaceHighlight = document.getElementById('search_space_highlight_fbv');
+        const pointerContainer = document.getElementById('pointer_container_fbv');
+        const lowPointerEl = document.getElementById('low-pointer-fbv');
+        const midPointerEl = document.getElementById('mid-pointer-fbv');
+        const highPointerEl = document.getElementById('high-pointer-fbv');
+        const apiCallDisplay = document.getElementById('api_call_display_fbv');
+        const ansDisplay = document.getElementById('ans_display_fbv');
+        const resultDisplay = document.getElementById('result_fbv');
+        const logOutput = document.getElementById('log_output_fbv');
+
+        const ANIMATION_DELAY = 800; 
+
+        let N_VERSIONS;
+        let ACTUAL_FIRST_BAD;
+        let domVersionBoxes = []; 
+        let lowFBV, midFBV, highFBV;
+        let ansFBV;
+        let simulationRunning = false;
+
+        function logFBV(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearAllHighlightsFBV() {
+            domVersionBoxes.forEach(box => box.classList.remove('highlight-api-call', 'is-bad-true', 'is-bad-false', 'final-ans'));
+            apiCallDisplay.textContent = 'API Call: -';
+        }
+        
+        function isBadVersionAPI(version) {
+            return version >= ACTUAL_FIRST_BAD;
+        }
+
+        function renderVersionsBar() {
+            versionsBar.innerHTML = ''; 
+            versionsBar.appendChild(searchSpaceHighlight); 
+            domVersionBoxes = [];
+            for (let i = 1; i <= N_VERSIONS; i++) {
+                const box = document.createElement('div');
+                box.classList.add('version-box-fbv');
+                box.id = `version-${i}`;
+                box.textContent = i;
+                
+                // Apply base color based on actual good/bad status
+                if (isBadVersionAPI(i)) { // Check actual bad status for base coloring
+                    box.classList.add('bad-version-actual'); 
+                } else {
+                    box.classList.add('good-version-actual');
+                }
+                versionsBar.insertBefore(box, searchSpaceHighlight);
+                domVersionBoxes.push(box);
+            }
+            pointerContainer.style.width = `${versionsBar.scrollWidth}px`;
+            if (N_VERSIONS > 0) updatePointerVisualsFBV();
+        }
+        
+        function updatePointerVisualsFBV() {
+            if (N_VERSIONS === 0 || domVersionBoxes.length === 0) {
+                 lowPointerEl.style.display = 'none';
+                 midPointerEl.style.display = 'none';
+                 highPointerEl.style.display = 'none';
+                 searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+            const getCenterOffset = (index) => { 
+                if (index < 0 || index >= N_VERSIONS || !domVersionBoxes[index]) return 0;
+                return domVersionBoxes[index].offsetLeft + domVersionBoxes[index].offsetWidth / 2;
+            };
+            if (lowFBV >= 1 && lowFBV <= N_VERSIONS) {
+                lowPointerEl.style.left = `${getCenterOffset(lowFBV - 1)}px`;
+                lowPointerEl.style.display = 'block';
+            } else { lowPointerEl.style.display = 'none'; }
+            if (midFBV >= 1 && midFBV <= N_VERSIONS) {
+                midPointerEl.style.left = `${getCenterOffset(midFBV - 1)}px`;
+                midPointerEl.style.display = 'block';
+            } else { midPointerEl.style.display = 'none'; }
+            if (highFBV >= 1 && highFBV <= N_VERSIONS) {
+                highPointerEl.style.left = `${getCenterOffset(highFBV - 1)}px`;
+                highPointerEl.style.display = 'block';
+            } else { highPointerEl.style.display = 'none'; }
+            updateSearchSpaceHighlightFBV();
+        }
+
+        function updateSearchSpaceHighlightFBV() { 
+            if (lowFBV > highFBV || lowFBV < 1 || highFBV > N_VERSIONS || !domVersionBoxes[lowFBV-1] || !domVersionBoxes[highFBV-1]) {
+                searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+            searchSpaceHighlight.style.display = 'block';
+            const firstBox = domVersionBoxes[lowFBV - 1];
+            const lastBox = domVersionBoxes[highFBV - 1];
+            searchSpaceHighlight.style.left = `${firstBox.offsetLeft -1}px`;
+            searchSpaceHighlight.style.width = `${lastBox.offsetLeft + lastBox.offsetWidth - firstBox.offsetLeft + 2}px`;
+        }
+
+        function initializeSearchFBV() {
+            logFBV("Initializing First Bad Version Search...");
+            
+            N_VERSIONS = parseInt(nVersionsInput.value);
+            ACTUAL_FIRST_BAD = parseInt(firstBadActualInput.value);
+
+            if (isNaN(N_VERSIONS) || N_VERSIONS < 1) {
+                alert("Total versions (n) must be at least 1."); return;
+            }
+            if (isNaN(ACTUAL_FIRST_BAD) || ACTUAL_FIRST_BAD < 1 || ACTUAL_FIRST_BAD > N_VERSIONS) {
+                alert(`Actual first bad version must be between 1 and ${N_VERSIONS}.`); return;
+            }
+            
+            renderVersionsBar(); 
+            clearAllHighlightsFBV(); 
+
+            lowFBV = 1;
+            highFBV = N_VERSIONS;
+            ansFBV = N_VERSIONS; 
+            midFBV = -1; 
+            simulationRunning = true;
+
+            ansDisplay.textContent = `Potential First Bad (ans): ${ansFBV}`;
+            resultDisplay.textContent = `Result: -`;
+            
+            startButton.textContent = "Reset";
+            nextStepButton.disabled = false;
+            logFBV(`Initialized. n=${N_VERSIONS}, Actual Bad=${ACTUAL_FIRST_BAD}. low=${lowFBV}, high=${highFBV}, ans=${ansFBV}`);
+            currentActionDisplay.textContent = "Ready. Click 'Next Step'.";
+            updatePointerVisualsFBV(); 
+        }
+
+        async function performNextStepFBV() {
+            if (!simulationRunning) return;
+            nextStepButton.disabled = true;
+            // Clear only API call/result highlights, keep base good/bad colors
+            // Ensure any box that had is-bad-true/false is reset for the next API call on a *different* box
+            domVersionBoxes.forEach(box => {
+                box.classList.remove('highlight-api-call', 'is-bad-true', 'is-bad-false');
+                // No need to remove 'final-ans' as it's terminal
+            });
+            apiCallDisplay.textContent = 'API Call: -';
+
+
+            if (lowFBV > highFBV) {
+                resultDisplay.textContent = `Result: ${ansFBV}`;
+                logFBV(`low (${lowFBV}) > high (${highFBV}). Search complete. First bad version is ${ansFBV}.`);
+                if (domVersionBoxes[ansFBV - 1]) domVersionBoxes[ansFBV - 1].classList.add('final-ans');
+                startButton.textContent = "Start/Reset";
+                simulationRunning = false;
+                lowPointerEl.style.display = 'none'; midPointerEl.style.display = 'none'; highPointerEl.style.display = 'none';
+                searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+
+            midFBV = lowFBV + Math.floor((highFBV - lowFBV) / 2);
+            updatePointerVisualsFBV(); 
+            if (domVersionBoxes[midFBV-1]) domVersionBoxes[midFBV-1].classList.add('highlight-api-call');
+            
+            logFBV(`Loop: low=${lowFBV}, high=${highFBV}. Calculated mid=${midFBV}.`);
+            apiCallDisplay.textContent = `Calling isBadVersion(${midFBV})...`;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+            const isMidBad = isBadVersionAPI(midFBV);
+            apiCallDisplay.textContent = `isBadVersion(${midFBV}) returns: ${isMidBad}`;
+            if (domVersionBoxes[midFBV-1]) {
+                domVersionBoxes[midFBV-1].classList.remove('highlight-api-call');
+                domVersionBoxes[midFBV-1].classList.add(isMidBad ? 'is-bad-true' : 'is-bad-false');
+            }
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5)); 
+
+            if (isMidBad) {
+                logFBV(`  Version ${midFBV} is BAD. ans = ${midFBV}. Search left: high = ${midFBV - 1}.`);
+                ansFBV = midFBV;
+                ansDisplay.textContent = `Potential First Bad (ans): ${ansFBV}`;
+                highFBV = midFBV - 1;
+            } else {
+                logFBV(`  Version ${midFBV} is GOOD. Search right: low = ${midFBV + 1}.`);
+                lowFBV = midFBV + 1;
+            }
+            
+            midFBV = -1; 
+            updatePointerVisualsFBV(); 
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+
+            if (simulationRunning) { 
+                 nextStepButton.disabled = false;
+            }
+        }
+
+        startButton.addEventListener('click', initializeSearchFBV);
+        nextStepButton.addEventListener('click', performNextStepFBV);
+        initializeSearchFBV(); 
+        
+        window.addEventListener('resize', () => {
+            if (simulationRunning && domVersionBoxes && domVersionBoxes.length > 0) {
+                 pointerContainer.style.width = `${versionsBar.scrollWidth}px`;
+                 updatePointerVisualsFBV();
+                 updateSearchSpaceHighlightFBV(); 
+            }
+        });
+    });
+    </script>
+</body>
+</html>

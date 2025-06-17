@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Element in Sorted Array Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .controls-sesa {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-sesa label { font-weight: bold; margin-right: 5px; }
+        .controls-sesa input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-sesa button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-sesa button:hover { background-color: #2980b9; }
+        .controls-sesa button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .array-visualization-sesa { margin-top: 20px; position: relative; padding-bottom: 70px; }
+        .array-container-sesa {
+            display: flex; justify-content: center; align-items: flex-end; 
+            min-height: 60px; gap: 5px; position: relative;
+            border: 1px solid #ccc; padding: 10px; overflow-x: auto;
+        }
+        .search-space-highlight-sesa {
+            position: absolute;
+            top: 0; bottom: 0; 
+            background-color: rgba(52, 152, 219, 0.1); 
+            border-left: 2px solid rgba(52, 152, 219, 0.5);
+            border-right: 2px solid rgba(52, 152, 219, 0.5);
+            z-index: 0;
+            transition: left 0.5s ease, width 0.5s ease;
+            pointer-events: none;
+            display: none; 
+        }
+
+        .array-element-sesa {
+            min-width: 40px; padding: 0 5px; 
+            height: 40px; border: 1px solid #bdc3c7; background-color: #ecf0f1;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 1em; border-radius: 4px;
+            transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative; z-index: 1;
+        }
+        .array-element-sesa .index-label-sesa {
+            position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+            font-size: 0.7em; color: #777;
+        }
+        .array-element-sesa.highlight-pair-sesa {
+            background-color: #fdebd0; /* Light orange for pair being checked */
+            border-color: #f39c12;
+            transform: scale(1.05);
+        }
+        .array-element-sesa.highlight-mid-sesa { /* For the mid pointer element itself */
+             box-shadow: 0 0 6px #f39c12;
+        }
+        .array-element-sesa.single-element-found-sesa {
+            background-color: #2ecc71 !important;
+            color: white;
+            border-color: #27ae60 !important;
+            transform: scale(1.15) translateY(-5px);
+            animation: pulse-found-sesa 1s infinite alternate;
+        }
+        @keyframes pulse-found-sesa {
+            from { transform: scale(1.15) translateY(-5px); }
+            to { transform: scale(1.20) translateY(-7px); box-shadow: 0 0 15px #2ecc71; }
+        }
+
+        .pointer-container-sesa {
+            position: absolute; bottom: 0px; left: 0; 
+            width: 100%; height: 50px; display: flex; align-items: center; 
+            padding-left: 10px; 
+            box-sizing: border-box;
+        }
+        .pointer-sesa {
+            position: absolute; bottom: 0; text-align: center; font-size: 0.9em; font-weight: bold;
+            width: auto; min-width: 35px; transition: left 0.5s ease;
+            padding-top: 5px; z-index: 5; transform: translateX(-50%);
+        }
+        .pointer-sesa .arrow-sesa { display: block; font-size: 1.4em; line-height: 0.8; }
+        #low-pointer-sesa { color: #27ae60; } 
+        #mid-pointer-sesa { color: #f39c12; } 
+        #high-pointer-sesa { color: #c0392b; } 
+        
+        #current_action_sesa_display { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; color: #2c3e50;}
+        #result_sesa_display { text-align:center; margin-top:5px; font-size: 1.2em; color: #27ae60; font-weight: bold; }
+        .log-container-sesa { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        #log_output_sesa { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Single Element in a Sorted Array Animation</h1>
+        <p style="text-align:center;">In a sorted array, every element appears twice except for one which appears once. Find it.</p>
+
+        <div class="controls-sesa">
+            <label for="array_input_sesa">Array (e.g., 1,1,2,3,3,4,4):</label>
+            <input type="text" id="array_input_sesa" value="1,1,2,2,3,4,4,5,5">
+            <button id="start_button_sesa">Start/Reset</button>
+            <button id="next_step_button_sesa" disabled>Next Step</button>
+        </div>
+
+        <div class="array-visualization-sesa">
+            <div id="array_container_sesa" class="array-container-sesa">
+                <div id="search_space_highlight_sesa" class="search-space-highlight-sesa"></div>
+                <!-- Array elements will be rendered here -->
+            </div>
+            <div id="pointer_container_sesa" class="pointer-container-sesa">
+                <div id="low-pointer-sesa" class="pointer-sesa"><span class="arrow-sesa">▲</span>low</div>
+                <div id="mid-pointer-sesa" class="pointer-sesa"><span class="arrow-sesa">▲</span>mid</div>
+                <div id="high-pointer-sesa" class="pointer-sesa"><span class="arrow-sesa">▲</span>high</div>
+            </div>
+        </div>
+        
+        <div id="current_action_sesa_display"></div>
+        <div id="result_sesa_display">Result: -</div>
+        <div class="log-container-sesa">
+            <h2>Log</h2>
+            <pre id="log_output_sesa"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const arrayInputEl = document.getElementById('array_input_sesa');
+        const startButton = document.getElementById('start_button_sesa');
+        const nextStepButton = document.getElementById('next_step_button_sesa');
+        
+        const arrayContainer = document.getElementById('array_container_sesa');
+        const searchSpaceHighlight = document.getElementById('search_space_highlight_sesa');
+        const pointerContainer = document.getElementById('pointer_container_sesa');
+        const lowPointerEl = document.getElementById('low-pointer-sesa');
+        const midPointerEl = document.getElementById('mid-pointer-sesa');
+        const highPointerEl = document.getElementById('high-pointer-sesa');
+        const currentActionDisplay = document.getElementById('current_action_sesa_display');
+        const resultDisplay = document.getElementById('result_sesa_display');
+        const logOutput = document.getElementById('log_output_sesa');
+
+        const ANIMATION_DELAY = 900; 
+
+        let numsSESA = [];
+        let domElementsSESA = [];
+        let lowSESA, midSESA, highSESA; // These will store indices
+        let nSESA;
+        let simulationRunning = false;
+
+        function logSESA(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearHighlightsSESA() {
+            domElementsSESA.forEach(el => el.classList.remove('highlight-pair-sesa', 'highlight-mid-sesa', 'single-element-found-sesa'));
+            currentActionDisplay.textContent = '';
+        }
+
+        function renderArraySESA() {
+            arrayContainer.innerHTML = ''; 
+            arrayContainer.appendChild(searchSpaceHighlight); 
+            domElementsSESA = [];
+            numsSESA.forEach((val, index) => {
+                const el = document.createElement('div');
+                el.classList.add('array-element-sesa');
+                el.id = `el-sesa-${index}`;
+                el.textContent = val;
+                const indexLabel = document.createElement('span');
+                indexLabel.classList.add('index-label-sesa');
+                indexLabel.textContent = index;
+                el.appendChild(indexLabel);
+                arrayContainer.insertBefore(el, searchSpaceHighlight); 
+                domElementsSESA.push(el);
+            });
+            if (nSESA > 0) updatePointerVisualsSESA();
+            pointerContainer.style.width = `${arrayContainer.scrollWidth}px`;
+        }
+        
+        function updatePointerVisualsSESA() {
+            if (nSESA === 0 || domElementsSESA.length === 0 ) {
+                lowPointerEl.style.display = 'none'; midPointerEl.style.display = 'none'; highPointerEl.style.display = 'none';
+                searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+        
+            const getCenterOffset = (index) => { 
+                if (index < 0 || index >= nSESA || !domElementsSESA[index]) return -1000; // Off-screen
+                return domElementsSESA[index].offsetLeft + domElementsSESA[index].offsetWidth / 2;
+            };
+        
+            if (lowSESA >= 0 && lowSESA < nSESA) {
+                lowPointerEl.style.left = `${getCenterOffset(lowSESA)}px`;
+                lowPointerEl.style.display = 'block';
+            } else { lowPointerEl.style.display = 'none'; }
+
+            if (midSESA !== -1 && midSESA >= 0 && midSESA < nSESA) { 
+                midPointerEl.style.left = `${getCenterOffset(midSESA)}px`;
+                midPointerEl.style.display = 'block';
+                if(domElementsSESA[midSESA]) domElementsSESA[midSESA].classList.add('highlight-mid-sesa');
+            } else { midPointerEl.style.display = 'none';}
+            
+            if (highSESA >= 0 && highSESA < nSESA) {
+                highPointerEl.style.left = `${getCenterOffset(highSESA)}px`;
+                highPointerEl.style.display = 'block';
+            } else { highPointerEl.style.display = 'none'; }
+
+            updateSearchSpaceHighlightSESA();
+        }
+
+        function updateSearchSpaceHighlightSESA() { 
+            if (lowSESA > highSESA || lowSESA < 0 || highSESA >= nSESA || !domElementsSESA[lowSESA] || !domElementsSESA[highSESA]) {
+                searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+            searchSpaceHighlight.style.display = 'block';
+            const firstBox = domElementsSESA[lowSESA];
+            const lastBox = domElementsSESA[highSESA];
+            searchSpaceHighlight.style.left = `${firstBox.offsetLeft -1}px`;
+            searchSpaceHighlight.style.width = `${lastBox.offsetLeft + lastBox.offsetWidth - firstBox.offsetLeft + 2}px`;
+        }
+
+        function initializeSearchSESA() {
+            logSESA("Initializing Single Element Search...");
+            clearHighlightsSESA(); 
+            try {
+                numsSESA = arrayInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                // Basic validation for the problem constraint (length is odd, elements appear twice except one)
+                // For simplicity, animation will assume valid input structure as per problem.
+                if (numsSESA.length > 0 && numsSESA.length % 2 === 0) {
+                    // throw new Error("Array length must be odd for this problem's constraints.");
+                    logSESA("Warning: Array length is even. Algorithm might not behave as expected for typical problem constraints.");
+                }
+
+            } catch (e) {
+                alert("Invalid array input. Use comma-separated numbers. Error: " + e.message); return;
+            }
+            
+            nSESA = numsSESA.length;
+            simulationRunning = true;
+
+            if (nSESA === 0) {
+                logSESA("Empty array.");
+                renderArraySESA(); 
+                startButton.textContent = "Start/Reset";
+                nextStepButton.disabled = true;
+                currentActionDisplay.textContent = "Empty array.";
+                resultDisplay.textContent = "Result: -";
+                updatePointerVisualsSESA();
+                simulationRunning = false;
+                return;
+            }
+            
+            lowSESA = 0;
+            highSESA = nSESA - 1;
+            midSESA = -1; // Will be calculated in first step
+
+            renderArraySESA(); 
+            
+            startButton.textContent = "Reset";
+            nextStepButton.disabled = false;
+            logSESA(`Initialized. Array: [${numsSESA.join(', ')}]. low=${lowSESA}, high=${highSESA}`);
+            currentActionDisplay.textContent = "Ready. Click 'Next Step'.";
+            resultDisplay.textContent = "Result: -";
+            updatePointerVisualsSESA(); 
+        }
+
+        async function performNextStepSESA() {
+            if (!simulationRunning) return;
+            nextStepButton.disabled = true;
+            clearHighlightsSESA(); 
+
+            if (lowSESA >= highSESA) { 
+                currentActionDisplay.textContent = `Search complete! Single element is ${numsSESA[lowSESA]} at index ${lowSESA}.`;
+                logSESA(`low (${lowSESA}) == high (${highSESA}). Single element found: ${numsSESA[lowSESA]} at index ${lowSESA}.`);
+                if (domElementsSESA[lowSESA]) domElementsSESA[lowSESA].classList.add('single-element-found-sesa');
+                resultDisplay.textContent = `Result: ${numsSESA[lowSESA]}`;
+                midPointerEl.style.display = 'none'; 
+                startButton.textContent = "Start/Reset";
+                simulationRunning = false;
+                return;
+            }
+
+            midSESA = lowSESA + Math.floor((highSESA - lowSESA) / 2);
+            updatePointerVisualsSESA(); // Update mid pointer position before adjustment logic
+            
+            logSESA(`Loop: low=${lowSESA}, high=${highSESA}. Calculated initial mid=${midSESA}.`);
+            currentActionDisplay.textContent = `Calculated mid = ${midSESA}.`;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+
+            let midPairStart = midSESA;
+            if (midPairStart % 2 === 1) {
+                logSESA(`  mid (${midPairStart}) is odd. Adjusting mid to ${midPairStart - 1} to check pair starting at even index.`);
+                currentActionDisplay.textContent = `Adjusted mid to ${midPairStart - 1} for pair check.`;
+                midPairStart--;
+                // Visually update mid pointer to the adjusted midPairStart for clarity
+                if (domElementsSESA[midSESA]) domElementsSESA[midSESA].classList.remove('highlight-mid-sesa'); // remove old highlight
+                midSESA = midPairStart; // Update the main midSESA for visual pointer
+                updatePointerVisualsSESA(); // This will re-highlight the new midSESA
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+            }
+
+            // Highlight the pair being checked
+            if (domElementsSESA[midPairStart]) domElementsSESA[midPairStart].classList.add('highlight-pair-sesa');
+            if (midPairStart + 1 < nSESA && domElementsSESA[midPairStart + 1]) {
+                domElementsSESA[midPairStart + 1].classList.add('highlight-pair-sesa');
+            }
+            
+            currentActionDisplay.textContent = `Comparing nums[${midPairStart}]=${numsSESA[midPairStart]} and nums[${midPairStart+1}]=${numsSESA[midPairStart+1]}`;
+            logSESA(`  Comparing pair: nums[${midPairStart}] (${numsSESA[midPairStart]}) and nums[${midPairStart+1}] (${numsSESA[midPairStart+1]}).`);
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+            if (numsSESA[midPairStart] === numsSESA[midPairStart + 1]) {
+                currentActionDisplay.textContent = `Pair (${numsSESA[midPairStart]}, ${numsSESA[midPairStart+1]}) matches. Single element in right half.`;
+                logSESA(`    Pair matches. Single element must be to the right. low = ${midPairStart + 2}.`);
+                lowSESA = midPairStart + 2;
+            } else {
+                currentActionDisplay.textContent = `Pair (${numsSESA[midPairStart]}, ${numsSESA[midPairStart+1]}) differs. Single element in left half (or is ${numsSESA[midPairStart]}).`;
+                logSESA(`    Pair differs. Single element is in this pair or to its left. high = ${midPairStart}.`);
+                highSESA = midPairStart;
+            }
+            
+            midSESA = -1; // Reset mid for next calculation
+            updatePointerVisualsSESA(); 
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+
+            if (simulationRunning) { 
+                 nextStepButton.disabled = false;
+            }
+        }
+
+        startButton.addEventListener('click', initializeSearchSESA);
+        nextStepButton.addEventListener('click', performNextStepSESA);
+        initializeSearchSESA(); 
+        
+        window.addEventListener('resize', () => {
+            if (simulationRunning && domElementsSESA && domElementsSESA.length > 0) {
+                 pointerContainer.style.width = `${arrayContainer.scrollWidth}px`;
+                 updatePointerVisualsSESA();
+                 updateSearchSpaceHighlightSESA(); 
+            }
+        });
+    });
+    </script>
+</body>
+</html>

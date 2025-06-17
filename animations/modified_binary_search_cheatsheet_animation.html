@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modified Binary Search: Find Peak Element Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls-mbs {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-mbs label { font-weight: bold; margin-right: 5px; }
+        .controls-mbs input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-mbs button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-mbs button:hover { background-color: #2980b9; }
+        .controls-mbs button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .array-visualization-mbs {
+            margin-top: 20px;
+            position: relative; 
+        }
+        .array-container-mbs {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end; 
+            min-height: 120px; /* Space for elements and pointers */
+            gap: 5px;
+            padding-bottom: 60px; /* Space for pointers below */
+            position: relative; /* For search space highlight */
+        }
+        .search-space-highlight-mbs {
+            position: absolute;
+            top: -5px; /* Slightly above elements */
+            bottom: 35px; /* Slightly above pointers */
+            background-color: rgba(52, 152, 219, 0.1); 
+            border-left: 3px solid rgba(52, 152, 219, 0.5);
+            border-right: 3px solid rgba(52, 152, 219, 0.5);
+            z-index: 0;
+            transition: left 0.5s ease, width 0.5s ease;
+            pointer-events: none;
+        }
+
+        .array-element-mbs {
+            width: 45px;
+            height: 45px;
+            border: 1px solid #bdc3c7;
+            background-color: #ecf0f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            border-radius: 4px;
+            transition: transform 0.4s ease, background-color 0.4s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative; 
+            z-index: 1; /* Above search space highlight */
+        }
+        .array-element-mbs .index-label-mbs {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7em;
+            color: #777;
+        }
+        
+        /* Pointer styles */
+        .pointer-container-mbs {
+            position: absolute;
+            bottom: 0px; 
+            left: 0;
+            width: 100%;
+            height: 50px; 
+            display: flex;
+            align-items: center; 
+        }
+        .pointer-mbs {
+            position: absolute;
+            bottom: 0;
+            text-align: center;
+            font-size: 0.9em;
+            font-weight: bold;
+            width: 45px; 
+            transition: left 0.5s ease;
+            padding-top: 5px; 
+            z-index: 5;
+        }
+        .pointer-mbs .arrow-mbs { 
+            display: block;
+            font-size: 1.4em;
+            line-height: 0.8;
+        }
+        #low-pointer-mbs { color: #27ae60; } /* Green */
+        #mid-pointer-mbs { color: #f39c12; } /* Orange */
+        #high-pointer-mbs { color: #c0392b; } /* Red */
+
+        /* Highlighting */
+        .highlight-compare-mbs { border-color: #f39c12; background-color: #fdebd0; transform: scale(1.05); }
+        .highlight-mid-mbs { border-color: #f39c12; box-shadow: 0 0 8px #f39c12; }
+        .highlight-peak-mbs {
+            background-color: #2ecc71 !important; /* Strong Green */
+            color: white;
+            border-color: #27ae60 !important;
+            transform: scale(1.15) translateY(-5px);
+            box-shadow: 0 0 15px #2ecc71;
+            animation: pulse-peak-mbs 1s infinite alternate;
+        }
+        @keyframes pulse-peak-mbs {
+            from { transform: scale(1.15) translateY(-5px); }
+            to { transform: scale(1.20) translateY(-7px); }
+        }
+        
+        #current_action_mbs_display { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; color: #2c3e50;}
+        .log-container-mbs { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        #log_output_mbs { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Modified Binary Search: Find Peak Element</h1>
+        <p style="text-align:center;">A peak element is strictly greater than its neighbors. Finds <i>any</i> peak.</p>
+
+        <div class="controls-mbs">
+            <label for="array_input_mbs">Array (comma-separated numbers):</label>
+            <input type="text" id="array_input_mbs" value="1,2,3,1">
+            <button id="start_button_mbs">Start/Reset</button>
+            <button id="next_step_button_mbs" disabled>Next Step</button>
+        </div>
+
+        <div class="array-visualization-mbs">
+            <div id="array_container_mbs" class="array-container-mbs">
+                <div id="search_space_highlight_mbs" class="search-space-highlight-mbs" style="display:none;"></div>
+                <!-- Array elements will be rendered here -->
+            </div>
+            <div class="pointer-container-mbs">
+                <div id="low-pointer-mbs" class="pointer-mbs"><span class="arrow-mbs">▼</span>low</div>
+                <div id="mid-pointer-mbs" class="pointer-mbs"><span class="arrow-mbs">▼</span>mid</div>
+                <div id="high-pointer-mbs" class="pointer-mbs"><span class="arrow-mbs">▼</span>high</div>
+            </div>
+        </div>
+        
+        <div id="current_action_mbs_display"></div>
+        <div class="log-container-mbs">
+            <h2>Log</h2>
+            <pre id="log_output_mbs"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const arrayInput = document.getElementById('array_input_mbs');
+        const startButton = document.getElementById('start_button_mbs');
+        const nextStepButton = document.getElementById('next_step_button_mbs');
+        const arrayContainer = document.getElementById('array_container_mbs');
+        const searchSpaceHighlight = document.getElementById('search_space_highlight_mbs');
+        const lowPointerEl = document.getElementById('low-pointer-mbs');
+        const midPointerEl = document.getElementById('mid-pointer-mbs');
+        const highPointerEl = document.getElementById('high-pointer-mbs');
+        const currentActionDisplay = document.getElementById('current_action_mbs_display');
+        const logOutput = document.getElementById('log_output_mbs');
+
+        const ANIMATION_DELAY = 800; 
+
+        let numsMBS = [];
+        let domElementsMBS = [];
+        let lowMBS, midMBS, highMBS;
+        let nMBS;
+
+        function logMBS(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearAllHighlightsMBS() {
+            domElementsMBS.forEach(el => el.classList.remove('highlight-compare-mbs', 'highlight-mid-mbs', 'highlight-peak-mbs'));
+            currentActionDisplay.textContent = '';
+        }
+
+        function renderArrayMBS() {
+            arrayContainer.innerHTML = ''; // Clear old elements but keep highlight div if needed
+            arrayContainer.appendChild(searchSpaceHighlight); // Ensure it's there
+            domElementsMBS = [];
+            numsMBS.forEach((val, index) => {
+                const el = document.createElement('div');
+                el.classList.add('array-element-mbs');
+                el.id = `el-mbs-${index}`;
+                el.textContent = val;
+                
+                const indexLabel = document.createElement('span');
+                indexLabel.classList.add('index-label-mbs');
+                indexLabel.textContent = index;
+                el.appendChild(indexLabel);
+
+                arrayContainer.insertBefore(el, searchSpaceHighlight); // Insert before highlight
+                domElementsMBS.push(el);
+            });
+            if (nMBS > 0) updatePointerVisualsMBS();
+        }
+        
+        function updatePointerVisualsMBS() {
+            if (nMBS === 0 || domElementsMBS.length === 0) return;
+        
+            const setPosition = (pointerElement, index) => {
+                if (index >= 0 && index < nMBS && domElementsMBS[index]) {
+                    pointerElement.style.left = `${domElementsMBS[index].offsetLeft}px`;
+                    pointerElement.style.display = 'block';
+                } else {
+                    pointerElement.style.display = 'none';
+                }
+            };
+        
+            setPosition(lowPointerEl, lowMBS);
+            setPosition(midPointerEl, midMBS); // midMBS might be undefined initially
+            setPosition(highPointerEl, highMBS);
+            updateSearchSpaceHighlightMBS();
+        }
+
+        function updateSearchSpaceHighlightMBS() {
+            if (lowMBS > highMBS || !domElementsMBS[lowMBS] || !domElementsMBS[highMBS]) {
+                searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+            searchSpaceHighlight.style.display = 'block';
+            const firstEl = domElementsMBS[lowMBS];
+            const lastEl = domElementsMBS[highMBS];
+            const containerPaddingLeft = 0; // Assuming no padding inside array-container itself影响offsetLeft
+
+            searchSpaceHighlight.style.left = `${firstEl.offsetLeft - containerPaddingLeft - 2}px`; // -2 for border
+            searchSpaceHighlight.style.width = `${lastEl.offsetLeft + lastEl.offsetWidth - firstEl.offsetLeft + 4}px`;
+        }
+
+        function initializeSearch() {
+            logMBS("Initializing Modified Binary Search...");
+            clearAllHighlightsMBS();
+            try {
+                numsMBS = arrayInput.value.split(',')
+                                 .map(s => parseInt(s.trim()))
+                                 .filter(n => !isNaN(n));
+                if (numsMBS.length === 0 && arrayInput.value.trim() !== "") {
+                    throw new Error("Filtered array is empty.");
+                }
+            } catch (e) {
+                alert("Invalid array input. Use comma-separated numbers."); return;
+            }
+            
+            nMBS = numsMBS.length;
+            if (nMBS === 0) {
+                logMBS("Empty array. Cannot find peak.");
+                renderArrayMBS(); // Render empty state
+                startButton.textContent = "Start/Reset";
+                nextStepButton.disabled = true;
+                currentActionDisplay.textContent = "Empty array.";
+                lowPointerEl.style.display = 'none'; midPointerEl.style.display = 'none'; highPointerEl.style.display = 'none';
+                searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+            
+            lowMBS = 0;
+            highMBS = nMBS - 1;
+            midMBS = -1; // Will be calculated in first step
+
+            renderArrayMBS(); 
+            
+            startButton.textContent = "Reset";
+            nextStepButton.disabled = false;
+            logMBS(`Initialized. Array: [${numsMBS.join(', ')}]. low=${lowMBS}, high=${highMBS}`);
+            currentActionDisplay.textContent = "Ready. Click 'Next Step'.";
+             updatePointerVisualsMBS(); // Initial pointer and search space
+        }
+
+        async function performNextStepMBS() {
+            nextStepButton.disabled = true;
+            clearAllHighlightsMBS(); // Clear previous highlights but keep search space updated by pointers
+
+            if (lowMBS >= highMBS) { // Termination condition for this peak find variant is low == high
+                currentActionDisplay.textContent = `Search complete! Peak found at index ${lowMBS} (Value: ${numsMBS[lowMBS]})`;
+                logMBS(`low (${lowMBS}) == high (${highMBS}). Peak is at index ${lowMBS}. Value: ${numsMBS[lowMBS]}`);
+                if (domElementsMBS[lowMBS]) domElementsMBS[lowMBS].classList.add('highlight-peak-mbs');
+                midPointerEl.style.display = 'none'; // Hide mid as it's same as low/high
+                updatePointerVisualsMBS(); // Update low and high pointers to final position
+                startButton.textContent = "Start/Reset";
+                return;
+            }
+
+            midMBS = lowMBS + Math.floor((highMBS - lowMBS) / 2);
+            updatePointerVisualsMBS(); // Update mid pointer and search space
+            if (domElementsMBS[midMBS]) domElementsMBS[midMBS].classList.add('highlight-mid-mbs');
+            
+            currentActionDisplay.textContent = `Calculated mid = ${midMBS}. Comparing nums[${midMBS}] with nums[${midMBS + 1}].`;
+            logMBS(`Loop: low=${lowMBS}, high=${highMBS}. Calculated mid=${midMBS}.`);
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+
+            if (midMBS + 1 >= nMBS) { // Edge case: mid is the last element, it must be a peak if loop is still running with low < high
+                currentActionDisplay.textContent = `mid is last element. Peak is at index ${midMBS}.`;
+                logMBS(`  mid (${midMBS}) is the last element. It's a peak in this context.`);
+                highMBS = midMBS; // This will make low == high in next check
+                // No visual comparison needed for this edge case, directly proceed
+            } else {
+                if (domElementsMBS[midMBS]) domElementsMBS[midMBS].classList.add('highlight-compare-mbs');
+                if (domElementsMBS[midMBS+1]) domElementsMBS[midMBS+1].classList.add('highlight-compare-mbs');
+                logMBS(`  Comparing nums[${midMBS}] (${numsMBS[midMBS]}) with nums[${midMBS+1}] (${numsMBS[midMBS+1]})`);
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+                if (numsMBS[midMBS] < numsMBS[midMBS + 1]) {
+                    currentActionDisplay.textContent = `${numsMBS[midMBS]} < ${numsMBS[midMBS+1]}. Peak in right half. low = ${midMBS + 1}`;
+                    logMBS(`    ${numsMBS[midMBS]} < ${numsMBS[midMBS+1]}. Peak must be to the right. low = mid + 1.`);
+                    lowMBS = midMBS + 1;
+                } else { // nums[mid] > nums[mid+1] (or equal, but problem says strictly greater for peak)
+                    currentActionDisplay.textContent = `${numsMBS[midMBS]} > ${numsMBS[midMBS+1]}. Peak in left half (or is mid). high = ${midMBS}`;
+                    logMBS(`    ${numsMBS[midMBS]} > ${numsMBS[midMBS+1]}. Peak could be mid or to the left. high = mid.`);
+                    highMBS = midMBS;
+                }
+            }
+            
+            updatePointerVisualsMBS(); // Update pointers and search space highlight
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+
+
+            if (lowMBS < highMBS) {
+                nextStepButton.disabled = false;
+            } else { // low == high, peak found
+                performNextStepMBS(); // Call again to trigger completion display
+            }
+        }
+
+        startButton.addEventListener('click', initializeSearch);
+        nextStepButton.addEventListener('click', performNextStepMBS);
+        initializeSearch(); 
+        
+        window.addEventListener('resize', () => {
+            if (domElementsMBS && domElementsMBS.length > 0) {
+                 updatePointerVisualsMBS();
+            }
+        });
+    });
+    </script>
+</body>
+</html>

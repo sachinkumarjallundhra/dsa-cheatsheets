@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Single Element in a Sorted Array Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Single Element in a Sorted Array – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Single Element in a Sorted Array</b> problem involves finding the single non-duplicate element in a sorted array where every other element appears exactly twice. The goal is to solve this in <code>O(log N)</code> time using binary search.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int singleNonDuplicate(int[] nums) {
+        int left = 0, right = nums.length - 1;
+
+        while (left &lt; right) {
+            int mid = left + (right - left) / 2;
+
+            // Ensure mid is even for comparison
+            if (mid % 2 == 1) {
+                mid--;
+            }
+
+            if (nums[mid] == nums[mid + 1]) {
+                left = mid + 2; // Single element is in the right half
+            } else {
+                right = mid; // Single element is in the left half
+            }
+        }
+
+        return nums[left]; // Single element
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log N)</code> – Halving the search space at each step.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding a unique element in a sorted array</li>
+      <li>Applications in data deduplication</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/single-element-in-a-sorted-array/" target="_blank" rel="noopener noreferrer">540. Single Element in a Sorted Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Single Element in a Sorted Array</h2>
+    <pre><code>Input: nums = [1,1,2,3,3,4,4,8,8]
+Output: 2
+
+Explanation:
+- The single non-duplicate element is 2.</code></pre>
+    <button onclick="window.location.href='../animations/single_element_in_sorted_array_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Ensure the mid index is even for comparison with its pair.</li>
+      <li>Edge cases: single-element arrays, arrays with all duplicates except one.</li>
+      <li>Use binary search to efficiently narrow down the search space.</li>
+    </ul>
+  </div>
+</body>
+</html>

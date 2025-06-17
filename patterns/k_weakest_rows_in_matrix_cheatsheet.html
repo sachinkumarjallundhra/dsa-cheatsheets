@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The K Weakest Rows in a Matrix Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 The K Weakest Rows in a Matrix – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>The K Weakest Rows in a Matrix</b> problem involves finding the <code>K</code> weakest rows in a binary matrix. A row's weakness is determined by the number of 1s in it, and in case of a tie, the row with the smaller index is weaker.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int[] kWeakestRows(int[][] mat, int k) {
+        PriorityQueue&lt;int[]&gt; maxHeap = new PriorityQueue&lt;&gt;(
+            (a, b) -&gt; a[0] == b[0] ? b[1] - a[1] : b[0] - a[0]
+        );
+
+        for (int i = 0; i &lt; mat.length; i++) {
+            int soldierCount = countSoldiers(mat[i]);
+            maxHeap.offer(new int[]{soldierCount, i});
+
+            if (maxHeap.size() &gt; k) {
+                maxHeap.poll();
+            }
+        }
+
+        int[] result = new int[k];
+        for (int i = k - 1; i &gt;= 0; i--) {
+            result[i] = maxHeap.poll()[1];
+        }
+
+        return result;
+    }
+
+    private int countSoldiers(int[] row) {
+        int left = 0, right = row.length;
+
+        while (left &lt; right) {
+            int mid = left + (right - left) / 2;
+
+            if (row[mid] == 1) {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+
+        return left;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Counting Soldiers</b>: <code>O(R log C)</code> – Binary search for each row.</li>
+      <li><b>Heap Operations</b>: <code>O(R log K)</code> – Maintaining a max-heap of size <code>K</code>.</li>
+      <li><b>Overall Complexity</b>: <code>O(R log C + R log K)</code>, where <code>R</code> is the number of rows and <code>C</code> is the number of columns.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the weakest rows in a binary matrix</li>
+      <li>Applications in ranking and prioritization problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/the-k-weakest-rows-in-a-matrix/" target="_blank" rel="noopener noreferrer">1337. The K Weakest Rows in a Matrix</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Heap</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: The K Weakest Rows in a Matrix</h2>
+    <pre><code>Input: mat = [
+  [1,1,0,0,0],
+  [1,1,1,1,0],
+  [1,0,0,0,0],
+  [1,1,0,0,0],
+  [1,1,1,1,1]
+], k = 3
+Output: [2, 0, 3]
+
+Explanation:
+- Row 2 has 1 soldier, row 0 has 2 soldiers, and row 3 has 2 soldiers.
+- These are the 3 weakest rows.</code></pre>
+    <button onclick="window.location.href='../animations/k_weakest_rows_in_matrix_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use binary search to efficiently count the number of soldiers in each row.</li>
+      <li>Maintain a max-heap of size <code>K</code> to track the weakest rows.</li>
+      <li>Edge cases: rows with all 0s or all 1s, and ties in soldier counts.</li>
+    </ul>
+  </div>
+</body>
+</html>

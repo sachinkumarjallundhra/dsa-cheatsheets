@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Split Array Largest Sum Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Split Array Largest Sum – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Split Array Largest Sum</b> problem involves splitting an array into <code>m</code> non-empty continuous subarrays such that the largest sum among these subarrays is minimized. The goal is to find this minimized largest sum using binary search.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int splitArray(int[] nums, int m) {
+        int left = 0, right = 0;
+
+        for (int num : nums) {
+            left = Math.max(left, num); // Minimum possible largest sum
+            right += num; // Maximum possible largest sum
+        }
+
+        while (left &lt; right) {
+            int mid = left + (right - left) / 2;
+
+            if (canSplit(nums, m, mid)) {
+                right = mid; // Try a smaller largest sum
+            } else {
+                left = mid + 1; // Try a larger largest sum
+            }
+        }
+
+        return left;
+    }
+
+    private boolean canSplit(int[] nums, int m, int maxSum) {
+        int currentSum = 0, splits = 1;
+
+        for (int num : nums) {
+            if (currentSum + num &gt; maxSum) {
+                splits++;
+                currentSum = num;
+
+                if (splits &gt; m) {
+                    return false;
+                }
+            } else {
+                currentSum += num;
+            }
+        }
+
+        return true;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log(S))</code>, where <code>S</code> is the sum of the array.</li>
+      <li><b>Validation</b>: <code>O(N)</code>, where <code>N</code> is the length of the array.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log(S))</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Splitting arrays into subarrays with minimized largest sums</li>
+      <li>Applications in load balancing and resource allocation</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/split-array-largest-sum/" target="_blank" rel="noopener noreferrer">410. Split Array Largest Sum</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Split Array Largest Sum</h2>
+    <pre><code>Input: nums = [7,2,5,10,8], m = 2
+Output: 18
+
+Explanation:
+- Split the array into [7,2,5] and [10,8].
+- The largest sum among these subarrays is 18, which is minimized.</code></pre>
+    <button onclick="window.location.href='../animations/split_array_largest_sum_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use binary search to efficiently find the minimized largest sum.</li>
+      <li>Edge cases: single-element arrays, large values of <code>m</code>, or when <code>m</code> equals the array length.</li>
+      <li>Precompute the sum of the array to set the binary search bounds.</li>
+    </ul>
+  </div>
+</body>
+</html>

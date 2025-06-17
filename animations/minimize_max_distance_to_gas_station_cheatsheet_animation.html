@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimize Max Distance to Gas Station Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1000px; 
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls-mmdgs {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-mmdgs label { font-weight: bold; margin-right: 5px; }
+        .controls-mmdgs input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-mmdgs input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 60px;}
+        .controls-mmdgs button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-mmdgs button:hover { background-color: #2980b9; }
+        .controls-mmdgs button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-layout-mmdgs {
+            display: grid;
+            grid-template-columns: 1fr; 
+            gap: 20px;
+        }
+        .config-panel-mmdgs, .timeline-panel-mmdgs, .canachieve-panel-mmdgs, .results-panel-mmdgs {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .config-panel-mmdgs > div, .canachieve-panel-mmdgs > div, .results-panel-mmdgs > div { margin-bottom: 8px; }
+        .config-panel-mmdgs span, .canachieve-panel-mmdgs span, .results-panel-mmdgs span { font-weight: bold; }
+        
+        #stations_mmdgs_disp { font-family: monospace; font-size: 1.1em; color: #2980b9; display: inline-block; max-width:100%; overflow-wrap: break-word;}
+        #k_val_mmdgs { color: #e67e22;}
+        #bs_low_dist_mmdgs, #bs_high_dist_mmdgs { color: #8e44ad; }
+        #bs_mid_dist_mmdgs { color: #f39c12; font-size: 1.1em; }
+        #ans_dist_mmdgs { color: #27ae60; font-size: 1.2em; }
+        #stations_needed_mmdgs { color: #c0392b; }
+        #can_achieve_result_mmdgs { font-size: 1.1em; }
+
+        .timeline-container-mmdgs {
+            width: 100%;
+            height: 80px; 
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            position: relative;
+            margin-top: 10px;
+            overflow-x: auto; 
+            overflow-y: hidden; 
+        }
+        .timeline-axis-mmdgs {
+            position: absolute;
+            left: 10px; right: 10px; top: 50%;
+            height: 2px;
+            background-color: #555;
+        }
+        .station-marker-mmdgs, .virtual-station-mmdgs {
+            position: absolute;
+            top: calc(50% - 10px); 
+            width: 4px;
+            height: 20px; 
+            border-radius: 2px;
+            transform: translateX(-50%); 
+        }
+        .station-marker-mmdgs { background-color: #c0392b; z-index: 2;}
+        .virtual-station-mmdgs { background-color: #3498db; opacity:0.7; z-index: 1;}
+        .station-label-mmdgs {
+            position: absolute;
+            top: calc(50% - 28px); 
+            font-size: 0.75em;
+            color: #333;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            padding: 1px 3px;
+            background-color: rgba(255,255,255,0.7);
+            border-radius: 2px;
+        }
+        .gap-highlight-mmdgs {
+            position: absolute;
+            top: calc(50% - 7px); height: 14px; 
+            background-color: rgba(243, 156, 18, 0.2); 
+            z-index: 0;
+            transition: left 0.3s ease, width 0.3s ease;
+            border-left: 1px dashed #f39c12;
+            border-right: 1px dashed #f39c12;
+        }
+
+
+        .log-container-mmdgs { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        #log_output_mmdgs { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minimize Max Distance to Gas Station Animation</h1>
+
+        <div class="controls-mmdgs">
+            <label for="stations_input_mmdgs">Stations (sorted, comma-separated):</label>
+            <input type="text" id="stations_input_mmdgs" value="1,2,3,4,5,6,7,8,9,10">
+            <label for="k_input_mmdgs">K (new stations):</label>
+            <input type="number" id="k_input_mmdgs" value="9" min="0">
+            <button id="start_button_mmdgs">Start/Reset</button>
+            <button id="next_step_button_mmdgs" disabled>Next BS Step</button>
+        </div>
+
+        <div class="config-panel-mmdgs">
+            <h2>Inputs & Binary Search State</h2>
+            <div>Stations: <span id="stations_mmdgs_disp">-</span></div>
+            <div>K (New Stations Allowed): <span id="k_val_mmdgs">-</span></div>
+            <hr>
+            <div>BS Range for Max Distance (D): [<span id="bs_low_dist_mmdgs">-</span>, <span id="bs_high_dist_mmdgs">-</span>]</div>
+            <div>Testing Max Distance (midDist): <span id="bs_mid_dist_mmdgs">-</span></div>
+        </div>
+        
+        <div class="timeline-panel-mmdgs">
+            <h2>Number Line & Station Placement</h2>
+            <div id="timeline_container_mmdgs" class="timeline-container-mmdgs">
+                <div class="timeline-axis-mmdgs"></div>
+                <div id="stations_on_timeline_mmdgs"></div> 
+                <div id="virtual_stations_on_timeline_mmdgs"></div> 
+                <div id="gap_highlight_mmdgs" class="gap-highlight-mmdgs" style="display:none;"></div>
+            </div>
+        </div>
+
+        <div class="canachieve-panel-mmdgs">
+            <h3>canAchieve(stations, k, <span id="canachieve_test_dist_mmdgs">-</span>) Details:</h3>
+            <div>Total New Stations Needed for this D: <span id="stations_needed_mmdgs">-</span></div>
+            <div>Result (Needed <= K?): <strong id="can_achieve_result_mmdgs">-</strong></div>
+        </div>
+
+        <div class="results-panel-mmdgs">
+            <h2>Result</h2>
+            <div>Minimized Max Distance (ansD): <span id="ans_dist_mmdgs">-</span></div>
+        </div>
+        
+        <div class="log-container-mmdgs">
+            <h2>Log</h2>
+            <pre id="log_output_mmdgs"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const stationsInputEl = document.getElementById('stations_input_mmdgs');
+        const kInputEl = document.getElementById('k_input_mmdgs');
+        const startButton = document.getElementById('start_button_mmdgs');
+        const nextStepButton = document.getElementById('next_step_button_mmdgs');
+
+        const stationsDisp = document.getElementById('stations_mmdgs_disp');
+        const kValDisp = document.getElementById('k_val_mmdgs');
+        const bsLowDistDisp = document.getElementById('bs_low_dist_mmdgs');
+        const bsHighDistDisp = document.getElementById('bs_high_dist_mmdgs');
+        const bsMidDistDisp = document.getElementById('bs_mid_dist_mmdgs');
+        const ansDistDisp = document.getElementById('ans_dist_mmdgs');
+
+        const timelineContainer = document.getElementById('timeline_container_mmdgs');
+        const stationsOnTimeline = document.getElementById('stations_on_timeline_mmdgs');
+        const virtualStationsOnTimeline = document.getElementById('virtual_stations_on_timeline_mmdgs');
+        const gapHighlight = document.getElementById('gap_highlight_mmdgs');
+
+        const canachieveTestDistDisp = document.getElementById('canachieve_test_dist_mmdgs');
+        const stationsNeededDisp = document.getElementById('stations_needed_mmdgs');
+        const canAchieveResultDisp = document.getElementById('can_achieve_result_mmdgs');
+        
+        const logOutput = document.getElementById('log_output_mmdgs');
+
+        const ANIMATION_DELAY = 800; 
+        const GAP_PROCESS_DELAY = 450; 
+        const FIXED_BS_ITERATIONS = 100; 
+        const EPSILON = 1e-7; 
+
+        let STATIONS_MMDGS = [];
+        let K_MMDGS;
+        let N_STATIONS;
+        
+        let bsLowD, bsHighD, bsMidDistance, ansD;
+        let bsIterationCount = 0;
+        
+        let timelineScale = 1; 
+        let timelineMinVal = 0; 
+        let timelineOffset = 10; 
+
+        let simulationRunning = false;
+
+        function logMMDGS(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        function calculateTimelineScaleAndOffset() {
+            if (N_STATIONS === 0) {
+                timelineMinVal = 0;
+                timelineScale = 10; 
+                return;
+            }
+            timelineMinVal = STATIONS_MMDGS[0];
+            const maxStation = STATIONS_MMDGS[N_STATIONS - 1];
+            let range = maxStation - timelineMinVal;
+            
+            if (range <= EPSILON) { 
+                range = N_STATIONS > 1 ? 1 : 10; 
+            }
+
+            const containerWidth = timelineContainer.clientWidth - 2 * timelineOffset; 
+            timelineScale = containerWidth / range;
+            timelineScale = Math.max(2, Math.min(timelineScale, 100)); 
+        }
+
+        function getTimelinePosition(stationValue) {
+            if (N_STATIONS === 0) return timelineOffset;
+            return timelineOffset + (stationValue - timelineMinVal) * timelineScale;
+        }
+
+        function renderStationsOnTimeline(highlightFinal = false, finalD = 0) {
+            stationsOnTimeline.innerHTML = '';
+            if (!highlightFinal) { // Only clear virtual if not showing final state
+                 virtualStationsOnTimeline.innerHTML = '';
+            }
+            if (N_STATIONS === 0) return;
+            calculateTimelineScaleAndOffset(); 
+
+            STATIONS_MMDGS.forEach((pos, idx) => {
+                const marker = document.createElement('div');
+                marker.classList.add('station-marker-mmdgs');
+                marker.style.left = `${getTimelinePosition(pos)}px`;
+                marker.title = `Original Station ${idx} at ${pos}`;
+                stationsOnTimeline.appendChild(marker);
+
+                const label = document.createElement('div');
+                label.classList.add('station-label-mmdgs');
+                label.textContent = pos.toFixed(STATIONS_MMDGS.some(s => !Number.isInteger(s)) ? 2 : 0); // More precision for floats
+                label.style.left = `${getTimelinePosition(pos)}px`;
+                stationsOnTimeline.appendChild(label);
+            });
+
+            if (highlightFinal && finalD > EPSILON) {
+                 virtualStationsOnTimeline.innerHTML = ''; // Clear previous virtual before adding final ones
+                 for (let i = 0; i < N_STATIONS - 1; i++) {
+                    const startStationPos = STATIONS_MMDGS[i];
+                    const endStationPos = STATIONS_MMDGS[i+1];
+                    const gapLength = endStationPos - startStationPos;
+                    if (gapLength > finalD + EPSILON) {
+                        const newStationsInThisGap = Math.ceil(gapLength / finalD) - 1;
+                        for (let j = 1; j <= newStationsInThisGap; j++) {
+                            const virtStationPos = startStationPos + j * (gapLength / (newStationsInThisGap + 1));
+                            const vMarker = document.createElement('div');
+                            vMarker.classList.add('virtual-station-mmdgs');
+                            vMarker.style.left = `${getTimelinePosition(virtStationPos)}px`;
+                            vMarker.style.backgroundColor = "#27ae60"; 
+                            vMarker.title = `Final Virtual @ ${virtStationPos.toFixed(3)}`;
+                            virtualStationsOnTimeline.appendChild(vMarker);
+                        }
+                    }
+                }
+            }
+        }
+        
+        function clearVirtualStationsAndGapHighlight() {
+            virtualStationsOnTimeline.innerHTML = '';
+            gapHighlight.style.display = 'none';
+        }
+
+        async function animateCanAchieve(testDistance) {
+            if (!simulationRunning) return false; 
+            logMMDGS(`  canAchieve: Testing D = ${testDistance.toFixed(7)}`);
+            canachieveTestDistDisp.textContent = testDistance.toFixed(7);
+            clearVirtualStationsAndGapHighlight();
+
+            let stationsNeeded = 0;
+            stationsNeededDisp.textContent = stationsNeeded;
+
+            for (let i = 0; i < N_STATIONS - 1; i++) {
+                if (!simulationRunning) return false; 
+                const startStationPos = STATIONS_MMDGS[i];
+                const endStationPos = STATIONS_MMDGS[i+1];
+                const gapLength = endStationPos - startStationPos;
+
+                gapHighlight.style.left = `${getTimelinePosition(startStationPos)}px`;
+                gapHighlight.style.width = `${Math.max(0, (endStationPos - startStationPos) * timelineScale)}px`;
+                gapHighlight.style.display = 'block';
+                
+                logMMDGS(`    Gap [${startStationPos.toFixed(3)} - ${endStationPos.toFixed(3)}], Length: ${gapLength.toFixed(3)}`);
+                await new Promise(r => setTimeout(r, GAP_PROCESS_DELAY / 2));
+                if (!simulationRunning) return false;
+
+                let newStationsInThisGap = 0;
+                if (gapLength > testDistance + EPSILON && testDistance > EPSILON) { 
+                     newStationsInThisGap = Math.ceil(gapLength / testDistance) - 1;
+                }
+
+                if (newStationsInThisGap > 0) {
+                    stationsNeeded += newStationsInThisGap;
+                    stationsNeededDisp.textContent = stationsNeeded;
+                    logMMDGS(`      Needs ${newStationsInThisGap} new stations. Total needed so far: ${stationsNeeded}`);
+
+                    for (let j = 1; j <= newStationsInThisGap; j++) {
+                        const virtStationPos = startStationPos + j * (gapLength / (newStationsInThisGap + 1));
+                        const vMarker = document.createElement('div');
+                        vMarker.classList.add('virtual-station-mmdgs');
+                        vMarker.style.left = `${getTimelinePosition(virtStationPos)}px`;
+                        vMarker.title = `Virtual @ ${virtStationPos.toFixed(3)}`;
+                        virtualStationsOnTimeline.appendChild(vMarker);
+                    }
+                } else {
+                     logMMDGS(`      Gap <= ${testDistance.toFixed(7)} or testDistance too small. No new stations needed here.`);
+                }
+                await new Promise(r => setTimeout(r, GAP_PROCESS_DELAY));
+                if (!simulationRunning) return false;
+                gapHighlight.style.display = 'none'; 
+            }
+            
+            const canAchieveResult = stationsNeeded <= K_MMDGS;
+            canAchieveResultDisp.textContent = canAchieveResult ? `True (${stationsNeeded} <= ${K_MMDGS})` : `False (${stationsNeeded} > ${K_MMDGS})`;
+            canAchieveResultDisp.style.color = canAchieveResult ? "green" : "red";
+            logMMDGS(`  canAchieve: Total new stations needed = ${stationsNeeded}. Allowed k = ${K_MMDGS}. Result: ${canAchieveResult}`);
+            
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+            if (!simulationRunning) return false;
+            return canAchieveResult;
+        }
+
+        function renderInitialDisplays() {
+            stationsDisp.textContent = STATIONS_MMDGS.length > 0 ? `[${STATIONS_MMDGS.join(', ')}]` : '[]';
+            kValDisp.textContent = K_MMDGS !== undefined ? K_MMDGS : '-';
+            bsLowDistDisp.textContent = bsLowD !== undefined ? bsLowD.toFixed(7) : '-';
+            bsHighDistDisp.textContent = bsHighD !== undefined ? bsHighD.toFixed(7) : '-';
+            bsMidDistDisp.textContent = '-';
+            ansDistDisp.textContent = ansD !== undefined ? ansD.toFixed(7) : '-';
+
+            canachieveTestDistDisp.textContent = '-';
+            stationsNeededDisp.textContent = '0';
+            canAchieveResultDisp.textContent = '-';
+            canAchieveResultDisp.style.color = 'inherit';
+            renderStationsOnTimeline(); // Render base stations
+        }
+
+
+        async function finalizeAnimationMMDGS() {
+            simulationRunning = false; 
+            nextStepButton.disabled = true;
+            startButton.textContent = "Start/Reset";
+            
+            bsMidDistDisp.textContent = ansD.toFixed(7); 
+            bsLowDistDisp.textContent = ansD.toFixed(7); 
+            bsHighDistDisp.textContent = ansD.toFixed(7);
+            
+            logMMDGS(`--- Minimized Max Distance Found: ${ansD.toFixed(7)} ---`);
+            ansDistDisp.textContent = ansD.toFixed(7);
+            
+            clearVirtualStationsAndGapHighlight(); 
+            if (N_STATIONS >= 1) { 
+                canachieveTestDistDisp.textContent = ansD.toFixed(7);
+                if (N_STATIONS > 1) { 
+                     logMMDGS("Final station placement for this distance:");
+                     renderStationsOnTimeline(true, ansD); 
+                } else {
+                    renderStationsOnTimeline(); 
+                }
+
+                let finalStationsNeeded = 0;
+                if (N_STATIONS > 1 && ansD > EPSILON) { 
+                    for (let i = 0; i < N_STATIONS - 1; i++) {
+                        const gapLength = STATIONS_MMDGS[i+1] - STATIONS_MMDGS[i];
+                         if (gapLength > ansD + EPSILON) { 
+                            finalStationsNeeded += Math.ceil(gapLength / ansD) - 1;
+                        }
+                    }
+                }
+                stationsNeededDisp.textContent = finalStationsNeeded;
+                canAchieveResultDisp.textContent = `True (${finalStationsNeeded} <= ${K_MMDGS})`;
+                canAchieveResultDisp.style.color = "green";
+
+            } else { 
+                canachieveTestDistDisp.textContent = '0.0';
+                stationsNeededDisp.textContent = '0';
+                canAchieveResultDisp.textContent = "N/A";
+                canAchieveResultDisp.style.color = "inherit";
+                renderStationsOnTimeline(); 
+            }
+        }
+
+        function initializeAnimation() {
+            logMMDGS("Initializing Minimize Max Distance to Gas Station...");
+            simulationRunning = false; 
+            nextStepButton.disabled = true; 
+
+            try {
+                STATIONS_MMDGS = stationsInputEl.value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+                STATIONS_MMDGS.sort((a, b) => a - b); 
+                stationsInputEl.value = STATIONS_MMDGS.join(','); 
+
+                K_MMDGS = parseInt(kInputEl.value);
+                N_STATIONS = STATIONS_MMDGS.length;
+
+                if (N_STATIONS === 0 && K_MMDGS >=0) { /* Allow empty stations, ans should be 0 */ }
+                else if (N_STATIONS === 1 && K_MMDGS >=0) { /* Allow 1 station, ans should be 0 */ }
+                else if (N_STATIONS < 2) {
+                    throw new Error("Need at least 2 stations for a meaningful non-zero distance if K is not sufficient to cover all gaps with 0 distance.");
+                }
+                if (isNaN(K_MMDGS) || K_MMDGS < 0) throw new Error("K must be non-negative.");
+
+            } catch (e) {
+                alert("Invalid input. Error: " + e.message); 
+                startButton.textContent = "Start/Reset";
+                return;
+            }
+            
+            stationsDisp.textContent = `[${STATIONS_MMDGS.join(', ')}]`;
+            kValDisp.textContent = K_MMDGS;
+            
+            bsLowD = 0.0;
+            bsHighD = (N_STATIONS > 1) ? (STATIONS_MMDGS[N_STATIONS - 1] - STATIONS_MMDGS[0]) : 0.0;
+            if (N_STATIONS <= 1) bsHighD = 0.0; 
+            
+            ansD = bsHighD; 
+            bsIterationCount = 0;
+
+            renderInitialDisplays(); 
+            logOutput.innerHTML = ""; 
+            
+            startButton.textContent = "Reset";
+            simulationRunning = true; 
+
+            if (N_STATIONS < 2) { 
+                ansD = 0.0;
+                logMMDGS("Not enough stations to form a gap or only one station. Max distance is 0.");
+                finalizeAnimationMMDGS();
+            } else if (bsIterationCount < FIXED_BS_ITERATIONS && (bsHighD - bsLowD) >= EPSILON) {
+                 nextStepButton.disabled = false;
+                 logMMDGS(`Initialized. Stations: [${STATIONS_MMDGS.join(', ')}], K=${K_MMDGS}.`);
+                 logMMDGS(`BS Range for Distance D: [${bsLowD.toFixed(7)}, ${bsHighD.toFixed(7)}]. Initial ansD: ${ansD.toFixed(7)}.`);
+            } else {
+                ansD = bsLowD; // Converged or iterations done
+                finalizeAnimationMMDGS();
+            }
+        }
+        
+
+        async function performNextStep() {
+            if (!simulationRunning) return;
+            
+            nextStepButton.disabled = true; // Disable at the start of the step
+            clearVirtualStationsAndGapHighlight();
+            canAchieveResultDisp.textContent = "-"; 
+            canAchieveResultDisp.style.color = "inherit";
+
+            if (bsIterationCount >= FIXED_BS_ITERATIONS || (bsHighD - bsLowD) < EPSILON) {
+                ansD = bsHighD; // Per typical BS for min D s.t. condition is true, highD is the answer
+                await finalizeAnimationMMDGS();
+                return; 
+            }
+
+            bsMidDistance = bsLowD + (bsHighD - bsLowD) / 2.0;
+            
+            bsLowDistDisp.textContent = bsLowD.toFixed(7);
+            bsHighDistDisp.textContent = bsHighD.toFixed(7);
+            bsMidDistDisp.textContent = bsMidDistance.toFixed(7);
+            
+            logMMDGS(`BS Iteration ${bsIterationCount + 1}: lowD=${bsLowD.toFixed(7)}, highD=${bsHighD.toFixed(7)}. Testing midDistance = ${bsMidDistance.toFixed(7)}`);
+            
+            const canBeAchieved = await animateCanAchieve(bsMidDistance);
+            
+            if (!simulationRunning) { // Check if reset was clicked during await
+                nextStepButton.disabled = true; // Ensure it stays disabled
+                return;
+            }
+
+            if (canBeAchieved) {
+                logMMDGS(`  canAchieve(${bsMidDistance.toFixed(7)}) is TRUE. This distance D is possible. Try smaller D.`);
+                ansD = bsMidDistance; 
+                bsHighD = bsMidDistance; 
+                ansDistDisp.textContent = ansD.toFixed(7);
+            } else {
+                logMMDGS(`  canAchieve(${bsMidDistance.toFixed(7)}) is FALSE. This D is too small. Need larger D.`);
+                bsLowD = bsMidDistance;
+            }
+
+            bsLowDistDisp.textContent = bsLowD.toFixed(7);
+            bsHighDistDisp.textContent = bsHighD.toFixed(7);
+            // ansDistDisp updated above if canBeAchieved was true
+
+            bsIterationCount++;
+            
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            if (!simulationRunning) { // Check again
+                nextStepButton.disabled = true;
+                return;
+            }
+
+            // After all operations for this step, decide if the NEXT step is possible
+            if (bsIterationCount < FIXED_BS_ITERATIONS && (bsHighD - bsLowD) >= EPSILON) {
+                nextStepButton.disabled = false; // More BS iterations are possible
+            } else {
+                ansD = bsHighD; // Loop terminates, bsHighD is the answer (smallest D found that works)
+                await finalizeAnimationMMDGS(); // This will keep the button disabled
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', performNextStep);
+        initializeAnimation(); 
+        
+        window.addEventListener('resize', () => {
+            if (STATIONS_MMDGS && STATIONS_MMDGS.length > 0) { 
+                 renderStationsOnTimeline(simulationRunning ? false : true, simulationRunning ? 0 : ansD); 
+            }
+        });
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimize Max Distance to Gas Station Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Minimize Max Distance to Gas Station – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Minimize Max Distance to Gas Station</b> problem involves placing additional gas stations along a highway to minimize the maximum distance between adjacent stations. The goal is to determine the smallest possible maximum distance using binary search.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public double minmaxGasDist(int[] stations, int k) {
+        double left = 0, right = stations[stations.length - 1] - stations[0];
+
+        while (right - left > 1e-6) {
+            double mid = left + (right - left) / 2;
+
+            if (canPlace(stations, k, mid)) {
+                right = mid; // Try a smaller maximum distance
+            } else {
+                left = mid; // Try a larger maximum distance
+            }
+        }
+
+        return left;
+    }
+
+    private boolean canPlace(int[] stations, int k, double maxDist) {
+        int count = 0;
+
+        for (int i = 1; i < stations.length; i++) {
+            count += (int) ((stations[i] - stations[i - 1]) / maxDist);
+
+            if (count > k) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log(D))</code>, where <code>D</code> is the difference between the farthest stations.</li>
+      <li><b>Validation</b>: <code>O(N)</code>, where <code>N</code> is the number of stations.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log(D))</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Optimizing placement of resources along a linear path</li>
+      <li>Applications in transportation and logistics</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/minimize-max-distance-to-gas-station/" target="_blank" rel="noopener noreferrer">774. Minimize Max Distance to Gas Station</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Minimize Max Distance to Gas Station</h2>
+    <pre><code>Input: stations = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], k = 9
+Output: 0.500000
+
+Explanation:
+- Place 9 additional stations to minimize the maximum distance to 0.5.</code></pre>
+    <button onclick="window.location.href='../animations/minimize_max_distance_to_gas_station_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use binary search to efficiently find the smallest possible maximum distance.</li>
+      <li>Edge cases: very small or very large distances, or when no additional stations are needed.</li>
+      <li>Use a precision threshold (e.g., <code>1e-6</code>) to terminate the binary search.</li>
+    </ul>
+  </div>
+</body>
+</html>

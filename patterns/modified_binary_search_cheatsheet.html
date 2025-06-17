@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modified Binary Search Pattern Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Modified Binary Search Pattern – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Modified Binary Search Pattern</b> involves solving problems where the search space is divided into halves to efficiently find a target or optimize a solution. This pattern is commonly used in sorted arrays or monotonic functions.</p>
+
+    <h2>🧱 Pattern Templates</h2>
+
+    <h3>1️⃣ Standard Binary Search</h3>
+    <pre><code>class Solution {
+    public int binarySearch(int[] nums, int target) {
+        int left = 0, right = nums.length - 1;
+
+        while (left &lt;= right) {
+            int mid = left + (right - left) / 2;
+
+            if (nums[mid] == target) {
+                return mid; // Target found
+            } else if (nums[mid] &lt; target) {
+                left = mid + 1; // Search right half
+            } else {
+                right = mid - 1; // Search left half
+            }
+        }
+
+        return -1; // Target not found
+    }
+}</code></pre>
+
+    <h3>2️⃣ Binary Search in Rotated Sorted Array</h3>
+    <pre><code>class Solution {
+    public int search(int[] nums, int target) {
+        int left = 0, right = nums.length - 1;
+
+        while (left &lt;= right) {
+            int mid = left + (right - left) / 2;
+
+            if (nums[mid] == target) {
+                return mid; // Target found
+            }
+
+            // Determine which half is sorted
+            if (nums[left] &lt;= nums[mid]) { // Left half is sorted
+                if (nums[left] &lt;= target && target &lt; nums[mid]) {
+                    right = mid - 1; // Search left half
+                } else {
+                    left = mid + 1; // Search right half
+                }
+            } else { // Right half is sorted
+                if (nums[mid] &lt; target && target &lt;= nums[right]) {
+                    left = mid + 1; // Search right half
+                } else {
+                    right = mid - 1; // Search left half
+                }
+            }
+        }
+
+        return -1; // Target not found
+    }
+}</code></pre>
+
+    <h3>3️⃣ Find Minimum in Rotated Sorted Array</h3>
+    <pre><code>class Solution {
+    public int findMin(int[] nums) {
+        int left = 0, right = nums.length - 1;
+
+        while (left &lt; right) {
+            int mid = left + (right - left) / 2;
+
+            if (nums[mid] &gt; nums[right]) {
+                left = mid + 1; // Minimum is in the right half
+            } else {
+                right = mid; // Minimum is in the left half
+            }
+        }
+
+        return nums[left]; // Minimum element
+    }
+}</code></pre>
+
+    <h3>4️⃣ Peak Index in a Mountain Array</h3>
+    <pre><code>class Solution {
+    public int peakIndexInMountainArray(int[] arr) {
+        int left = 0, right = arr.length - 1;
+
+        while (left &lt; right) {
+            int mid = left + (right - left) / 2;
+
+            if (arr[mid] &lt; arr[mid + 1]) {
+                left = mid + 1; // Peak is in the right half
+            } else {
+                right = mid; // Peak is in the left half
+            }
+        }
+
+        return left; // Peak index
+    }
+}</code></pre>
+
+    <h3>5️⃣ Binary Search on Monotonic Functions</h3>
+    <pre><code>class Solution {
+    public int minimizeMax(int[] nums, int target) {
+        int left = 0, right = nums.length - 1;
+        int result = Integer.MAX_VALUE;
+
+        while (left &lt;= right) {
+            int mid = left + (right - left) / 2;
+
+            if (isValid(nums, mid, target)) {
+                result = mid; // Update result
+                right = mid - 1; // Search left half
+            } else {
+                left = mid + 1; // Search right half
+            }
+        }
+
+        return result;
+    }
+
+    private boolean isValid(int[] nums, int mid, int target) {
+        // Custom logic to check if mid satisfies the condition
+        return true;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log N)</code> – Halving the search space at each step.</li>
+      <li><b>Overall Complexity</b>: Depends on the specific problem.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding an element in a sorted array</li>
+      <li>Searching in rotated sorted arrays</li>
+      <li>Finding peaks in mountain arrays</li>
+      <li>Optimizing solutions in monotonic functions</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/binary-search/" target="_blank" rel="noopener noreferrer">704. Binary Search</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="binary_search_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/search-in-rotated-sorted-array/" target="_blank" rel="noopener noreferrer">33. Search in Rotated Sorted Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="search_in_rotated_sorted_array_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/" target="_blank" rel="noopener noreferrer">153. Find Minimum in Rotated Sorted Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="find_minimum_in_rotated_sorted_array_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/find-minimum-in-rotated-sorted-array-ii/" target="_blank" rel="noopener noreferrer">154. Find Minimum in Rotated Sorted Array II</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="find_minimum_in_rotated_sorted_array_ii_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/peak-index-in-a-mountain-array/" target="_blank" rel="noopener noreferrer">852. Peak Index in a Mountain Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="peak_index_in_mountain_array_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/split-array-largest-sum/" target="_blank" rel="noopener noreferrer">410. Split Array Largest Sum</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="split_array_largest_sum_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/divide-chocolate/" target="_blank" rel="noopener noreferrer">1231. Divide Chocolate</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="divide_chocolate_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/minimize-max-distance-to-gas-station/" target="_blank" rel="noopener noreferrer">774. Minimize Max Distance to Gas Station</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="minimize_max_distance_to_gas_station_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/maximum-running-time-of-n-computers/" target="_blank" rel="noopener noreferrer">2141. Maximum Running Time of N Computers</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="maximum_running_time_of_n_computers_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/first-bad-version/" target="_blank" rel="noopener noreferrer">278. First Bad Version</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="first_bad_version_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/find-k-closest-elements/" target="_blank" rel="noopener noreferrer">658. Find K Closest Elements</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="find_k_closest_elements_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/single-element-in-a-sorted-array/" target="_blank" rel="noopener noreferrer">540. Single Element in a Sorted Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="single_element_in_sorted_array_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/maximum-value-at-a-given-index-in-a-bounded-array/" target="_blank" rel="noopener noreferrer">1802. Maximum Value at a Given Index in a Bounded Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="maximum_value_at_index_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/the-k-weakest-rows-in-a-matrix/" target="_blank" rel="noopener noreferrer">1337. The K Weakest Rows in a Matrix</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Binary Search</span>
+        <a href="k_weakest_rows_in_matrix_cheatsheet.html">Cheat Sheet</a>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Binary Search</h2>
+    <pre><code>Input: nums = [-1,0,3,5,9,12], target = 9
+Output: 4
+
+Explanation:
+- The target 9 is found at index 4.</code></pre>
+    <button onclick="window.location.href='../animations/modified_binary_search_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Always calculate the mid-point as <code>mid = left + (right - left) / 2</code> to avoid overflow.</li>
+      <li>Edge cases: empty arrays, duplicates, rotated arrays.</li>
+      <li>Use binary search for optimization problems with monotonic functions.</li>
+    </ul>
+  </div>
+</body>
+</html>

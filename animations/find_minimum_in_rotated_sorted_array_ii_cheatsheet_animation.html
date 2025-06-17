@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Minimum in Rotated Sorted Array II Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .controls-fmrsa2 {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-fmrsa2 label { font-weight: bold; margin-right: 5px; }
+        .controls-fmrsa2 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-fmrsa2 button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-fmrsa2 button:hover { background-color: #2980b9; }
+        .controls-fmrsa2 button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .array-visualization-fmrsa2 { margin-top: 20px; position: relative; padding-bottom: 70px; }
+        .array-container-fmrsa2 {
+            display: flex; justify-content: center; align-items: flex-end; 
+            min-height: 60px; gap: 5px; position: relative;
+            border: 1px solid #ccc; padding: 10px; overflow-x: auto;
+        }
+        .search-space-highlight-fmrsa2, .identified-sorted-segment-fmrsa2 { 
+            position: absolute;
+            top: 0; bottom: 0; 
+            z-index: 0;
+            transition: left 0.5s ease, width 0.5s ease, opacity 0.3s ease;
+            pointer-events: none;
+            border-radius: 4px;
+            display: none; 
+        }
+        .search-space-highlight-fmrsa2 { 
+            background-color: rgba(200, 200, 200, 0.1); 
+            border-left: 3px solid rgba(150, 150, 150, 0.6);
+            border-right: 3px solid rgba(150, 150, 150, 0.6);
+        }
+        .identified-sorted-segment-fmrsa2 { 
+            background-color: rgba(46, 204, 113, 0.15); 
+            border: 2px dashed rgba(39, 174, 96, 0.7);
+        }
+
+
+        .array-element-fmrsa2 {
+            min-width: 40px; padding: 0 5px; 
+            height: 40px; border: 1px solid #bdc3c7; background-color: #ecf0f1; 
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 1em; border-radius: 4px;
+            transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative; z-index: 1;
+        }
+        .array-element-fmrsa2 .index-label-fmrsa2 {
+            position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+            font-size: 0.7em; color: #777;
+        }
+        .array-element-fmrsa2.highlight-compare-fmrsa2 {
+            background-color: #fdebd0 !important; 
+            border-color: #f39c12 !important;
+            transform: scale(1.05);
+        }
+        .array-element-fmrsa2.highlight-mid-fmrsa2 { 
+             box-shadow: 0 0 6px #f39c12;
+        }
+        .array-element-fmrsa2.minimum-found-fmrsa2 {
+            background-color: #2ecc71 !important;
+            color: white;
+            border-color: #27ae60 !important;
+            transform: scale(1.15) translateY(-5px);
+            animation: pulse-found-fmrsa2 1s infinite alternate;
+        }
+        @keyframes pulse-found-fmrsa2 {
+            from { transform: scale(1.15) translateY(-5px); box-shadow: 0 0 10px #2ecc71;}
+            to { transform: scale(1.20) translateY(-7px); box-shadow: 0 0 18px #2ecc71;}
+        }
+
+        .pointer-container-fmrsa2 {
+            position: absolute; bottom: 0px; left: 0; 
+            width: 100%; height: 50px; display: flex; align-items: center; 
+            padding-left: 10px; 
+            box-sizing: border-box;
+        }
+        .pointer-fmrsa2 {
+            position: absolute; bottom: 0; text-align: center; font-size: 0.9em; font-weight: bold;
+            width: auto; min-width: 35px; transition: left 0.5s ease;
+            padding-top: 5px; z-index: 5; transform: translateX(-50%);
+        }
+        .pointer-fmrsa2 .arrow-fmrsa2 { display: block; font-size: 1.4em; line-height: 0.8; }
+        #low-pointer-fmrsa2 { color: #27ae60; } 
+        #mid-pointer-fmrsa2 { color: #f39c12; } 
+        #high-pointer-fmrsa2 { color: #c0392b; } 
+        
+        #current_action_fmrsa2_display { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; color: #2c3e50;}
+        #result_fmrsa2_display { text-align:center; margin-top:5px; font-size: 1.2em; color: #27ae60; font-weight: bold; }
+        .log-container-fmrsa2 { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        #log_output_fmrsa2 { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Find Minimum in Rotated Sorted Array II Animation</h1>
+        <p style="text-align:center;">Array may contain duplicates.</p>
+
+        <div class="controls-fmrsa2">
+            <label for="array_input_fmrsa2">Array (e.g., 2,2,2,0,1):</label>
+            <input type="text" id="array_input_fmrsa2" value="3,3,1,3">
+            <button id="start_button_fmrsa2">Start/Reset</button>
+            <button id="next_step_button_fmrsa2" disabled>Next Step</button>
+        </div>
+
+        <div class="array-visualization-fmrsa2">
+            <div id="array_container_fmrsa2" class="array-container-fmrsa2">
+                <div id="search_space_highlight_fmrsa2" class="search-space-highlight-fmrsa2"></div>
+                <div id="identified_sorted_segment_fmrsa2" class="identified-sorted-segment-fmrsa2"></div> 
+                <!-- Array elements will be rendered here -->
+            </div>
+            <div id="pointer_container_fmrsa2" class="pointer-container-fmrsa2">
+                <div id="low-pointer-fmrsa2" class="pointer-fmrsa2"><span class="arrow-fmrsa2">▲</span>low</div>
+                <div id="mid-pointer-fmrsa2" class="pointer-fmrsa2"><span class="arrow-fmrsa2">▲</span>mid</div>
+                <div id="high-pointer-fmrsa2" class="pointer-fmrsa2"><span class="arrow-fmrsa2">▲</span>high</div>
+            </div>
+        </div>
+        
+        <div id="current_action_fmrsa2_display"></div>
+        <div id="result_fmrsa2_display">Minimum: -</div>
+        <div class="log-container-fmrsa2">
+            <h2>Log</h2>
+            <pre id="log_output_fmrsa2"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const arrayInputEl = document.getElementById('array_input_fmrsa2');
+        const startButton = document.getElementById('start_button_fmrsa2');
+        const nextStepButton = document.getElementById('next_step_button_fmrsa2');
+        
+        const arrayContainer = document.getElementById('array_container_fmrsa2');
+        const searchSpaceHighlight = document.getElementById('search_space_highlight_fmrsa2');
+        const identifiedSortedSegmentHighlight = document.getElementById('identified_sorted_segment_fmrsa2'); 
+        const pointerContainer = document.getElementById('pointer_container_fmrsa2');
+        const lowPointerEl = document.getElementById('low-pointer-fmrsa2');
+        const midPointerEl = document.getElementById('mid-pointer-fmrsa2');
+        const highPointerEl = document.getElementById('high-pointer-fmrsa2');
+        const currentActionDisplay = document.getElementById('current_action_fmrsa2_display');
+        const resultDisplay = document.getElementById('result_fmrsa2_display');
+        const logOutput = document.getElementById('log_output_fmrsa2');
+
+        const ANIMATION_DELAY = 900; 
+
+        let numsFMRSA2 = [];
+        let domElementsFMRSA2 = [];
+        let lowFMRSA2, midFMRSA2, highFMRSA2; 
+        let nFMRSA2;
+        let simulationRunning = false;
+
+        function logFMRSA2(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearDynamicHighlightsFMRSA2() {
+            domElementsFMRSA2.forEach(el => el.classList.remove('highlight-compare-fmrsa2', 'highlight-mid-fmrsa2', 'minimum-found-fmrsa2'));
+            identifiedSortedSegmentHighlight.style.display = 'none'; 
+            currentActionDisplay.textContent = '';
+        }
+
+        function renderArrayFMRSA2() {
+            arrayContainer.innerHTML = ''; 
+            arrayContainer.appendChild(searchSpaceHighlight); 
+            arrayContainer.appendChild(identifiedSortedSegmentHighlight); 
+            domElementsFMRSA2 = [];
+            numsFMRSA2.forEach((val, index) => {
+                const el = document.createElement('div');
+                el.classList.add('array-element-fmrsa2');
+                el.id = `el-fmrsa2-${index}`;
+                el.textContent = val;
+                const indexLabel = document.createElement('span');
+                indexLabel.classList.add('index-label-fmrsa2');
+                indexLabel.textContent = index;
+                el.appendChild(indexLabel);
+                arrayContainer.insertBefore(el, searchSpaceHighlight); 
+                domElementsFMRSA2.push(el);
+            });
+            if (nFMRSA2 > 0) updatePointerVisualsFMRSA2();
+            pointerContainer.style.width = `${arrayContainer.scrollWidth}px`;
+        }
+        
+        function updatePointerVisualsFMRSA2() {
+            if (nFMRSA2 === 0 || domElementsFMRSA2.length === 0 ) {
+                lowPointerEl.style.display = 'none'; midPointerEl.style.display = 'none'; highPointerEl.style.display = 'none';
+                searchSpaceHighlight.style.display = 'none';
+                identifiedSortedSegmentHighlight.style.display = 'none';
+                return;
+            }
+        
+            const getCenterOffset = (index) => { 
+                if (index < 0 || index >= nFMRSA2 || !domElementsFMRSA2[index]) return -1000; 
+                return domElementsFMRSA2[index].offsetLeft + domElementsFMRSA2[index].offsetWidth / 2;
+            };
+        
+            if (lowFMRSA2 >= 0 && lowFMRSA2 < nFMRSA2 && domElementsFMRSA2[lowFMRSA2]) {
+                lowPointerEl.style.left = `${getCenterOffset(lowFMRSA2)}px`;
+                lowPointerEl.style.display = 'block';
+            } else { lowPointerEl.style.display = 'none'; }
+
+            if (midFMRSA2 !== -1 && midFMRSA2 >= 0 && midFMRSA2 < nFMRSA2 && domElementsFMRSA2[midFMRSA2]) { 
+                midPointerEl.style.left = `${getCenterOffset(midFMRSA2)}px`;
+                midPointerEl.style.display = 'block';
+                domElementsFMRSA2[midFMRSA2].classList.add('highlight-mid-fmrsa2');
+            } else { midPointerEl.style.display = 'none';}
+            
+            if (highFMRSA2 >= 0 && highFMRSA2 < nFMRSA2 && domElementsFMRSA2[highFMRSA2]) {
+                highPointerEl.style.left = `${getCenterOffset(highFMRSA2)}px`;
+                highPointerEl.style.display = 'block';
+            } else { highPointerEl.style.display = 'none'; }
+
+            updateSearchSpaceHighlightFMRSA2();
+        }
+
+        function updateSearchSpaceHighlightFMRSA2() { 
+            if (lowFMRSA2 > highFMRSA2 || lowFMRSA2 < 0 || highFMRSA2 >= nFMRSA2 || !domElementsFMRSA2[lowFMRSA2] || !domElementsFMRSA2[highFMRSA2]) {
+                searchSpaceHighlight.style.display = 'none';
+                return;
+            }
+            searchSpaceHighlight.style.display = 'block';
+            const firstBox = domElementsFMRSA2[lowFMRSA2];
+            const lastBox = domElementsFMRSA2[highFMRSA2];
+            searchSpaceHighlight.style.left = `${firstBox.offsetLeft -1}px`;
+            searchSpaceHighlight.style.width = `${lastBox.offsetLeft + lastBox.offsetWidth - firstBox.offsetLeft + 2}px`;
+        }
+        
+        function showIdentifiedSortedSegment(startIdx, endIdx) {
+            if (startIdx < 0 || endIdx >= nFMRSA2 || startIdx > endIdx || !domElementsFMRSA2[startIdx] || !domElementsFMRSA2[endIdx]) {
+                identifiedSortedSegmentHighlight.style.display = 'none';
+                return;
+            }
+            identifiedSortedSegmentHighlight.style.display = 'block';
+            const firstEl = domElementsFMRSA2[startIdx];
+            const lastEl = domElementsFMRSA2[endIdx];
+            identifiedSortedSegmentHighlight.style.left = `${firstEl.offsetLeft -1}px`; 
+            identifiedSortedSegmentHighlight.style.width = `${lastEl.offsetLeft + lastEl.offsetWidth - firstEl.offsetLeft + 2}px`; 
+        }
+
+        function initializeSearchFMRSA2() {
+            logFMRSA2("Initializing Find Minimum in Rotated Sorted Array II...");
+            simulationRunning = false; // Stop any ongoing processes
+            nextStepButton.disabled = true;
+
+            try {
+                numsFMRSA2 = arrayInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            } catch (e) {
+                alert("Invalid array input. Use comma-separated numbers."); return;
+            }
+            
+            nFMRSA2 = numsFMRSA2.length;
+            renderArrayFMRSA2(); 
+            clearDynamicHighlightsFMRSA2(); 
+
+            if (nFMRSA2 === 0) {
+                logFMRSA2("Empty array.");
+                startButton.textContent = "Start/Reset";
+                currentActionDisplay.textContent = "Empty array.";
+                resultDisplay.textContent = "Minimum: -";
+                updatePointerVisualsFMRSA2(); 
+                return; // simulationRunning remains false
+            }
+            
+            lowFMRSA2 = 0;
+            highFMRSA2 = nFMRSA2 - 1;
+            midFMRSA2 = -1; 
+            
+            startButton.textContent = "Reset";
+            resultDisplay.textContent = "Minimum: -";
+            logFMRSA2(`Initialized. Array: [${numsFMRSA2.join(', ')}]. low=${lowFMRSA2}, high=${highFMRSA2}`);
+            
+            simulationRunning = true; // Simulation can start
+            if (lowFMRSA2 < highFMRSA2) { 
+                nextStepButton.disabled = false;
+                currentActionDisplay.textContent = "Ready. Click 'Next Step'.";
+            } else { 
+                // If lowFMRSA2 == highFMRSA2 (array of 1 element), finalize immediately
+                currentActionDisplay.textContent = `Single element. Minimum is ${numsFMRSA2[lowFMRSA2]}.`;
+                logFMRSA2(`Single element or already sorted. Minimum: ${numsFMRSA2[lowFMRSA2]}`);
+                resultDisplay.textContent = `Minimum: ${numsFMRSA2[lowFMRSA2]}`;
+                if(domElementsFMRSA2[lowFMRSA2]) domElementsFMRSA2[lowFMRSA2].classList.add('minimum-found-fmrsa2');
+                simulationRunning = false; // No steps for user to take
+            }
+            updatePointerVisualsFMRSA2(); 
+        }
+
+        async function performNextStepFMRSA2() {
+            if (!simulationRunning) return;
+            nextStepButton.disabled = true;
+            clearDynamicHighlightsFMRSA2(); 
+
+            if (lowFMRSA2 >= highFMRSA2) { 
+                currentActionDisplay.textContent = `Search complete! Minimum is ${numsFMRSA2[lowFMRSA2]} at index ${lowFMRSA2}.`;
+                logFMRSA2(`low (${lowFMRSA2}) == high (${highFMRSA2}). Minimum found: ${numsFMRSA2[lowFMRSA2]} at index ${lowFMRSA2}.`);
+                if (domElementsFMRSA2[lowFMRSA2]) domElementsFMRSA2[lowFMRSA2].classList.add('minimum-found-fmrsa2');
+                resultDisplay.textContent = `Minimum: ${numsFMRSA2[lowFMRSA2]}`;
+                midPointerEl.style.display = 'none'; 
+                searchSpaceHighlight.style.display = 'none'; 
+                identifiedSortedSegmentHighlight.style.display = 'none';
+                startButton.textContent = "Start/Reset";
+                simulationRunning = false;
+                return;
+            }
+
+            midFMRSA2 = lowFMRSA2 + Math.floor((highFMRSA2 - lowFMRSA2) / 2);
+            updatePointerVisualsFMRSA2(); 
+            
+            logFMRSA2(`Loop: low=${lowFMRSA2}, high=${highFMRSA2}. Calculated mid=${midFMRSA2}.`);
+            currentActionDisplay.textContent = `Comparing nums[mid=${midFMRSA2}] (${numsFMRSA2[midFMRSA2]}) with nums[high=${highFMRSA2}] (${numsFMRSA2[highFMRSA2]})`;
+            
+            if (domElementsFMRSA2[midFMRSA2]) domElementsFMRSA2[midFMRSA2].classList.add('highlight-compare-fmrsa2');
+            if (domElementsFMRSA2[highFMRSA2]) domElementsFMRSA2[highFMRSA2].classList.add('highlight-compare-fmrsa2');
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            if (!simulationRunning) return;
+
+
+            if (numsFMRSA2[midFMRSA2] < numsFMRSA2[highFMRSA2]) {
+                currentActionDisplay.textContent = `${numsFMRSA2[midFMRSA2]} < ${numsFMRSA2[highFMRSA2]}. Min in [low...mid]. high = ${midFMRSA2}`;
+                logFMRSA2(`  ${numsFMRSA2[midFMRSA2]} < ${numsFMRSA2[highFMRSA2]}. Segment [mid...high] is part of an ascending sequence (or mid is pivot). Minimum must be in [${lowFMRSA2}...${midFMRSA2}]. high = mid.`);
+                showIdentifiedSortedSegment(midFMRSA2, highFMRSA2); 
+                highFMRSA2 = midFMRSA2;
+            } else if (numsFMRSA2[midFMRSA2] > numsFMRSA2[highFMRSA2]) {
+                currentActionDisplay.textContent = `${numsFMRSA2[midFMRSA2]} > ${numsFMRSA2[highFMRSA2]}. Min in [mid+1...high]. low = ${midFMRSA2 + 1}`;
+                logFMRSA2(`  ${numsFMRSA2[midFMRSA2]} > ${numsFMRSA2[highFMRSA2]}. Segment [low...mid] contains the drop point OR is before it. Minimum must be in [${midFMRSA2 + 1}...${highFMRSA2}]. low = mid + 1.`);
+                showIdentifiedSortedSegment(lowFMRSA2, midFMRSA2); 
+                lowFMRSA2 = midFMRSA2 + 1;
+            } else { // numsFMRSA2[midFMRSA2] == numsFMRSA2[highFMRSA2]
+                currentActionDisplay.textContent = `${numsFMRSA2[midFMRSA2]} == ${numsFMRSA2[highFMRSA2]}. Cannot decide. Shrink: high--.`;
+                logFMRSA2(`  ${numsFMRSA2[midFMRSA2]} == ${numsFMRSA2[highFMRSA2]}. Duplicates. Discarding high element. high = high - 1.`);
+                highFMRSA2--;
+            }
+            
+            // Clear specific compare highlights for the next step, mid highlight is reapplied by updatePointerVisuals
+            if (domElementsFMRSA2[midFMRSA2]) domElementsFMRSA2[midFMRSA2].classList.remove('highlight-compare-fmrsa2');
+            if (domElementsFMRSA2[highFMRSA2+1]) domElementsFMRSA2[highFMRSA2+1]?.classList.remove('highlight-compare-fmrsa2'); // Clear old high if it changed
+            else if (domElementsFMRSA2[nFMRSA2-1] && highFMRSA2 === nFMRSA2-2) domElementsFMRSA2[nFMRSA2-1]?.classList.remove('highlight-compare-fmrsa2');
+
+
+            midFMRSA2 = -1; // Reset for next calculation, visual pointer will hide if not recalculated
+            updatePointerVisualsFMRSA2(); 
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            if (!simulationRunning) return;
+
+
+            if (lowFMRSA2 < highFMRSA2) { 
+                nextStepButton.disabled = false;
+            } else { 
+                // Allow one final click to trigger the completion logic (where lowFMRSA2 == highFMRSA2)
+                nextStepButton.disabled = false; 
+            }
+        }
+
+        startButton.addEventListener('click', initializeSearchFMRSA2);
+        nextStepButton.addEventListener('click', performNextStepFMRSA2);
+        initializeSearchFMRSA2(); 
+        
+        window.addEventListener('resize', () => {
+            if (simulationRunning && domElementsFMRSA2 && domElementsFMRSA2.length > 0) {
+                 pointerContainer.style.width = `${arrayContainer.scrollWidth}px`;
+                 updatePointerVisualsFMRSA2();
+                 updateSearchSpaceHighlightFMRSA2(); 
+                 // Re-applying identifiedSortedSegmentHighlight on resize can be complex due to its transient nature
+            }
+        });
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maximum Value at a Given Index in a Bounded Array Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Maximum Value at a Given Index in a Bounded Array – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Maximum Value at a Given Index in a Bounded Array</b> problem involves constructing an array of size <code>n</code> such that the sum of its elements does not exceed <code>maxSum</code>, and the value at a specific index <code>index</code> is maximized. The array values must be positive integers, and the difference between adjacent elements must not exceed 1.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int maxValue(int n, int index, int maxSum) {
+        int left = 1, right = maxSum;
+
+        while (left &lt; right) {
+            int mid = (left + right + 1) / 2;
+
+            if (isValid(n, index, maxSum, mid)) {
+                left = mid; // Try a larger value
+            } else {
+                right = mid - 1; // Try a smaller value
+            }
+        }
+
+        return left;
+    }
+
+    private boolean isValid(int n, int index, int maxSum, int value) {
+        long sum = value;
+
+        // Calculate left side sum
+        if (index > 0) {
+            int leftCount = index;
+            int leftSum = (value > leftCount) 
+                ? (long) (value - 1 + value - leftCount) * leftCount / 2
+                : (long) (value - 1 + 1) * value / 2;
+            sum += leftSum;
+        }
+
+        // Calculate right side sum
+        if (index < n - 1) {
+            int rightCount = n - index - 1;
+            int rightSum = (value > rightCount) 
+                ? (long) (value - 1 + value - rightCount) * rightCount / 2
+                : (long) (value - 1 + 1) * value / 2;
+            sum += rightSum;
+        }
+
+        return sum <= maxSum;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log(maxSum))</code> – Halving the search space for the maximum value.</li>
+      <li><b>Validation</b>: <code>O(1)</code> – Calculating the sum for a given value.</li>
+      <li><b>Overall Complexity</b>: <code>O(log(maxSum))</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Optimizing values under constraints</li>
+      <li>Applications in resource allocation problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/maximum-value-at-a-given-index-in-a-bounded-array/" target="_blank" rel="noopener noreferrer">1802. Maximum Value at a Given Index in a Bounded Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Maximum Value at a Given Index</h2>
+    <pre><code>Input: n = 4, index = 2, maxSum = 6
+Output: 2
+
+Explanation:
+- The array [1, 2, 2, 1] satisfies the constraints.
+- The maximum value at index 2 is 2.</code></pre>
+    <button onclick="window.location.href='../animations/maximum_value_at_index_cheatsheet_animation_v2.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use binary search to efficiently find the maximum value at the given index.</li>
+      <li>Edge cases: small arrays, large <code>maxSum</code>, or when the index is at the boundaries.</li>
+      <li>Precompute sums for left and right sides to optimize validation.</li>
+    </ul>
+  </div>
+</body>
+</html>

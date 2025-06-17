@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maximum Running Time of N Computers Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Maximum Running Time of N Computers – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Maximum Running Time of N Computers</b> problem involves determining the maximum number of hours <code>N</code> computers can run simultaneously using a given number of batteries. Each battery has a specific capacity, and the goal is to distribute the batteries optimally to maximize the runtime.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public long maxRunTime(int n, int[] batteries) {
+        long totalPower = 0;
+        for (int battery : batteries) {
+            totalPower += battery;
+        }
+
+        long left = 1, right = totalPower / n;
+
+        while (left &lt; right) {
+            long mid = right - (right - left) / 2;
+
+            if (canRun(n, batteries, mid)) {
+                left = mid; // Try a larger runtime
+            } else {
+                right = mid - 1; // Try a smaller runtime
+            }
+        }
+
+        return left;
+    }
+
+    private boolean canRun(int n, int[] batteries, long runtime) {
+        long availablePower = 0;
+
+        for (int battery : batteries) {
+            availablePower += Math.min(battery, runtime);
+
+            if (availablePower >= runtime * n) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log(T))</code>, where <code>T</code> is the total power divided by <code>N</code>.</li>
+      <li><b>Validation</b>: <code>O(M)</code>, where <code>M</code> is the number of batteries.</li>
+      <li><b>Overall Complexity</b>: <code>O(M log(T))</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Optimizing resource allocation for maximum runtime</li>
+      <li>Applications in power management and scheduling</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/maximum-running-time-of-n-computers/" target="_blank" rel="noopener noreferrer">2141. Maximum Running Time of N Computers</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Maximum Running Time of N Computers</h2>
+    <pre><code>Input: n = 2, batteries = [3, 3, 3]
+Output: 4
+
+Explanation:
+- Distribute the batteries as [3, 1] and [3, 1].
+- The maximum runtime is 4 hours.</code></pre>
+    <button onclick="window.location.href='../animations/maximum_running_time_of_n_computers_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use binary search to efficiently find the maximum runtime.</li>
+      <li>Edge cases: fewer batteries than computers, batteries with zero capacity.</li>
+      <li>Precompute the total power to set the binary search bounds.</li>
+    </ul>
+  </div>
+</body>
+</html>

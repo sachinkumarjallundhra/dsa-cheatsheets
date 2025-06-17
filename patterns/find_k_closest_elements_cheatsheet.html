@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find K Closest Elements Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Find K Closest Elements – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Find K Closest Elements</b> problem involves finding the <code>K</code> closest elements to a given target in a sorted array. The result should also be sorted in ascending order.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public List&lt;Integer&gt; findClosestElements(int[] arr, int k, int x) {
+        int left = 0, right = arr.length - k;
+
+        while (left &lt; right) {
+            int mid = left + (right - left) / 2;
+
+            if (x - arr[mid] &gt; arr[mid + k] - x) {
+                left = mid + 1; // Narrow down to the right half
+            } else {
+                right = mid; // Narrow down to the left half
+            }
+        }
+
+        List&lt;Integer&gt; result = new ArrayList&lt;&gt;();
+        for (int i = left; i &lt; left + k; i++) {
+            result.add(arr[i]);
+        }
+
+        return result;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log(N - K))</code> – Halving the search space for the starting index.</li>
+      <li><b>Result Construction</b>: <code>O(K)</code> – Adding K elements to the result list.</li>
+      <li><b>Overall Complexity</b>: <code>O(log(N - K) + K)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the closest elements to a target in a sorted array</li>
+      <li>Applications in recommendation systems and search engines</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-k-closest-elements/" target="_blank" rel="noopener noreferrer">658. Find K Closest Elements</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Find K Closest Elements</h2>
+    <pre><code>Input: arr = [1,2,3,4,5], k = 4, x = 3
+Output: [1,2,3,4]
+
+Explanation:
+- The 4 closest elements to 3 are [1, 2, 3, 4].</code></pre>
+    <button onclick="window.location.href='../animations/find_k_closest_elements_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use binary search to efficiently find the starting index of the closest elements.</li>
+      <li>Edge cases: target outside the array bounds, duplicates in the array.</li>
+      <li>Ensure the result is sorted in ascending order.</li>
+    </ul>
+  </div>
+</body>
+</html>

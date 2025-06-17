@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>First Bad Version Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 First Bad Version – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>First Bad Version</b> problem involves finding the first bad version in a sequence of versions, where each version is either good or bad. Once a bad version is found, all subsequent versions are also bad. The goal is to find the first bad version using <code>O(log N)</code> time.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>public class Solution extends VersionControl {
+    public int firstBadVersion(int n) {
+        int left = 1, right = n;
+
+        while (left &lt; right) {
+            int mid = left + (right - left) / 2;
+
+            if (isBadVersion(mid)) {
+                right = mid; // Narrow down to the left half
+            } else {
+                left = mid + 1; // Narrow down to the right half
+            }
+        }
+
+        return left; // The first bad version
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log N)</code> – Halving the search space at each step.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the first occurrence of a condition in a sequence</li>
+      <li>Applications in debugging and version control systems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/first-bad-version/" target="_blank" rel="noopener noreferrer">278. First Bad Version</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: First Bad Version</h2>
+    <pre><code>Input: n = 5, bad = 4
+Output: 4
+
+Explanation:
+- Versions 1, 2, and 3 are good.
+- Version 4 is the first bad version.</code></pre>
+    <button onclick="window.location.href='../animations/first_bad_version_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Always calculate the mid-point as <code>mid = left + (right - left) / 2</code> to avoid overflow.</li>
+      <li>Edge cases: single bad version, all versions bad, or no bad versions (if applicable).</li>
+    </ul>
+  </div>
+</body>
+</html>

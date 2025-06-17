@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Divide Chocolate Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Divide Chocolate – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Divide Chocolate</b> problem involves dividing a chocolate bar (represented as an array of sweetness levels) into <code>k + 1</code> pieces such that the minimum sweetness of the piece with the least sweetness is maximized. The goal is to solve this using binary search.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int maximizeSweetness(int[] sweetness, int k) {
+        int left = 1, right = 0;
+
+        for (int sweet : sweetness) {
+            right += sweet; // Total sweetness
+        }
+
+        while (left &lt; right) {
+            int mid = right - (right - left) / 2;
+
+            if (canDivide(sweetness, k, mid)) {
+                left = mid; // Try a larger minimum sweetness
+            } else {
+                right = mid - 1; // Try a smaller minimum sweetness
+            }
+        }
+
+        return left;
+    }
+
+    private boolean canDivide(int[] sweetness, int k, int minSweetness) {
+        int currentSweetness = 0, pieces = 0;
+
+        for (int sweet : sweetness) {
+            currentSweetness += sweet;
+
+            if (currentSweetness &gt;= minSweetness) {
+                pieces++;
+                currentSweetness = 0;
+
+                if (pieces &gt; k) {
+                    return true;
+                }
+            }
+        }
+
+        return pieces &gt; k;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log(S))</code>, where <code>S</code> is the total sweetness.</li>
+      <li><b>Validation</b>: <code>O(N)</code>, where <code>N</code> is the length of the sweetness array.</li>
+      <li><b>Overall Complexity</b>: <code>O(N log(S))</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Dividing resources into groups with balanced properties</li>
+      <li>Applications in optimization and resource allocation</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/divide-chocolate/" target="_blank" rel="noopener noreferrer">1231. Divide Chocolate</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Divide Chocolate</h2>
+    <pre><code>Input: sweetness = [1,2,3,4,5,6,7,8,9], k = 5
+Output: 6
+
+Explanation:
+- Divide the chocolate into [1,2,3], [4], [5], [6], [7,8,9].
+- The minimum sweetness among these pieces is 6, which is maximized.</code></pre>
+    <button onclick="window.location.href='../animations/divide_chocolate_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use binary search to efficiently find the maximum minimum sweetness.</li>
+      <li>Edge cases: very small or very large sweetness values, or when <code>k</code> equals the array length.</li>
+      <li>Precompute the total sweetness to set the binary search bounds.</li>
+    </ul>
+  </div>
+</body>
+</html>

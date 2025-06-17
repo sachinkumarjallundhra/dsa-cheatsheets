@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search in Rotated Sorted Array Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Search in Rotated Sorted Array – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Search in Rotated Sorted Array</b> problem involves finding a target element in a sorted array that has been rotated at an unknown pivot. The goal is to locate the target in <code>O(log N)</code> time using binary search.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int search(int[] nums, int target) {
+        int left = 0, right = nums.length - 1;
+
+        while (left &lt;= right) {
+            int mid = left + (right - left) / 2;
+
+            if (nums[mid] == target) {
+                return mid; // Target found
+            }
+
+            // Determine which half is sorted
+            if (nums[left] &lt;= nums[mid]) { // Left half is sorted
+                if (nums[left] &lt;= target && target &lt; nums[mid]) {
+                    right = mid - 1; // Search left half
+                } else {
+                    left = mid + 1; // Search right half
+                }
+            } else { // Right half is sorted
+                if (nums[mid] &lt; target && target &lt;= nums[right]) {
+                    left = mid + 1; // Search right half
+                } else {
+                    right = mid - 1; // Search left half
+                }
+            }
+        }
+
+        return -1; // Target not found
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Binary Search</b>: <code>O(log N)</code> – Halving the search space at each step.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Searching in rotated sorted arrays</li>
+      <li>Finding elements in arrays with unknown pivots</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/search-in-rotated-sorted-array/" target="_blank" rel="noopener noreferrer">33. Search in Rotated Sorted Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/" target="_blank" rel="noopener noreferrer">153. Find Minimum in Rotated Sorted Array</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Search in Rotated Sorted Array</h2>
+    <pre><code>Input: nums = [4,5,6,7,0,1,2], target = 0
+Output: 4
+
+Explanation:
+- The target 0 is found at index 4.</code></pre>
+    <button onclick="window.location.href='../animations/search_in_rotated_sorted_array_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Always check which half of the array is sorted to decide the search direction.</li>
+      <li>Edge cases: arrays with duplicates, single-element arrays, or when the target is not present.</li>
+    </ul>
+  </div>
+</body>
+</html>

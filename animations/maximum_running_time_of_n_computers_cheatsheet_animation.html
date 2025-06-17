@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max Running Time of N Computers Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px; 
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls-mrt {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-mrt label { font-weight: bold; margin-right: 5px; }
+        .controls-mrt input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 60px;}
+        .controls-mrt input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-mrt button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-mrt button:hover { background-color: #2980b9; }
+        .controls-mrt button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-layout-mrt {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr; 
+            gap: 20px;
+        }
+        .config-panel-mrt, .canrun-viz-panel-mrt {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .config-panel-mrt > div { margin-bottom: 10px; }
+        .config-panel-mrt span, .canrun-viz-panel-mrt span { font-weight: bold; }
+        
+        #n_computers_mrt_disp { color: #3498db; }
+        #batteries_mrt_disp { font-family: monospace; font-size: 1.0em; color: #2980b9; display:inline-block; max-width: 100%; overflow-wrap: break-word;}
+        #bs_low_time_mrt, #bs_high_time_mrt { color: #e67e22; }
+        #bs_mid_time_mrt { color: #f39c12; font-size: 1.1em; }
+        #ans_time_mrt { color: #27ae60; font-size: 1.2em; }
+
+
+        .canrun-batteries-container-mrt {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            margin-top: 10px;
+            min-height: 40px;
+            background-color: #f9f9f9;
+        }
+        .battery-item-mrt {
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            text-align: center;
+            transition: background-color 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+            min-width: 60px; /* Ensure some space for text */
+        }
+        .battery-item-mrt .capacity { font-weight: bold; font-size: 1em;}
+        .battery-item-mrt .contribution { display: block; font-size: 0.8em; color: #27ae60; margin-top: 3px;}
+        .battery-item-mrt.highlight-battery { 
+            background-color: #fdf3e6; /* Lighter orange */
+            transform: scale(1.05); 
+            border-color: #f39c12;
+            box-shadow: 0 0 5px #f39c12;
+        }
+        
+        #canrun_total_power_mrt, #canrun_power_needed_mrt { color: #2980b9; font-size: 1.1em;}
+        #canrun_result_mrt { font-size: 1.2em;}
+
+        .log-container-mrt { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; grid-column: 1 / -1;}
+        #log_output_mrt { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Max Running Time of N Computers Animation</h1>
+
+        <div class="controls-mrt">
+            <label for="n_computers_mrt">N Computers:</label>
+            <input type="number" id="n_computers_mrt" value="2" min="1">
+            <label for="batteries_input_mrt">Batteries (comma-separated):</label>
+            <input type="text" id="batteries_input_mrt" value="3,3,3">
+            <button id="start_button_mrt">Start/Reset</button>
+            <button id="next_step_button_mrt" disabled>Next BS Step</button>
+        </div>
+
+        <div class="main-layout-mrt">
+            <div class="config-panel-mrt">
+                <h2>Inputs & Binary Search State</h2>
+                <div>N Computers: <span id="n_computers_mrt_disp">-</span></div>
+                <div>Batteries: <span id="batteries_mrt_disp">-</span></div>
+                <hr>
+                <div>BS Range for Time (T): [<span id="bs_low_time_mrt">-</span>, <span id="bs_high_time_mrt">-</span>]</div>
+                <div>Testing Time (midTime): <span id="bs_mid_time_mrt">-</span></div>
+                <hr>
+                <div>Max Possible Run Time (ans): <span id="ans_time_mrt">-</span></div>
+            </div>
+
+            <div class="canrun-viz-panel-mrt">
+                <h2>canRun(n, batteries, <span id="canrun_test_time_mrt">-</span>) Visualization</h2>
+                <div class="canrun-batteries-container-mrt" id="canrun_batteries_container_mrt">
+                    <!-- Battery items for canRun viz -->
+                </div>
+                <div style="margin-top:10px;">
+                    <div>Total Power Supplied: <span id="canrun_total_power_mrt">0</span></div>
+                    <div>Power Needed (n * testTime): <span id="canrun_power_needed_mrt">0</span></div>
+                    <div style="margin-top:5px;">canRun Result: <strong id="canrun_result_mrt" style="font-size:1.2em;">-</strong></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-mrt">
+            <h2>Log</h2>
+            <pre id="log_output_mrt"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const nComputersInput = document.getElementById('n_computers_mrt');
+        const batteriesInputEl = document.getElementById('batteries_input_mrt');
+        const startButton = document.getElementById('start_button_mrt');
+        const nextStepButton = document.getElementById('next_step_button_mrt');
+
+        const nComputersDisp = document.getElementById('n_computers_mrt_disp');
+        const batteriesDisp = document.getElementById('batteries_mrt_disp');
+        const bsLowTimeDisp = document.getElementById('bs_low_time_mrt');
+        const bsHighTimeDisp = document.getElementById('bs_high_time_mrt');
+        const bsMidTimeDisp = document.getElementById('bs_mid_time_mrt');
+        const ansTimeDisp = document.getElementById('ans_time_mrt');
+
+        const canrunTestTimeDisp = document.getElementById('canrun_test_time_mrt');
+        const canrunBatteriesContainer = document.getElementById('canrun_batteries_container_mrt');
+        const canrunTotalPowerDisp = document.getElementById('canrun_total_power_mrt');
+        const canrunPowerNeededDisp = document.getElementById('canrun_power_needed_mrt');
+        const canrunResultDisp = document.getElementById('canrun_result_mrt');
+        
+        const logOutput = document.getElementById('log_output_mrt');
+
+        const ANIMATION_DELAY = 800;
+        const BATTERY_PROCESS_DELAY = 350; // Slightly increased for better visibility
+
+        let N_COMPUTERS_MRT;
+        let BATTERIES_MRT = [];
+        
+        let bsLowTime, bsHighTime, bsMidTimeToTest, ansTime;
+        
+        let simulationRunning = false;
+
+        function logMRT(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearCanRunVizHighlights() {
+            canrunBatteriesContainer.querySelectorAll('.battery-item-mrt').forEach(el => {
+                el.classList.remove('highlight-battery');
+                const powerSpan = el.querySelector('.contribution');
+                if(powerSpan) powerSpan.textContent = ''; 
+            });
+        }
+
+        function renderInitialDisplays() {
+            nComputersDisp.textContent = N_COMPUTERS_MRT !== undefined ? N_COMPUTERS_MRT : '-';
+            batteriesDisp.textContent = BATTERIES_MRT.length > 0 ? `[${BATTERIES_MRT.join(', ')}]` : '-';
+            bsLowTimeDisp.textContent = bsLowTime !== undefined ? bsLowTime : '-';
+            bsHighTimeDisp.textContent = bsHighTime !== undefined ? bsHighTime : '-';
+            bsMidTimeDisp.textContent = '-';
+            ansTimeDisp.textContent = ansTime !== undefined ? ansTime : '-';
+
+            canrunTestTimeDisp.textContent = '-';
+            canrunBatteriesContainer.innerHTML = ''; 
+            canrunTotalPowerDisp.textContent = '0';
+            canrunPowerNeededDisp.textContent = '0';
+            canrunResultDisp.textContent = '-';
+            canrunResultDisp.style.color = 'inherit';
+        }
+        
+        async function animateCanRun(n_param, batteries_param, testTime_param) {
+            if (!simulationRunning) return false; 
+            logMRT(`  canRun: Testing if ${n_param} computers can run for ${testTime_param} hours.`);
+            canrunTestTimeDisp.textContent = testTime_param;
+            canrunBatteriesContainer.innerHTML = ''; 
+            
+            let domBatteryItems = [];
+            batteries_param.forEach((cap) => {
+                const el = document.createElement('div');
+                el.classList.add('battery-item-mrt');
+                el.innerHTML = `<span class="capacity">${cap}</span> <span class="contribution"></span>`;
+                canrunBatteriesContainer.appendChild(el);
+                domBatteryItems.push(el);
+            });
+
+            let totalPowerSupplied = 0n; 
+            canrunTotalPowerDisp.textContent = totalPowerSupplied.toString();
+
+            for (let i = 0; i < batteries_param.length; i++) {
+                if (!simulationRunning) return false; 
+                const batteryCapacity = BigInt(batteries_param[i]);
+                const testTimeBigInt = BigInt(testTime_param);
+                const el = domBatteryItems[i];
+
+                if(el) el.classList.add('highlight-battery');
+                logMRT(`    canRun: Battery ${i} (capacity ${batteryCapacity})`);
+                
+                const powerFromThisBattery = batteryCapacity < testTimeBigInt ? batteryCapacity : testTimeBigInt;
+                
+                if(el) {
+                    const powerSpan = el.querySelector('.contribution');
+                    if(powerSpan) powerSpan.textContent = `Gives: ${powerFromThisBattery}`;
+                }
+                logMRT(`      Contributes: min(${batteryCapacity}, ${testTimeBigInt}) = ${powerFromThisBattery}`);
+                
+                totalPowerSupplied += powerFromThisBattery;
+                canrunTotalPowerDisp.textContent = totalPowerSupplied.toString();
+                
+                await new Promise(r => setTimeout(r, BATTERY_PROCESS_DELAY));
+                if (!simulationRunning) return false;
+                if(el) el.classList.remove('highlight-battery');
+            }
+            
+            const powerNeededBigInt = BigInt(n_param) * BigInt(testTime_param);
+            canrunPowerNeededDisp.textContent = powerNeededBigInt.toString();
+            logMRT(`  canRun: Total Power Supplied = ${totalPowerSupplied}, Power Needed = ${powerNeededBigInt}`);
+
+            const canRunResult = totalPowerSupplied >= powerNeededBigInt;
+            canrunResultDisp.textContent = canRunResult ? "True" : "False";
+            canrunResultDisp.style.color = canRunResult ? "green" : "red";
+            logMRT(`  canRun returns: ${canRunResult}`);
+            
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+            if (!simulationRunning) return false;
+            return canRunResult;
+        }
+
+        function initializeAnimation() {
+            logMRT("Initializing Max Running Time Animation...");
+            simulationRunning = false; // Stop any ongoing simulation
+            nextStepButton.disabled = true; // Disable until setup is complete
+
+            try {
+                N_COMPUTERS_MRT = parseInt(nComputersInput.value);
+                BATTERIES_MRT = batteriesInputEl.value.split(',')
+                                 .map(s => parseInt(s.trim()))
+                                 .filter(n => !isNaN(n) && n >= 0);
+                
+                if (isNaN(N_COMPUTERS_MRT) || N_COMPUTERS_MRT < 1) {
+                    if (N_COMPUTERS_MRT === 0 && BATTERIES_MRT.length === 0) { // Special case n=0
+                         // Allow, result will be effectively infinite or very large, but practically 0 for "no computers"
+                    } else {
+                        throw new Error("N Computers must be at least 1.");
+                    }
+                }
+                // It's possible to have batteries but N=0, which means time could be infinite.
+                // Or N > 0 but no batteries.
+            } catch (e) {
+                alert("Invalid input. Error: " + e.message); 
+                startButton.textContent = "Start/Reset"; // Ensure reset state
+                return;
+            }
+            
+            // Calculate binary search range
+            if (N_COMPUTERS_MRT === 0) { // No computers, they can run "infinitely" or 0 time needed
+                bsLowTime = 0;
+                bsHighTime = 0; // Effectively, no meaningful search
+                ansTime = 0; // Or a very large number if problem defined that way. For "max time they can run", 0 is fine.
+                logMRT("N=0 computers. Max time is effectively infinite or 0 depending on interpretation. Setting to 0.");
+            } else if (BATTERIES_MRT.length === 0 ) { // No batteries
+                bsLowTime = 0;
+                bsHighTime = 0;
+                ansTime = 0;
+                logMRT("No batteries. Max time is 0.");
+            }
+            else {
+                 bsLowTime = 0; 
+                 let sumOfBatteries = 0n;
+                 BATTERIES_MRT.forEach(b => sumOfBatteries += BigInt(b));
+                 // Upper bound for binary search: sum of all battery capacities 
+                 // (max time if only 1 computer or perfect distribution)
+                 // Or, sumOfBatteries / N_COMPUTERS_MRT.
+                 // Max value per problem constraint is 10^9 for battery, 10^5 batteries. Sum can be 10^14.
+                 // So high can be very large.
+                 bsHighTime = Number(sumOfBatteries); // Max possible time if n=1
+                 if (N_COMPUTERS_MRT > 0) {
+                    // A tighter upper bound for BS, but sumOfBatteries is safe
+                    // bsHighTime = Math.min(Number(sumOfBatteries), Number(sumOfBatteries / BigInt(N_COMPUTERS_MRT)) + 1) ; 
+                 }
+                 ansTime = 0; 
+            }
+
+            renderInitialDisplays();
+            logOutput.innerHTML = ""; 
+            
+            startButton.textContent = "Reset";
+            simulationRunning = true; 
+
+            if (N_COMPUTERS_MRT === 0 || (BATTERIES_MRT.length === 0 && N_COMPUTERS_MRT > 0)) {
+                 finalizeAnimationMRT(); // Finalize immediately for these trivial cases
+            } else if (bsLowTime <= bsHighTime) {
+                 nextStepButton.disabled = false;
+                 logMRT(`Initialized. N Computers: ${N_COMPUTERS_MRT}, Batteries: [${BATTERIES_MRT.join(', ')}].`);
+                 logMRT(`BS Range for Time: [${bsLowTime}, ${bsHighTime}]. Initial ans: ${ansTime}.`);
+            } else { 
+                logMRT("Initial high bound is less than low bound. Max time is 0.");
+                ansTime = 0; // Should already be 0
+                finalizeAnimationMRT();
+            }
+        }
+        
+        async function finalizeAnimationMRT() {
+            simulationRunning = false; 
+            nextStepButton.disabled = true;
+            startButton.textContent = "Start/Reset";
+            
+            bsMidTimeDisp.textContent = ansTime !== undefined ? ansTime.toString() : '-'; 
+            bsLowTimeDisp.textContent = ansTime !== undefined ? ansTime.toString() : '-';
+            bsHighTimeDisp.textContent = ansTime !== undefined ? ansTime.toString() : '-';
+            
+            logMRT(`--- Maximum Running Time Found: ${ansTime} ---`);
+            ansTimeDisp.textContent = ansTime !== undefined ? ansTime.toString() : '-';
+            
+            if (N_COMPUTERS_MRT > 0 && BATTERIES_MRT.length > 0 && ansTime > 0) {
+                canrunTestTimeDisp.textContent = ansTime;
+                logMRT("Final check with canRun to show power distribution (conceptual):");
+                await animateCanRun(N_COMPUTERS_MRT, BATTERIES_MRT, ansTime); 
+            } else {
+                canrunTestTimeDisp.textContent = ansTime !== undefined ? ansTime.toString() : '0';
+                canrunBatteriesContainer.innerHTML = N_COMPUTERS_MRT > 0 && BATTERIES_MRT.length > 0 ? '(Run time is 0)' : '(No run possible or no computers/batteries)';
+                canrunTotalPowerDisp.textContent = '0';
+                canrunPowerNeededDisp.textContent = '0';
+                canrunResultDisp.textContent = (ansTime > 0).toString();
+                canrunResultDisp.style.color = (ansTime > 0) ? "green" : "red";
+            }
+        }
+
+
+        async function performNextStep() {
+            if (!simulationRunning) return;
+            nextStepButton.disabled = true;
+            clearCanRunVizHighlights();
+            canrunResultDisp.textContent = "-"; canrunResultDisp.style.color = "inherit";
+
+            if (bsLowTime > bsHighTime) {
+                await finalizeAnimationMRT();
+                return;
+            }
+
+            // Standard binary search for finding max T s.t. canRun(T) is true
+            bsMidTimeToTest = bsLowTime + Math.floor((bsHighTime - bsLowTime) / 2);
+            
+            bsLowTimeDisp.textContent = bsLowTime;
+            bsHighTimeDisp.textContent = bsHighTime;
+            bsMidTimeDisp.textContent = bsMidTimeToTest;
+            
+            logMRT(`BS Step: low=${bsLowTime}, high=${bsHighTime}. Testing midTime = ${bsMidTimeToTest}`);
+            
+            const canRunResult = await animateCanRun(N_COMPUTERS_MRT, BATTERIES_MRT, bsMidTimeToTest);
+            if (!simulationRunning) return; 
+
+
+            if (canRunResult) {
+                logMRT(`  canRun(${bsMidTimeToTest}) is TRUE. This time is possible. Try longer.`);
+                ansTime = bsMidTimeToTest; // Record this as a possible answer
+                bsLowTime = bsMidTimeToTest + 1; // Try to find a better (larger) time
+                ansTimeDisp.textContent = ansTime;
+            } else {
+                logMRT(`  canRun(${bsMidTimeToTest}) is FALSE. This time is too long. Try shorter.`);
+                bsHighTime = bsMidTimeToTest - 1;
+            }
+
+            bsLowTimeDisp.textContent = bsLowTime;
+            bsHighTimeDisp.textContent = bsHighTime;
+
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            if (!simulationRunning) return;
+
+            if (bsLowTime <= bsHighTime) {
+                nextStepButton.disabled = false;
+            } else {
+                // The loop terminates, ansTime holds the last midTime for which canRun was true
+                await finalizeAnimationMRT();
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', performNextStep);
+        initializeAnimation(); 
+        
+    });
+    </script>
+</body>
+</html>

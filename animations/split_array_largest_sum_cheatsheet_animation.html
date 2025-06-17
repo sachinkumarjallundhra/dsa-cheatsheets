@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split Array Largest Sum Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px; 
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls-sals {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-sals label { font-weight: bold; margin-right: 5px; }
+        .controls-sals input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-sals input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 60px;}
+        .controls-sals button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-sals button:hover { background-color: #2980b9; }
+        .controls-sals button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-layout-sals {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr; 
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .config-panel-sals, .cansplit-viz-panel-sals {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .config-panel-sals > div { margin-bottom: 12px; }
+        .config-panel-sals span { font-weight: bold; }
+
+        #input_array_sals_display { font-family: monospace; font-size: 1.1em; color: #2980b9; display:inline-block; max-width: 100%; overflow-wrap: break-word;}
+        #m_val_sals, #bs_low_sals, #bs_high_sals, #bs_mid_sum_sals, #ans_sals { color: #e67e22; }
+        #can_split_result_sals { font-size: 1.1em; }
+
+        .cansplit-array-container-sals {
+            display: flex;
+            gap: 2px; 
+            padding: 10px;
+            border: 1px solid #ccc;
+            min-height: 50px;
+            align-items: center;
+            flex-wrap: wrap; 
+            margin-top: 10px;
+        }
+        .cansplit-element-sals {
+            padding: 8px 10px;
+            border: 1px solid #bdc3c7;
+            background-color: #ecf0f1;
+            font-weight: bold; text-align: center;
+            border-radius: 3px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .cansplit-element-sals.current-in-subarray { background-color: #aed6f1; transform: scale(1.05); } 
+        .cansplit-element-sals.being-added { background-color: #f9e79f !important; transform: scale(1.1); border: 2px solid #f39c12;} 
+        .subarray-divider-sals {
+            width: 4px; 
+            height: 35px;
+            background-color: #c0392b; 
+            margin: 0 4px; 
+            border-radius: 2px;
+            align-self: center; 
+        }
+        .cansplit-info div { margin: 3px 0; }
+        .cansplit-info span { font-weight: bold; }
+
+
+        .log-container-sals { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; grid-column: 1 / -1;}
+        #log_output_sals { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Split Array Largest Sum Animation</h1>
+
+        <div class="controls-sals">
+            <label for="array_input_sals">Nums (comma-separated):</label>
+            <input type="text" id="array_input_sals" value="7,2,5,10,8">
+            <label for="m_input_sals">m (splits):</label>
+            <input type="number" id="m_input_sals" value="2" min="1">
+            <button id="start_button_sals">Start/Reset</button>
+            <button id="next_step_button_sals" disabled>Next BS Step</button>
+        </div>
+
+        <div class="main-layout-sals">
+            <div class="config-panel-sals">
+                <h2>Inputs & Binary Search State</h2>
+                <div>Input Array: <span id="input_array_sals_display">-</span></div>
+                <div>Splits (m): <span id="m_val_sals">-</span></div>
+                <hr>
+                <div>BS Range for Max Sum: [<span id="bs_low_sals">-</span>, <span id="bs_high_sals">-</span>]</div>
+                <div>Testing Max Subarray Sum (midSum): <span id="bs_mid_sum_sals">-</span></div>
+                <hr>
+                <div>Current Best Minimized Largest Sum (ans): <span id="ans_sals">-</span></div>
+            </div>
+
+            <div class="cansplit-viz-panel-sals">
+                <h2>canSplit(nums, m, <span id="cansplit_test_sum_sals">-</span>) Visualization</h2>
+                <div class="cansplit-info">
+                    <div>Current Subarray Sum: <span id="cansplit_current_sum_sals">-</span></div>
+                    <div>Splits Made: <span id="cansplit_splits_made_sals">-</span></div>
+                </div>
+                <div id="cansplit_array_container_sals" class="cansplit-array-container-sals">
+                    <!-- Elements for canSplit visualization -->
+                </div>
+                <div style="text-align:center; margin-top:10px;">canSplit Result: <strong id="can_split_result_sals" style="font-size:1.2em;">-</strong></div>
+            </div>
+        </div>
+        
+        <div class="log-container-sals">
+            <h2>Log</h2>
+            <pre id="log_output_sals"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const arrayInputEl = document.getElementById('array_input_sals');
+        const mInputEl = document.getElementById('m_input_sals');
+        const startButton = document.getElementById('start_button_sals');
+        const nextStepButton = document.getElementById('next_step_button_sals');
+
+        const inputArrayDisplay = document.getElementById('input_array_sals_display');
+        const mValDisplay = document.getElementById('m_val_sals');
+        const bsLowDisplay = document.getElementById('bs_low_sals');
+        const bsHighDisplay = document.getElementById('bs_high_sals');
+        const bsMidSumDisplay = document.getElementById('bs_mid_sum_sals');
+        const ansDisplay = document.getElementById('ans_sals');
+
+        const cansplitTestSumDisplay = document.getElementById('cansplit_test_sum_sals');
+        const cansplitCurrentSumDisplay = document.getElementById('cansplit_current_sum_sals');
+        const cansplitSplitsMadeDisplay = document.getElementById('cansplit_splits_made_sals');
+        const cansplitArrayContainer = document.getElementById('cansplit_array_container_sals');
+        const canSplitResultDisplay = document.getElementById('can_split_result_sals');
+        
+        const logOutput = document.getElementById('log_output_sals');
+
+        const ANIMATION_DELAY = 800;
+        const CANSPLIT_ELEMENT_DELAY = 350;
+
+        let NUMS_SALS = [];
+        let M_SALS;
+        let N_SALS; 
+        
+        let bsLowSALS, bsHighSALS, bsMidSumToTestSALS, ansSALS;
+        
+        let simulationRunning = false;
+
+        function logSALS(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearCanSplitHighlights() {
+            cansplitArrayContainer.querySelectorAll('.cansplit-element-sals').forEach(el => {
+                el.classList.remove('current-in-subarray', 'being-added');
+            });
+        }
+
+        function renderInitialDisplays() {
+            inputArrayDisplay.textContent = `[${NUMS_SALS.join(', ')}]`;
+            mValDisplay.textContent = M_SALS;
+            bsLowDisplay.textContent = bsLowSALS;
+            bsHighDisplay.textContent = bsHighSALS;
+            bsMidSumDisplay.textContent = '-';
+            ansDisplay.textContent = ansSALS !== undefined ? ansSALS : '-';
+
+            cansplitTestSumDisplay.textContent = '-';
+            cansplitCurrentSumDisplay.textContent = '0';
+            cansplitSplitsMadeDisplay.textContent = '1';
+            cansplitArrayContainer.innerHTML = '';
+            canSplitResultDisplay.textContent = '-';
+            canSplitResultDisplay.style.color = 'inherit';
+        }
+        
+        async function animateCanSplit(testMaxSum) {
+            if (!simulationRunning) return false; 
+            logSALS(`  canSplit: Testing if array can be split into <= ${M_SALS} parts, each sum <= ${testMaxSum}`);
+            cansplitTestSumDisplay.textContent = testMaxSum;
+            cansplitArrayContainer.innerHTML = ''; 
+            
+            const canSplitDomElements = []; // Store references to element divs
+            NUMS_SALS.forEach(val => {
+                const el = document.createElement('div');
+                el.classList.add('cansplit-element-sals');
+                el.textContent = val;
+                cansplitArrayContainer.appendChild(el);
+                canSplitDomElements.push(el);
+            });
+
+            let localSubarraySum = 0;
+            let localSplitsCount = 1; 
+            cansplitSplitsMadeDisplay.textContent = localSplitsCount;
+            cansplitCurrentSumDisplay.textContent = localSubarraySum;
+            
+            let domElementsInCurrentSubarrayVisual = [];
+
+            for (let i = 0; i < N_SALS; i++) {
+                if (!simulationRunning) return false; 
+                const currentNum = NUMS_SALS[i];
+                const elToProcess = canSplitDomElements[i]; 
+                
+                if (elToProcess) elToProcess.classList.add('being-added');
+                logSALS(`    canSplit: Considering element ${currentNum} (idx ${i})`);
+                await new Promise(r => setTimeout(r, CANSPLIT_ELEMENT_DELAY));
+                if (!simulationRunning) return false;
+
+
+                if (localSubarraySum + currentNum <= testMaxSum) {
+                    localSubarraySum += currentNum;
+                    if (elToProcess) {
+                        elToProcess.classList.add('current-in-subarray');
+                        domElementsInCurrentSubarrayVisual.push(elToProcess);
+                    }
+                    logSALS(`      Added to current subarray. Sum = ${localSubarraySum}`);
+                } else {
+                    localSplitsCount++;
+                    logSALS(`      Exceeds ${testMaxSum}. Starting new subarray. Splits = ${localSplitsCount}`);
+                    
+                    domElementsInCurrentSubarrayVisual.forEach(el => el.classList.remove('current-in-subarray'));
+                    domElementsInCurrentSubarrayVisual = [];
+                    
+                    const divider = document.createElement('div');
+                    divider.classList.add('subarray-divider-sals');
+                    if(elToProcess) { 
+                        cansplitArrayContainer.insertBefore(divider, elToProcess);
+                    } else { // Should not be reached if canSplitDomElements is correct
+                        cansplitArrayContainer.appendChild(divider); 
+                    }
+
+                    localSubarraySum = currentNum;
+                    if (elToProcess) {
+                        elToProcess.classList.add('current-in-subarray');
+                        domElementsInCurrentSubarrayVisual.push(elToProcess);
+                    }
+                    logSALS(`      New subarray starts with ${currentNum}. Sum = ${localSubarraySum}`);
+                }
+                if (elToProcess) elToProcess.classList.remove('being-added');
+                cansplitSplitsMadeDisplay.textContent = localSplitsCount;
+                cansplitCurrentSumDisplay.textContent = localSubarraySum;
+                
+                if (localSplitsCount > M_SALS) {
+                    logSALS(`    canSplit: Splits needed (${localSplitsCount}) > m (${M_SALS}). Returning false.`);
+                    canSplitResultDisplay.textContent = "False";
+                    canSplitResultDisplay.style.color = "red";
+                    return false; 
+                }
+                await new Promise(r => setTimeout(r, CANSPLIT_ELEMENT_DELAY));
+                if (!simulationRunning) return false;
+            }
+            
+            logSALS(`    canSplit: Finished. Splits needed (${localSplitsCount}) <= m (${M_SALS}). Returning true.`);
+            canSplitResultDisplay.textContent = "True";
+            canSplitResultDisplay.style.color = "green";
+            return true; 
+        }
+
+
+        function initializeAnimation() {
+            logSALS("Initializing Split Array Largest Sum...");
+            simulationRunning = false;
+            nextStepButton.disabled = true;
+
+            try {
+                NUMS_SALS = arrayInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                M_SALS = parseInt(mInputEl.value);
+                N_SALS = NUMS_SALS.length;
+
+                if (N_SALS === 0) throw new Error("Array cannot be empty.");
+                if (isNaN(M_SALS) || M_SALS < 1 || M_SALS > N_SALS) {
+                    throw new Error(`m must be between 1 and array length (${N_SALS}).`);
+                }
+                NUMS_SALS.forEach(num => { if (num < 0) throw new Error("Array elements must be non-negative."); });
+
+            } catch (e) {
+                alert("Invalid input. Error: " + e.message); return;
+            }
+            
+            bsLowSALS = 0; 
+            NUMS_SALS.forEach(num => bsLowSALS = Math.max(bsLowSALS, num));
+            
+            bsHighSALS = 0; 
+            NUMS_SALS.forEach(num => bsHighSALS += num);
+            
+            ansSALS = bsHighSALS; 
+
+            renderInitialDisplays();
+            logOutput.innerHTML = ""; 
+            
+            startButton.textContent = "Reset";
+            simulationRunning = true; 
+
+            if (bsLowSALS <= bsHighSALS) {
+                 nextStepButton.disabled = false;
+                 logSALS(`Initialized. Nums: [${NUMS_SALS.join(', ')}], m: ${M_SALS}.`);
+                 logSALS(`BS Range for Max Sum: [${bsLowSALS}, ${bsHighSALS}]. Initial ans: ${ansSALS}.`);
+            } else {
+                logSALS("Initialization error or trivial case. No search needed.");
+                finalizeAnimation(); 
+            }
+        }
+        
+        async function finalizeAnimation() {
+            simulationRunning = false; 
+            nextStepButton.disabled = true;
+            startButton.textContent = "Start/Reset";
+            bsMidSumDisplay.textContent = ansSALS.toString(); 
+            cansplitTestSumDisplay.textContent = ansSALS.toString();
+            logSALS(`--- Minimized Largest Subarray Sum Found: ${ansSALS} ---`);
+            
+            if (N_SALS > 0) {
+                await animateCanSplit(ansSALS); 
+            }
+            if (canSplitResultDisplay.textContent === "True" || N_SALS === 0 && M_SALS === 0) { // Adjusted condition for empty/trivial
+                 canSplitResultDisplay.innerHTML = `Final optimal split with max sum <strong>${ansSALS}</strong>`;
+                 canSplitResultDisplay.style.color = "blue";
+            } else if (N_SALS > 0) { // If N_SALS > 0 but canSplit for ansSALS was false (shouldn't happen if logic correct)
+                 canSplitResultDisplay.innerHTML = `Final ans: <strong>${ansSALS}</strong>. (canSplit for this ans may show last test or be re-run)`;
+                 canSplitResultDisplay.style.color = "blue";
+            } else { // N_SALS = 0, M_SALS = 0 or some other trivial case
+                canSplitResultDisplay.textContent = `Result: ${ansSALS}`;
+            }
+        }
+
+
+        async function performNextStep() {
+            if (!simulationRunning) return;
+            nextStepButton.disabled = true;
+            clearCanSplitHighlights(); 
+
+            if (bsLowSALS > bsHighSALS) {
+                await finalizeAnimation();
+                return;
+            }
+
+            bsMidSumToTestSALS = bsLowSALS + Math.floor((bsHighSALS - bsLowSALS) / 2);
+            bsLowDisplay.textContent = bsLowSALS;
+            bsHighDisplay.textContent = bsHighSALS;
+            bsMidSumDisplay.textContent = bsMidSumToTestSALS;
+            
+            logSALS(`BS Step: low=${bsLowSALS}, high=${bsHighSALS}. Testing midSum = ${bsMidSumToTestSALS}`);
+            
+            const canBeSplit = await animateCanSplit(bsMidSumToTestSALS);
+            if (!simulationRunning) return; 
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2)); 
+            if (!simulationRunning) return;
+
+
+            if (canBeSplit) {
+                logSALS(`  canSplit(${bsMidSumToTestSALS}) is TRUE. Possible. Try smaller max sum (or this is it).`);
+                ansSALS = bsMidSumToTestSALS;
+                bsHighSALS = bsMidSumToTestSALS - 1;
+                ansDisplay.textContent = ansSALS;
+            } else {
+                logSALS(`  canSplit(${bsMidSumToTestSALS}) is FALSE. Need larger max sum.`);
+                bsLowSALS = bsMidSumToTestSALS + 1;
+            }
+
+            bsLowDisplay.textContent = bsLowSALS;
+            bsHighDisplay.textContent = bsHighSALS;
+            ansDisplay.textContent = ansSALS; 
+
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            if (!simulationRunning) return;
+
+            if (bsLowSALS <= bsHighSALS) {
+                nextStepButton.disabled = false;
+            } else {
+                await finalizeAnimation();
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', performNextStep);
+        initializeAnimation(); 
+        
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K Weakest Rows Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1300px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls-kwr {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-kwr label { font-weight: bold; margin-right: 5px; }
+        .controls-kwr input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 300px; }
+        .controls-kwr input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 60px;}
+        .controls-kwr button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-kwr button:hover { background-color: #2980b9; }
+        .controls-kwr button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-layout-kwr {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr; /* Matrix & BS | PQ & Results */
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .left-panel-kwr, .right-panel-kwr {
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .matrix-display-kwr, .bs-display-kwr, .pq-display-kwr, .results-display-kwr {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .info-panel-kwr, .log-container-kwr { /* Spanning full width below main layout */
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+            margin-top:10px;
+        }
+
+
+        .matrix-table-kwr { border-collapse: collapse; margin: 0 auto; }
+        .matrix-table-kwr td, .matrix-table-kwr th {
+            border: 1px solid #ccc;
+            width: 30px; height: 30px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .matrix-table-kwr tr.highlight-current-row td { background-color: #fff3cd; }
+        .matrix-table-kwr td.soldier { background-color: #5dade2; color: white; } 
+        .matrix-table-kwr td.civilian { background-color: #e5e7e9; } 
+
+        .bs-row-container-kwr {
+            display: flex; gap: 2px; justify-content: center; margin-bottom: 10px;
+            position: relative; 
+            padding-bottom: 30px; 
+            min-height: 30px; /* So pointers don't overlap title if empty */
+        }
+        .bs-element-kwr {
+            width: 28px; height: 28px; border: 1px solid #bdc3c7;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 0.9em; background-color: #f8f9f9;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .bs-element-kwr.highlight-bs-mid { background-color: #f1c40f !important; transform: scale(1.1); }
+        .pointer-bs-kwr {
+            position: absolute; bottom: 0; text-align: center; font-size: 0.7em;
+            width: 28px; transition: left 0.4s ease; font-weight: bold;
+        }
+        .pointer-bs-kwr::before { content: '▲'; display: block; }
+        #bs-low-ptr { color: green; } #bs-mid-ptr { color: orange; } #bs-high-ptr { color: red; }
+        #soldier_count_display_kwr { font-weight: bold; color: #27ae60; }
+
+
+        .pq-area-kwr, .results-area-kwr {
+            display: flex; flex-direction: column; gap: 5px; padding: 10px;
+            border: 1px dashed #777; min-height: 80px;
+            overflow-y: auto; max-height: 200px; /* Max height for PQ/Results */
+        }
+        .pq-item-kwr, .result-item-kwr {
+            padding: 6px 10px; border-radius: 4px; font-size: 0.9em;
+            text-align: center; border: 1px solid;
+            transition: opacity 0.4s ease, transform 0.4s ease, background-color 0.3s ease;
+        }
+        .pq-item-kwr { background-color: #ebdef0; border-color: #d2b4de; } 
+        .pq-item-kwr.pq-top-kwr { font-weight: bold; border-width: 2px; transform: scale(1.03); background-color: #d7bde2; }
+        .pq-item-kwr.pq-adding-kwr { 
+            transform: scale(0.5) translateX(-30px); 
+            opacity: 0; 
+            background-color: #a9dfbf  !important; /* Greenish for adding */
+        }
+        .pq-item-kwr.pq-polling-kwr { 
+            transform: scale(0.5) translateX(30px); 
+            opacity: 0; 
+            background-color: #fadbd8 !important; /* Reddish for polling */
+        }
+        
+        .result-item-kwr { background-color: #d4efdf; border-color: #a9dfbf; }
+        .result-item-kwr.result-adding-kwr { animation: popInKWR 0.4s ease-out; }
+        @keyframes popInKWR { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
+
+        .info-panel-kwr div { margin: 5px 0; }
+        .info-panel-kwr span { font-weight: bold; }
+        #k_val_kwr { color: #e67e22; }
+        #current_action_display_kwr {font-weight: normal; color: #c0392b; min-height: 1.2em;}
+        #final_result_array_kwr { color: #27ae60; font-size: 1.1em; }
+
+        .log-container-kwr { 
+             background-color: #2c3e50; color: #ecf0f1; padding: 15px; 
+             border-radius: 5px; margin-top: 10px; 
+        }
+        #log_output_kwr { 
+            white-space: pre-wrap; word-wrap: break-word; 
+            max-height: 150px; overflow-y: auto; 
+            font-family: 'Courier New', Courier, monospace; font-size: 0.9em;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>K Weakest Rows Animation</h1>
+
+        <div class="controls-kwr">
+            <label for="matrix_input_kwr">Matrix (e.g., [[1,1,0],[1,0,0],[1,1,1]]):</label>
+            <input type="text" id="matrix_input_kwr" value="[[1,1,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,1,0,0,0],[1,1,1,1,1]]">
+            <label for="k_input_kwr">K:</label>
+            <input type="number" id="k_input_kwr" value="3" min="1">
+            <button id="start_button_kwr">Start/Reset</button>
+            <button id="next_step_button_kwr" disabled>Next Step</button>
+        </div>
+
+        <div class="info-panel-kwr">
+            <div>K: <span id="k_val_kwr">-</span></div>
+            <div>Current Row Processing: <span id="current_row_info_kwr">-</span></div>
+            <div>Soldier Count for Current Row: <span id="soldier_count_display_kwr">-</span></div>
+            <div id="current_action_display_kwr"></div>
+        </div>
+
+        <div class="main-layout-kwr">
+            <div class="left-panel-kwr">
+                <div class="matrix-display-kwr">
+                    <h2>Input Matrix</h2>
+                    <table id="matrix_table_kwr"></table>
+                </div>
+                <div class="bs-display-kwr">
+                    <h2>Binary Search for Soldier Count (in current row)</h2>
+                    <div id="bs_row_container_kwr" class="bs-row-container-kwr">
+                         <div id="bs-low-ptr" class="pointer-bs-kwr" style="display:none;">low</div>
+                         <div id="bs-mid-ptr" class="pointer-bs-kwr" style="display:none;">mid</div>
+                         <div id="bs-high-ptr" class="pointer-bs-kwr" style="display:none;">high</div>
+                    </div>
+                    <div style="text-align:center; font-size:0.8em;">Binary Search Pointers ^</div>
+                </div>
+            </div>
+            <div class="right-panel-kwr">
+                <div class="pq-display-kwr">
+                    <h2>Max Priority Queue ([Soldiers, RowIdx], Size K)</h2>
+                    <div id="pq_area_kwr" class="pq-area-kwr"></div>
+                </div>
+                <div class="results-display-kwr">
+                    <h2>Result (K Weakest Row Indices)</h2>
+                    <div id="results_area_kwr" class="results-area-kwr"></div>
+                    <div>Final Result Array: <span id="final_result_array_kwr">-</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-kwr">
+            <h2>Log</h2>
+            <pre id="log_output_kwr"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const matrixInputEl = document.getElementById('matrix_input_kwr');
+        const kInputEl = document.getElementById('k_input_kwr');
+        const startButton = document.getElementById('start_button_kwr');
+        const nextStepButton = document.getElementById('next_step_button_kwr');
+
+        const kValDisplay = document.getElementById('k_val_kwr');
+        const currentRowInfoDisplay = document.getElementById('current_row_info_kwr');
+        const soldierCountDisplay = document.getElementById('soldier_count_display_kwr');
+        const currentActionDisplay = document.getElementById('current_action_display_kwr');
+        const matrixTable = document.getElementById('matrix_table_kwr');
+        const bsRowContainer = document.getElementById('bs_row_container_kwr');
+        const bsLowPtr = document.getElementById('bs-low-ptr');
+        const bsMidPtr = document.getElementById('bs-mid-ptr');
+        const bsHighPtr = document.getElementById('bs-high-ptr');
+        const pqArea = document.getElementById('pq_area_kwr');
+        const resultsArea = document.getElementById('results_area_kwr');
+        const finalResultArrayDisplay = document.getElementById('final_result_array_kwr');
+        const logOutput = document.getElementById('log_output_kwr');
+
+        const ANIMATION_DELAY = 700;
+        const BS_DELAY = 450;
+
+        let MATRIX = [];
+        let K_VAL_KWR;
+        let N_ROWS, M_COLS;
+        
+        let maxHeapPQ = []; 
+        let resultKWR = [];
+        
+        let currentRowIdx = 0; 
+        let animationPhase = 'init'; 
+        let bsCurrentRow = [];
+        let bsLow, bsHigh, bsMid;
+        let bsDomElements = [];
+        let currentSoldierCountForRow = 0; // To pass between phases
+
+        function logKWR(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearHighlightsKWR() {
+            document.querySelectorAll('.matrix-table-kwr tr.highlight-current-row').forEach(r => r.classList.remove('highlight-current-row'));
+            bsRowContainer.querySelectorAll('.bs-element-kwr.highlight-bs-mid').forEach(el => el.classList.remove('highlight-bs-mid'));
+            pqArea.querySelectorAll('.pq-item-kwr.pq-top-kwr').forEach(el => el.classList.remove('pq-top-kwr'));
+            // currentActionDisplay.textContent = ''; // Keep action display until next action
+        }
+
+        function renderMatrix() {
+            matrixTable.innerHTML = '';
+            MATRIX.forEach((row, rIdx) => {
+                const tr = document.createElement('tr');
+                tr.id = `matrix-row-${rIdx}`;
+                const th = document.createElement('th');
+                th.textContent = `R${rIdx}`;
+                tr.appendChild(th);
+                row.forEach(cellVal => {
+                    const td = document.createElement('td');
+                    td.textContent = cellVal;
+                    td.classList.add(cellVal === 1 ? 'soldier' : 'civilian');
+                    tr.appendChild(td);
+                });
+                matrixTable.appendChild(tr);
+            });
+        }
+        
+        function renderBsRowVisual() {
+            bsRowContainer.innerHTML = ''; 
+            bsRowContainer.appendChild(bsLowPtr); bsRowContainer.appendChild(bsMidPtr); bsRowContainer.appendChild(bsHighPtr); 
+            bsDomElements = [];
+            bsCurrentRow.forEach((val, idx) => {
+                const el = document.createElement('div');
+                el.classList.add('bs-element-kwr');
+                el.id = `bs-el-${idx}`;
+                el.textContent = val;
+                el.style.backgroundColor = val === 1 ? '#5dade2' : '#e5e7e9'; 
+                el.style.color = val === 1 ? 'white' : '#333';
+                bsRowContainer.appendChild(el);
+                bsDomElements.push(el);
+            });
+            updateBsPointersVisual();
+        }
+
+        function updateBsPointersVisual() {
+            const updatePointer = (ptrEl, index) => {
+                if (bsDomElements.length === 0) { // Hide pointers if BS row is empty
+                    ptrEl.style.display = 'none';
+                    return;
+                }
+                const targetElement = bsDomElements[index];
+                if (targetElement) {
+                    ptrEl.style.left = `${targetElement.offsetLeft}px`;
+                    ptrEl.style.display = 'block';
+                } else if (index === bsDomElements.length) { // For high or left pointer at the end
+                     ptrEl.style.left = `${bsDomElements[bsDomElements.length-1].offsetLeft + bsDomElements[bsDomElements.length-1].offsetWidth + 2}px`; // Place after last element
+                     ptrEl.style.display = 'block';
+                }
+                else {
+                    ptrEl.style.display = 'none';
+                }
+            };
+            updatePointer(bsLowPtr, bsLow);
+            updatePointer(bsMidPtr, bsMid);
+            updatePointer(bsHighPtr, bsHigh);
+        }
+
+        function renderMaxPQ() {
+            pqArea.innerHTML = '';
+            maxHeapPQ.sort((a, b) => a[0] === b[0] ? b[1] - a[1] : b[0] - a[0]);
+            maxHeapPQ.forEach((item, idx) => {
+                const el = document.createElement('div');
+                el.classList.add('pq-item-kwr');
+                el.id = item[2]; 
+                el.textContent = `[S:${item[0]}, R:${item[1]}]`;
+                if (idx === 0 && maxHeapPQ.length > 0) el.classList.add('pq-top-kwr'); 
+                pqArea.appendChild(el);
+            });
+        }
+        async function addToPQVisual(item) { 
+            maxHeapPQ.push(item);
+            const itemEl = document.createElement('div'); // Create a temporary element for animation
+            itemEl.classList.add('pq-item-kwr', 'pq-adding-kwr');
+            itemEl.id = item[2];
+            itemEl.textContent = `[S:${item[0]}, R:${item[1]}]`;
+            pqArea.appendChild(itemEl); // Add to DOM to be visible for animation
+
+            await new Promise(r => setTimeout(r, 50)); // Allow paint
+            itemEl.style.transform = 'scale(1) translateX(0)'; 
+            itemEl.style.opacity = '1';
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            // itemEl.classList.remove('pq-adding-kwr'); // Animation class might be removed by full render
+            renderMaxPQ(); // Full re-render after animation to ensure correct order
+        }
+        async function pollFromPQVisual() {
+            if (maxHeapPQ.length === 0) return null;
+            maxHeapPQ.sort((a, b) => a[0] === b[0] ? b[1] - a[1] : b[0] - a[0]);
+            const item = maxHeapPQ.shift(); // Remove from data first
+            
+            const itemEl = document.getElementById(item[2]); // Find existing DOM element
+            if (itemEl) {
+                itemEl.classList.add('pq-polling-kwr');
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            }
+            renderMaxPQ(); // Re-render without the polled item
+            return item;
+        }
+
+        function renderResultsKWR() {
+            resultsArea.innerHTML = '';
+            // resultKWR will be built in reverse order of polling from MaxHeap
+            // So, iterate normally to display
+            resultKWR.forEach(rowIndex => {
+                const el = document.createElement('div');
+                el.classList.add('result-item-kwr');
+                el.textContent = `Row ${rowIndex}`;
+                resultsArea.appendChild(el);
+            });
+             if (animationPhase === 'done') {
+                finalResultArrayDisplay.textContent = `[${resultKWR.join(', ')}]`;
+            } else {
+                finalResultArrayDisplay.textContent = "-";
+            }
+        }
+       
+        function initializeAnimation() {
+            logKWR("Initializing K Weakest Rows...");
+            clearHighlightsKWR();
+            try {
+                MATRIX = JSON.parse(matrixInputEl.value.replace(/(\w+)\s*:/g, '"$1":'));
+                if (!Array.isArray(MATRIX) || !MATRIX.every(row => Array.isArray(row))) {
+                    throw new Error("Matrix must be an array of arrays.");
+                }
+                let colLength = -1;
+                MATRIX.forEach(row => {
+                    if (colLength === -1) colLength = row.length;
+                    else if (colLength !== row.length) throw new Error("All matrix rows must have the same length.");
+                    if (!row.every(val => val === 0 || val === 1)) throw new Error("Matrix cells must be 0 or 1.");
+                });
+                K_VAL_KWR = parseInt(kInputEl.value);
+                N_ROWS = MATRIX.length;
+                M_COLS = N_ROWS > 0 ? MATRIX[0].length : 0;
+
+                if (N_ROWS > 0 && (isNaN(K_VAL_KWR) || K_VAL_KWR < 1 || K_VAL_KWR > N_ROWS) ) {
+                     throw new Error(`K must be between 1 and ${N_ROWS}.`);
+                } else if (N_ROWS === 0 && K_VAL_KWR > 0) {
+                    throw new Error("K must be 0 if matrix is empty.");
+                }
+
+
+            } catch (e) {
+                alert("Invalid input. Matrix: [[0,1],[1,1]], K: number. Error: " + e.message); return;
+            }
+            
+            kValDisplay.textContent = K_VAL_KWR;
+            maxHeapPQ = [];
+            resultKWR = [];
+            currentRowIdx = 0;
+            animationPhase = (N_ROWS > 0 && K_VAL_KWR > 0) ? 'count_soldiers' : 'done';
+
+            renderMatrix();
+            renderMaxPQ();
+            renderResultsKWR();
+            soldierCountDisplay.textContent = '-';
+            currentRowInfoDisplay.textContent = '-';
+            bsRowContainer.innerHTML = ''; 
+            bsLowPtr.style.display = 'none'; bsMidPtr.style.display = 'none'; bsHighPtr.style.display = 'none';
+            currentActionDisplay.textContent = "";
+
+
+            startButton.textContent = "Reset";
+            if (animationPhase !== 'done') {
+                nextStepButton.disabled = false;
+                logKWR(`Initialized. Matrix ${N_ROWS}x${M_COLS}, K=${K_VAL_KWR}.`);
+                currentActionDisplay.textContent = `Ready to count soldiers for Row ${currentRowIdx}.`;
+                currentRowInfoDisplay.textContent = `Row ${currentRowIdx}`;
+                const rowEl = document.getElementById(`matrix-row-${currentRowIdx}`);
+                if(rowEl) rowEl.classList.add('highlight-current-row');
+
+            } else {
+                logKWR(N_ROWS === 0 ? "Empty matrix." : "K is 0, no rows to find.");
+                nextStepButton.disabled = true;
+                finalResultArrayDisplay.textContent = "[]";
+            }
+        }
+        
+        async function animateCountSoldiers(row, rowIndex) {
+            bsCurrentRow = [...row]; 
+            bsLow = 0;
+            bsHigh = row.length; 
+            bsMid = -1; // Indicates not yet calculated for visual
+            renderBsRowVisual();
+            logKWR(`  countSoldiers for Row ${rowIndex}: [${row.join(',')}]`);
+
+            while (bsLow < bsHigh) {
+                bsMid = bsLow + Math.floor((bsHigh - bsLow) / 2);
+                updateBsPointersVisual();
+                if(bsDomElements[bsMid]) bsDomElements[bsMid].classList.add('highlight-bs-mid');
+                logKWR(`    BS: low=${bsLow}, high=${bsHigh}, mid=${bsMid}. Checking row[${bsMid}]=${row[bsMid]}`);
+                currentActionDisplay.textContent = `BS on Row ${rowIndex}: mid=${bsMid} (val=${row[bsMid]})`;
+                await new Promise(r => setTimeout(r, BS_DELAY * 1.5));
+                if(bsDomElements[bsMid]) bsDomElements[bsMid].classList.remove('highlight-bs-mid');
+
+                if (row[bsMid] === 1) {
+                    logKWR(`    row[${bsMid}] is 1 (soldier). Soldiers might be further right. low = ${bsMid + 1}`);
+                    bsLow = bsMid + 1;
+                } else {
+                    logKWR(`    row[${bsMid}] is 0 (civilian). First civilian might be here or left. high = ${bsMid}`);
+                    bsHigh = bsMid;
+                }
+                updateBsPointersVisual();
+                await new Promise(r => setTimeout(r, BS_DELAY));
+            }
+            logKWR(`  countSoldiers for Row ${rowIndex} result: ${bsLow} (soldiers)`);
+            soldierCountDisplay.textContent = bsLow;
+            bsMidPtr.style.display = 'none'; 
+            bsLowPtr.style.left = bsDomElements[bsLow] ? `${bsDomElements[bsLow].offsetLeft}px` : (bsDomElements.length > 0 ? `${bsDomElements[bsDomElements.length-1].offsetLeft + bsDomElements[bsDomElements.length-1].offsetWidth + 2}px` : '0px');
+            bsHighPtr.style.display = 'none'; // High converges with Low
+            return bsLow; 
+        }
+
+        async function performNextStep() {
+            if (animationPhase === 'done') return;
+            nextStepButton.disabled = true;
+            clearHighlightsKWR();
+
+            if (animationPhase === 'count_soldiers') {
+                if (currentRowIdx >= N_ROWS) { // Should have transitioned before this
+                    animationPhase = 'build_result'; 
+                } else {
+                    const currentRowEl = document.getElementById(`matrix-row-${currentRowIdx}`);
+                    if(currentRowEl) currentRowEl.classList.add('highlight-current-row');
+                    currentRowInfoDisplay.textContent = `Row ${currentRowIdx} ([${MATRIX[currentRowIdx].join(',')}])`;
+                    currentActionDisplay.textContent = `Counting soldiers in Row ${currentRowIdx}...`;
+                    
+                    currentSoldierCountForRow = await animateCountSoldiers(MATRIX[currentRowIdx], currentRowIdx);
+                    
+                    currentActionDisplay.textContent = `Row ${currentRowIdx} has ${currentSoldierCountForRow} soldiers. Next: Add to PQ.`;
+                    animationPhase = 'update_pq'; 
+                }
+            } else if (animationPhase === 'update_pq') {
+                const sCount = currentSoldierCountForRow; // Use stored count
+                const rIdx = currentRowIdx; // Use current row index before incrementing
+                const domId = `pq-item-${rIdx}-${Date.now()}`; 
+                
+                logKWR(`Offering [S:${sCount}, R:${rIdx}] to Max PQ.`);
+                currentActionDisplay.textContent = `Adding [S:${sCount}, R:${rIdx}] to PQ.`;
+                await addToPQVisual([sCount, rIdx, domId]);
+                
+                if (maxHeapPQ.length > K_VAL_KWR) {
+                    logKWR("PQ size > K. Polling strongest (max soldiers/index) from Max PQ.");
+                    currentActionDisplay.textContent = "PQ too large. Polling strongest.";
+                    await pollFromPQVisual();
+                }
+                
+                currentRowIdx++; 
+                if (currentRowIdx < N_ROWS) {
+                    animationPhase = 'count_soldiers';
+                    currentRowInfoDisplay.textContent = `Row ${currentRowIdx}`;
+                    soldierCountDisplay.textContent = '-';
+                    const nextRowEl = document.getElementById(`matrix-row-${currentRowIdx}`);
+                    if(nextRowEl) nextRowEl.classList.add('highlight-current-row');
+                    currentActionDisplay.textContent = `Ready to count soldiers for Row ${currentRowIdx}.`;
+                } else {
+                    animationPhase = 'build_result';
+                    logKWR("All rows processed for PQ. Moving to build result.");
+                    currentActionDisplay.textContent = "All rows processed. Build result list.";
+                    bsRowContainer.innerHTML = ''; // Clear BS display
+                    bsLowPtr.style.display = 'none'; bsMidPtr.style.display = 'none'; bsHighPtr.style.display = 'none';
+                    soldierCountDisplay.textContent = '-';
+                    currentRowInfoDisplay.textContent = 'All Processed';
+                }
+            } else if (animationPhase === 'build_result') {
+                if (resultKWR.length < K_VAL_KWR && maxHeapPQ.length > 0) {
+                    logKWR(`Extracting from PQ to build final result. Need ${K_VAL_KWR - resultKWR.length} more.`);
+                    const polled = await pollFromPQVisual();
+                    if (polled) {
+                        currentActionDisplay.textContent = `Adding Row ${polled[1]} to results (from end).`;
+                        resultKWR.unshift(polled[1]); // Add to the beginning to build in reverse order
+                        renderResultsKWR(); 
+                    }
+                } 
+                // Check completion after attempting a poll or if enough results are gathered
+                if (resultKWR.length >= K_VAL_KWR || maxHeapPQ.length === 0 && resultKWR.length < K_VAL_KWR) { 
+                    logKWR("Result construction complete.");
+                    currentActionDisplay.textContent = "K Weakest Rows Found!";
+                    animationPhase = 'done';
+                    finalResultArrayDisplay.textContent = `[${resultKWR.join(', ')}]`;
+                    renderResultsKWR(); // Ensure final state is rendered
+                }
+            }
+
+            if (animationPhase !== 'done') {
+                nextStepButton.disabled = false;
+            } else {
+                nextStepButton.disabled = true;
+                startButton.textContent = "Start/Reset";
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', performNextStep);
+        initializeAnimation(); 
+        
+    });
+    </script>
+</body>
+</html>

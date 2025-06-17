@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divide Chocolate Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px; 
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls-dc {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-dc label { font-weight: bold; margin-right: 5px; }
+        .controls-dc input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-dc input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 60px;}
+        .controls-dc button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-dc button:hover { background-color: #2980b9; }
+        .controls-dc button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-layout-dc {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr; 
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .config-panel-dc, .candivide-viz-panel-dc {
+            padding: 15px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .config-panel-dc > div { margin-bottom: 10px; }
+        .config-panel-dc span, .candivide-viz-panel-dc span { font-weight: bold; }
+        
+        #sweetness_array_dc_disp { font-family: monospace; font-size: 1.1em; color: #2980b9; display:inline-block; max-width: 100%; overflow-wrap: break-word;}
+        #k_cuts_dc_disp, #num_pieces_dc_disp {color: #8e44ad;}
+        #bs_low_s_dc, #bs_high_s_dc { color: #e67e22; }
+        #bs_mid_sweetness_dc { color: #f39c12; font-size: 1.1em; }
+        #ans_s_dc { color: #27ae60; font-size: 1.2em; }
+        #can_divide_result_dc { font-size: 1.1em; }
+
+        .candivide-bar-container-dc {
+            display: flex;
+            gap: 1px; 
+            padding: 10px;
+            border: 1px solid #795548; 
+            background-color: #efebe9; 
+            min-height: 60px;
+            align-items: stretch; 
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+        .chocolate-chunk-dc {
+            padding: 5px;
+            border-right: 1px solid #d7ccc8; 
+            background-color: #a1887f; 
+            color: white;
+            font-weight: bold; text-align: center;
+            display: flex; flex-direction: column; justify-content: center;
+            min-width: 30px; 
+            /* flex-grow: 1; */ /* Removed for more consistent chunk width unless desired */
+            transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+            position: relative; 
+        }
+        .chocolate-chunk-dc:last-child { border-right: none; }
+        .chocolate-chunk-dc.current-in-piece { background-color: #6d4c41 !important; transform: scale(1.05); } /* Darker brown */
+        .chocolate-chunk-dc.being-added { background-color: #FFCA28 !important; transform: scale(1.1); border: 2px solid #FFA000 !important; color: #333 !important;} 
+        
+        .cut-marker-dc {
+            width: 4px;
+            background-color: #e74c3c; 
+            align-self: stretch; 
+            margin: 0 1px; 
+            border-radius: 2px;
+            animation: cutAppearDC 0.3s ease-out;
+        }
+        @keyframes cutAppearDC { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+        .candivide-info div { margin: 3px 0; }
+        .candivide-info span { font-weight: bold; }
+
+
+        .log-container-dc { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; grid-column: 1 / -1;}
+        #log_output_dc { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Divide Chocolate Animation</h1>
+        <p style="text-align:center;">Maximize the minimum sweetness of any piece after K cuts.</p>
+
+        <div class="controls-dc">
+            <label for="sweetness_input_dc">Sweetness (comma-separated):</label>
+            <input type="text" id="sweetness_input_dc" value="1,2,3,4,5,6,7,8,9">
+            <label for="k_cuts_input_dc">K (cuts allowed):</label>
+            <input type="number" id="k_cuts_input_dc" value="5" min="0">
+            <button id="start_button_dc">Start/Reset</button>
+            <button id="next_step_button_dc" disabled>Next BS Step</button>
+        </div>
+
+        <div class="main-layout-dc">
+            <div class="config-panel-dc">
+                <h2>Inputs & Binary Search State</h2>
+                <div>Sweetness Array: <span id="sweetness_array_dc_disp">-</span></div>
+                <div>K (Cuts): <span id="k_cuts_dc_disp">-</span> (implies <span id="num_pieces_dc_disp">-</span> pieces)</div>
+                <hr>
+                <div>BS Range for Min Sweetness: [<span id="bs_low_s_dc">-</span>, <span id="bs_high_s_dc">-</span>]</div>
+                <div>Testing Min Sweetness per piece (midSweetness): <span id="bs_mid_sweetness_dc">-</span></div>
+                <hr>
+                <div>Maximized Min Sweetness (ans): <span id="ans_s_dc">-</span></div>
+            </div>
+
+            <div class="candivide-viz-panel-dc">
+                <h2>canDivide(sweetness, <span id="candivide_num_pieces_dc_disp">-</span> pieces, minSweetness=<span id="candivide_test_sweetness_dc_disp">-</span>)</h2>
+                <div class="candivide-info">
+                    <div>Current Piece Sum: <span id="candivide_current_sum_dc">-</span></div>
+                    <div>Pieces Formed: <span id="candivide_pieces_formed_dc">-</span></div>
+                </div>
+                <div id="candivide_bar_container_dc" class="candivide-bar-container-dc">
+                    <!-- Chocolate chunks for canDivide visualization -->
+                </div>
+                <div style="text-align:center; margin-top:10px;">canDivide Result: <strong id="can_divide_result_dc" style="font-size:1.2em;">-</strong></div>
+            </div>
+        </div>
+        
+        <div class="log-container-dc">
+            <h2>Log</h2>
+            <pre id="log_output_dc"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sweetnessInputEl = document.getElementById('sweetness_input_dc');
+        const kCutsInputEl = document.getElementById('k_cuts_input_dc');
+        const startButton = document.getElementById('start_button_dc');
+        const nextStepButton = document.getElementById('next_step_button_dc');
+
+        const sweetnessArrayDisp = document.getElementById('sweetness_array_dc_disp');
+        const kCutsDisp = document.getElementById('k_cuts_dc_disp');
+        const numPiecesDisp = document.getElementById('num_pieces_dc_disp');
+        const bsLowSDisp = document.getElementById('bs_low_s_dc');
+        const bsHighSDisp = document.getElementById('bs_high_s_dc');
+        const bsMidSweetnessDisp = document.getElementById('bs_mid_sweetness_dc');
+        const ansSDisp = document.getElementById('ans_s_dc');
+
+        const candivideNumPiecesDisp = document.getElementById('candivide_num_pieces_dc_disp');
+        const candivideTestSweetnessDisp = document.getElementById('candivide_test_sweetness_dc_disp');
+        const candivideCurrentSumDisp = document.getElementById('candivide_current_sum_dc');
+        const candividePiecesFormedDisp = document.getElementById('candivide_pieces_formed_dc');
+        const candivideBarContainer = document.getElementById('candivide_bar_container_dc');
+        const canDivideResultDisp = document.getElementById('can_divide_result_dc');
+        
+        const logOutput = document.getElementById('log_output_dc');
+
+        const ANIMATION_DELAY = 800;
+        const CHUNK_PROCESS_DELAY = 350;
+
+        let SWEETNESS_DC = [];
+        let K_CUTS_DC;
+        let NUM_PIECES_DC; 
+        let N_CHUNKS; 
+        
+        let bsLowS, bsHighS, bsMidSweetnessToTest, ansS;
+        
+        let simulationRunning = false;
+
+        function logDC(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearCanDivideHighlights() {
+            candivideBarContainer.querySelectorAll('.chocolate-chunk-dc').forEach(el => {
+                el.classList.remove('current-in-piece', 'being-added');
+            });
+        }
+
+        function renderInitialDisplays() {
+            sweetnessArrayDisp.textContent = `[${SWEETNESS_DC.join(', ')}]`;
+            kCutsDisp.textContent = K_CUTS_DC;
+            numPiecesDisp.textContent = NUM_PIECES_DC;
+
+            bsLowSDisp.textContent = bsLowS !== undefined ? bsLowS : '-';
+            bsHighSDisp.textContent = bsHighS !== undefined ? bsHighS : '-';
+            bsMidSweetnessDisp.textContent = '-';
+            ansSDisp.textContent = ansS !== undefined ? ansS : '-';
+
+            candivideNumPiecesDisp.textContent = NUM_PIECES_DC !== undefined ? NUM_PIECES_DC : '-';
+            candivideTestSweetnessDisp.textContent = '-';
+            candivideCurrentSumDisp.textContent = '0';
+            candividePiecesFormedDisp.textContent = '0';
+            candivideBarContainer.innerHTML = '';
+            canDivideResultDisp.textContent = '-';
+            canDivideResultDisp.style.color = 'inherit';
+        }
+        
+        async function animateCanDivide(testMinSweetness) {
+            if (!simulationRunning) return false; 
+            logDC(`  canDivide: Testing if can get ${NUM_PIECES_DC} pieces, each with min sweetness ${testMinSweetness}`);
+            candivideTestSweetnessDisp.textContent = testMinSweetness;
+            candivideBarContainer.innerHTML = ''; 
+            
+            const chunkDomElements = []; 
+            SWEETNESS_DC.forEach(val => {
+                const el = document.createElement('div');
+                el.classList.add('chocolate-chunk-dc');
+                el.textContent = val;
+                candivideBarContainer.appendChild(el);
+                chunkDomElements.push(el);
+            });
+
+            let localSubarraySum = 0;
+            let localPiecesFormed = 0; // Start at 0, increment when a piece is FORMED
+            candividePiecesFormedDisp.textContent = localPiecesFormed;
+            candivideCurrentSumDisp.textContent = localSubarraySum;
+            
+            let domElementsInCurrentPieceVisual = [];
+
+            for (let i = 0; i < N_CHUNKS; i++) {
+                if (!simulationRunning) return false; 
+                const currentChunkSweetness = SWEETNESS_DC[i];
+                const chunkEl = chunkDomElements[i]; 
+                
+                if (chunkEl) chunkEl.classList.add('being-added');
+                logDC(`    canDivide: Considering chunk ${i} (sweetness ${currentChunkSweetness})`);
+                await new Promise(r => setTimeout(r, CHUNK_PROCESS_DELAY));
+                if (!simulationRunning) return false;
+
+                localSubarraySum += currentChunkSweetness;
+                if (chunkEl) {
+                    chunkEl.classList.add('current-in-piece');
+                    domElementsInCurrentPieceVisual.push(chunkEl);
+                }
+                candivideCurrentSumDisp.textContent = localSubarraySum;
+                logDC(`      Added to current piece. Current piece sum = ${localSubarraySum}`);
+                
+                if (localSubarraySum >= testMinSweetness) {
+                    localPiecesFormed++;
+                    logDC(`      Piece sum ${localSubarraySum} >= ${testMinSweetness}. Piece ${localPiecesFormed} formed.`);
+                    candividePiecesFormedDisp.textContent = localPiecesFormed;
+                    
+                    domElementsInCurrentPieceVisual.forEach(el => el.classList.remove('current-in-piece'));
+                    elementsInCurrentPieceVisual = [];
+                    localSubarraySum = 0; 
+                    candivideCurrentSumDisp.textContent = localSubarraySum;
+
+                    if (i < N_CHUNKS - 1) { // Don't add cut after the very last chunk
+                        const cutMarker = document.createElement('div');
+                        cutMarker.classList.add('cut-marker-dc');
+                        if (chunkEl && chunkEl.nextSibling) {
+                            candivideBarContainer.insertBefore(cutMarker, chunkEl.nextSibling);
+                        } else if (chunkEl) { 
+                            candivideBarContainer.appendChild(cutMarker);
+                        }
+                         await new Promise(r => setTimeout(r, CHUNK_PROCESS_DELAY / 2)); 
+                    }
+                }
+                if (chunkEl) chunkEl.classList.remove('being-added');
+                await new Promise(r => setTimeout(r, CHUNK_PROCESS_DELAY / 2));
+                if (!simulationRunning) return false;
+            }
+            
+            // After iterating through all chunks, check if enough pieces were formed.
+            const canBeDivided = localPiecesFormed >= NUM_PIECES_DC;
+            canDivideResultDisp.textContent = canBeDivided ? "True" : "False";
+            canDivideResultDisp.style.color = canBeDivided ? "green" : "red";
+            logDC(`  canDivide: Finished. Pieces formed = ${localPiecesFormed}. Needed >= ${NUM_PIECES_DC}. Result: ${canBeDivided}`);
+            
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+            if (!simulationRunning) return false;
+            return canBeDivided;
+        }
+
+        function initializeAnimation() {
+            logDC("Initializing Divide Chocolate Animation...");
+            simulationRunning = false;
+            nextStepButton.disabled = true;
+
+            try {
+                SWEETNESS_DC = sweetnessInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+                K_CUTS_DC = parseInt(kCutsInputEl.value);
+                N_CHUNKS = SWEETNESS_DC.length;
+                NUM_PIECES_DC = K_CUTS_DC + 1;
+
+                if (N_CHUNKS === 0) throw new Error("Sweetness array cannot be empty.");
+                if (isNaN(K_CUTS_DC) || K_CUTS_DC < 0 ) throw new Error("K (cuts) must be non-negative.");
+                if (NUM_PIECES_DC > N_CHUNKS) throw new Error("Number of pieces (k+1) cannot be more than number of chunks.");
+
+            } catch (e) {
+                alert("Invalid input. Error: " + e.message); 
+                startButton.textContent = "Start/Reset";
+                return;
+            }
+            
+            bsLowS = 1; 
+            let sumOfSweetness = 0;
+            SWEETNESS_DC.forEach(s => {
+                sumOfSweetness += s;
+                if (s < bsLowS) bsLowS = s; // Smallest individual chunk could be the min sweetness
+            });
+            bsHighS = sumOfSweetness; 
+            
+            ansS = 0; 
+
+            renderInitialDisplays();
+            logOutput.innerHTML = ""; 
+            
+            startButton.textContent = "Reset";
+            simulationRunning = true; 
+
+            if (bsLowS <= bsHighS) {
+                 nextStepButton.disabled = false;
+                 logDC(`Initialized. Sweetness: [${SWEETNESS_DC.join(', ')}], K cuts: ${K_CUTS_DC} (${NUM_PIECES_DC} pieces).`);
+                 logDC(`BS Range for Min Sweetness: [${bsLowS}, ${bsHighS}]. Initial ans: ${ansS}.`);
+            } else {
+                logDC("Initialization error or trivial case (e.g. high < low).");
+                finalizeAnimationDC(); 
+            }
+        }
+        
+        async function finalizeAnimationDC() {
+            simulationRunning = false; 
+            nextStepButton.disabled = true;
+            startButton.textContent = "Start/Reset";
+            bsMidSweetnessDisp.textContent = ansS.toString(); 
+            
+            logDC(`--- Maximized Minimum Sweetness Found: ${ansS} ---`);
+            ansSDisp.textContent = ansS.toString();
+            
+            if (N_CHUNKS > 0 && ansS >= 0) { // ansS can be 0 if no pieces can be formed with min 1
+                candivideTestSweetnessDisp.textContent = ansS;
+                logDC("Final cutting for this sweetness:");
+                await animateCanDivide(ansS); 
+                if(canDivideResultDisp.textContent === "True" || (ansS === 0 && NUM_PIECES_DC <= N_CHUNKS) ){ 
+                     canDivideResultDisp.innerHTML = `Final optimal division with min sweetness <strong>${ansS}</strong> per piece.`;
+                     canDivideResultDisp.style.color = "blue";
+                } else { 
+                     canDivideResultDisp.innerHTML = `Final ans: <strong>${ansS}</strong>.`;
+                     canDivideResultDisp.style.color = "blue";
+                }
+            } else {
+                 candivideTestSweetnessDisp.textContent = ansS.toString();
+                 candivideArrayContainer.innerHTML = '(No chunks or ans is 0)';
+                 candivideCurrentSumDisp.textContent = '0';
+                 candividePiecesFormedDisp.textContent = '0';
+                 canDivideResultDisp.textContent = "N/A";
+            }
+        }
+
+        async function performNextStep() {
+            if (!simulationRunning) return;
+            nextStepButton.disabled = true;
+            clearCanDivideHighlights(); 
+            canDivideResultDisp.textContent = "-"; 
+            canDivideResultDisp.style.color = "inherit";
+
+            if (bsLowS > bsHighS) {
+                await finalizeAnimationDC();
+                return;
+            }
+
+            bsMidSweetnessToTest = bsLowS + Math.floor((bsHighS - bsLowS) / 2);
+            
+            bsLowSDisp.textContent = bsLowS;
+            bsHighSDisp.textContent = bsHighS;
+            bsMidSweetnessDisp.textContent = bsMidSweetnessToTest;
+            
+            logDC(`BS Step: lowS=${bsLowS}, highS=${bsHighS}. Testing midSweetness = ${bsMidSweetnessToTest}`);
+            
+            const canBeDivided = await animateCanDivide(bsMidSweetnessToTest);
+            if (!simulationRunning) return; 
+
+
+            if (canBeDivided) {
+                logDC(`  canDivide(${bsMidSweetnessToTest}) is TRUE. This min sweetness is possible. Try higher.`);
+                ansS = bsMidSweetnessToTest; 
+                bsLowS = bsMidSweetnessToTest + 1; 
+                ansSDisp.textContent = ansS;
+            } else {
+                logDC(`  canDivide(${bsMidSweetnessToTest}) is FALSE. This min sweetness is too high. Try lower.`);
+                bsHighS = bsMidSweetnessToTest - 1;
+            }
+
+            bsLowSDisp.textContent = bsLowS;
+            bsHighSDisp.textContent = bsHighS;
+
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            if (!simulationRunning) return;
+
+            if (bsLowS <= bsHighS) {
+                nextStepButton.disabled = false;
+            } else {
+                // The loop terminates, ansS holds the highest midSweetness for which canDivide was true
+                await finalizeAnimationDC();
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', performNextStep);
+        initializeAnimation(); 
+        
+    });
+    </script>
+</body>
+</html>

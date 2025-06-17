@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Minimum in Rotated Sorted Array II Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Find Minimum in Rotated Sorted Array II – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Find Minimum in Rotated Sorted Array II</b> problem involves finding the minimum element in a rotated sorted array that may contain duplicates. The goal is to solve this in <code>O(log N)</code> time in the best case, but it may degrade to <code>O(N)</code> in the presence of duplicates.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int findMin(int[] nums) {
+        int left = 0, right = nums.length - 1;
+
+        while (left &lt; right) {
+            int mid = left + (right - left) / 2;
+
+            if (nums[mid] &lt; nums[right]) {
+                right = mid; // Minimum is in the left half
+            } else if (nums[mid] &gt; nums[right]) {
+                left = mid + 1; // Minimum is in the right half
+            } else {
+                right--; // Handle duplicates by reducing the search space
+            }
+        }
+
+        return nums[left]; // Minimum element
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Best Case</b>: <code>O(log N)</code> – Halving the search space at each step.</li>
+      <li><b>Worst Case</b>: <code>O(N)</code> – When duplicates force a linear scan.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the minimum element in rotated sorted arrays with duplicates</li>
+      <li>Applications in searching and optimization problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-minimum-in-rotated-sorted-array-ii/" target="_blank" rel="noopener noreferrer">154. Find Minimum in Rotated Sorted Array II</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Binary Search</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Find Minimum in Rotated Sorted Array II</h2>
+    <pre><code>Input: nums = [2,2,2,0,1]
+Output: 0
+
+Explanation:
+- The minimum element in the array is 0.</code></pre>
+    <button onclick="window.location.href='../animations/find_minimum_in_rotated_sorted_array_ii_cheatsheet_animation.html'">▶️ View Animation</button>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use binary search to efficiently find the minimum element.</li>
+      <li>Handle duplicates by reducing the search space when <code>nums[mid] == nums[right]</code>.</li>
+      <li>Edge cases: arrays with all duplicates, single-element arrays, or no rotation.</li>
+    </ul>
+  </div>
+</body>
+</html>

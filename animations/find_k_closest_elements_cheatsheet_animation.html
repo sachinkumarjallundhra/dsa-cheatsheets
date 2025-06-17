@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find K Closest Elements (Binary Search on Start Index) Animation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .controls-fkcebs {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-fkcebs label { font-weight: bold; margin-right: 5px; }
+        .controls-fkcebs input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .controls-fkcebs input[type="text"] { width: 200px; }
+        .controls-fkcebs input[type="number"] { width: 60px; }
+        .controls-fkcebs button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-fkcebs button:hover { background-color: #2980b9; }
+        .controls-fkcebs button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .info-display-fkcebs { text-align: center; margin-bottom: 15px; font-size: 1.1em;}
+        .info-display-fkcebs span { font-weight: bold; color: #e67e22; }
+
+        .array-visualization-fkcebs { margin-top: 10px; position: relative; padding-bottom: 70px; }
+        .array-container-fkcebs {
+            display: flex; justify-content: center; align-items: flex-end; 
+            min-height: 60px; gap: 5px; position: relative;
+            border: 1px solid #ccc; padding: 10px; overflow-x: auto;
+        }
+        .search-space-indices-highlight-fkcebs { /* Highlights the range of possible STARTING indices */
+            position: absolute;
+            top: 50px; 
+            height: 10px; 
+            background-color: rgba(243, 156, 18, 0.2); /* Orangeish */
+            border-top: 2px solid rgba(243, 156, 18, 0.6);
+            border-bottom: 2px solid rgba(243, 156, 18, 0.6);
+            z-index: 0;
+            transition: left 0.5s ease, width 0.5s ease;
+            pointer-events: none;
+            display: none; 
+        }
+        .final-window-highlight-fkcebs { /* Highlights the final k-elements window */
+             position: absolute;
+            top: 0; bottom: 0; 
+            background-color: rgba(46, 204, 113, 0.15); 
+            border-left: 3px solid rgba(39, 174, 96, 0.6);
+            border-right: 3px solid rgba(39, 174, 96, 0.6);
+            z-index: 1; /* Above search-space-indices, below elements */
+            transition: left 0.5s ease, width 0.5s ease, opacity 0.3s ease;
+            pointer-events: none;
+            display: none; 
+        }
+
+
+        .array-element-fkcebs {
+            min-width: 40px; padding: 0 5px; 
+            height: 40px; border: 1px solid #bdc3c7; background-color: #ecf0f1;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 1em; border-radius: 4px;
+            transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+            position: relative; z-index: 2; 
+        }
+        .array-element-fkcebs .index-label-fkcebs {
+            position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+            font-size: 0.7em; color: #777;
+        }
+        .array-element-fkcebs.highlight-mid-val { background-color: #f9e79f !important; border-color: #f1c40f !important; transform: scale(1.1); }
+        .array-element-fkcebs.highlight-mid-k-val { background-color: #d2b4de !important; border-color: #8e44ad !important; transform: scale(1.1); }
+        .array-element-fkcebs.final-result-fkcebs {
+            background-color: #2ecc71 !important;
+            color: white;
+            border-color: #27ae60 !important;
+        }
+
+        .pointer-container-fkcebs {
+            position: absolute; bottom: 0px; left: 0; 
+            width: 100%; height: 50px; display: flex; align-items: center; 
+            padding-left: 10px; 
+            box-sizing: border-box;
+        }
+        .pointer-fkcebs {
+            position: absolute; bottom: 0; text-align: center; font-size: 0.9em; font-weight: bold;
+            width: auto; min-width: 35px; transition: left 0.5s ease;
+            padding-top: 5px; z-index: 5; transform: translateX(-50%);
+        }
+        .pointer-fkcebs .arrow-fkcebs { display: block; font-size: 1.4em; line-height: 0.8; }
+        #left-pointer-fkcebs { color: #27ae60; } 
+        #mid-bs-pointer-fkcebs { color: #f39c12; } 
+        #right-pointer-fkcebs { color: #c0392b; } 
+        
+        .comparison-area-fkcebs { text-align:center; margin-top:15px; min-height:2.5em; font-weight: bold;}
+        .results-display-fkcebs { margin-top: 15px; text-align: center; }
+        #final_results_fkcebs { font-size: 1.2em; color: #27ae60; font-weight: bold; }
+
+        .log-container-fkcebs { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        #log_output_fkcebs { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Find K Closest Elements (Binary Search on Start Index)</h1>
+
+        <div class="controls-fkcebs">
+            <label for="array_input_fkcebs">Array (sorted):</label>
+            <input type="text" id="array_input_fkcebs" value="1,2,3,4,5">
+            <label for="k_input_fkcebs">K:</label>
+            <input type="number" id="k_input_fkcebs" value="4" min="1">
+            <label for="x_input_fkcebs">X:</label>
+            <input type="number" id="x_input_fkcebs" value="3">
+            <button id="start_button_fkcebs">Start/Reset</button>
+            <button id="next_step_button_fkcebs" disabled>Next Step</button>
+        </div>
+
+        <div class="info-display-fkcebs">
+            K = <span id="k_val_fkcebs">-</span>, X = <span id="x_val_fkcebs">-</span>
+        </div>
+
+        <div class="array-visualization-fkcebs">
+            <div id="array_container_fkcebs" class="array-container-fkcebs">
+                <div id="search_space_indices_highlight_fkcebs" class="search-space-indices-highlight-fkcebs"></div>
+                <div id="final_window_highlight_fkcebs" class="final-window-highlight-fkcebs"></div>
+                <!-- Array elements will be rendered here -->
+            </div>
+            <div id="pointer_container_fkcebs" class="pointer-container-fkcebs">
+                <div id="left-pointer-fkcebs" class="pointer-fkcebs"><span class="arrow-fkcebs">▲</span>left</div>
+                <div id="mid-bs-pointer-fkcebs" class="pointer-fkcebs"><span class="arrow-fkcebs">▲</span>mid</div>
+                <div id="right-pointer-fkcebs" class="pointer-fkcebs"><span class="arrow-fkcebs">▲</span>right</div>
+            </div>
+        </div>
+        
+        <div id="comparison_area_fkcebs" class="comparison-area-fkcebs"></div>
+        <div class="results-display-fkcebs">
+            <h2>Result: <span id="final_results_fkcebs">-</span></h2>
+        </div>
+
+        <div class="log-container-fkcebs">
+            <h2>Log</h2>
+            <pre id="log_output_fkcebs"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const arrayInputEl = document.getElementById('array_input_fkcebs');
+        const kInputEl = document.getElementById('k_input_fkcebs');
+        const xInputEl = document.getElementById('x_input_fkcebs');
+        const startButton = document.getElementById('start_button_fkcebs');
+        const nextStepButton = document.getElementById('next_step_button_fkcebs');
+        
+        const kValDisplay = document.getElementById('k_val_fkcebs');
+        const xValDisplay = document.getElementById('x_val_fkcebs');
+        const arrayContainer = document.getElementById('array_container_fkcebs');
+        const searchSpaceIndicesHighlight = document.getElementById('search_space_indices_highlight_fkcebs');
+        const finalWindowHighlight = document.getElementById('final_window_highlight_fkcebs');
+        const pointerContainer = document.getElementById('pointer_container_fkcebs');
+        const leftPointerEl = document.getElementById('left-pointer-fkcebs'); 
+        const midPointerEl = document.getElementById('mid-bs-pointer-fkcebs'); 
+        const rightPointerEl = document.getElementById('right-pointer-fkcebs'); 
+        const comparisonArea = document.getElementById('comparison_area_fkcebs');
+        const finalResultsDisplay = document.getElementById('final_results_fkcebs');
+        const logOutput = document.getElementById('log_output_fkcebs');
+
+        const ANIMATION_DELAY = 1000; 
+
+        let arrFKCEBS = [];
+        let domElementsFKCEBS = [];
+        let kFKCEBS, xFKCEBS;
+        let leftBS, rightBS, midBS; 
+        let nFKCEBS;
+        let simulationRunning = false;
+
+        function logFKCEBS(message) {
+            logOutput.innerHTML += `> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearHighlightsFKCEBS() {
+            domElementsFKCEBS.forEach(el => el.classList.remove('highlight-mid-val', 'highlight-mid-k-val', 'final-result-fkcebs'));
+            comparisonArea.textContent = '';
+            finalWindowHighlight.style.display = 'none';
+        }
+
+        function renderArrayFKCEBS() {
+            arrayContainer.innerHTML = ''; 
+            arrayContainer.appendChild(searchSpaceIndicesHighlight); 
+            arrayContainer.appendChild(finalWindowHighlight);
+            domElementsFKCEBS = [];
+            arrFKCEBS.forEach((val, index) => {
+                const el = document.createElement('div');
+                el.classList.add('array-element-fkcebs');
+                el.id = `el-fkcebs-${index}`;
+                el.textContent = val;
+                const indexLabel = document.createElement('span');
+                indexLabel.classList.add('index-label-fkcebs');
+                indexLabel.textContent = index;
+                el.appendChild(indexLabel);
+                arrayContainer.insertBefore(el, searchSpaceIndicesHighlight); 
+                domElementsFKCEBS.push(el);
+            });
+            if (nFKCEBS > 0) updatePointerVisualsFKCEBS();
+            pointerContainer.style.width = `${arrayContainer.scrollWidth}px`;
+        }
+        
+        function updatePointerVisualsFKCEBS() {
+            if (nFKCEBS === 0 || domElementsFKCEBS.length === 0 ) {
+                leftPointerEl.style.display = 'none'; 
+                midPointerEl.style.display = 'none'; 
+                rightPointerEl.style.display = 'none';
+                searchSpaceIndicesHighlight.style.display = 'none';
+                return;
+            }
+        
+            const getCenterOffset = (index) => { 
+                if (index < 0 || index >= nFKCEBS || !domElementsFKCEBS[index]) {
+                     return -1000; 
+                }
+                return domElementsFKCEBS[index].offsetLeft + domElementsFKCEBS[index].offsetWidth / 2;
+            };
+        
+            if (leftBS >= 0 && leftBS < nFKCEBS && domElementsFKCEBS[leftBS]) { 
+                leftPointerEl.style.left = `${getCenterOffset(leftBS)}px`;
+                leftPointerEl.style.display = 'block';
+            } else { 
+                leftPointerEl.style.display = 'none'; 
+            }
+
+            if (midBS !== -1 && midBS >= 0 && midBS < nFKCEBS && domElementsFKCEBS[midBS]) { 
+                midPointerEl.style.left = `${getCenterOffset(midBS)}px`;
+                midPointerEl.style.display = 'block';
+            } else { 
+                midPointerEl.style.display = 'none';
+            }
+            
+            // rightBS points to a potential starting index, so arr[rightBS] must be valid
+            if (rightBS >= 0 && rightBS < nFKCEBS && domElementsFKCEBS[rightBS]) { 
+                rightPointerEl.style.left = `${getCenterOffset(rightBS)}px`;
+                rightPointerEl.style.display = 'block';
+            } else { 
+                rightPointerEl.style.display = 'none'; 
+            }
+            updateSearchSpaceIndicesHighlightFKCEBS();
+        }
+
+        function updateSearchSpaceIndicesHighlightFKCEBS() { 
+            if (leftBS > rightBS || leftBS < 0 || rightBS >= nFKCEBS || 
+                rightBS > nFKCEBS - kFKCEBS +1 || // Max start index is n-k
+                !domElementsFKCEBS[leftBS] || !domElementsFKCEBS[rightBS]) {
+                searchSpaceIndicesHighlight.style.display = 'none';
+                return;
+            }
+            searchSpaceIndicesHighlight.style.display = 'block';
+            const firstPossibleStartElement = domElementsFKCEBS[leftBS];
+            const lastPossibleStartElement = domElementsFKCEBS[rightBS]; 
+            
+            searchSpaceIndicesHighlight.style.left = `${firstPossibleStartElement.offsetLeft -1}px`;
+            searchSpaceIndicesHighlight.style.width = `${lastPossibleStartElement.offsetLeft + lastPossibleStartElement.offsetWidth - firstPossibleStartElement.offsetLeft + 2}px`;
+        }
+
+        function showFinalWindowHighlight(startIdx) {
+            if (startIdx < 0 || startIdx + kFKCEBS > nFKCEBS || !domElementsFKCEBS[startIdx] || !domElementsFKCEBS[startIdx + kFKCEBS - 1]) {
+                finalWindowHighlight.style.display = 'none';
+                return;
+            }
+            finalWindowHighlight.style.display = 'block';
+            const firstEl = domElementsFKCEBS[startIdx];
+            const lastEl = domElementsFKCEBS[startIdx + kFKCEBS - 1];
+            finalWindowHighlight.style.left = `${firstEl.offsetLeft -1}px`;
+            finalWindowHighlight.style.width = `${lastEl.offsetLeft + lastEl.offsetWidth - firstEl.offsetLeft + 2}px`;
+        }
+
+        function initializeSearchFKCEBS() {
+            logFKCEBS("Initializing K Closest Elements (BS on Start Index)...");
+            clearHighlightsFKCEBS(); 
+            try {
+                arrFKCEBS = arrayInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                arrFKCEBS.sort((a, b) => a - b); 
+                arrayInputEl.value = arrFKCEBS.join(','); 
+
+                kFKCEBS = parseInt(kInputEl.value);
+                xFKCEBS = parseInt(xInputEl.value);
+
+                if (isNaN(kFKCEBS) || kFKCEBS < 1) throw new Error("K must be at least 1.");
+                if (isNaN(xFKCEBS)) throw new Error("X must be a number.");
+                nFKCEBS = arrFKCEBS.length;
+                if (nFKCEBS === 0 && kFKCEBS > 0) {
+                     if (kFKCEBS > 0) throw new Error("Array is empty, but K is positive.");
+                } else if (kFKCEBS > nFKCEBS) {
+                     throw new Error("K cannot be greater than array length.");
+                }
+
+            } catch (e) {
+                alert("Invalid input. Error: " + e.message); return;
+            }
+            
+            kValDisplay.textContent = kFKCEBS;
+            xValDisplay.textContent = xFKCEBS;
+            simulationRunning = true;
+
+            if (nFKCEBS === 0 || kFKCEBS === 0) {
+                logFKCEBS(nFKCEBS === 0 ? "Empty array." : "K is 0, result is empty.");
+                renderArrayFKCEBS(); 
+                startButton.textContent = "Start/Reset";
+                nextStepButton.disabled = true;
+                comparisonArea.textContent = nFKCEBS === 0 ? "Empty array." : "K is 0.";
+                finalResultsDisplay.textContent = "[]";
+                updatePointerVisualsFKCEBS(); 
+                simulationRunning = false; 
+                return;
+            }
+            
+            leftBS = 0;
+            rightBS = nFKCEBS - kFKCEBS; 
+            midBS = -1; 
+
+            renderArrayFKCEBS(); 
+            
+            startButton.textContent = "Reset";
+            nextStepButton.disabled = false;
+            logFKCEBS(`Initialized. Array: [${arrFKCEBS.join(', ')}], K=${kFKCEBS}, X=${xFKCEBS}.`);
+            logFKCEBS(`Binary searching for start index in [${leftBS}...${rightBS}]`);
+            comparisonArea.textContent = "Ready to find optimal window start.";
+            finalResultsDisplay.textContent = "-";
+            updatePointerVisualsFKCEBS(); 
+        }
+
+        async function performNextStepFKCEBS() {
+            if (!simulationRunning) return;
+            nextStepButton.disabled = true;
+            clearHighlightsFKCEBS(); 
+
+            if (leftBS >= rightBS) { 
+                comparisonArea.textContent = `Binary Search for start index complete! Optimal window starts at index ${leftBS}.`;
+                logFKCEBS(`left (${leftBS}) == right (${rightBS}). Optimal start index found: ${leftBS}.`);
+                
+                const resultSlice = arrFKCEBS.slice(leftBS, leftBS + kFKCEBS);
+                finalResultsDisplay.textContent = `[${resultSlice.join(', ')}]`;
+                logFKCEBS(`Final K closest elements: [${resultSlice.join(', ')}]`);
+
+                showFinalWindowHighlight(leftBS); 
+                for (let i = leftBS; i < leftBS + kFKCEBS; i++) {
+                    if (domElementsFKCEBS[i]) domElementsFKCEBS[i].classList.add('final-result-fkcebs');
+                }
+                
+                midPointerEl.style.display = 'none'; 
+                if (domElementsFKCEBS[leftBS]) {
+                    leftPointerEl.style.left = `${domElementsFKCEBS[leftBS].offsetLeft + domElementsFKCEBS[leftBS].offsetWidth / 2}px`;
+                    leftPointerEl.innerHTML = '<span class="arrow-fkcebs">▲</span>start';
+                }
+                const endOfWindowIdx = leftBS + kFKCEBS - 1;
+                if (domElementsFKCEBS[endOfWindowIdx]) {
+                     rightPointerEl.style.left = `${domElementsFKCEBS[endOfWindowIdx].offsetLeft + domElementsFKCEBS[endOfWindowIdx].offsetWidth / 2}px`;
+                     rightPointerEl.innerHTML = '<span class="arrow-fkcebs">▲</span>end'; 
+                } else if (domElementsFKCEBS[nFKCEBS-1] && endOfWindowIdx >= nFKCEBS-1) { 
+                     rightPointerEl.style.left = `${domElementsFKCEBS[nFKCEBS-1].offsetLeft + domElementsFKCEBS[nFKCEBS-1].offsetWidth / 2}px`;
+                     rightPointerEl.innerHTML = '<span class="arrow-fkcebs">▲</span>end';
+                }
+
+
+                startButton.textContent = "Start/Reset";
+                simulationRunning = false;
+                return;
+            }
+            
+            midBS = leftBS + Math.floor((rightBS - leftBS) / 2);
+            updatePointerVisualsFKCEBS(); 
+            
+            logFKCEBS(`Loop: left=${leftBS}, right=${rightBS}. Mid (potential start idx) = ${midBS}.`);
+            comparisonArea.textContent = `Considering window starting at index ${midBS}.`;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+
+            const midValEl = domElementsFKCEBS[midBS];
+            let midKValEl = null;
+            const midKIndex = midBS + kFKCEBS;
+
+            if (midValEl) midValEl.classList.add('highlight-mid-val');
+            if (midKIndex < nFKCEBS && domElementsFKCEBS[midKIndex]) { // Check bounds for arr[mid+k]
+                midKValEl = domElementsFKCEBS[midKIndex];
+                midKValEl.classList.add('highlight-mid-k-val');
+            } else {
+                 logFKCEBS(`  arr[mid+k] (arr[${midKIndex}]) is out of bounds. Comparison point invalid.`);
+            }
+            
+            let decisionMade = false;
+            if (midKIndex >= nFKCEBS) { // If arr[mid+k] is out of bounds
+                logFKCEBS(`  arr[${midKIndex}] is out of bounds. This implies window starting at ${midBS} is one of the rightmost. Prefer this or move left. right = mid.`);
+                comparisonArea.innerHTML = `Comparing |X - arr[mid=${midBS}]| with |arr[mid+k=${midKIndex}] - X| <br>
+                                            |${xFKCEBS} - ${arrFKCEBS[midBS]}| vs (arr[${midKIndex}] is out of bounds)<br>
+                                            Decision: Optimal start could be ${midBS} or earlier. right = ${midBS}`;
+                rightBS = midBS;
+                decisionMade = true;
+            } else {
+                const diff1 = xFKCEBS - arrFKCEBS[midBS];
+                const diff2 = arrFKCEBS[midKIndex] - xFKCEBS;
+
+                comparisonArea.innerHTML = `Comparing |X - arr[mid=${midBS}]| with |arr[mid+k=${midKIndex}] - X| <br>
+                                            |${xFKCEBS} - ${arrFKCEBS[midBS]}| vs |${arrFKCEBS[midKIndex]} - ${xFKCEBS}| <br>
+                                            (${Math.abs(diff1)}) vs (${Math.abs(diff2)})`; // Show absolute for user clarity
+                logFKCEBS(`  Comparing (x - arr[${midBS}])=${diff1} with (arr[${midKIndex}] - x)=${diff2}`);
+                
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                
+                if (diff1 > diff2) { 
+                    logFKCEBS(`    ${diff1} > ${diff2}. Window starting at ${midBS} is too far left. left = mid + 1.`);
+                    comparisonArea.innerHTML += `<br>Decision: Move search for start index right. left = ${midBS + 1}`;
+                    leftBS = midBS + 1;
+                } else {
+                    logFKCEBS(`    ${diff1} <= ${diff2}. Window starting at ${midBS} is potentially optimal or too far right. right = mid.`);
+                    comparisonArea.innerHTML += `<br>Decision: Optimal start could be ${midBS} or earlier. right = ${midBS}`;
+                    rightBS = midBS;
+                }
+                decisionMade = true;
+            }
+            
+            // midBS value is for the just processed step, don't reset to -1 until next calculation if needed
+            
+            updatePointerVisualsFKCEBS(); 
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+
+            if (simulationRunning) { 
+                 nextStepButton.disabled = false;
+            }
+        }
+
+        startButton.addEventListener('click', initializeSearchFKCEBS);
+        nextStepButton.addEventListener('click', performNextStepFKCEBS);
+        initializeSearchFKCEBS(); 
+        
+        window.addEventListener('resize', () => {
+            if (simulationRunning && domElementsFKCEBS && domElementsFKCEBS.length > 0) {
+                 pointerContainer.style.width = `${arrayContainer.scrollWidth}px`;
+                 updatePointerVisualsFKCEBS();
+                 updateSearchSpaceIndicesHighlightFKCEBS(); 
+            }
+        });
+    });
+    </script>
+</body>
+</html>
