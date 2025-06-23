@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Tile Possibilities Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-tile-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-tile-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-tile-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 180px; }
+        .controls-tile-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-tile-p5 button:hover { background-color: #0056b3; }
+        .controls-tile-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-tile-p5 { display: grid; grid-template-columns: minmax(320px, 1.2fr) 2fr; gap: 15px; }
+        .left-panel-tile-p5, .right-panel-tile-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .config-panel-tile-p5, .results-panel-tile-p5, .recursion-tree-container-p5 {
+            padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .config-panel-tile-p5 > div { margin-bottom: 6px; font-size: 0.9em; }
+        .display-area-tile-p5 { padding: 5px; border: 1px dashed #ccc; min-height: 28px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 4px; }
+        .element-tile-p5, .used-flag-tile-p5 { padding: 3px 6px; border-radius: 3px; font-size: 0.85em; text-align: center; border: 1px solid #bdc3c7; background-color: #e9ecef; transition: all 0.3s ease; font-family: 'Courier New', Courier, monospace; }
+        
+        .tiles-array-tile-p5 .element-tile-p5.highlight-current-eval { background-color: #ffc107 !important; border-color: #ffaa00 !important; transform: scale(1.1); }
+        
+        .used-array-tile-p5 .used-flag-tile-p5 { min-width: 28px; font-size:0.7em; }
+        .used-array-tile-p5 .used-flag-tile-p5.true { background-color: #dc3545; color: white; } 
+        .used-array-tile-p5 .used-flag-tile-p5.false { background-color: #28a745; color: white; } 
+        .used-array-tile-p5 .used-flag-tile-p5.highlight-check { transform: scale(1.2); border-color: #f39c12 !important; }
+
+        .current-path-tile-p5 .element-tile-p5 { background-color: #cfe2ff; border-color: #b6d4fe; }
+
+        .results-panel-tile-p5 h2 { margin-bottom: 8px; }
+        .result-list-container-tile-p5 { max-height: 280px; overflow-y: auto; border: 1px dashed #a9dfbf; padding: 5px; }
+        .result-item-tile-p5 { display: inline-block; padding: 4px 8px; margin: 2px; border: 1px solid #a9dfbf; background-color: #e6f9f0; border-radius: 4px; animation: fadeInResultTile-p5 0.5s ease-out; font-family: 'Courier New', Courier, monospace; }
+
+        #current_action_tile_display_p5 { text-align:center; margin:8px 0; font-weight:bold; min-height:1.1em; font-size:0.9em; transition: color 0.3s; }
+        #current_action_tile_display_p5.choose { color: #28a745; }
+        #current_action_tile_display_p5.skip { color: #fd7e14; }
+        #current_action_tile_display_p5.backtrack { color: #dc3545; }
+        #current_action_tile_display_p5.info { color: #0d6efd; }
+        #current_action_tile_display_p5.return { color: #6c757d; }
+        
+        .recursion-tree-container-p5 { min-height: 450px; overflow: auto; position: relative; background-color: #f0f2f5; }
+        #p5_canvas_target_div_tile { width:100%; height:100%; min-height: 430px; display: flex; justify-content: center; align-items: flex-start; }
+
+        .log-container-tile-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_tile_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes fadeInResultTile-p5 { from { opacity:0; transform: translateY(10px)} to { opacity:1; transform: translateY(0)} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Letter Tile Possibilities Animation</h1>
+
+        <div class="controls-tile-p5">
+            <label for="tiles_input_tile_p5">Tiles:</label>
+            <input type="text" id="tiles_input_tile_p5" value="AAB" maxlength="7">
+            <button id="start_button_tile_p5">Start/Reset</button>
+            <button id="next_step_button_tile_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-tile-p5">
+            <div class="left-panel-tile-p5">
+                <div class="config-panel-tile-p5">
+                    <h2>Input & Current State</h2>
+                    <div>Input Tiles (Sorted): <div id="tiles_array_tile_p5" class="display-area-tile-p5 tiles-array-tile-p5"></div></div>
+                    <div>Used Flags: <div id="used_array_tile_p5" class="display-area-tile-p5 used-array-tile-p5"></div></div>
+                    <div>Current Path: <div id="current_path_tile_p5" class="display-area-tile-p5 current-path-tile-p5"></div></div>
+                    <div id="current_action_tile_display_p5" class="info"></div>
+                </div>
+                <div class="results-panel-tile-p5">
+                    <h2>Result Possibilities</h2>
+                    <div id="result_list_container_tile_p5" class="result-list-container-tile-p5"></div>
+                </div>
+            </div>
+            <div class="right-panel-tile-p5">
+                 <div class="recursion-tree-container-p5">
+                    <h2>Recursion Call Tree</h2>
+                    <div id="p5_canvas_target_div_tile"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-tile-p5">
+            <h2>Log (Detailed Steps)</h2>
+            <pre id="log_output_tile_p5"></pre>
+        </div>
+    </div>
+
+<script>
+let p5Instance; 
+
+// --- STATE VARIABLES ---
+let INPUT_TILES = [];
+let USED_FLAGS = [];
+let resultPossibilities = new Set();
+let currentPath = [];
+let callStack = []; 
+let currentPhase = 'idle';
+let uniqueNodeIdCounter = 0;
+let treeNodes = {}; 
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let tilesInputEl, startButton, nextStepButton, tilesArrayDisplay, usedArrayDisplay,
+    currentPathDisplay, currentActionDisplay, resultListContainer, logOutput;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 500; 
+const TREE_NODE_WIDTH = 120;  
+const TREE_NODE_HEIGHT = 50; 
+const TREE_LEVEL_SEP = 100;
+const TREE_SIBLING_SEP = 20;
+
+// --- HELPER FUNCTIONS ---
+function log(message, indent = 0) {
+    const indentation = '  '.repeat(indent);
+    if(logOutput) logOutput.innerHTML += `${indentation}> ${message}\n`;
+    if(logOutput) logOutput.scrollTop = logOutput.scrollHeight;
+}
+
+function clearHighlights() {
+    if(tilesArrayDisplay) tilesArrayDisplay.querySelectorAll('.element-tile-p5.highlight-current-eval').forEach(el => el.classList.remove('highlight-current-eval'));
+    if(usedArrayDisplay) usedArrayDisplay.querySelectorAll('.used-flag-tile-p5.highlight-check').forEach(el => el.classList.remove('highlight-check'));
+}
+
+function renderTilesAndUsed() {
+    if(!tilesArrayDisplay || !usedArrayDisplay) return;
+    tilesArrayDisplay.innerHTML = ''; usedArrayDisplay.innerHTML = '';
+    INPUT_TILES.forEach((val, index) => {
+        const el = document.createElement('div'); el.classList.add('element-tile-p5'); el.id = `tile-el-p5-${index}`; el.textContent = val;
+        tilesArrayDisplay.appendChild(el);
+        const usedEl = document.createElement('div'); usedEl.classList.add('used-flag-tile-p5'); usedEl.id = `used-el-p5-${index}`;
+        usedEl.textContent = USED_FLAGS[index] ? 'T' : 'F'; usedEl.classList.toggle('true', USED_FLAGS[index]); usedEl.classList.toggle('false', !USED_FLAGS[index]);
+        usedArrayDisplay.appendChild(usedEl);
+    });
+}
+function renderCurrentPath() {
+    if(!currentPathDisplay) return;
+    currentPathDisplay.innerHTML = '';
+    currentPath.forEach(val => {
+        const el = document.createElement('div'); el.classList.add('element-tile-p5'); el.textContent = val;
+        currentPathDisplay.appendChild(el);
+    });
+}
+function renderResults() {
+    if(!resultListContainer) return;
+    resultListContainer.innerHTML = '';
+    const sortedResults = Array.from(resultPossibilities).sort((a,b) => a.length - b.length || a.localeCompare(b));
+    sortedResults.forEach(res => {
+        const resDiv = document.createElement('div'); resDiv.classList.add('result-item-tile-p5');
+        resDiv.textContent = `"${res}"`;
+        resultListContainer.appendChild(resDiv);
+    });
+}
+async function flashNewResult(resultString) {
+    renderResults();
+    // A more complex flash could be implemented here if needed
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+}
+
+// --- P5.JS SKETCH DEFINITION ---
+const p5_sketch_definition = (p) => {
+    function postOrderLayout(nodeId, depth, nextX) {
+        const node = treeNodes[nodeId];
+        node.y = depth * TREE_LEVEL_SEP;
+        if (!node.children || node.children.length === 0) {
+            node.x = nextX; return nextX + TREE_NODE_WIDTH + TREE_SIBLING_SEP;
+        }
+        let currentX = nextX;
+        for (const childId of node.children) {
+            currentX = postOrderLayout(childId, depth + 1, currentX);
+        }
+        const firstChild = treeNodes[node.children[0]];
+        const lastChild = treeNodes[node.children[node.children.length - 1]];
+        node.x = (firstChild.x + lastChild.x) / 2;
+        return currentX;
+    }
+
+    p.setup = () => {
+        const container = document.getElementById('p5_canvas_target_div_tile');
+        p.createCanvas(container.clientWidth || 800, container.clientHeight || 450).parent('p5_canvas_target_div_tile');
+        p.textAlign(p.CENTER, p.CENTER); p.textSize(10); p.noLoop();
+    };
+
+    p.draw = () => {
+        p.background(240, 242, 245); 
+        const rootNodeId = 'node-0';
+        if (!treeNodes[rootNodeId]) return;
+        postOrderLayout(rootNodeId, 0, 0);
+        
+        const allNodes = Object.values(treeNodes);
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        allNodes.forEach(node => {
+            if (node.x !== undefined) { minX = Math.min(minX, node.x); maxX = Math.max(maxX, node.x); }
+            if (node.y !== undefined) { minY = Math.min(minY, node.y); maxY = Math.max(maxY, node.y); }
+        });
+
+        const padding = 60;
+        const requiredWidth = Math.max(p.width, (maxX - minX) + 2 * padding + TREE_NODE_WIDTH);
+        const requiredHeight = Math.max(p.height, (maxY - minY) + 2 * padding + TREE_NODE_HEIGHT);
+        if (Math.abs(p.width - requiredWidth) > 10 || Math.abs(p.height - requiredHeight) > 10) p.resizeCanvas(requiredWidth, requiredHeight);
+        
+        const offsetX = (p.width / 2) - (minX + (maxX - minX) / 2);
+        const offsetY = padding;
+
+        allNodes.forEach(node => {
+            if (node.parentId && treeNodes[node.parentId]) {
+                const parent = treeNodes[node.parentId];
+                if (parent.x !== undefined && node.x !== undefined) {
+                    p.stroke(180); p.strokeWeight(1.5);
+                    p.line(parent.x + offsetX, parent.y + offsetY, node.x + offsetX, node.y + offsetY);
+                }
+            }
+        });
+        allNodes.forEach(node => {
+            if (node.x === undefined) return;
+            p.strokeWeight(1.5); p.stroke(108, 117, 125);
+            let isActive = callStack.length > 0 && node.nodeId === callStack[callStack.length - 1].nodeId && simulationRunning && !node.isReturning;
+            if (node.isReturning) p.fill(222, 226, 230, 200); 
+            else if (isActive) { p.fill(255, 243, 205); p.stroke(255, 193, 7); p.strokeWeight(2.5); }
+            else p.fill(255);
+            p.rectMode(p.CENTER);
+            p.rect(node.x + offsetX, node.y + offsetY, TREE_NODE_WIDTH, TREE_NODE_HEIGHT, 5);
+            p.fill(30); p.noStroke(); p.textAlign(p.CENTER, p.CENTER); p.textSize(9.5);
+            const pathText = `Path: "${node.pathAtCall.join('')}"`;
+            const callText = `solve(i=${node.loopIterator ?? ''})`;
+            p.text(`${callText}\n${pathText}`, node.x + offsetX, node.y + offsetY, TREE_NODE_WIDTH - 4, TREE_NODE_HEIGHT - 4);
+        });
+    };
+    p.customRedraw = () => { if(p && typeof p.redraw === 'function' && p.width) p.redraw(); };
+};
+
+// --- CORE LOGIC FUNCTIONS ---
+function updateButtonState() {
+    if (!nextStepButton || !startButton) return; 
+    nextStepButton.disabled = !(simulationRunning && currentPhase !== 'done');
+    if (currentPhase === 'done') {
+        startButton.textContent = "Reset";
+        if(currentActionDisplay) {
+            currentActionDisplay.textContent = "All possibilities generated!";
+            currentActionDisplay.className = 'info';
+        }
+    }
+}
+
+function initializeAnimation() {
+    log("Initializing...");
+    simulationRunning = false; 
+    clearHighlights(); 
+    INPUT_TILES = tilesInputEl.value.toUpperCase().split('').sort();
+    tilesInputEl.value = INPUT_TILES.join('');
+
+    USED_FLAGS = new Array(INPUT_TILES.length).fill(false);
+    resultPossibilities.clear(); currentPath = []; callStack = []; 
+    uniqueNodeIdCounter = 0; treeNodes = {}; 
+
+    renderTilesAndUsed(); renderCurrentPath(); renderResults();
+    logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+    
+    const rootNodeId = `node-${uniqueNodeIdCounter++}`;
+    treeNodes[rootNodeId] = { 
+        nodeId: rootNodeId, parentId: null, children: [],
+        pathAtCall: [], loopIterator: -1, isReturning: false
+    };
+    callStack.push({ nodeId: rootNodeId, loopIterator: -1, phase: 'enter' });
+
+    currentPhase = 'running'; 
+    simulationRunning = true; 
+    log(`Initialized. Tiles: [${INPUT_TILES.join(', ')}]. Start recursion.`);
+    currentActionDisplay.textContent = "Ready to generate possibilities.";
+    currentActionDisplay.className = 'info';
+    
+    if (p5Instance) p5Instance.customRedraw();
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || callStack.length === 0) {
+        currentPhase = 'done'; updateButtonState(); return;
+    }
+    
+    nextStepButton.disabled = true; clearHighlights();
+    
+    let frame = callStack[callStack.length - 1];
+    let node = treeNodes[frame.nodeId];
+    const indent = callStack.length - 1;
+
+    if (frame.phase === 'enter') {
+        log(`Depth ${indent}: solve(path="${currentPath.join('')}")`, indent);
+        if (currentPath.length > 0) {
+            const currentResult = currentPath.join('');
+            if (!resultPossibilities.has(currentResult)) {
+                log(`  New possibility found: "${currentResult}"`, indent);
+                currentActionDisplay.textContent = `Found new result: "${currentResult}"`;
+                currentActionDisplay.className = 'info';
+                resultPossibilities.add(currentResult);
+                await flashNewResult(currentResult);
+            }
+        }
+        log(`  Starting loop i=0 to ${INPUT_TILES.length - 1}`, indent);
+        frame.phase = 'loop';
+
+    } else if (frame.phase === 'loop') {
+        frame.loopIterator++;
+        node.loopIterator = frame.loopIterator;
+        const i = frame.loopIterator;
+
+        if (i >= INPUT_TILES.length) {
+            frame.phase = 'return';
+            await performNextStep(); return;
+        }
+        
+        document.getElementById(`tile-el-p5-${i}`)?.classList.add('highlight-current-eval');
+        document.getElementById(`used-el-p5-${i}`)?.classList.add('highlight-check');
+        
+        currentActionDisplay.textContent = `Loop i=${i}. Check tile '${INPUT_TILES[i]}'.`;
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+        if (USED_FLAGS[i]) {
+            log(`  i=${i}: Tile '${INPUT_TILES[i]}' is already used. Skip.`, indent);
+            currentActionDisplay.textContent = `Tile '${INPUT_TILES[i]}' used. Skip.`;
+            currentActionDisplay.className = 'skip';
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY/2));
+            // Stays in 'loop' phase for next iteration
+        } else if (i > 0 && INPUT_TILES[i] === INPUT_TILES[i-1] && !USED_FLAGS[i-1]) {
+            log(`  i=${i}: Tile '${INPUT_TILES[i]}' is a duplicate and previous was not used. Pruning.`, indent);
+            currentActionDisplay.textContent = `Duplicate '${INPUT_TILES[i]}'. Pruning branch.`;
+            currentActionDisplay.className = 'skip';
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY/2));
+            // Stays in 'loop' phase for next iteration
+        } else {
+            frame.phase = 'choose';
+        }
+    
+    } else if (frame.phase === 'choose') {
+        const i = frame.loopIterator;
+        log(`  i=${i}: Choose tile '${INPUT_TILES[i]}'.`, indent);
+        currentActionDisplay.textContent = `Choose '${INPUT_TILES[i]}'`;
+        currentActionDisplay.className = 'choose';
+        
+        USED_FLAGS[i] = true;
+        currentPath.push(INPUT_TILES[i]);
+        renderTilesAndUsed(); renderCurrentPath();
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY/2));
+
+        // Recurse
+        frame.phase = 'backtrack'; // Parent waits to backtrack
+        const childNodeId = `node-${uniqueNodeIdCounter++}`;
+        treeNodes[childNodeId] = {
+            nodeId: childNodeId, parentId: frame.nodeId, children: [],
+            pathAtCall: [...currentPath], loopIterator: -1, isReturning: false
+        };
+        node.children.push(childNodeId);
+        callStack.push({ nodeId: childNodeId, loopIterator: -1, phase: 'enter' });
+
+    } else if (frame.phase === 'backtrack') {
+        const i = frame.loopIterator;
+        const tile = INPUT_TILES[i];
+        log(`  i=${i}: Backtrack from '${tile}'.`, indent);
+        currentActionDisplay.textContent = `Backtrack from '${tile}'`;
+        currentActionDisplay.className = 'backtrack';
+
+        USED_FLAGS[i] = false;
+        currentPath.pop();
+        renderTilesAndUsed(); renderCurrentPath();
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+        
+        frame.phase = 'loop'; // Continue loop
+
+    } else if (frame.phase === 'return') {
+        log(`Depth ${indent}: Loop finished. Return.`, indent);
+        currentActionDisplay.textContent = `Return from call`;
+        currentActionDisplay.className = 'return';
+        node.isReturning = true;
+        callStack.pop();
+    }
+    
+    if (p5Instance) p5Instance.customRedraw();
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    tilesInputEl = document.getElementById('tiles_input_tile_p5');
+    startButton = document.getElementById('start_button_tile_p5');
+    nextStepButton = document.getElementById('next_step_button_tile_p5');
+    tilesArrayDisplay = document.getElementById('tiles_array_tile_p5');
+    usedArrayDisplay = document.getElementById('used_array_tile_p5');
+    currentPathDisplay = document.getElementById('current_path_tile_p5');
+    currentActionDisplay = document.getElementById('current_action_tile_display_p5');
+    resultListContainer = document.getElementById('result_list_container_tile_p5');
+    logOutput = document.getElementById('log_output_tile_p5');
+
+    p5Instance = new p5(p5_sketch_definition);
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    initializeAnimation(); 
+    
+    window.addEventListener('resize', () => {
+        if (p5Instance && p5Instance.width) {
+            const container = document.getElementById('p5_canvas_target_div_tile');
+            p5Instance.resizeCanvas(container.clientWidth || 800, container.clientHeight);
+            p5Instance.customRedraw();
+        }
+    });
+});
+</script>
+</body>
+</html>

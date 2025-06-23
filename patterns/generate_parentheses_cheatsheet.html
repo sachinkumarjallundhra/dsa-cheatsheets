@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate Parentheses Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Generate Parentheses – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Generate Parentheses</b> problem involves generating all combinations of well-formed parentheses for a given number <code>n</code>.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Recursive Backtracking</h3>
+    <pre><code>class Solution {
+    public List&lt;String&gt; generateParenthesis(int n) {
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        backtrack(result, new StringBuilder(), 0, 0, n);
+        return result;
+    }
+
+    private void backtrack(List&lt;String&gt; result, StringBuilder current, int open, int close, int max) {
+        if (current.length() == max * 2) {
+            result.add(current.toString());
+            return;
+        }
+
+        if (open < max) {
+            current.append("(");
+            backtrack(result, current, open + 1, close, max);
+            current.deleteCharAt(current.length() - 1); // Backtrack
+        }
+        if (close < open) {
+            current.append(")");
+            backtrack(result, current, open, close + 1, max);
+            current.deleteCharAt(current.length() - 1); // Backtrack
+        }
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/generate_parentheses_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(4^n / √n)</code>, where <code>n</code> is the number of pairs of parentheses. This is the Catalan number complexity.</li>
+      <li><b>Space Complexity:</b> <code>O(n)</code>, for the recursion stack.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Generating all valid combinations of parentheses.</li>
+      <li>Exploring all combinations of balanced strings.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/generate-parentheses/" target="_blank" rel="noopener noreferrer">22. Generate Parentheses</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: n = 3
+Output: ["((()))", "(()())", "(())()", "()(())", "()()()"]
+
+Explanation:
+- For n = 3, generate all valid combinations of 3 pairs of parentheses.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use two counters (<code>open</code> and <code>close</code>) to track the number of open and close parentheses used so far.</li>
+      <li>Only add an open parenthesis if <code>open &lt; max</code>.</li>
+      <li>Only add a close parenthesis if <code>close &lt; open</code>.</li>
+      <li>Use backtracking to explore all valid combinations efficiently.</li>
+    </ul>
+  </div>
+</body>
+</html>

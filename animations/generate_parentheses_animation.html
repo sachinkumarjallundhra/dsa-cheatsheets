@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Parentheses Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-paren-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-paren-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-paren-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
+        .controls-paren-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-paren-p5 button:hover { background-color: #0056b3; }
+        .controls-paren-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-paren-p5 { display: grid; grid-template-columns: minmax(320px, 1.2fr) 2fr; gap: 15px; }
+        .left-panel-paren-p5, .right-panel-paren-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .config-panel-paren-p5, .results-panel-paren-p5, .recursion-tree-container-p5 {
+            padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .config-panel-paren-p5 > div { margin-bottom: 8px; font-size: 0.9em; }
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
+        .state-item-p5 { padding: 5px; text-align: center; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; }
+        .state-item-p5 .label { font-size: 0.8em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.2em; font-weight: bold; color: #343a40; }
+        
+        .string-display-paren-p5 { padding: 5px; border: 1px dashed #ccc; min-height: 28px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 4px; font-family: 'Courier New', Courier, monospace; font-size: 1.1em; font-weight: bold; color: #1967d2; }
+
+        .results-panel-paren-p5 h2 { margin-bottom: 8px; }
+        .result-list-container-paren-p5 { max-height: 280px; overflow-y: auto; border: 1px dashed #a9dfbf; padding: 5px; }
+        .result-item-paren-p5 { display: inline-block; padding: 4px 8px; margin: 2px; border: 1px solid #a9dfbf; background-color: #e6f9f0; border-radius: 4px; animation: fadeInResultParen-p5 0.5s ease-out; font-family: 'Courier New', Courier, monospace; }
+
+        #current_action_paren_display_p5 { text-align:center; margin:8px 0; font-weight:bold; min-height:1.1em; font-size:0.9em; transition: color 0.3s; }
+        #current_action_paren_display_p5.yes { color: #28a745; }
+        #current_action_paren_display_p5.no { color: #dc3545; }
+        #current_action_paren_display_p5.info { color: #0d6efd; }
+        #current_action_paren_display_p5.return { color: #6c757d; }
+        
+        .recursion-tree-container-p5 { min-height: 450px; overflow: auto; position: relative; background-color: #f0f2f5; }
+        #p5_canvas_target_div_paren { width:100%; height:100%; min-height: 430px; display: flex; justify-content: center; align-items: flex-start; }
+
+        .log-container-paren-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_paren_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes fadeInResultParen-p5 { from { opacity:0; transform: translateY(10px)} to { opacity:1; transform: translateY(0)} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generate Parentheses Animation</h1>
+
+        <div class="controls-paren-p5">
+            <label for="n_input_paren_p5">N (pairs):</label>
+            <input type="number" id="n_input_paren_p5" value="3" min="1" max="4">
+            <button id="start_button_paren_p5">Start/Reset</button>
+            <button id="next_step_button_paren_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-paren-p5">
+            <div class="left-panel-paren-p5">
+                <div class="config-panel-paren-p5">
+                    <h2>Current State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Target (N)</div><div id="n_display_p5" class="value">3</div></div>
+                        <div class="state-item-p5"><div class="label">Path Length</div><div id="len_display_p5" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">Open Count</div><div id="open_display_p5" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">Close Count</div><div id="close_display_p5" class="value">0</div></div>
+                    </div>
+                    <div>Current String: <div id="current_string_paren_p5" class="string-display-paren-p5">""</div></div>
+                    <div id="current_action_paren_display_p5" class="info"></div>
+                </div>
+                <div class="results-panel-paren-p5">
+                    <h2>Result Combinations</h2>
+                    <div id="result_list_container_paren_p5" class="result-list-container-paren-p5"></div>
+                </div>
+            </div>
+            <div class="right-panel-paren-p5">
+                 <div class="recursion-tree-container-p5">
+                    <h2>Recursion Call Tree</h2>
+                    <div id="p5_canvas_target_div_paren"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-paren-p5">
+            <h2>Log (Detailed Steps)</h2>
+            <pre id="log_output_paren_p5"></pre>
+        </div>
+    </div>
+
+<script>
+let p5Instance; 
+
+// --- STATE VARIABLES ---
+let N_PAIRS;
+let resultCombinations = [];
+let currentString = "";
+let callStack = []; 
+let currentPhase = 'idle';
+let uniqueNodeIdCounter = 0;
+let treeNodes = {}; 
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let nInputEl, startButton, nextStepButton, nDisplay, lenDisplay, openDisplay, closeDisplay,
+    currentStringDisplay, currentActionDisplay, resultListContainer, logOutput;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 500; 
+const TREE_NODE_WIDTH = 120;  
+const TREE_NODE_HEIGHT = 50; 
+const TREE_LEVEL_SEP = 100;
+const TREE_SIBLING_SEP = 20;
+
+// --- HELPER FUNCTIONS ---
+function log(message, indent = 0) {
+    const indentation = '  '.repeat(indent);
+    if(logOutput) logOutput.innerHTML += `${indentation}> ${message}\n`;
+    if(logOutput) logOutput.scrollTop = logOutput.scrollHeight;
+}
+
+function updateStateDisplay(openCount, closeCount) {
+    nDisplay.textContent = N_PAIRS;
+    openDisplay.textContent = openCount;
+    closeDisplay.textContent = closeCount;
+    lenDisplay.textContent = openCount + closeCount;
+    currentStringDisplay.textContent = `"${currentString}"`;
+}
+
+async function addCurrentToResultVisual() {
+    if(!resultListContainer) return;
+    const resultDiv = document.createElement('div');
+    resultDiv.classList.add('result-item-paren-p5');
+    resultDiv.textContent = `"${currentString}"`;
+    resultListContainer.appendChild(resultDiv);
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+}
+
+// --- P5.JS SKETCH DEFINITION ---
+const p5_sketch_definition = (p) => {
+    function postOrderLayout(nodeId, depth, nextX) {
+        const node = treeNodes[nodeId];
+        node.y = depth * TREE_LEVEL_SEP;
+
+        if (!node.children || node.children.length === 0) {
+            node.x = nextX;
+            return nextX + TREE_NODE_WIDTH + TREE_SIBLING_SEP;
+        }
+        
+        let currentX = nextX;
+        for (const childId of node.children) {
+            currentX = postOrderLayout(childId, depth + 1, currentX);
+        }
+
+        const firstChild = treeNodes[node.children[0]];
+        const lastChild = treeNodes[node.children[node.children.length - 1]];
+        node.x = (firstChild.x + lastChild.x) / 2;
+        return currentX;
+    }
+
+    p.setup = () => {
+        const container = document.getElementById('p5_canvas_target_div_paren');
+        const canvas = p.createCanvas(container.clientWidth || 800, container.clientHeight || 450);
+        canvas.parent('p5_canvas_target_div_paren');
+        p.textAlign(p.CENTER, p.CENTER); p.textSize(10); p.noLoop();
+    };
+
+    p.draw = () => {
+        p.background(240, 242, 245); 
+        const rootNodeId = 'node-0';
+        if (!treeNodes[rootNodeId]) return;
+        
+        postOrderLayout(rootNodeId, 0, 0);
+        
+        const allNodes = Object.values(treeNodes);
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        allNodes.forEach(node => {
+            if (node.x !== undefined && node.y !== undefined) {
+                minX = Math.min(minX, node.x); maxX = Math.max(maxX, node.x);
+                minY = Math.min(minY, node.y); maxY = Math.max(maxY, node.y);
+            }
+        });
+
+        const padding = 60;
+        const requiredWidth = Math.max(p.width, (maxX - minX) + 2 * padding + TREE_NODE_WIDTH);
+        const requiredHeight = Math.max(p.height, (maxY - minY) + 2 * padding + TREE_NODE_HEIGHT);
+        if (Math.abs(p.width - requiredWidth) > 10 || Math.abs(p.height - requiredHeight) > 10) {
+            p.resizeCanvas(requiredWidth, requiredHeight);
+        }
+
+        const offsetX = (p.width / 2) - (minX + (maxX - minX) / 2);
+        const offsetY = padding;
+
+        allNodes.forEach(node => {
+            if (node.parentId && treeNodes[node.parentId]) {
+                const parent = treeNodes[node.parentId];
+                if (parent.x !== undefined && node.x !== undefined) {
+                    p.stroke(180); p.strokeWeight(1.5);
+                    p.line(parent.x + offsetX, parent.y + offsetY, node.x + offsetX, node.y + offsetY);
+                }
+            }
+        });
+
+        allNodes.forEach(node => {
+            if (node.x === undefined || node.y === undefined) return;
+            p.strokeWeight(1.5); p.stroke(108, 117, 125);
+            let isActive = callStack.length > 0 && node.nodeId === callStack[callStack.length - 1].nodeId && simulationRunning && !node.isReturning;
+            
+            if (node.isReturning) p.fill(222, 226, 230, 200); 
+            else if (isActive) { p.fill(255, 243, 205); p.stroke(255, 193, 7); p.strokeWeight(2.5); }
+            else p.fill(255);
+
+            p.rectMode(p.CENTER);
+            p.rect(node.x + offsetX, node.y + offsetY, TREE_NODE_WIDTH, TREE_NODE_HEIGHT, 5);
+
+            p.fill(30); p.noStroke(); p.textAlign(p.CENTER, p.CENTER); p.textSize(9.5);
+            const pathText = `Path: "${node.pathAtCall}"`;
+            const callText = `gen(open=${node.open}, close=${node.close})`;
+            p.text(`${callText}\n${pathText}`, node.x + offsetX, node.y + offsetY, TREE_NODE_WIDTH - 4, TREE_NODE_HEIGHT - 4);
+        });
+    };
+    p.customRedraw = () => { if(p && typeof p.redraw === 'function' && p.width) p.redraw(); };
+};
+
+// --- CORE LOGIC FUNCTIONS ---
+function updateButtonState() {
+    if (!nextStepButton || !startButton) return; 
+    nextStepButton.disabled = !(simulationRunning && currentPhase !== 'done');
+    if (currentPhase === 'done') {
+        startButton.textContent = "Reset";
+        if(currentActionDisplay) {
+            currentActionDisplay.textContent = "All combinations generated!";
+            currentActionDisplay.className = 'info';
+        }
+    }
+}
+
+function initializeAnimation() {
+    log("Initializing...");
+    simulationRunning = false; 
+    N_PAIRS = parseInt(nInputEl.value);
+    if (isNaN(N_PAIRS) || N_PAIRS < 1 || N_PAIRS > 4) {
+        alert("Please enter a number between 1 and 4.");
+        N_PAIRS = Math.max(1, Math.min(4, N_PAIRS || 3));
+        nInputEl.value = N_PAIRS;
+    }
+
+    resultCombinations = []; currentString = ""; callStack = []; 
+    uniqueNodeIdCounter = 0; treeNodes = {}; 
+
+    updateStateDisplay(0, 0);
+    resultListContainer.innerHTML = ''; logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+
+    const rootNodeId = `node-${uniqueNodeIdCounter++}`;
+    treeNodes[rootNodeId] = { 
+        nodeId: rootNodeId, parentId: null, children: [],
+        open: 0, close: 0, pathAtCall: "", isReturning: false
+    };
+    callStack.push({ 
+        nodeId: rootNodeId, open: 0, close: 0,
+        phase: 'enter' // Phases: enter, check_close, return
+    });
+
+    currentPhase = 'running'; 
+    simulationRunning = true; 
+    log(`Initialized. n=${N_PAIRS}. Start recursion.`);
+    currentActionDisplay.textContent = "Ready to generate parentheses.";
+    currentActionDisplay.className = 'info';
+    
+    if (p5Instance) p5Instance.customRedraw();
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || callStack.length === 0) {
+        currentPhase = 'done';
+        updateButtonState();
+        return;
+    }
+    
+    nextStepButton.disabled = true; 
+    
+    let frame = callStack[callStack.length - 1];
+    let node = treeNodes[frame.nodeId];
+    const indent = callStack.length - 1;
+
+    updateStateDisplay(frame.open, frame.close);
+
+    // --- State Machine ---
+    if (frame.phase === 'enter') {
+        log(`Depth ${indent}: generate(open=${frame.open}, close=${frame.close})`, indent);
+        
+        if (currentString.length === 2 * N_PAIRS) {
+            log(`  Depth ${indent}: Base Case TRUE. Combination found.`, indent);
+            currentActionDisplay.textContent = `BASE CASE: Found "${currentString}"`;
+            currentActionDisplay.className = 'info';
+            resultCombinations.push(currentString);
+            await addCurrentToResultVisual();
+            frame.phase = 'return';
+        } else {
+            frame.phase = 'check_open';
+        }
+    }
+    else if (frame.phase === 'check_open') {
+        const conditionMet = frame.open < N_PAIRS;
+        log(`  Depth ${indent}: Check (open < n) -> (${frame.open} < ${N_PAIRS}) -> ${conditionMet}`, indent);
+        currentActionDisplay.textContent = `Check open < n (${frame.open} < ${N_PAIRS})? ${conditionMet ? 'YES' : 'NO'}`;
+        currentActionDisplay.className = conditionMet ? 'yes' : 'no';
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+        
+        if (conditionMet) {
+            const parentNode = node;
+            const childNodeId = `node-${uniqueNodeIdCounter++}`;
+            
+            currentString += '(';
+            treeNodes[childNodeId] = {
+                nodeId: childNodeId, parentId: frame.nodeId, children: [],
+                open: frame.open + 1, close: frame.close, pathAtCall: currentString,
+                isReturning: false,
+            };
+            parentNode.children.push(childNodeId);
+            
+            frame.phase = 'check_close'; // Parent will resume here after child returns
+            callStack.push({ nodeId: childNodeId, open: frame.open + 1, close: frame.close, phase: 'enter' });
+        } else {
+            frame.phase = 'check_close';
+        }
+
+    } else if (frame.phase === 'check_close') {
+        const conditionMet = frame.close < frame.open;
+        log(`  Depth ${indent}: Check (close < open) -> (${frame.close} < ${frame.open}) -> ${conditionMet}`, indent);
+        currentActionDisplay.textContent = `Check close < open (${frame.close} < ${frame.open})? ${conditionMet ? 'YES' : 'NO'}`;
+        currentActionDisplay.className = conditionMet ? 'yes' : 'no';
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+        
+        if (conditionMet) {
+            const parentNode = node;
+            const childNodeId = `node-${uniqueNodeIdCounter++}`;
+
+            currentString += ')';
+            treeNodes[childNodeId] = {
+                nodeId: childNodeId, parentId: frame.nodeId, children: [],
+                open: frame.open, close: frame.close + 1, pathAtCall: currentString,
+                isReturning: false,
+            };
+            parentNode.children.push(childNodeId);
+
+            frame.phase = 'return'; // Parent will resume here
+            callStack.push({ nodeId: childNodeId, open: frame.open, close: frame.close + 1, phase: 'enter' });
+        } else {
+            frame.phase = 'return';
+        }
+
+    } else if (frame.phase === 'return') {
+        log(`Depth ${indent}: Return from call.`, indent);
+        currentActionDisplay.textContent = `Return from generate(${frame.open}, ${frame.close})`;
+        currentActionDisplay.className = 'return';
+        node.isReturning = true;
+        callStack.pop();
+
+        // Implicit backtrack: string length is now tied to stack depth
+        currentString = currentString.slice(0, callStack.length -1);
+    }
+    
+    if (p5Instance) p5Instance.customRedraw();
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    nInputEl = document.getElementById('n_input_paren_p5');
+    startButton = document.getElementById('start_button_paren_p5');
+    nextStepButton = document.getElementById('next_step_button_paren_p5');
+    nDisplay = document.getElementById('n_display_p5');
+    lenDisplay = document.getElementById('len_display_p5');
+    openDisplay = document.getElementById('open_display_p5');
+    closeDisplay = document.getElementById('close_display_p5');
+    currentStringDisplay = document.getElementById('current_string_paren_p5');
+    currentActionDisplay = document.getElementById('current_action_paren_display_p5');
+    resultListContainer = document.getElementById('result_list_container_paren_p5');
+    logOutput = document.getElementById('log_output_paren_p5');
+
+    p5Instance = new p5(p5_sketch_definition);
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    initializeAnimation(); 
+    
+    window.addEventListener('resize', () => {
+        if (p5Instance && p5Instance.width) {
+            const container = document.getElementById('p5_canvas_target_div_paren');
+            p5Instance.resizeCanvas(container.clientWidth || 800, p5Instance.height);
+            p5Instance.customRedraw();
+        }
+    });
+});
+</script>
+</body>
+</html>

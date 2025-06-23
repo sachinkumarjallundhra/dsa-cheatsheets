@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Letter Tile Possibilities Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Letter Tile Possibilities – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Letter Tile Possibilities</b> problem involves finding all possible sequences of letters that can be formed using the given tiles. Each tile can be used only once per sequence, and the order of tiles matters.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Recursive Backtracking with Visited Array</h3>
+    <pre><code>class Solution {
+    public int numTilePossibilities(String tiles) {
+        char[] chars = tiles.toCharArray();
+        Arrays.sort(chars); // Sort to handle duplicates
+        boolean[] visited = new boolean[chars.length];
+        return backtrack(chars, visited);
+    }
+
+    private int backtrack(char[] chars, boolean[] visited) {
+        int count = 0;
+        for (int i = 0; i < chars.length; i++) {
+            if (visited[i] || (i > 0 && chars[i] == chars[i - 1] && !visited[i - 1])) {
+                continue; // Skip duplicates
+            }
+            visited[i] = true;
+            count += 1 + backtrack(chars, visited); // Count current sequence and recurse
+            visited[i] = false; // Backtrack
+        }
+        return count;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/letter_tile_possibilities_animation.html'">▶️ View Animation</button>
+
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n!)</code>, where <code>n</code> is the number of tiles. This accounts for all permutations of the tiles.</li>
+      <li><b>Space Complexity:</b> <code>O(n)</code>, for the recursion stack and visited array.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Generating all possible sequences of letters from a set of tiles.</li>
+      <li>Counting unique permutations of a string with duplicate characters.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/letter-tile-possibilities/" target="_blank" rel="noopener noreferrer">1079. Letter Tile Possibilities</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: tiles = "AAB"
+Output: 8
+
+Explanation:
+The possible sequences are:
+"A", "B", "AA", "AB", "BA", "AAB", "ABA", "BAA".</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Sort the tiles to handle duplicates efficiently.</li>
+      <li>Use a <code>visited</code> array to track which tiles have been used in the current sequence.</li>
+      <li>Skip duplicate tiles by checking if the current tile is the same as the previous one and the previous tile has not been visited.</li>
+    </ul>
+  </div>
+</body>
+</html>

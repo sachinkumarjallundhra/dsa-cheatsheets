@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Letter Case Permutation Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Letter Case Permutation – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Letter Case Permutation</b> problem involves generating all possible strings by changing the case of each letter in the input string. Digits remain unchanged.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Recursive Backtracking</h3>
+    <pre><code>class Solution {
+    public List&lt;String&gt; letterCasePermutation(String s) {
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        backtrack(0, s.toCharArray(), result);
+        return result;
+    }
+
+    private void backtrack(int index, char[] chars, List&lt;String&gt; result) {
+        if (index == chars.length) {
+            result.add(new String(chars));
+            return;
+        }
+
+        if (Character.isLetter(chars[index])) {
+            // Change to lowercase
+            chars[index] = Character.toLowerCase(chars[index]);
+            backtrack(index + 1, chars, result);
+
+            // Change to uppercase
+            chars[index] = Character.toUpperCase(chars[index]);
+            backtrack(index + 1, chars, result);
+        } else {
+            // Skip digits
+            backtrack(index + 1, chars, result);
+        }
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/letter_case_permutation_animation.html'">▶️ View Animation</button>
+
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(2^N)</code>, where <code>N</code> is the number of letters in the input string. Each letter has two possibilities (uppercase or lowercase).</li>
+      <li><b>Space Complexity:</b> <code>O(N)</code>, for the recursion stack.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Generating all possible case permutations of a string.</li>
+      <li>Exploring all combinations of letter cases for a given input.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/letter-case-permutation/" target="_blank" rel="noopener noreferrer">784. Letter Case Permutation</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "a1b2"
+Output: ["a1b2", "a1B2", "A1b2", "A1B2"]
+
+Explanation:
+- For each letter, toggle between lowercase and uppercase.
+- Digits remain unchanged.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a character array for in-place modifications to avoid creating new strings repeatedly.</li>
+      <li>Skip digits during recursion since they don't have case permutations.</li>
+      <li>Use backtracking to explore all valid combinations efficiently.</li>
+    </ul>
+  </div>
+</body>
+</html>

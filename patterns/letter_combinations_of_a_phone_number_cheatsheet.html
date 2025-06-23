@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Letter Combinations of a Phone Number Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Letter Combinations of a Phone Number – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Letter Combinations of a Phone Number</b> problem involves generating all possible letter combinations for a given string of digits (2-9) based on the mapping of a telephone keypad.</p>
+
+    <h2>📞 Keypad Mapping</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Digit</th>
+          <th>Letters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>2</td><td>a, b, c</td></tr>
+        <tr><td>3</td><td>d, e, f</td></tr>
+        <tr><td>4</td><td>g, h, i</td></tr>
+        <tr><td>5</td><td>j, k, l</td></tr>
+        <tr><td>6</td><td>m, n, o</td></tr>
+        <tr><td>7</td><td>p, q, r, s</td></tr>
+        <tr><td>8</td><td>t, u, v</td></tr>
+        <tr><td>9</td><td>w, x, y, z</td></tr>
+      </tbody>
+    </table>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Recursive Backtracking</h3>
+    <pre><code>class Solution {
+    public List&lt;String&gt; letterCombinations(String digits) {
+        if (digits == null || digits.isEmpty()) return new ArrayList&lt;&gt;();
+
+        String[] mapping = {
+            "", "", "abc", "def", "ghi", "jkl",
+            "mno", "pqrs", "tuv", "wxyz"
+        };
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        backtrack(0, digits, new StringBuilder(), result, mapping);
+        return result;
+    }
+
+    private void backtrack(int index, String digits, StringBuilder current, List&lt;String&gt; result, String[] mapping) {
+        if (index == digits.length()) {
+            result.add(current.toString());
+            return;
+        }
+
+        String letters = mapping[digits.charAt(index) - '0'];
+        for (char letter : letters.toCharArray()) {
+            current.append(letter);
+            backtrack(index + 1, digits, current, result, mapping);
+            current.deleteCharAt(current.length() - 1); // Backtrack
+        }
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/letter_combinations_of_a_phone_number_animation_v2.html'">▶️ View Animation</button>
+
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(4^N)</code>, where <code>N</code> is the length of the input string. Each digit can map to up to 4 letters.</li>
+      <li><b>Space Complexity:</b> <code>O(N)</code>, for the recursion stack.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Generating all possible letter combinations for a phone number.</li>
+      <li>Exploring all combinations of characters for a given input.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/letter-combinations-of-a-phone-number/" target="_blank" rel="noopener noreferrer">17. Letter Combinations of a Phone Number</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: digits = "23"
+Output: ["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]
+
+Explanation:
+- Digit '2' maps to ['a', 'b', 'c'].
+- Digit '3' maps to ['d', 'e', 'f'].
+- Combine all possible pairs.</code></pre>
+
+    <h2>🎥 Animation</h2>
+    <p>Watch the animation for this problem: <a href="../animations/letter_combinations_of_a_phone_number_animation_v2.html" target="_blank">Letter Combinations Animation</a></p>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a mapping array to store the letters for each digit.</li>
+      <li>Handle edge cases like empty input or invalid digits (e.g., '1' or '0').</li>
+      <li>Use backtracking to explore all possible combinations efficiently.</li>
+    </ul>
+  </div>
+</body>
+</html>
