@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two City Scheduling Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-2city-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-2city-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-2city-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 220px; }
+        .controls-2city-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-2city-p5 button:hover { background-color: #0056b3; }
+        .controls-2city-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-2city-p5 { display: grid; grid-template-columns: minmax(280px, 1fr) 3fr; gap: 15px; }
+        .left-panel-2city-p5, .right-panel-2city-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-2city-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 400px; background-color: #dcedc8; overflow: hidden; position: relative; }
+
+        .cost-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; text-align: center; }
+        .cost-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .cost-item-p5 .value { font-size: 1.5em; font-weight: bold; font-family: 'Courier New', Courier, monospace; transition: all 0.3s; }
+        #total_cost_a { color: #0d6efd; }
+        #total_cost_b { color: #dc3545; }
+        #total_min_cost { font-size: 1.8em; color: #28a745; margin-top: 10px; }
+        #total_min_cost.pulse { animation: pulse-anim 0.5s ease-out; }
+
+        #current_action_2city_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; font-size:1em; }
+
+        .person-container-p5 { width: 100px; height: 120px; position: absolute; transition: all 0.6s ease-in-out; text-align: center; }
+        .person-icon-p5 { font-size: 3em; line-height: 1; }
+        .person-info-p5 { font-size: 0.75em; background: rgba(255,255,255,0.8); border-radius: 4px; padding: 3px; }
+        .person-info-p5 .costs span { margin: 0 3px; transition: all 0.3s; }
+        .person-info-p5 .costs .cost-a { color: #0d6efd; }
+        .person-info-p5 .costs .cost-b { color: #dc3545; }
+        
+        .cost-taken { font-weight: bold; background-color: #fff3cd; border-radius: 2px; }
+        .cost-not-taken { text-decoration: line-through; opacity: 0.5; color: #6c757d; }
+        
+        .person-info-p5 .diff { font-weight: bold; font-size: 1.1em; margin-top: 3px; }
+        .person-info-p5 .diff.positive { color: #28a745; }
+        .person-info-p5 .diff.negative { color: #dc3545; }
+        .person-container-p5.highlight { transform: scale(1.1); box-shadow: 0 0 15px gold; border-radius: 8px; background: rgba(255, 215, 0, 0.3); }
+
+        .city-area { position: absolute; top: 0; width: 25%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 6em; opacity: 0.2; }
+        #city-a-area { left: 0; background: #e3f2fd; }
+        #city-b-area { right: 0; background: #fce4ec; }
+        #hub-area { position: absolute; top: 0; left: 25%; width: 50%; height: 100%; border-left: 2px dashed #90a4ae; border-right: 2px dashed #90a4ae; }
+
+        #divider-line { position: absolute; top: 0; left: 50%; width: 3px; height: 100%; background: #455a64; transform: scaleY(0); transition: transform 0.4s ease-out; transform-origin: top; }
+        
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        #overlay span:first-child { font-size: 3em; color: #90ee90; }
+        #overlay span:last-child { font-size: 1.8em; margin-top: 10px; }
+
+        .log-container-2city-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_2city_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes pulse-anim { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Two City Scheduling</h1>
+
+        <div class="controls-2city-p5">
+            <label for="costs_a_p5">Costs to City A:</label>
+            <input type="text" id="costs_a_p5" value="10,30,400,30">
+            <label for="costs_b_p5">Costs to City B:</label>
+            <input type="text" id="costs_b_p5" value="60,20,50,20">
+            <button id="start_button_2city_p5">Start/Reset</button>
+            <button id="next_step_button_2city_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-2city-p5">
+            <div class="left-panel-2city-p5">
+                <div class="state-panel-2city-p5">
+                    <h2>Flight Costs</h2>
+                    <div class="cost-grid-p5">
+                        <div class="cost-item-p5"><div class="label">City A Total</div><div id="total_cost_a" class="value">$0</div></div>
+                        <div class="cost-item-p5"><div class="label">City B Total</div><div id="total_cost_b" class="value">$0</div></div>
+                    </div>
+                     <div class="cost-item-p5" style="margin-top: 15px;">
+                        <div class="label">Minimum Total Cost</div><div id="total_min_cost" class="value">$0</div>
+                    </div>
+                    <div id="current_action_2city_display_p5"></div>
+                </div>
+                <div class="log-container-2city-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_2city_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-2city-p5">
+                 <div class="visualization-container-p5">
+                    <div id="city-a-area" class="city-area">🗽</div>
+                    <div id="city-b-area" class="city-area">🗼</div>
+                    <div id="hub-area">
+                        <div id="divider-line"></div>
+                    </div>
+                    <div id="person_container_p5"></div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+// --- STATE VARIABLES ---
+let PEOPLE = [];
+let totalCostA = 0, totalCostB = 0;
+let nPerCity = 0;
+let simulationRunning = false;
+let currentPhase = 'idle';
+
+// --- DOM ELEMENTS ---
+let costsAInput, costsBInput, startButton, nextStepButton, totalCostADisplay, totalCostBDisplay, 
+    totalMinCostDisplay, currentActionDisplay, logOutput, personContainer, overlay;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 500; 
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+
+function updateCostDisplays() {
+    totalCostADisplay.textContent = `$${totalCostA}`;
+    totalCostBDisplay.textContent = `$${totalCostB}`;
+    totalMinCostDisplay.textContent = `$${totalCostA + totalCostB}`;
+}
+
+async function renderPeople(sorted = false) {
+    const hub = document.getElementById('hub-area');
+    const hubRect = hub.getBoundingClientRect();
+    const containerRect = hub.parentElement.getBoundingClientRect();
+
+    if (!sorted) {
+        personContainer.innerHTML = '';
+        PEOPLE.forEach((person, i) => {
+            const el = document.createElement('div');
+            el.className = 'person-container-p5';
+            el.id = `person-orig-${person.originalIndex}`;
+            el.style.top = `${50 + (i % 2) * 130}px`;
+            el.style.left = `${hubRect.left - containerRect.left + 20 + Math.floor(i/2) * 110}px`;
+            el.innerHTML = `<div class="person-icon-p5">🧍</div>
+                <div class="person-info-p5">
+                    <div class="costs">
+                        <span class="cost-a" id="cost-a-${person.originalIndex}">$${person.costA}</span>|<span class="cost-b" id="cost-b-${person.originalIndex}">$${person.costB}</span>
+                    </div>
+                    <div class="diff" id="diff-${person.originalIndex}"></div>
+                </div>`;
+            personContainer.appendChild(el);
+        });
+    } else {
+        PEOPLE.forEach((person, i) => {
+            const el = document.getElementById(`person-orig-${person.originalIndex}`);
+            el.style.top = `${50 + (i % 2) * 130}px`;
+            el.style.left = `${hubRect.left - containerRect.left + 20 + Math.floor(i/2) * 110}px`;
+        });
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY + 200));
+    }
+}
+
+function showOverlay() {
+    const finalCost = totalCostA + totalCostB;
+    overlay.innerHTML = `<span>SUCCESS!</span><span>Minimum Cost: $${finalCost}</span>`;
+    overlay.className = 'show';
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!simulationRunning) startButton.textContent = "Reset";
+}
+
+async function initializeAnimation() {
+    log("Planning new travel schedules...");
+    simulationRunning = false; 
+    
+    try {
+        const costsA = costsAInput.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        const costsB = costsBInput.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        if (costsA.length !== costsB.length || costsA.length === 0 || costsA.length % 2 !== 0) {
+            alert("Arrays must be the same, non-zero, even length.");
+            return;
+        }
+        PEOPLE = costsA.map((ca, i) => ({ costA: ca, costB: costsB[i], originalIndex: i, difference: 0 }));
+        nPerCity = PEOPLE.length / 2;
+    } catch (e) { alert("Invalid input."); return; }
+    
+    totalCostA = 0; totalCostB = 0;
+    
+    logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+    overlay.className = '';
+    document.getElementById('divider-line').style.transform = 'scaleY(0)';
+    
+    await renderPeople(false);
+    updateCostDisplays();
+
+    currentActionDisplay.textContent = `Click 'Next Step' to calculate savings.`;
+    currentPhase = 'calculate_diffs';
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    nextStepButton.disabled = true;
+    document.querySelectorAll('.person-container-p5.highlight').forEach(el => el.classList.remove('highlight'));
+    
+    switch(currentPhase) {
+        case 'calculate_diffs':
+            log("--- Calculating 'City A' Savings (costB - costA) ---");
+            currentActionDisplay.textContent = "Calculating the savings for sending each person to City A...";
+            for (const person of PEOPLE) {
+                const el = document.getElementById(`person-orig-${person.originalIndex}`);
+                el.classList.add('highlight');
+                person.difference = person.costB - person.costA;
+                const diffEl = document.getElementById(`diff-${person.originalIndex}`);
+                diffEl.textContent = `Save: $${person.difference}`;
+                diffEl.className = `diff ${person.difference >= 0 ? 'positive' : 'negative'}`;
+                log(`Person ${person.originalIndex}: costB(${person.costB}) - costA(${person.costA}) = ${person.difference}`);
+                await new Promise(r => setTimeout(r, 200));
+                el.classList.remove('highlight');
+            }
+            currentActionDisplay.textContent = "Next, sort by the best 'City A' deals (highest savings).";
+            currentPhase = 'sorting';
+            break;
+
+        case 'sorting':
+            log("\n--- Sorting by Savings (Descending) ---");
+            currentActionDisplay.textContent = "Sorting by best 'City A' deals (highest savings)...";
+            PEOPLE.sort((a,b) => b.difference - a.difference);
+            await renderPeople(true);
+            document.getElementById('divider-line').style.transform = 'scaleY(1)';
+            log("Sorted! First half go to A, second half to B.");
+            currentActionDisplay.textContent = "First half (best deals) will fly to City A.";
+            currentPhase = 'assign_to_a';
+            break;
+
+        case 'assign_to_a':
+            log("\n--- Assigning First Half to City A ---");
+            currentActionDisplay.textContent = `Sending ${nPerCity} people to City A...`;
+            for (let i = 0; i < nPerCity; i++) {
+                const person = PEOPLE[i];
+                const el = document.getElementById(`person-orig-${person.originalIndex}`);
+                el.classList.add('highlight');
+                document.getElementById(`cost-a-${person.originalIndex}`).classList.add('cost-taken');
+                document.getElementById(`cost-b-${person.originalIndex}`).classList.add('cost-not-taken');
+                log(`Person ${person.originalIndex} to City A (cost $${person.costA})`);
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                totalCostA += person.costA;
+                updateCostDisplays();
+                totalCostADisplay.classList.add('pulse');
+                setTimeout(()=>totalCostADisplay.classList.remove('pulse'), 500);
+                el.style.left = '5%';
+                el.style.top = `${15 + i * 130}px`;
+                await new Promise(r => setTimeout(r, 300));
+                el.classList.remove('highlight');
+            }
+            currentActionDisplay.textContent = "Now, the rest will fly to City B.";
+            currentPhase = 'assign_to_b';
+            break;
+            
+        case 'assign_to_b':
+            log("\n--- Assigning Second Half to City B ---");
+            currentActionDisplay.textContent = `Sending ${nPerCity} people to City B...`;
+            const cityBArea = document.getElementById('city-b-area');
+            for (let i = nPerCity; i < PEOPLE.length; i++) {
+                const person = PEOPLE[i];
+                const el = document.getElementById(`person-orig-${person.originalIndex}`);
+                el.classList.add('highlight');
+                document.getElementById(`cost-b-${person.originalIndex}`).classList.add('cost-taken');
+                document.getElementById(`cost-a-${person.originalIndex}`).classList.add('cost-not-taken');
+                log(`Person ${person.originalIndex} to City B (cost $${person.costB})`);
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                totalCostB += person.costB;
+                updateCostDisplays();
+                totalCostBDisplay.classList.add('pulse');
+                setTimeout(()=>totalCostBDisplay.classList.remove('pulse'), 500);
+                el.style.left = `${cityBArea.offsetLeft + 20}px`;
+                el.style.top = `${15 + (i - nPerCity) * 130}px`;
+                await new Promise(r => setTimeout(r, 300));
+                el.classList.remove('highlight');
+            }
+            currentPhase = 'finish';
+            break;
+
+        case 'finish':
+            const finalCost = totalCostA + totalCostB;
+            log(`\n--- Finished ---`);
+            log(`Total minimum cost: $${finalCost}`);
+            currentActionDisplay.textContent = `Finished! Minimum cost is $${finalCost}.`;
+            totalMinCostDisplay.textContent = `$${finalCost}`;
+            totalMinCostDisplay.classList.add('pulse');
+            showOverlay();
+            simulationRunning = false;
+            break;
+    }
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    costsAInput = document.getElementById('costs_a_p5');
+    costsBInput = document.getElementById('costs_b_p5');
+    startButton = document.getElementById('start_button_2city_p5');
+    nextStepButton = document.getElementById('next_step_button_2city_p5');
+    totalCostADisplay = document.getElementById('total_cost_a');
+    totalCostBDisplay = document.getElementById('total_cost_b');
+    totalMinCostDisplay = document.getElementById('total_min_cost');
+    currentActionDisplay = document.getElementById('current_action_2city_display_p5');
+    logOutput = document.getElementById('log_output_2city_p5');
+    personContainer = document.getElementById('person_container_p5');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maximum Swap Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-max-swap-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-max-swap-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-max-swap-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 220px; font-size:1.1em; }
+        .controls-max-swap-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-max-swap-p5 button:hover { background-color: #0056b3; }
+        .controls-max-swap-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-max-swap-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-max-swap-p5, .right-panel-max-swap-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-max-swap-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 400px; background-color: #f0f4c3; overflow: visible; position: relative; display: flex; justify-content: center; align-items: center;}
+        
+        .digit-container-p5 { display: flex; flex-direction: row; gap: 10px; position: relative; }
+        .digit-row-p5 { display: flex; align-items: center; gap: 15px; position: relative; }
+        .index-label-p5 { font-family: 'Courier New', monospace; font-size: 1.2em; color: #555; width: 35px; text-align: right; }
+
+        .digit-box-p5 { width: 60px; height: 80px; background: #fff; border: 2px solid #90a4ae; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 2.5em; font-weight: bold; color: #37474f; transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.4s ease-in-out; position: relative; }
+        digit-row-p5.highlight-i .digit-box-p5 { border-color: #fbc02d; background-color: #fff9c4; transform: translateX(10px); }
+        .digit-row-p5.highlight-max .digit-box-p5 { box-shadow: 0 0 10px 3px #1e88e5; }
+        .digit-row-p5.highlight-left .digit-box-p5 { box-shadow: 0 0 10px 3px #e53935; border-color: #e53935; }
+        .digit-row-p5.highlight-right .digit-box-p5 { box-shadow: 0 0 10px 3px #43a047; border-color: #43a047; }
+        .digit-box-p5.swapping { z-index: 5; }
+
+        .pointer-p5 { position: absolute; transform: translateY(-50%); font-family: 'Courier New', monospace; font-size: 1.1em; font-weight: bold; padding: 3px 8px; border-radius: 4px; color: white; transition: top 0.4s ease-in-out; text-align: center; width: 80px; visibility: hidden; }
+        #i_pointer { background-color: #fbc02d; color: #424242; right: calc(50% + 100px); }
+        #max_idx_pointer { background-color: #1e88e5; left: calc(50% + 100px); }
+        #left_idx_pointer { background-color: #e53935; right: calc(50% + 100px); }
+        #right_idx_pointer { background-color: #43a047; left: calc(50% + 100px); }
+
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; }
+        #vars_display_p5 { grid-column: 1 / -1; margin-top:10px; font-family: 'Courier New', Courier, monospace; font-size: 1em; background: #e9ecef; padding: 8px; border-radius: 4px; }
+
+        #current_action_max_swap_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:3em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        #overlay span:first-child { font-size: 3em; color: #90ee90; }
+        #overlay span:last-child { font-size: 1.8em; margin-top: 10px; }
+
+        .log-container-max-swap-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_max_swap_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Maximum Swap</h1>
+
+        <div class="controls-max-swap-p5">
+            <label for="num_input_max_swap_p5">Input Number:</label>
+            <input type="text" id="num_input_max_swap_p5" value="2736">
+            <button id="start_button_max_swap_p5">Start/Reset</button>
+            <button id="next_step_button_max_swap_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-max-swap-p5">
+            <div class="left-panel-max-swap-p5">
+                <div class="state-panel-max-swap-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Initial Number</div><div id="initial_num_display" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">Result</div><div id="result_num_display" class="value">0</div></div>
+                        <div id="vars_display_p5"></div>
+                    </div>
+                    <div id="current_action_max_swap_display_p5"></div>
+                </div>
+                <div class="log-container-max-swap-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_max_swap_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-max-swap-p5">
+                 <div class="visualization-container-p5">
+                    <div id="digit_container_p5"></div>
+                    <!-- Pointers are now direct children of the viz container for positioning -->
+                    <div class="pointer-p5" id="i_pointer">i</div>
+                    <div class="pointer-p5" id="max_idx_pointer">maxIdx</div>
+                    <div class="pointer-p5" id="left_idx_pointer">leftIdx</div>
+                    <div class="pointer-p5" id="right_idx_pointer">rightIdx</div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <!-- Re-using sounds from previous context -->
+    <audio id="sound-calc" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgACAAIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let isAudioUnlocked = false;
+let initialNumStr = '';
+
+// --- DOM ELEMENTS ---
+let numInput, startButton, nextStepButton, initialNumDisplay, resultNumDisplay,
+    varsDisplay, currentActionDisplay, logOutput, digitContainer, vizContainer, overlay;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 600; 
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-calc', 'sound-win'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(numStr) {
+    const steps = [];
+    const digits = numStr.split('');
+    const n = digits.length;
+    let maxIdx = n - 1;
+    let leftIdx = -1, rightIdx = -1;
+
+    steps.push({
+        type: 'initial',
+        digits: [...digits],
+        maxIdx: n-1,
+        message: 'Start. Scan from bottom to top (right-to-left) to find the largest digit.'
+    });
+
+    for (let i = n - 2; i >= 0; i--) {
+        steps.push({
+            type: 'scan', i, maxIdx, leftIdx, rightIdx,
+            message: `Scanning index ${i} ('${digits[i]}'). Current max is '${digits[maxIdx]}' at index ${maxIdx}.`
+        });
+
+        if (digits[i] > digits[maxIdx]) {
+            maxIdx = i;
+            steps.push({
+                type: 'update_max', i, maxIdx, leftIdx, rightIdx,
+                message: `New max '${digits[i]}' found. Updated maxIdx to ${i}.`
+            });
+        } else if (digits[i] < digits[maxIdx]) {
+            leftIdx = i;
+            rightIdx = maxIdx;
+             steps.push({
+                type: 'update_swap_pair', i, maxIdx, leftIdx, rightIdx,
+                message: `Found smaller digit '${digits[i]}'. Potential swap: (${i}, ${maxIdx}).`
+            });
+        }
+    }
+    
+    if (leftIdx !== -1) {
+        steps.push({
+            type: 'before_swap', leftIdx, rightIdx,
+            message: `Loop finished. Final swap is between index ${leftIdx} and ${rightIdx}.`
+        });
+        [digits[leftIdx], digits[rightIdx]] = [digits[rightIdx], digits[leftIdx]];
+        steps.push({
+            type: 'swap', leftIdx, rightIdx, finalDigits: [...digits],
+            message: `Swapped digits. The new number is ${digits.join('')}.`
+        });
+    } else {
+         steps.push({ type: 'no_swap', message: `Loop finished. No swap needed.` });
+    }
+
+    steps.push({ type: 'finish', result: digits.join(''), message: `Maximum value is ${digits.join('')}.` });
+    return steps;
+}
+
+function renderDigits(digits, highlights = {}) {
+    digitContainer.innerHTML = '';
+    
+    digits.forEach((digit, index) => {
+        const row = document.createElement('div');
+        row.className = 'digit-row-p5';
+        row.id = `row-${index}`;
+
+        const indexLabel = document.createElement('span');
+        indexLabel.className = 'index-label-p5';
+        indexLabel.textContent = `[${index}]`;
+        row.appendChild(indexLabel);
+
+        const digitBox = document.createElement('div');
+        digitBox.className = 'digit-box-p5';
+        digitBox.id = `digit-${index}`;
+        digitBox.textContent = digit;
+        row.appendChild(digitBox);
+
+        if (highlights.i === index) row.classList.add('highlight-i');
+        if (highlights.maxIdx === index) row.classList.add('highlight-max');
+        if (highlights.leftIdx === index) row.classList.add('highlight-left');
+        if (highlights.rightIdx === index) row.classList.add('highlight-right');
+
+        digitContainer.appendChild(row);
+    });
+    updatePointers(highlights);
+}
+
+function updatePointers(state) {
+    const vizTop = vizContainer.getBoundingClientRect().top;
+    const digitTop = digitContainer.getBoundingClientRect().top;
+    const relativeOffset = digitTop - vizTop;
+
+    const pointers = {
+        i_pointer: state.i,
+        max_idx_pointer: state.maxIdx,
+        left_idx_pointer: state.leftIdx,
+        right_idx_pointer: state.rightIdx,
+    };
+
+    for (const [p_id, index] of Object.entries(pointers)) {
+        const pointerEl = document.getElementById(p_id);
+        if (pointerEl && index !== undefined && index !== -1) {
+            const rowEl = document.getElementById(`row-${index}`);
+            if (rowEl) {
+                pointerEl.style.top = `${relativeOffset + rowEl.offsetTop + rowEl.offsetHeight / 2}px`;
+                pointerEl.style.visibility = 'visible';
+            }
+        } else if (pointerEl) {
+            pointerEl.style.visibility = 'hidden';
+        }
+    }
+}
+
+function updateStateDisplay(state) {
+    let varsText = `i = ${state.i ?? 'N/A'}<br>`;
+    varsText += `maxIdx = ${state.maxIdx ?? 'N/A'}<br>`;
+    varsText += `leftIdx = ${state.leftIdx ?? 'N/A'}<br>`;
+    varsText += `rightIdx = ${state.rightIdx ?? 'N/A'}`;
+    varsDisplay.innerHTML = varsText;
+}
+
+async function initializeAnimation() {
+    simulationRunning = false; 
+    const numStr = numInput.value.trim();
+    if (!/^\d+$/.test(numStr)) {
+        alert("Please enter a valid positive integer.");
+        return;
+    }
+    initialNumStr = numStr;
+    
+    animationSteps = generateAnimationSteps(initialNumStr);
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    resultNumDisplay.textContent = initialNumStr;
+    initialNumDisplay.textContent = initialNumStr;
+    
+    const firstStep = animationSteps[0];
+    renderDigits(firstStep.digits, { maxIdx: firstStep.maxIdx });
+    updateStateDisplay({i: 'N/A', maxIdx: firstStep.maxIdx, leftIdx: -1, rightIdx: -1});
+    currentActionDisplay.textContent = firstStep.message;
+    log(firstStep.message);
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+    log(`\n--- Step ${currentStepIndex + 1}: ${step.type} ---`);
+    log(step.message);
+    currentActionDisplay.textContent = step.message;
+    
+    const highlights = { i: step.i, maxIdx: step.maxIdx, leftIdx: step.leftIdx, rightIdx: step.rightIdx };
+    renderDigits(initialNumStr.split(''), highlights);
+    updateStateDisplay(step);
+
+    switch (step.type) {
+        case 'swap':
+            playSound('sound-calc');
+            const leftBox = document.getElementById(`digit-${step.leftIdx}`);
+            const rightBox = document.getElementById(`digit-${step.rightIdx}`);
+            const leftRow = document.getElementById(`row-${step.leftIdx}`);
+            const rightRow = document.getElementById(`row-${step.rightIdx}`);
+
+            const yDiff = rightRow.offsetTop - leftRow.offsetTop;
+            
+            leftBox.classList.add('swapping');
+            rightBox.classList.add('swapping');
+
+            leftBox.style.transform = `translateY(${yDiff}px)`;
+            rightBox.style.transform = `translateY(${-yDiff}px)`;
+            
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            
+            renderDigits(step.finalDigits);
+            resultNumDisplay.textContent = step.finalDigits.join('');
+            break;
+
+        case 'finish':
+            playSound('sound-win');
+            resultNumDisplay.textContent = step.result;
+            overlay.innerHTML = `<span>SUCCESS!</span><span>Maximum Value: ${step.result}</span>`;
+            overlay.className = 'show';
+            simulationRunning = false;
+            break;
+        
+        default:
+            playSound('sound-calc');
+            break;
+    }
+    
+    currentStepIndex++;
+    if(simulationRunning) {
+        updateButtonState();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    numInput = document.getElementById('num_input_max_swap_p5');
+    startButton = document.getElementById('start_button_max_swap_p5');
+    nextStepButton = document.getElementById('next_step_button_max_swap_p5');
+    initialNumDisplay = document.getElementById('initial_num_display');
+    resultNumDisplay = document.getElementById('result_num_display');
+    varsDisplay = document.getElementById('vars_display_p5');
+    currentActionDisplay = document.getElementById('current_action_max_swap_display_p5');
+    logOutput = document.getElementById('log_output_max_swap_p5');
+    digitContainer = document.getElementById('digit_container_p5');
+    vizContainer = document.querySelector('.visualization-container-p5');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

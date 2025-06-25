@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Largest Palindromic Number Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Largest Palindromic Number – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Largest Palindromic Number</b> problem involves constructing the largest palindromic number possible using the digits from a given string. A palindromic number reads the same backward as forward.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm with Frequency Count</h3>
+    <pre><code>class Solution {
+    public String largestPalindromicNumber(String num) {
+        int[] count = new int[10];
+        for (char c : num.toCharArray()) {
+            count[c - '0']++;
+        }
+
+        StringBuilder half = new StringBuilder();
+        char middle = 0;
+
+        // Build the largest half of the palindrome
+        for (int i = 9; i >= 0; i--) {
+            while (count[i] >= 2) {
+                // Avoid leading zeroes in the palindrome
+                if (half.length() == 0 && i == 0) break;
+                half.append(i);
+                count[i] -= 2;
+            }
+            // Check for a middle digit
+            if (count[i] > 0 && middle == 0) {
+                middle = (char) (i + '0');
+            }
+        }
+
+        // Handle edge case: If no valid palindrome can be formed
+        if (half.length() == 0 && middle == 0) return "0";
+
+        // Construct the full palindrome
+        String halfStr = half.toString();
+        return middle == 0 ? halfStr + half.reverse() : halfStr + middle + half.reverse();
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/largest_palindromic_number_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Counting Digits:</b> <code>O(N)</code>, where <code>N</code> is the length of the input string.</li>
+      <li><b>Building Palindrome:</b> <code>O(1)</code>, as the digit range is fixed (0-9).</li>
+      <li><b>Total Complexity:</b> <code>O(N)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Constructing the largest palindromic number from a set of digits.</li>
+      <li>Solving problems involving frequency counts and string manipulation.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/largest-palindromic-number/" target="_blank" rel="noopener noreferrer">2384. Largest Palindromic Number</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: num = "98231256"
+Output: "292"
+
+Explanation:
+- Use digits [2, 9, 2] to form the largest palindrome: "292".</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a frequency array to count the occurrences of each digit.</li>
+      <li>Start building the palindrome from the largest digit to maximize its value.</li>
+      <li>Handle edge cases like all zeros or no valid palindrome.</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Best Time to Buy and Sell Stock Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Best Time to Buy and Sell Stock – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Best Time to Buy and Sell Stock</b> problem involves finding the maximum profit you can achieve by buying and selling a stock. You are given an array where each element represents the stock price on a given day. You can only complete one transaction (buy one and sell one share).</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm</h3>
+    <pre><code>class Solution {
+    public int maxProfit(int[] prices) {
+        int minPrice = Integer.MAX_VALUE;
+        int maxProfit = 0;
+
+        for (int price : prices) {
+            if (price < minPrice) {
+                minPrice = price; // Update the minimum price
+            } else if (price - minPrice > maxProfit) {
+                maxProfit = price - minPrice; // Update the maximum profit
+            }
+        }
+
+        return maxProfit;
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/best_time_to_buy_and_sell_stock_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the number of days (length of the prices array).</li>
+      <li><b>Space Complexity:</b> <code>O(1)</code>, as no additional space is used.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Optimizing profit in stock trading scenarios.</li>
+      <li>Finding maximum differences in arrays with constraints.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock/" target="_blank" rel="noopener noreferrer">121. Best Time to Buy and Sell Stock</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: prices = [7, 1, 5, 3, 6, 4]
+Output: 5
+
+Explanation:
+- Buy on day 2 (price = 1) and sell on day 5 (price = 6).
+- Profit = 6 - 1 = 5.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Track the minimum price encountered so far while iterating through the array.</li>
+      <li>Calculate the profit for each day by subtracting the minimum price from the current price.</li>
+      <li>Update the maximum profit whenever a higher profit is found.</li>
+    </ul>
+  </div>
+</body>
+</html>

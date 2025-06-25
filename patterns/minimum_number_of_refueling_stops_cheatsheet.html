@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimum Number of Refueling Stops Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Minimum Number of Refueling Stops – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Minimum Number of Refueling Stops</b> problem involves finding the minimum number of refueling stops required to reach a target distance with a given starting fuel. You are provided with a list of gas stations, each with a location and fuel capacity.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm with Max-Heap</h3>
+    <pre><code>class Solution {
+    public int minRefuelStops(int target, int startFuel, int[][] stations) {
+        PriorityQueue&lt;Integer&gt; maxHeap = new PriorityQueue&lt;&gt;(Collections.reverseOrder());
+        int fuel = startFuel, stops = 0, index = 0;
+
+        while (fuel < target) {
+            // Add all reachable stations to the max-heap
+            while (index < stations.length && stations[index][0] <= fuel) {
+                maxHeap.offer(stations[index][1]);
+                index++;
+            }
+
+            // If no station is reachable and target is not reached, return -1
+            if (maxHeap.isEmpty()) return -1;
+
+            // Refuel with the station providing the most fuel
+            fuel += maxHeap.poll();
+            stops++;
+        }
+
+        return stops;
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/min_refueling_stops_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Heap Operations:</b> <code>O(N log N)</code>, where <code>N</code> is the number of stations.</li>
+      <li><b>Total Complexity:</b> <code>O(N log N)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Optimizing resource usage in constrained environments.</li>
+      <li>Solving problems involving cumulative sums and greedy selection.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/minimum-number-of-refueling-stops/" target="_blank" rel="noopener noreferrer">871. Minimum Number of Refueling Stops</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: target = 100, startFuel = 10, stations = [[10,60],[20,30],[30,30],[60,40]]
+Output: 2
+
+Explanation:
+- Stop at station 0 (10, 60) to refuel. Fuel = 10 + 60 = 70.
+- Stop at station 3 (60, 40) to refuel. Fuel = 70 + 40 = 110.
+- Reach the target with 2 stops.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a max-heap to always refuel with the station providing the most fuel.</li>
+      <li>Iterate through stations and add them to the heap only if they are reachable.</li>
+      <li>If the heap is empty and the target is not reached, return <code>-1</code>.</li>
+    </ul>
+  </div>
+</body>
+</html>

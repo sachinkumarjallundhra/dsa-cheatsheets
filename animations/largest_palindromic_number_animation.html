@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Largest Palindromic Number Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-pal-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-pal-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-pal-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 220px; }
+        .controls-pal-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-pal-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-pal-p5 { display: grid; grid-template-columns: minmax(320px, 1.2fr) 3fr; gap: 15px; }
+        .left-panel-pal-p5, .right-panel-pal-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-pal-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 400px; background-color: #eceff1; overflow: hidden; position: relative; }
+        
+        .construction-area { text-align: center; margin-top: 15px; }
+        .construction-label { font-size: 0.9em; color: #6c757d; }
+        .construction-text { font-size: 1.5em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; background: #fff; padding: 5px 10px; border-radius: 4px; border: 1px dashed #ccc; min-height: 1.5em; }
+        #total_result_display_p5 { font-size: 1.8em; color: #28a745; margin-top: 15px; text-align: center; font-weight: bold; }
+        #total_result_display_p5.pulse { animation: pulse-anim 0.5s ease-out; }
+
+        #current_action_pal_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; font-size:1em; }
+
+        #freq-bins-container { display: flex; justify-content: space-around; padding: 10px; border: 2px solid #b0bec5; background: #cfd8dc; border-radius: 5px; margin-bottom: 20px;}
+        .freq-bin { width: 50px; height: 70px; border: 2px solid #78909c; background: #fff; border-radius: 5px; text-align: center; transition: all 0.3s; }
+        .bin-label { font-weight: bold; font-size: 1.2em; background: #78909c; color: white; }
+        .bin-count { font-size: 2em; padding-top: 5px; font-family: 'Courier New', Courier, monospace; }
+        .freq-bin.highlight { box-shadow: 0 0 15px gold; border-color: gold; }
+
+        #assembly-area { position: absolute; bottom: 30px; width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; }
+        .assembly-part { font-size: 2em; font-family: 'Courier New', Courier, monospace; font-weight: bold; transition: all 0.5s ease-in-out; }
+        #left-half { color: #0d6efd; }
+        #center-piece { color: #28a745; transform: scale(0); }
+        #right-half { color: #0d6efd; }
+
+        #crane { position: absolute; top: 100px; left: 50%; font-size: 3em; transition: all 0.5s ease-in-out; z-index: 10; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 20; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        #overlay span:first-child { font-size: 3em; color: #90ee90; }
+        #overlay span:last-child { font-size: 2em; margin-top: 10px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 10px; }
+
+        .log-container-pal-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_pal_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes pulse-anim { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Largest Palindromic Number</h1>
+
+        <div class="controls-pal-p5">
+            <label for="num_input_p5">Input Number String:</label>
+            <input type="text" id="num_input_p5" value="444947137">
+            <button id="start_button_pal_p5">Start/Reset</button>
+            <button id="next_step_button_pal_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-pal-p5">
+            <div class="left-panel-pal-p5">
+                <div class="state-panel-pal-p5">
+                    <h2>Construction</h2>
+                    <div class="construction-area">
+                        <div class="construction-label">Left Half</div>
+                        <div id="left_half_text" class="construction-text"></div>
+                    </div>
+                     <div class="construction-area">
+                        <div class="construction-label">Center Piece</div>
+                        <div id="center_piece_text" class="construction-text"></div>
+                    </div>
+                    <div id="total_result_display_p5">Result: ""</div>
+                    <div id="current_action_pal_display_p5"></div>
+                </div>
+                <div class="log-container-pal-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_pal_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-pal-p5">
+                 <div class="visualization-container-p5">
+                    <div id="freq-bins-container"></div>
+                    <div id="crane">🏗️</div>
+                    <div id="assembly-area">
+                        <div id="left-half" class="assembly-part"></div>
+                        <div id="center-piece" class="assembly-part"></div>
+                        <div id="right-half" class="assembly-part"></div>
+                    </div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+// --- STATE VARIABLES ---
+let FREQ_MAP = new Array(10).fill(0);
+let leftHalf = "", centerPiece = "", rightHalf = "";
+let simulationRunning = false;
+let currentPhase = 'idle';
+let loop_i = 9; // Index for our manual loops
+
+// --- DOM ELEMENTS ---
+let numInput, startButton, nextStepButton, leftHalfText, centerPieceText, 
+    totalResultDisplay, currentActionDisplay, logOutput, freqBinsContainer, 
+    crane, leftHalfAssembly, centerPieceAssembly, rightHalfAssembly, overlay;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 400; 
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+
+function updateStateDisplay() {
+    leftHalfText.textContent = leftHalf;
+    centerPieceText.textContent = centerPiece;
+    const finalResult = `${leftHalf}${centerPiece}${rightHalf}`;
+    totalResultDisplay.textContent = `Result: "${finalResult}"`;
+}
+
+function renderFreqBins() {
+    freqBinsContainer.innerHTML = '';
+    for(let i=0; i<10; i++) {
+        const binEl = document.createElement('div');
+        binEl.className = 'freq-bin';
+        binEl.id = `bin-${i}`;
+        binEl.innerHTML = `<div class="bin-label">${i}</div><div class="bin-count" id="bin-count-${i}">${FREQ_MAP[i]}</div>`;
+        freqBinsContainer.appendChild(binEl);
+    }
+}
+
+async function moveCraneToBin(digit) {
+    const binEl = document.getElementById(`bin-${digit}`);
+    if (binEl) {
+        crane.style.left = `${binEl.offsetLeft + binEl.offsetWidth / 2 - 20}px`;
+        crane.style.top = `${binEl.offsetTop + binEl.offsetHeight - 20}px`;
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+    }
+}
+
+function showOverlay(result) {
+    overlay.innerHTML = `<span>SUCCESS!</span><span>Largest Palindrome: ${result}</span>`;
+    overlay.className = 'show';
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!simulationRunning) startButton.textContent = "Reset";
+}
+
+async function initializeAnimation() {
+    log("Starting Palindrome Factory...");
+    simulationRunning = false; 
+    
+    const numStr = numInput.value;
+    if (!numStr.match(/^[0-9]+$/)) {
+        alert("Please enter a string containing only digits.");
+        return;
+    }
+    
+    FREQ_MAP.fill(0);
+    leftHalf = ""; centerPiece = ""; rightHalf = "";
+    
+    logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+    overlay.className = '';
+    leftHalfAssembly.textContent = '';
+    centerPieceAssembly.textContent = '';
+    rightHalfAssembly.textContent = '';
+    rightHalfAssembly.style.transform = '';
+    centerPieceAssembly.style.transform = 'scale(0)';
+    
+    renderFreqBins(); // Render empty bins first
+    updateStateDisplay();
+
+    currentActionDisplay.textContent = `Click 'Next Step' to count digits.`;
+    currentPhase = 'count_freqs';
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    nextStepButton.disabled = true;
+    document.querySelectorAll('.freq-bin.highlight').forEach(el => el.classList.remove('highlight'));
+    
+    switch(currentPhase) {
+        case 'count_freqs':
+            log("--- Counting Digit Frequencies ---");
+            currentActionDisplay.textContent = "Counting frequencies of each digit...";
+            const numStr = numInput.value;
+            for(let i = 0; i < numStr.length; i++) {
+                const digit = parseInt(numStr[i]);
+                const binEl = document.getElementById(`bin-${digit}`);
+                binEl.classList.add('highlight');
+                await moveCraneToBin(digit);
+                FREQ_MAP[digit]++;
+                document.getElementById(`bin-count-${digit}`).textContent = FREQ_MAP[digit];
+                await new Promise(r => setTimeout(r, 150));
+                binEl.classList.remove('highlight');
+            }
+            log("Finished counting.");
+            currentActionDisplay.textContent = "Let's build the outer parts of the palindrome.";
+            currentPhase = 'start_build_halves';
+            break;
+
+        case 'start_build_halves':
+            log("\n--- Building Halves from Pairs (Largest to Smallest) ---");
+            currentActionDisplay.textContent = "Greedily finding pairs of largest digits...";
+            loop_i = 9; // Start loop from 9
+            currentPhase = 'check_digit_pair';
+            break;
+            
+        case 'check_digit_pair':
+            if (loop_i < 0) {
+                currentPhase = 'start_find_center';
+                await performNextStep(); // Transition to next major phase
+                return;
+            }
+            const i = loop_i;
+            const binEl = document.getElementById(`bin-${i}`);
+            binEl.classList.add('highlight');
+            await moveCraneToBin(i);
+            currentActionDisplay.textContent = `Checking for pairs of '${i}'...`;
+            
+            if (i === 0 && leftHalf === "") {
+                log("Cannot use '0' as the first digit. Skipping.");
+                currentActionDisplay.textContent = "Skipping '0' to avoid leading zeros.";
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                loop_i--; // Move to next digit in the loop
+            } else if (FREQ_MAP[i] >= 2) {
+                log(`Found a pair of '${i}'.`);
+                currentPhase = 'add_pair';
+            } else {
+                log(`No pairs for '${i}'.`);
+                loop_i--; // Move to next digit
+            }
+            binEl.classList.remove('highlight');
+            break;
+
+        case 'add_pair':
+            const digitToAdd = loop_i;
+            currentActionDisplay.textContent = `Adding a pair of '${digitToAdd}'...`;
+            leftHalf += digitToAdd;
+            rightHalf = digitToAdd + rightHalf;
+            FREQ_MAP[digitToAdd] -= 2;
+            document.getElementById(`bin-count-${digitToAdd}`).textContent = FREQ_MAP[digitToAdd];
+            leftHalfAssembly.textContent = leftHalf;
+            rightHalfAssembly.textContent = rightHalf;
+            updateStateDisplay();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            
+            // After adding, check again for the same digit before moving on
+            currentPhase = 'check_digit_pair';
+            break;
+
+        case 'start_find_center':
+            log("\n--- Searching for Largest Center Digit ---");
+            currentActionDisplay.textContent = "Searching for the largest single digit remaining...";
+            loop_i = 9; // Reset loop for center search
+            currentPhase = 'find_center_digit';
+            break;
+
+        case 'find_center_digit':
+            if (loop_i < 0) {
+                log("No single digit left for the center.");
+                currentActionDisplay.textContent = "No center piece found.";
+                currentPhase = 'assemble';
+                break;
+            }
+            const center_i = loop_i;
+            const centerBinEl = document.getElementById(`bin-${center_i}`);
+            centerBinEl.classList.add('highlight');
+            await moveCraneToBin(center_i);
+            currentActionDisplay.textContent = `Checking for a single '${center_i}'...`;
+
+            if (FREQ_MAP[center_i] > 0) {
+                centerPiece = center_i.toString();
+                log(`Found '${center_i}' to be the center piece.`);
+                currentActionDisplay.textContent = `Found '${center_i}' for the center!`;
+                centerPieceAssembly.textContent = centerPiece;
+                centerPieceAssembly.style.transform = 'scale(1)';
+                updateStateDisplay();
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                currentPhase = 'assemble';
+            } else {
+                loop_i--; // Move to next digit
+            }
+            centerBinEl.classList.remove('highlight');
+            break;
+
+        case 'assemble':
+            log("\n--- Assembling Final Palindrome ---");
+            currentActionDisplay.textContent = `Assembling the parts...`;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+            let finalResult;
+            if (leftHalf === "" && centerPiece === "") {
+                 finalResult = "0"; // Special case for input like "00"
+            } else {
+                 finalResult = `${leftHalf}${centerPiece}${rightHalf}`;
+            }
+            if(finalResult === "") finalResult = "0"; // Case for single digit inputs resulting in empty halves
+            
+            // Final assembly animation
+            rightHalfAssembly.style.transform = "translateX(-60px) scaleX(-1)";
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            leftHalfAssembly.style.transform = "translateX(60px)";
+            centerPieceAssembly.style.transform = "scale(1.2)";
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            
+            log(`Final result: ${finalResult}`);
+            showOverlay(finalResult);
+            simulationRunning = false;
+            break;
+    }
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    numInput = document.getElementById('num_input_p5');
+    startButton = document.getElementById('start_button_pal_p5');
+    nextStepButton = document.getElementById('next_step_button_pal_p5');
+    leftHalfText = document.getElementById('left_half_text');
+    centerPieceText = document.getElementById('center_piece_text');
+    totalResultDisplay = document.getElementById('total_result_display_p5');
+    currentActionDisplay = document.getElementById('current_action_pal_display_p5');
+    logOutput = document.getElementById('log_output_pal_p5');
+    freqBinsContainer = document.getElementById('freq-bins-container');
+    crane = document.getElementById('crane');
+    leftHalfAssembly = document.getElementById('left-half');
+    centerPieceAssembly = document.getElementById('center-piece');
+    rightHalfAssembly = document.getElementById('right-half');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

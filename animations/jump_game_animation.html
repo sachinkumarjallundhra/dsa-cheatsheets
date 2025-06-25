@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jump Game Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-jg1-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-jg1-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-jg1-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; font-size: 1.1em; }
+        .controls-jg1-p5 button { padding: 10px 15px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-jg1-p5 button:hover { background-color: #229954; }
+        .controls-jg1-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-jg1-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-jg1-p5, .right-panel-jg1-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-jg1-p5, .visualization-wrapper-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .visualization-wrapper-p5 { min-height: 300px; background-color: #e0f2f1; overflow-x: auto; position: relative; display: flex; align-items: center; padding: 40px 20px; }
+        .platforms-container-p5 { display: flex; flex-direction: row; align-items: center; gap: 5px; position: relative; }
+        
+        .platform-box { width: 70px; height: 70px; background: #a5d6a7; border: 2px solid #388e3c; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold; color: #1b5e20; position: relative; flex-shrink: 0; }
+        .platform-box .value { font-size: 1.8em; }
+        .platform-box .index { font-size: 0.8em; color: #4caf50; position: absolute; top: 2px; }
+
+        #runner_p5 { position: absolute; bottom: 80px; font-size: 3em; transition: all 0.4s ease-in-out; z-index: 3; transform: translateX(-50%); }
+        #runner_p5.is-falling { transform: translate(-50%, 80px); opacity: 0; }
+
+        #farthest_overlay_p5 { position: absolute; bottom: 20px; height: 95px; border-radius: 8px; opacity: 0.3; transition: all 0.4s ease-in-out; z-index: 1; pointer-events: none; background: #81c784; border: 2px solid #388e3c; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; }
+        
+        #result_display_p5 { grid-column: 1 / -1; font-size: 1.4em; font-weight: bold; margin-top: 10px; }
+        #result_display_p5.yes { color: #28a745; }
+        #result_display_p5.no { color: #dc3545; }
+
+        #current_action_jg1_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay.show { opacity: 1; }
+
+        .log-container-jg1-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_jg1_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @media (max-width: 1000px) {
+            .main-content-jg1-p5 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Jump Game</h1>
+
+        <div class="controls-jg1-p5">
+            <label for="nums_input_p5">Input Array:</label>
+            <input type="text" id="nums_input_p5" value="2,3,1,1,4">
+            <button id="start_button_jg1_p5">Start/Reset</button>
+            <button id="next_step_button_jg1_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-jg1-p5">
+            <div class="left-panel-jg1-p5">
+                <div class="state-panel-jg1-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Current Index (i)</div><div id="i_display_p5" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">Max Reach</div><div id="farthest_display_p5" class="value">0</div></div>
+                    </div>
+                     <div id="result_display_p5" class="state-item-p5">Result: ?</div>
+                    <div id="current_action_jg1_display_p5"></div>
+                </div>
+                <div class="log-container-jg1-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_jg1_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-jg1-p5">
+                 <div class="visualization-wrapper-p5" id="visualization_wrapper_p5">
+                    <!-- Platforms will be added here by JS -->
+                    <div id="farthest_overlay_p5" class="overlay-region"></div>
+                    <div id="runner_p5">🏃‍♂️</div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <audio id="sound-move" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgACAAIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+    <audio id="sound-fail" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A"></audio>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let isAudioUnlocked = false;
+
+// --- DOM ELEMENTS ---
+let numsInput, startButton, nextStepButton, iDisplay, farthestDisplay, resultDisplay,
+    currentActionDisplay, logOutput, vizWrapper, overlay, runner, farthestOverlay;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-move', 'sound-win', 'sound-fail'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(nums) {
+    const steps = [];
+    const n = nums.length;
+    let farthest = 0;
+
+    steps.push({ type: 'initial', i: -1, farthest, message: 'Start. Max reach is 0.' });
+
+    for (let i = 0; i < n; i++) {
+        if (i > farthest) {
+            steps.push({
+                type: 'fail', i, farthest,
+                message: `Current position ${i} is beyond the max reach of ${farthest}. Impossible to continue.`
+            });
+            return steps;
+        }
+
+        steps.push({
+            type: 'scan', i, farthest,
+            message: `At index ${i}, our max reach is ${farthest}.`
+        });
+
+        let oldFarthest = farthest;
+        farthest = Math.max(farthest, i + nums[i]);
+
+        if (farthest > oldFarthest) {
+            steps.push({
+                type: 'update_farthest', i, farthest,
+                message: `From index ${i}, we can now reach index ${i + nums[i]}. New max reach is ${farthest}.`
+            });
+        }
+        
+        if (farthest >= n - 1) {
+            steps.push({
+                type: 'win', i, farthest,
+                message: `Success! The max reach of ${farthest} covers the last index (${n - 1}).`
+            });
+            return steps;
+        }
+    }
+    
+    if (farthest >= n - 1) {
+        steps.push({
+            type: 'win', i: n-1, farthest,
+            message: `Success! The last index is reachable.`
+        });
+    }
+
+    return steps;
+}
+
+function renderState(step) {
+    iDisplay.textContent = step.i >= 0 ? step.i : 'N/A';
+    farthestDisplay.textContent = step.farthest;
+
+    const platforms = vizWrapper.querySelectorAll('.platform-box');
+    if (platforms.length === 0) return;
+
+    if (step.i >= 0 && step.i < platforms.length) {
+        const platform = platforms[step.i];
+        runner.style.left = `${platform.offsetLeft + platform.offsetWidth / 2}px`;
+    } else {
+        runner.style.left = `-50px`;
+    }
+
+    const firstPlatform = platforms[0];
+    const platformWidth = firstPlatform.offsetWidth;
+    const fIndex = Math.min(step.farthest, platforms.length - 1);
+    const fPlatform = platforms[fIndex];
+
+    if(fPlatform){
+        farthestOverlay.style.left = `${firstPlatform.offsetLeft}px`;
+        farthestOverlay.style.width = `${fPlatform.offsetLeft + platformWidth - firstPlatform.offsetLeft}px`;
+    }
+
+    runner.classList.toggle('is-falling', step.type === 'fail');
+
+    if (step.type === 'win' || step.type === 'fail') {
+        const canJump = step.type === 'win';
+        resultDisplay.textContent = `Result: ${canJump ? 'Possible' : 'Impossible'}`;
+        resultDisplay.className = `state-item-p5 ${canJump ? 'yes' : 'no'}`;
+    } else {
+        resultDisplay.textContent = 'Result: ?';
+        resultDisplay.className = 'state-item-p5';
+    }
+}
+
+async function initializeAnimation() {
+    simulationRunning = false;
+    let nums;
+    try {
+        nums = numsInput.value.split(',').map(s => parseInt(s.trim()));
+        if (nums.some(isNaN)) throw new Error("Invalid array input.");
+    } catch (e) {
+        alert(e.message);
+        return;
+    }
+    
+    vizWrapper.querySelectorAll('.platform-box').forEach(p => p.remove());
+    nums.forEach((val, i) => {
+        const platform = document.createElement('div');
+        platform.className = 'platform-box';
+        platform.innerHTML = `<span class="index">${i}</span><span class="value">${val}</span>`;
+        vizWrapper.insertBefore(platform, farthestOverlay);
+    });
+
+    animationSteps = generateAnimationSteps(nums);
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    
+    setTimeout(() => {
+        const firstStep = animationSteps[0];
+        renderState(firstStep);
+        currentActionDisplay.textContent = firstStep.message;
+        log(firstStep.message);
+        simulationRunning = true; 
+        updateButtonState();
+    }, 100);
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+    log(`\n--- Step ${currentStepIndex + 1}: ${step.type} ---`);
+    log(step.message);
+    currentActionDisplay.textContent = step.message;
+    
+    renderState(step);
+    
+    switch (step.type) {
+        case 'scan':
+        case 'update_farthest':
+             playSound('sound-move');
+             break;
+        case 'win':
+            playSound('sound-win');
+            overlay.className = 'show';
+            overlay.innerHTML = `<span style="font-size:3em">🏁</span><div style="font-size:1.5em">Success!</div><div style="font-size:1.8em">The last index is reachable.</div>`;
+            simulationRunning = false;
+            break;
+        case 'fail':
+            playSound('sound-fail');
+            overlay.className = 'show';
+            overlay.innerHTML = `<span style="font-size:3em">❌</span><div style="font-size:1.5em">Failure!</div><div style="font-size:1.8em">The last index is unreachable.</div>`;
+            simulationRunning = false;
+            break;
+    }
+    
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    numsInput = document.getElementById('nums_input_p5');
+    startButton = document.getElementById('start_button_jg1_p5');
+    nextStepButton = document.getElementById('next_step_button_jg1_p5');
+    iDisplay = document.getElementById('i_display_p5');
+    farthestDisplay = document.getElementById('farthest_display_p5');
+    resultDisplay = document.getElementById('result_display_p5');
+    currentActionDisplay = document.getElementById('current_action_jg1_display_p5');
+    logOutput = document.getElementById('log_output_jg1_p5');
+    vizWrapper = document.getElementById('visualization_wrapper_p5');
+    overlay = document.getElementById('overlay');
+    runner = document.getElementById('runner_p5');
+    farthestOverlay = document.getElementById('farthest_overlay_p5');
+
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

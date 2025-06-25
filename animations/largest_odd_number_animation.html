@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Largest Odd Number in String Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-lon-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-lon-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-lon-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; font-size: 1.1em; }
+        .controls-lon-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-lon-p5 button:hover { background-color: #0056b3; }
+        .controls-lon-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-lon-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-lon-p5, .right-panel-lon-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-lon-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 400px; background-color: #e0f7fa; overflow-x: auto; position: relative; display: flex; justify-content: center; align-items: center;}
+        
+        .digit-container-p5 { display: flex; gap: 10px; position: relative; top: -50px; padding: 20px; }
+        .digit-box-p5 { width: 60px; height: 80px; background: #fff; border: 2px solid #90a4ae; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 2.5em; font-weight: bold; color: #37474f; transition: all 0.4s ease-in-out; position: relative; }
+        .digit-box-p5.highlight-i { transform: translateY(-15px); border-color: #fbc02d; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
+        .digit-box-p5.is-odd { border-color: #4CAF50; box-shadow: 0 0 15px 5px #4CAF50; }
+        .digit-box-p5.is-even::after { content: '❌'; color: #f44336; position: absolute; font-size: 0.8em; opacity: 0; animation: fade-in 0.4s forwards; }
+        .digit-box-p5.discarded { opacity: 0.2; transform: translateY(40px); }
+
+        @keyframes fade-in { to { opacity: 1; } }
+
+        #i_pointer { position: absolute; top: 0; transform: translateX(-50%); font-family: 'Courier New', monospace; font-size: 1.5em; font-weight: bold; transition: left 0.4s ease-in-out; color: #d35400; visibility: hidden;}
+        #i_pointer::before { content: 'i'; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr; gap: 15px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; min-height: 1.2em; word-wrap: break-word; }
+
+        #current_action_lon_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:3em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        .overlay-icon { font-size: 4em; }
+        .overlay-text { font-size: 1.8em; margin-top: 10px; }
+
+        .log-container-lon-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_lon_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Largest Odd Number in String</h1>
+
+        <div class="controls-lon-p5">
+            <label for="num_input_lon_p5">Number String:</label>
+            <input type="text" id="num_input_lon_p5" value="52478">
+            <button id="start_button_lon_p5">Start/Reset</button>
+            <button id="next_step_button_lon_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-lon-p5">
+            <div class="left-panel-lon-p5">
+                <div class="state-panel-lon-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Input Number</div><div id="input_num_display_p5" class="value"></div></div>
+                        <div class="state-item-p5"><div class="label">Result</div><div id="result_num_display_p5" class="value"></div></div>
+                    </div>
+                    <div id="current_action_lon_display_p5"></div>
+                </div>
+                <div class="log-container-lon-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_lon_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-lon-p5">
+                 <div class="visualization-container-p5">
+                    <div id="digit_container_p5"></div>
+                    <div id="i_pointer"></div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <audio id="sound-move" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgACAAIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+    <audio id="sound-fail" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A"></audio>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let isAudioUnlocked = false;
+let initialNum = '';
+
+// --- DOM ELEMENTS ---
+let numInput, startButton, nextStepButton, inputNumDisplay, resultNumDisplay,
+    currentActionDisplay, logOutput, digitContainer, iPointer, overlay;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 600; 
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-move', 'sound-win', 'sound-fail'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(num) {
+    const steps = [];
+    let result = "";
+
+    steps.push({
+        type: 'initial',
+        digits: num.split(''),
+        message: 'Goal: Find the longest prefix ending in an odd digit. We scan from right to left.'
+    });
+
+    for (let i = num.length - 1; i >= 0; i--) {
+        const digit = parseInt(num[i]);
+
+        steps.push({
+            type: 'scan', i, digits: num.split(''),
+            message: `Scanning index ${i} (digit '${digit}').`
+        });
+
+        if (digit % 2 !== 0) {
+            result = num.substring(0, i + 1);
+            steps.push({
+                type: 'found_odd', i, digits: num.split(''),
+                message: `Digit '${digit}' is odd! This is the end of our result.`
+            });
+             steps.push({
+                type: 'form_result', i, result, digits: num.split(''),
+                message: `The result is the substring from the start up to index ${i}.`
+            });
+            break; 
+        } else {
+            steps.push({
+                type: 'is_even', i, digits: num.split(''),
+                message: `Digit '${digit}' is even. We discard it and continue.`
+            });
+        }
+    }
+    
+    if (result === "") {
+        steps.push({
+            type: 'no_odd_found', digits: num.split(''),
+            message: 'No odd digits were found in the entire string.'
+        });
+    }
+
+    steps.push({
+        type: 'finish',
+        result,
+        message: result ? `Success! The largest odd number is ${result}.` : `Finished. The result is an empty string.`
+    });
+
+    return steps;
+}
+
+function renderDigits(digits, highlights = {}) {
+    digitContainer.innerHTML = '';
+    digits.forEach((digit, index) => {
+        const digitBox = document.createElement('div');
+        digitBox.className = 'digit-box-p5';
+        digitBox.id = `digit-${index}`;
+        digitBox.textContent = digit;
+        
+        if (highlights.i === index) digitBox.classList.add('highlight-i');
+        if (highlights.is_odd_idx === index) digitBox.classList.add('is-odd');
+        if (highlights.is_even_idx === index) digitBox.classList.add('is-even');
+        if (highlights.discarded_after_idx !== undefined && index > highlights.discarded_after_idx) {
+            digitBox.classList.add('discarded');
+        }
+
+        digitContainer.appendChild(digitBox);
+    });
+
+    if (highlights.i !== undefined) {
+        const plotBox = document.getElementById(`digit-${highlights.i}`);
+        if(plotBox){
+            iPointer.style.left = `${plotBox.offsetLeft + plotBox.offsetWidth / 2}px`;
+            iPointer.style.visibility = 'visible';
+        }
+    } else {
+        iPointer.style.visibility = 'hidden';
+    }
+}
+
+async function initializeAnimation() {
+    simulationRunning = false; 
+    const numStr = numInput.value.trim();
+    if (!/^\d*$/.test(numStr)) {
+        alert("Please enter a string containing only digits.");
+        return;
+    }
+    initialNum = numStr;
+    
+    animationSteps = generateAnimationSteps(initialNum);
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    
+    inputNumDisplay.textContent = initialNum || '""';
+    resultNumDisplay.textContent = '?';
+
+    const firstStep = animationSteps[0];
+    renderDigits(firstStep.digits);
+    currentActionDisplay.textContent = firstStep.message;
+    log(firstStep.message);
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+    log(`\n--- Step ${currentStepIndex + 1}: ${step.type} ---`);
+    log(step.message);
+    currentActionDisplay.textContent = step.message;
+
+    switch (step.type) {
+        case 'scan':
+            playSound('sound-move');
+            renderDigits(step.digits, { i: step.i });
+            break;
+        case 'found_odd':
+            playSound('sound-win');
+            renderDigits(step.digits, { i: step.i, is_odd_idx: step.i });
+            break;
+        case 'is_even':
+            playSound('sound-fail');
+            renderDigits(step.digits, { i: step.i, is_even_idx: step.i });
+            break;
+        case 'form_result':
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+            renderDigits(step.digits, { is_odd_idx: step.i, discarded_after_idx: step.i });
+            iPointer.style.visibility = 'hidden';
+            break;
+        case 'no_odd_found':
+            renderDigits(step.digits);
+            iPointer.style.visibility = 'hidden';
+            break;
+        case 'finish':
+            resultNumDisplay.textContent = step.result || '""';
+            overlay.className = 'show';
+            const success = step.result !== "";
+            if (success) {
+                playSound('sound-win');
+                overlay.innerHTML = `<span class="overlay-icon">✅</span><span class="overlay-text">Result: ${step.result}</span>`;
+            } else {
+                playSound('sound-fail');
+                overlay.innerHTML = `<span class="overlay-icon">∅</span><span class="overlay-text">No odd number found</span>`;
+            }
+            simulationRunning = false;
+            break;
+    }
+    
+    currentStepIndex++;
+    if(simulationRunning) {
+        updateButtonState();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    numInput = document.getElementById('num_input_lon_p5');
+    startButton = document.getElementById('start_button_lon_p5');
+    nextStepButton = document.getElementById('next_step_button_lon_p5');
+    inputNumDisplay = document.getElementById('input_num_display_p5');
+    resultNumDisplay = document.getElementById('result_num_display_p5');
+    currentActionDisplay = document.getElementById('current_action_lon_display_p5');
+    logOutput = document.getElementById('log_output_lon_p5');
+    digitContainer = document.getElementById('digit_container_p5');
+    iPointer = document.getElementById('i_pointer');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

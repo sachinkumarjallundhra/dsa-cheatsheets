@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permutations Backtracking Animation with Tree</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1200px; 
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.1em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 10px;
+        }
+
+        .controls-perm {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; padding: 15px;
+            background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;
+        }
+        .controls-perm label { font-weight: bold; margin-right: 5px; }
+        .controls-perm input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
+        .controls-perm button {
+            padding: 10px 15px; background-color: #3498db; color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;
+        }
+        .controls-perm button:hover { background-color: #2980b9; }
+        .controls-perm button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-layout-perm {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr 1.7fr; 
+            gap: 15px;
+        }
+        .config-panel-perm, .recursion-tree-panel-perm, .results-panel-perm {
+            padding: 10px; background-color: #fdfdfd;
+            border: 1px solid #e0e0e0; border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+        .config-panel-perm > div { margin-bottom: 8px; }
+        .config-panel-perm span { font-weight: bold; }
+
+        .display-area-perm {
+            padding: 8px; border: 1px dashed #ccc; min-height: 35px;
+            display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+            margin-bottom: 8px;
+        }
+        .element-perm, .used-flag-perm {
+            padding: 5px 9px; border-radius: 4px; font-size: 0.9em; text-align: center;
+            border: 1px solid #bdc3c7; background-color: #ecf0f1;
+            transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .nums-array-perm .element-perm.highlight-current-eval { background-color: #f1c40f !important; transform: scale(1.1); border-color: #d39e00 !important; }
+        .nums-array-perm .element-perm.is-used { background-color: #e0e0e0 !important; color: #999; text-decoration: line-through; }
+        
+        .used-array-perm .used-flag-perm { min-width: 35px; font-size:0.8em; }
+        .used-array-perm .used-flag-perm.true { background-color: #f5b7b1; color: #c0392b; } 
+        .used-array-perm .used-flag-perm.false { background-color: #a9dfbf; color: #27ae60; } 
+        .used-array-perm .used-flag-perm.changing { animation: pulse-used-perm 0.5s; }
+        .used-array-perm .used-flag-perm.highlight-check { /* New for highlighting used flag */
+            transform: scale(1.2);
+            border-color: #f39c12 !important; 
+            box-shadow: 0 0 6px #f39c12;
+        }
+        @keyframes pulse-used-perm { 0%,100% {transform: scale(1);} 50% {transform: scale(1.15);} }
+
+
+        .current-list-perm .element-perm { background-color: #aed6f1; border-color: #85c1e9; }
+        .current-list-perm .element-perm.adding-perm { animation: popInPerm 0.3s ease-out; }
+        .current-list-perm .element-perm.removing-perm { transform: scale(0.5) translateY(-5px) ; opacity: 0; }
+
+        .results-panel-perm h2 { margin-bottom: 8px; }
+        .result-list-container-perm { 
+            flex-grow: 1; 
+            max-height: 400px; overflow-y: auto; 
+            border: 1px dashed #a9dfbf; padding: 5px;
+        }
+        .result-permutation-perm {
+            display: flex; gap: 4px; padding: 5px; margin-bottom: 5px;
+            border: 1px solid #a9dfbf; background-color: #e8f8f5; border-radius: 4px;
+            animation: fadeInResultPerm 0.5s ease-out;
+        }
+        .result-permutation-perm .element-perm { font-size: 0.9em; padding: 4px 8px; background-color: #d4efdf; }
+
+        @keyframes popInPerm { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
+        @keyframes fadeInResultPerm { from { opacity:0; transform: translateY(10px)} to { opacity:1; transform: translateY(0)} }
+        
+        #current_action_perm_display { text-align:center; margin:10px 0; font-weight:bold; min-height:1.2em; color: #c0392b;}
+        
+        .recursion-tree-panel-perm {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            min-height: 200px; 
+            max-height: 450px; 
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .tree-node-perm {
+            padding: 5px 7px;
+            margin-bottom: 3px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: #ffffff;
+            font-size: 0.8em;
+            line-height: 1.3;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            position: relative; 
+        }
+        .tree-node-perm.active-call {
+            background-color: #fff3cd; 
+            border-left: 4px solid #ffc107; /* More prominent active call */
+            font-weight: bold;
+        }
+        .tree-node-perm.returned-call {
+            background-color: #e9ecef; 
+            opacity: 0.7;
+            border-left: 4px solid #d6d8db;
+        }
+        .tree-node-perm .call-signature { font-weight: bold; color: #0056b3; display: block;}
+        .tree-node-perm .node-current-list { font-style: italic; color: #5a6268; display: block; margin-top: 2px;}
+        .tree-node-perm .node-loop-info { font-size: 0.9em; color: #777; display: block;}
+
+
+        .log-container-perm { background-color: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; margin-top: 20px; grid-column: 1 / -1;}
+        #log_output_perm { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Backtracking: Permutations Animation</h1>
+
+        <div class="controls-perm">
+            <label for="nums_input_perm">Nums (comma-separated):</label>
+            <input type="text" id="nums_input_perm" value="1,2,3">
+            <button id="start_button_perm">Start/Reset</button>
+            <button id="next_step_button_perm" disabled>Next Step</button>
+        </div>
+
+        <div class="main-layout-perm">
+            <div class="config-panel-perm">
+                <h2>Input & Current State</h2>
+                <div>Nums Array: <div id="nums_array_perm" class="display-area-perm nums-array-perm"></div></div>
+                <div>Used Array: <div id="used_array_perm" class="display-area-perm used-array-perm"></div></div>
+                <div>Current Permutation (current): <div id="current_list_perm" class="display-area-perm current-list-perm"></div></div>
+                <div id="current_action_perm_display"></div>
+            </div>
+
+            <div class="recursion-tree-panel-perm"> 
+                <h2>Recursion Call Visualization</h2>
+                <div id="recursion_tree_area_perm"></div>
+            </div>
+
+            <div class="results-panel-perm">
+                <h2>Result Permutations</h2>
+                <div id="result_list_container_perm" class="result-list-container-perm">
+                    <!-- Results will be appended here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-perm">
+            <h2>Log</h2>
+            <pre id="log_output_perm"></pre>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const numsInputEl = document.getElementById('nums_input_perm');
+        const startButton = document.getElementById('start_button_perm');
+        const nextStepButton = document.getElementById('next_step_button_perm');
+
+        const numsArrayDisplay = document.getElementById('nums_array_perm');
+        const usedArrayDisplay = document.getElementById('used_array_perm');
+        const recursionTreeArea = document.getElementById('recursion_tree_area_perm');
+        const currentListDisplay = document.getElementById('current_list_perm');
+        const currentActionDisplay = document.getElementById('current_action_perm_display');
+        const resultListContainer = document.getElementById('result_list_container_perm');
+        const logOutput = document.getElementById('log_output_perm');
+
+        const ANIMATION_DELAY = 650; 
+
+        let NUMS_PERM = [];
+        let N_PERM; 
+        let USED_PERM = []; 
+        
+        let resultPERM_actual = []; // To store actual algorithm results
+        let currentPERM = [];   
+
+        let callStackPERM = []; 
+        let currentPhasePERM = 'idle'; 
+        let uniqueNodeIdCounter = 0;
+
+
+        function logPERM(message, indent = 0) {
+            const indentation = '  '.repeat(indent);
+            logOutput.innerHTML += `${indentation}> ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+
+        function clearInteractionHighlightsPERM() {
+            // Clear highlights that are specific to one step/interaction
+            numsArrayDisplay.querySelectorAll('.element-perm.highlight-current-eval').forEach(el => el.classList.remove('highlight-current-eval'));
+            usedArrayDisplay.querySelectorAll('.used-flag-perm.highlight-check').forEach(el => el.classList.remove('highlight-check'));
+            // currentActionDisplay.textContent = ''; // Cleared by next action
+        }
+
+        function renderNumsArrayAndUsed() {
+            numsArrayDisplay.innerHTML = '';
+            usedArrayDisplay.innerHTML = '';
+            NUMS_PERM.forEach((val, index) => {
+                const el = document.createElement('div');
+                el.classList.add('element-perm');
+                el.id = `num-el-perm-${index}`;
+                el.textContent = val;
+                if (USED_PERM[index]) { 
+                    el.classList.add('is-used');
+                }
+                numsArrayDisplay.appendChild(el);
+
+                const usedEl = document.createElement('div');
+                usedEl.classList.add('used-flag-perm');
+                usedEl.id = `used-el-perm-${index}`;
+                usedEl.textContent = USED_PERM[index] ? 'T' : 'F';
+                usedEl.classList.toggle('true', USED_PERM[index]);
+                usedEl.classList.toggle('false', !USED_PERM[index]);
+                usedArrayDisplay.appendChild(usedEl);
+            });
+        }
+        
+        function renderCurrentList() {
+            currentListDisplay.innerHTML = '';
+            currentPERM.forEach(val => {
+                const el = document.createElement('div');
+                el.classList.add('element-perm');
+                el.textContent = val;
+                currentListDisplay.appendChild(el);
+            });
+        }
+        
+        async function addCurrentToResultVisual() {
+            const permutationCopy = [...currentPERM];
+            // resultPERM_actual.push(permutationCopy); // Actual algo result storage
+
+            const permDiv = document.createElement('div');
+            permDiv.classList.add('result-permutation-perm');
+            permutationCopy.forEach(val => {
+                const el = document.createElement('div');
+                el.classList.add('element-perm');
+                el.textContent = val;
+                permDiv.appendChild(el);
+            });
+            resultListContainer.appendChild(permDiv);
+            resultListContainer.scrollTop = resultListContainer.scrollHeight; 
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5)); 
+        }
+        
+        function renderRecursionTree() {
+            recursionTreeArea.innerHTML = '';
+            callStackPERM.forEach((frame, depth) => {
+                const nodeDiv = document.createElement('div');
+                nodeDiv.classList.add('tree-node-perm');
+                nodeDiv.id = frame.nodeId;
+                nodeDiv.style.marginLeft = `${depth * 15}px`;
+
+                let chosenNumInfo = "";
+                if (frame.chosenNumInfo && frame.chosenNumInfo.num !== undefined) {
+                    chosenNumInfo = ` (chose ${frame.chosenNumInfo.num} from nums[${frame.chosenNumInfo.index}])`;
+                }
+                
+                let loopInfo = `(Loop i=${frame.i === -1 ? 'starting' : frame.i})`;
+                if (currentPhasePERM === 'base_case_check' && depth === callStackPERM.length - 1 && !frame.isReturning) {
+                    loopInfo = "(Checking base case)";
+                } else if (frame.isReturning) {
+                     loopInfo = "(Returned)";
+                }
+
+                let content = `<span class="call-signature">${frame.funcName}${chosenNumInfo}</span>`;
+                content += `<span class="node-current-list">current: [${frame.currentAtPath.join(',') || ' '}]</span>`;
+                content += `<span class="node-loop-info">${loopInfo}</span>`;
+                
+                if (frame.isReturning) { 
+                    nodeDiv.classList.add('returned-call');
+                } else if (depth === callStackPERM.length - 1 && currentPhasePERM !== 'returning_from_call' && currentPhasePERM !== 'done') {
+                    nodeDiv.classList.add('active-call');
+                }
+                nodeDiv.innerHTML = content;
+                recursionTreeArea.appendChild(nodeDiv);
+            });
+            if(recursionTreeArea.lastElementChild) {
+                recursionTreeArea.lastElementChild.scrollIntoView({behavior: "smooth", block: "nearest"});
+            }
+        }
+
+
+        function initializeAnimation() {
+            logPERM("Initializing Permutations...");
+            clearInteractionHighlightsPERM();
+            try {
+                NUMS_PERM = numsInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            } catch (e) {
+                alert("Invalid Nums input. Use comma-separated numbers."); return;
+            }
+            
+            N_PERM = NUMS_PERM.length;
+            USED_PERM = new Array(N_PERM).fill(false);
+            resultPERM_actual = []; 
+            currentPERM = [];
+            callStackPERM = []; 
+            uniqueNodeIdCounter = 0;
+
+            renderNumsArrayAndUsed();
+            renderCurrentList();
+            resultListContainer.innerHTML = ''; 
+            logOutput.innerHTML = ""; 
+            recursionTreeArea.innerHTML = ""; 
+            
+            startButton.textContent = "Reset";
+            currentPhasePERM = 'idle'; 
+
+            if (N_PERM >= 0) { 
+                callStackPERM.push({ 
+                    i: -1, 
+                    funcName: "generatePermutations", 
+                    nodeId: `node-${uniqueNodeIdCounter++}`,
+                    currentAtPath: [], 
+                    isReturning: false,
+                    // chosenNumInfo: null // No num chosen to get to the root call
+                });
+                currentPhasePERM = 'base_case_check'; 
+                nextStepButton.disabled = false;
+                logPERM(`Initialized. Nums: [${NUMS_PERM.join(', ')}]. Starting generatePermutations.`);
+                currentActionDisplay.textContent = "Ready to generate permutations.";
+            } else { 
+                nextStepButton.disabled = true;
+                currentActionDisplay.textContent = "Input array invalid.";
+            }
+            renderRecursionTree();
+        }
+        
+        async function performNextStep() {
+            if (callStackPERM.length === 0) { 
+                logPERM("Algorithm complete.");
+                currentActionDisplay.textContent = "All permutations generated!";
+                nextStepButton.disabled = true;
+                startButton.textContent = "Start/Reset";
+                renderRecursionTree(); 
+                return;
+            }
+            
+            nextStepButton.disabled = true; 
+            clearInteractionHighlightsPERM();
+            
+            let currentFrame = callStackPERM[callStackPERM.length - 1];
+            const indent = callStackPERM.length -1;
+            
+            // Update active node in tree for the current phase
+            recursionTreeArea.querySelectorAll('.tree-node-perm.active-call').forEach(n => n.classList.remove('active-call'));
+            if (currentFrame && !currentFrame.isReturning) {
+                const currentFrameNode = document.getElementById(currentFrame.nodeId);
+                if(currentFrameNode) currentFrameNode.classList.add('active-call');
+            }
+
+
+            if (currentPhasePERM === 'base_case_check') {
+                currentActionDisplay.textContent = `Base Case: current.size (${currentPERM.length}) == N (${N_PERM})?`;
+                logPERM(`Depth ${indent}: Base Case Check: current.size (${currentPERM.length}) == N (${N_PERM})?`, indent);
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY/1.5));
+
+                if (currentPERM.length === N_PERM) {
+                    currentActionDisplay.textContent = `Permutation Found: [${currentPERM.join(',')}]`;
+                    logPERM(`  Depth ${indent}: Base Case TRUE. Adding [${currentPERM.join(',')}] to results.`, indent);
+                    resultPERM_actual.push([...currentPERM]); 
+                    await addCurrentToResultVisual();
+                    currentFrame.isReturning = true; 
+                    currentPhasePERM = 'returning_from_call'; 
+                } else {
+                    currentActionDisplay.textContent = `Base Case FALSE. Proceed to loop.`;
+                    logPERM(`  Depth ${indent}: Base Case FALSE. Proceed to loop.`, indent);
+                    currentFrame.i = -1; 
+                    currentPhasePERM = 'looping';
+                }
+            } 
+            else if (currentPhasePERM === 'looping') {
+                currentFrame.i++; 
+                renderRecursionTree(); // Update tree to show new 'i' in current frame
+
+                if (currentFrame.i < N_PERM) { 
+                    const numToConsider = NUMS_PERM[currentFrame.i];
+                    const numEl = document.getElementById(`num-el-perm-${currentFrame.i}`);
+                    const usedEl = document.getElementById(`used-el-perm-${currentFrame.i}`);
+
+                    if(numEl) numEl.classList.add('highlight-current-eval');
+                    if(usedEl) usedEl.classList.add('highlight-check'); 
+
+                    currentActionDisplay.textContent = `Loop i=${currentFrame.i}: Try ${numToConsider}. Used? ${USED_PERM[currentFrame.i]}`;
+                    logPERM(`Depth ${indent}: Loop i=${currentFrame.i}. Considering nums[${currentFrame.i}] = ${numToConsider}. used[${currentFrame.i}] = ${USED_PERM[currentFrame.i]}`, indent);
+                    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                    
+                    if(usedEl) usedEl.classList.remove('highlight-check');
+
+
+                    if (USED_PERM[currentFrame.i]) {
+                        currentActionDisplay.textContent = `${numToConsider} (at index ${currentFrame.i}) already used. Skip.`;
+                        logPERM(`  Depth ${indent}: nums[${currentFrame.i}] = ${numToConsider} is used. Skipping.`, indent);
+                        // Stay in 'looping' phase to try next i for this frame
+                    } else {
+                        currentActionDisplay.textContent = `Choose ${numToConsider}. Mark used[${currentFrame.i}]=T. Add to current.`;
+                        logPERM(`  Depth ${indent}: Choosing nums[${currentFrame.i}] = ${numToConsider}. Mark used[${currentFrame.i}]=true. Add to current.`, indent);
+                        
+                        USED_PERM[currentFrame.i] = true;
+                        if(usedEl) { usedEl.textContent = 'T'; usedEl.classList.remove('false'); usedEl.classList.add('true', 'changing'); }
+                        
+                        currentPERM.push(numToConsider);
+                        const tempEl = document.createElement('div'); 
+                        tempEl.classList.add('element-perm', 'adding-perm');
+                        tempEl.textContent = numToConsider;
+                        currentListDisplay.appendChild(tempEl);
+                        await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                        if(usedEl) usedEl.classList.remove('changing');
+                        renderCurrentList(); 
+                        renderNumsArrayAndUsed(); 
+
+                        currentPhasePERM = 'recursive_call_prep';
+                    }
+                } else {
+                    currentActionDisplay.textContent = `Loop finished for this call (Depth ${indent}).`;
+                    logPERM(`Depth ${indent}: Loop finished for this call. Returning.`, indent);
+                    currentFrame.isReturning = true;
+                    currentPhasePERM = 'returning_from_call';
+                }
+            }
+            else if (currentPhasePERM === 'recursive_call_prep') {
+                currentActionDisplay.textContent = `Recurse: generatePermutations(...)`;
+                logPERM(`Depth ${indent}: RECURSE: Calling generatePermutations(...) with current: [${currentPERM.join(',')}]`, indent);
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY/2));
+                
+                const parentFrame = callStackPERM[callStackPERM.length - 1];
+                callStackPERM.push({ 
+                    i: -1, 
+                    funcName: "generatePermutations",
+                    nodeId: `node-${uniqueNodeIdCounter++}`, 
+                    currentAtPath: [...currentPERM], 
+                    isReturning: false,
+                    chosenNumInfo: { num: NUMS_PERM[parentFrame.i], index: parentFrame.i } // Store what parent chose
+                }); 
+                currentPhasePERM = 'base_case_check'; 
+            }
+            else if (currentPhasePERM === 'returning_from_call') {
+                if (currentFrame) currentFrame.isReturning = true; 
+                renderRecursionTree(); 
+                currentActionDisplay.textContent = `Returning from call (Depth ${indent}).`;
+                logPERM(`Depth ${indent}: Returned from call.`, indent);
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY/2));
+
+                callStackPERM.pop(); 
+                if (callStackPERM.length === 0) { 
+                    currentPhasePERM = 'done'; 
+                    await performNextStep(); 
+                    return;
+                }
+                currentFrame = callStackPERM[callStackPERM.length - 1]; 
+                logPERM(`Returned to Depth ${indent-1}: (Caller loop i=${currentFrame.i}). Preparing to backtrack.`, indent-1);
+                currentPhasePERM = 'backtracking_remove'; 
+            }
+            else if (currentPhasePERM === 'backtracking_remove') {
+                const indexInNumsToUnmark = currentFrame.i; 
+                if (currentPERM.length > 0 && indexInNumsToUnmark >=0 && indexInNumsToUnmark < N_PERM) {
+                    const removedElement = currentPERM.pop(); 
+                    
+                    currentActionDisplay.textContent = `Backtrack: Removed ${removedElement}. Mark used[${indexInNumsToUnmark}]=F.`;
+                    logPERM(`Depth ${indent}: BACKTRACK: Removing ${removedElement} (from nums[${indexInNumsToUnmark}]). Mark used[${indexInNumsToUnmark}]=false.`, indent);
+
+                    USED_PERM[indexInNumsToUnmark] = false;
+                    const usedEl = document.getElementById(`used-el-perm-${indexInNumsToUnmark}`);
+                    if(usedEl) { usedEl.textContent = 'F'; usedEl.classList.remove('true'); usedEl.classList.add('false', 'changing');}
+                    
+                    if(currentListDisplay.lastElementChild){
+                        currentListDisplay.lastElementChild.classList.add('removing-perm');
+                         await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                    }
+                    if(usedEl) usedEl.classList.remove('changing');
+                    renderCurrentList();
+                    renderNumsArrayAndUsed(); 
+                } else {
+                     logPERM(`Depth ${indent}: BACKTRACK: currentPERM empty or invalid index. No removal needed.`, indent);
+                     currentActionDisplay.textContent = `Backtrack: No element to remove from current, or invalid index.`;
+                }
+                currentPhasePERM = 'looping'; 
+            }
+
+            renderRecursionTree(); 
+
+            if (currentPhasePERM !== 'done' && callStackPERM.length > 0) {
+                 nextStepButton.disabled = false;
+            } else if (currentPhasePERM === 'done' || callStackPERM.length === 0) { 
+                logPERM("Algorithm complete.");
+                currentActionDisplay.textContent = "All permutations generated!";
+                nextStepButton.disabled = true;
+                startButton.textContent = "Start/Reset";
+                renderRecursionTree(); 
+            }
+        }
+
+        startButton.addEventListener('click', initializeAnimation);
+        nextStepButton.addEventListener('click', performNextStep);
+        initializeAnimation(); 
+        
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gas Station Problem Animation (Step-by-Step)</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1200px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-gas-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-gas-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-gas-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 220px; }
+        .controls-gas-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-gas-p5 button:hover { background-color: #0056b3; }
+        .controls-gas-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-gas-p5 { display: grid; grid-template-columns: minmax(280px, 1fr) 3fr; gap: 15px; }
+        .left-panel-gas-p5, .right-panel-gas-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-gas-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 350px; background-color: #e0e0e0; overflow: hidden; position: relative; }
+
+        .gauge-container-p5 { margin: 10px 0; }
+        .gauge-label { font-size: 0.9em; font-weight: bold; color: #495057; margin-bottom: 5px; }
+        .gauge-bar-p5 { height: 25px; background-color: #e9ecef; border-radius: 5px; overflow: hidden; border: 1px solid #dee2e6; }
+        .gauge-fill-p5 { height: 100%; width: 50%; transition: width 0.4s ease-out, background-color 0.4s; }
+        #total_tank_fill { background-color: #6f42c1; }
+        #current_tank_fill { background-color: #28a745; }
+        .gauge-text { text-align: center; font-size: 0.8em; margin-top: 2px; color: #6c757d; }
+
+        #start_station_display_p5 { text-align: center; font-size: 1.2em; font-weight: bold; margin-top: 10px;}
+        #current_action_gas_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; font-size:1em; transition: color 0.3s; }
+
+        .road-p5 { position: absolute; width: 100%; height: 5px; background-color: #6c757d; top: 50%; transform: translateY(-50%); }
+        .station-container-p5 { position: absolute; width: 100%; height: 100%; }
+        .station-p5 { width: 60px; height: 100px; position: absolute; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .station-icon-p5 { width: 40px; height: 40px; background-color: #ffc107; border: 2px solid #e0a800; border-radius: 5px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 1.5em; transition: all 0.3s; }
+        .station-info-p5 { font-size: 0.8em; margin-top: 5px; }
+        .station-p5.highlight .station-icon-p5 { box-shadow: 0 0 15px #ffc107; transform: scale(1.1); }
+        .gas-pump { position: absolute; font-size: 2em; top: -40px; left: 15px; opacity: 0; transition: all 0.3s; }
+        .gas-pump.active { opacity: 1; top: -10px; }
+
+        .car-container-p5 { position: absolute; top: calc(50% - 45px); left: 0; transition: left 0.5s ease-in-out; }
+        .car-p5 { font-size: 2.5em; transition: transform 0.2s; }
+        .car-p5.sputter { animation: shake 0.5s; }
+        #start-flag { position: absolute; top: -35px; left: 15px; font-size: 2em; transition: left 0.5s ease-in-out; }
+        #scanner { position: absolute; top: 0; height: 100%; width: 5px; background: rgba(255, 0, 0, 0.5); box-shadow: 0 0 10px red; display: none; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        #overlay span:first-child { font-size: 3em; }
+        #overlay span:last-child { font-size: 1.5em; margin-top: 10px; }
+        #overlay.success span:first-child { color: #90ee90; }
+        #overlay.failure span:first-child { color: #ff7f7f; }
+
+        .log-container-gas-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_gas_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes shake { 0%, 100% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(-2px, 0) rotate(-1deg); } 50% { transform: translate(2px, 0) rotate(1deg); } 75% { transform: translate(-2px, 0) rotate(-1deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gas Station Problem</h1>
+
+        <div class="controls-gas-p5">
+            <label for="gas_input_p5">Gas Array:</label>
+            <input type="text" id="gas_input_p5" value="1,2,3,4,5">
+            <label for="cost_input_p5">Cost Array:</label>
+            <input type="text" id="cost_input_p5" value="3,4,5,1,2">
+            <button id="start_button_gas_p5">Start/Reset</button>
+            <button id="next_step_button_gas_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-gas-p5">
+            <div class="left-panel-gas-p5">
+                <div class="state-panel-gas-p5">
+                    <h2>State</h2>
+                    <div class="gauge-container-p5">
+                        <div class="gauge-label">Total Tank (Gas vs Cost)</div>
+                        <div class="gauge-bar-p5"><div id="total_tank_fill" class="gauge-fill-p5"></div></div>
+                        <div id="total_tank_text" class="gauge-text">0 / 0</div>
+                    </div>
+                    <div class="gauge-container-p5">
+                        <div class="gauge-label">Car's Current Tank</div>
+                        <div class="gauge-bar-p5"><div id="current_tank_fill" class="gauge-fill-p5" style="width:0%"></div></div>
+                        <div id="current_tank_text" class="gauge-text">0</div>
+                    </div>
+                    <div id="start_station_display_p5">Candidate Start: Station 0</div>
+                    <div id="current_action_gas_display_p5"></div>
+                </div>
+                <div class="log-container-gas-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_gas_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-gas-p5">
+                 <div class="visualization-container-p5">
+                    <div class="road-p5"></div>
+                    <div id="station_container_p5" class="station-container-p5"></div>
+                    <div id="car_container_p5" class="car-container-p5"><span class="car-p5">🚗</span></div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <!-- Embedded Audio -->
+    <audio id="sound-engine" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA/v8A//8A//8A/f8A/P8A/f8A/v8A/v8A/v8A//8A//8A//8A/v8A/v8AAP8AAP8AAP8AAAD/AAD/AAD/AAD/AAD+AAD+AAD+AAD+AAACAAIAAAMAAwADAAcABwAHAAoACgAKAAwADAAIAAAB//8A//8A//8A/v8A/P8A/P8A/v8A//8A//8A//8A//8A/v8A/f8A/f8A/f8A/P8A/P8A/f8A/f8A/f8A/P8A/P8A/f8A/P8A/P8A/f8A/P8A/P8A/P8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+    <audio id="sound-gas" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAP3/APv/APz/AO//AN//AM//AKj/AHv/AGv/AEH/ABr/AAD/APn/APb/APf/APr/AP//AAAAAQABAAAAAP//APv/APj/AOr/ANr/AMf/AJv/AHD/AFX/AET/ABz/AAD/APb/APL/AOz/ANv/AMX/AJ//AHT/AGH/ADz/ABf/APf+APb+APb+APf+APj+APr+AP/+AP//AAAA//8A//8A//8A"></audio>
+    <audio id="sound-fail" src="data:audio/mpeg;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8A/f8A/P8A/P8A/P8A/P8A/v8A//8A//8A//8A/v8A/v8A/v8A/P8A/P8A/v8A//8A//8A//8A//8A//8A//8A//8A//8A/P8A/f8A/v8A/f8A/P8A/P8A/v8A/f8A/P8A/P8A/v8A/v8A/v8A/v8A//8A//8A//8A//8A//8A/f8A/P8A/P8A/P8A/P8A/f8A/v8A/v8A//8A//8A//8A//8A//8A/f8A/P8A/f8A/f8A/f8A/f8A/f8A/P8A/P8A/f8A/v8A//8A//8A/f8A/P8A/f8A/f8A/P8A/P8A/v8A/v8A//8A//8A/v8A/v8A/f8A/P8A/P8A/P8A/f8A/f8A/f8A/f8A/v8A//8A//8A/v8A/v8A/v8A/P8A/P8A/P8A/f8A/v8A//8A//8A//8A//8A/f8A/v8A//8A//8A/v8A/P8A/P8A/P8A/f8A/v8A/v8A/v8A/v8A//8A//8A/v8A//8A/v8A/v8A/f8A/P8A/f8A/v8A/v8A/v8A/v8A//8A//8A"></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8CAP3/AP//AP//AP//AP//AP7/APz/APz/AP3/AP//AP//AP//AP7/APz/APz/APz/APv/APz/APv/AP//AAAAAAEAAgADAAQABQAHAAgACgALAA0ADgAQABEAEwAUABYAFwAZABoAHAAeAB8AIAAiACMAJAAkACQAJAAnACgAKgAqACsAKgApACgAJwAmACQAJAAnACgAKQAqACsAKQApACgAKQAnACYAJAAkACMAIQAfAB0AGgAXABIA//8A//8A//8A//8A//8A/v8A/P8A/P8A/f8A//8A//8A//8A/v8A/P8A/P8A/P8A/f8A/P8A/f8A//8AAAABAAMABAAFAAcACAAKAAwADAAOABAAEgATABUAFgAYABoAHAAeACAAIgAjACQAJgAmACYAJwApACoAKgArACoAKgApACgAJwAnACYAJAAjACIAIAAeABwAGgAXABIA//8A//8A//8A//8A"></audio>
+
+<script>
+// --- STATE VARIABLES ---
+let GAS = [], COST = [];
+let totalTank = 0, currentTank = 0;
+let startStation = 0, currentIndex = 0;
+let simulationRunning = false, isAudioUnlocked = false;
+let currentPhase = 'idle';
+
+// --- DOM ELEMENTS ---
+let gasInputEl, costInputEl, startButton, nextStepButton, totalTankFill, totalTankText, 
+    currentTankFill, currentTankText, startStationDisplay, currentActionDisplay, logOutput, 
+    stationContainer, carContainer, overlay;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 600; 
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-engine', 'sound-gas', 'sound-fail', 'sound-win'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+
+function updateStateDisplay() {
+    currentTankText.textContent = `${currentTank}`;
+    const maxTankEstimate = GAS.reduce((a, b) => a + b, 0);
+    const currentTankPercent = maxTankEstimate > 0 ? Math.max(0, Math.min(100, (currentTank / maxTankEstimate) * 100)) : 0;
+    currentTankFill.style.width = `${currentTankPercent}%`;
+    currentTankFill.style.backgroundColor = currentTank < 0 ? '#dc3545' : '#28a745';
+    startStationDisplay.textContent = `Candidate Start: Station ${startStation}`;
+}
+
+function renderStations() {
+    stationContainer.innerHTML = '<div id="scanner"></div><div id="start-flag">🏁</div>';
+    const PADDING = 50;
+    const totalWidth = stationContainer.offsetWidth - 2 * PADDING;
+    const spacing = GAS.length > 1 ? totalWidth / (GAS.length - 1) : 0;
+    GAS.forEach((gas, i) => {
+        const stationEl = document.createElement('div');
+        stationEl.className = 'station-p5';
+        stationEl.id = `station-${i}`;
+        stationEl.style.left = `${PADDING + i * spacing}px`;
+        stationEl.innerHTML = `
+            <div class="station-icon-p5">⛽</div>
+            <div class="station-info-p5">
+                <div>+${gas} / -${COST[i]}</div>
+            </div>
+            <div class="gas-pump">⛽</div>`;
+        stationContainer.appendChild(stationEl);
+    });
+}
+
+function updateCarPosition(index) {
+    const stationEl = document.getElementById(`station-${index}`);
+    if (stationEl) carContainer.style.left = `${stationEl.offsetLeft}px`;
+}
+function updateFlagPosition(index) {
+    const stationEl = document.getElementById(`station-${index}`);
+    if (stationEl) document.getElementById('start-flag').style.left = `${stationEl.offsetLeft}px`;
+}
+
+async function animateScanner() {
+    const scanner = document.getElementById('scanner');
+    scanner.style.display = 'block';
+    scanner.style.transition = `left ${GAS.length * 0.2}s linear`;
+    scanner.style.left = '100%';
+    await new Promise(r => setTimeout(r, GAS.length * 200));
+    scanner.style.display = 'none';
+}
+
+function showOverlay(type) {
+    overlay.innerHTML = type === 'success' ? `<span>SUCCESS!</span><span>Start at station ${startStation}.</span>` : `<span>IMPOSSIBLE!</span><span>Total gas is less than total cost.</span>`;
+    overlay.className = `show ${type}`;
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!simulationRunning) startButton.textContent = "Reset";
+}
+
+async function initializeAnimation() {
+    log("Starting up the engine...");
+    simulationRunning = false; 
+    
+    try {
+        GAS = gasInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        COST = costInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        if (GAS.length !== COST.length || GAS.length === 0) {
+            alert("Gas and Cost arrays must have the same, non-zero length.");
+            return;
+        }
+    } catch (e) { alert("Invalid input."); return; }
+    
+    totalTank = 0; currentTank = 0; startStation = 0; currentIndex = 0;
+    
+    logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+    overlay.className = '';
+    
+    renderStations();
+    updateCarPosition(0);
+    updateFlagPosition(0);
+    updateStateDisplay();
+    totalTankFill.style.width = '0%';
+    totalTankText.textContent = `0 / 0`;
+
+    currentActionDisplay.innerHTML = `Click 'Next Step' to begin.`;
+    currentPhase = 'initial_check';
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    nextStepButton.disabled = true;
+    
+    document.querySelectorAll('.station-p5.highlight').forEach(el => el.classList.remove('highlight'));
+    const stationEl = document.getElementById(`station-${currentIndex}`);
+    if (stationEl) stationEl.classList.add('highlight');
+
+    // --- REWRITTEN STATE MACHINE ---
+    switch(currentPhase) {
+        case 'initial_check':
+            log("--- Pre-flight Check ---");
+            currentActionDisplay.textContent = "Checking if a trip is possible...";
+            
+            const totalGas = GAS.reduce((a, b) => a + b, 0);
+            const totalCost = COST.reduce((a, b) => a + b, 0);
+            totalTank = totalGas - totalCost;
+
+            await animateScanner();
+            totalTankFill.style.width = '100%';
+            totalTankFill.style.backgroundColor = totalTank < 0 ? '#dc3545' : '#28a745';
+            totalTankText.textContent = `Total Gas: ${totalGas} / Total Cost: ${totalCost}`;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+            if (totalTank < 0) {
+                log(`Total Gas (${totalGas}) < Total Cost (${totalCost}). Impossible.`);
+                currentActionDisplay.textContent = "Not enough fuel overall. Impossible!";
+                playSound('sound-fail');
+                showOverlay('failure');
+                simulationRunning = false;
+            } else {
+                log(`Total Gas (${totalGas}) >= Total Cost (${totalCost}). A solution exists!`);
+                currentActionDisplay.textContent = "A solution exists! Let's start the trip.";
+                playSound('sound-engine');
+                currentPhase = 'arrive_at_station';
+            }
+            break;
+
+        case 'arrive_at_station':
+            log(`\n--- Arrived at station ${currentIndex} ---`);
+            updateCarPosition(currentIndex);
+            await new Promise(r => setTimeout(r, 400));
+            currentActionDisplay.textContent = `Arrived at station ${currentIndex}.`;
+            currentPhase = 'add_gas';
+            break;
+
+        case 'add_gas':
+            const gasPump = stationEl.querySelector('.gas-pump');
+            gasPump.classList.add('active');
+            playSound('sound-gas');
+            currentActionDisplay.textContent = `Gaining ${GAS[currentIndex]} fuel...`;
+            currentTank += GAS[currentIndex];
+            updateStateDisplay();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            gasPump.classList.remove('active');
+            currentPhase = 'subtract_cost';
+            break;
+            
+        case 'subtract_cost':
+            currentActionDisplay.textContent = `Using ${COST[currentIndex]} fuel to travel...`;
+            currentTank -= COST[currentIndex];
+            updateStateDisplay();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            currentPhase = 'check_tank';
+            break;
+        
+        case 'check_tank':
+            if (currentTank < 0) {
+                log(`Tank fell to ${currentTank}. This start is wrong.`);
+                currentActionDisplay.textContent = `Tank empty! Station ${startStation} can't be the start.`;
+                playSound('sound-fail');
+                carContainer.querySelector('.car-p5').classList.add('sputter');
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                carContainer.querySelector('.car-p5').classList.remove('sputter');
+                
+                currentPhase = 'reset_start';
+            } else {
+                log(`Tank is at ${currentTank}. Continuing trip.`);
+                currentActionDisplay.textContent = `Made it! Tank has ${currentTank} fuel left.`;
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                currentIndex++;
+                if (currentIndex >= GAS.length) {
+                    currentPhase = 'finish_trip';
+                } else {
+                    currentPhase = 'arrive_at_station';
+                }
+            }
+            break;
+            
+        case 'reset_start':
+            startStation = currentIndex + 1;
+            currentTank = 0;
+            log(`New candidate for start station is ${startStation}. Resetting tank.`);
+            currentActionDisplay.textContent = `Trying a new start at station ${startStation}.`;
+            updateFlagPosition(startStation);
+            updateStateDisplay();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            
+            currentIndex++;
+            if (currentIndex >= GAS.length) {
+                currentPhase = 'finish_trip';
+            } else {
+                currentPhase = 'arrive_at_station';
+            }
+            break;
+            
+        case 'finish_trip':
+            log(`Finished the trip! The correct starting station is ${startStation}.`);
+            currentActionDisplay.textContent = `Success! The starting station is ${startStation}.`;
+            playSound('sound-win');
+            showOverlay('success');
+            simulationRunning = false;
+            break;
+    }
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    gasInputEl = document.getElementById('gas_input_p5');
+    costInputEl = document.getElementById('cost_input_p5');
+    startButton = document.getElementById('start_button_gas_p5');
+    nextStepButton = document.getElementById('next_step_button_gas_p5');
+    totalTankFill = document.getElementById('total_tank_fill');
+    totalTankText = document.getElementById('total_tank_text');
+    currentTankFill = document.getElementById('current_tank_fill');
+    currentTankText = document.getElementById('current_tank_text');
+    startStationDisplay = document.getElementById('start_station_display_p5');
+    currentActionDisplay = document.getElementById('current_action_gas_display_p5');
+    logOutput = document.getElementById('log_output_gas_p5');
+    stationContainer = document.getElementById('station_container_p5');
+    carContainer = document.getElementById('car_container_p5');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

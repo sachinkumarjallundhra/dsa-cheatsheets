@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permutations Backtracking Animation (p5.js Tree - Fixed)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script> 
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-perm-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-perm-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-perm-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 180px; }
+        .controls-perm-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-perm-p5 button:hover { background-color: #0056b3; }
+        .controls-perm-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-perm-p5 { display: grid; grid-template-columns: minmax(320px, 1.2fr) 2fr; gap: 15px; } 
+        .left-panel-perm-p5 { display: flex; flex-direction: column; gap: 10px; }
+        .right-panel-perm-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .config-panel-perm-p5, .results-panel-perm-p5, .recursion-tree-container-p5 {
+            padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .config-panel-perm-p5 > div { margin-bottom: 6px; font-size: 0.9em; }
+        .display-area-perm-p5 { padding: 5px; border: 1px dashed #ccc; min-height: 28px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 4px; }
+        .element-perm-p5, .used-flag-perm-p5 { padding: 3px 6px; border-radius: 3px; font-size: 0.85em; text-align: center; border: 1px solid #bdc3c7; background-color: #e9ecef; transition: all 0.3s ease; }
+        
+        .nums-array-perm-p5 .element-perm-p5.highlight-current-eval { background-color: #ffc107 !important; border-color: #ffaa00 !important; transform: scale(1.1); }
+        .nums-array-perm-p5 .element-perm-p5.is-used { background-color: #adb5bd !important; color: #f8f9fa; text-decoration: line-through; }
+        
+        .used-array-perm-p5 .used-flag-perm-p5 { min-width: 28px; font-size:0.7em; }
+        .used-array-perm-p5 .used-flag-perm-p5.true { background-color: #dc3545; color: white; } 
+        .used-array-perm-p5 .used-flag-perm-p5.false { background-color: #28a745; color: white; } 
+        .used-array-perm-p5 .used-flag-perm-p5.changing { animation: pulse-perm-p5 0.4s; }
+
+        .current-list-perm-p5 .element-perm-p5 { background-color: #cfe2ff; border-color: #b6d4fe; }
+        .current-list-perm-p5 .element-perm-p5.adding-perm { animation: popInPerm-p5 0.3s ease-out; }
+        .current-list-perm-p5 .element-perm-p5.removing-perm { transform: scale(0.5) translateY(-5px) ; opacity: 0; }
+
+        .results-panel-perm-p5 h2 { margin-bottom: 8px; }
+        .result-list-container-perm-p5 { max-height: 200px; overflow-y: auto; border: 1px dashed #a9dfbf; padding: 5px; }
+        .result-permutation-perm-p5 { display: flex; gap: 4px; padding: 4px; margin-bottom: 4px; border: 1px solid #a9dfbf; background-color: #e6f9f0; border-radius: 4px; animation: fadeInResultPerm-p5 0.5s ease-out; }
+        .result-permutation-perm-p5 .element-perm-p5 { font-size: 0.8em; padding: 2px 5px; background-color: #d1ecdf; }
+
+        #current_action_perm_display_p5 { text-align:center; margin:8px 0; font-weight:bold; min-height:1.1em; color: #df4759; font-size:0.9em;}
+        
+        .recursion-tree-container-p5 { 
+            min-height: 400px; 
+            overflow: auto; 
+            position: relative; 
+            background-color: #f0f2f5; 
+        }
+        #p5_canvas_target_div { /* Explicitly give this a size for p5 to attach to */
+            width:100%; 
+            height:100%; 
+            min-height: 380px; /* Ensure canvas has some initial drawing space */
+            display: flex; 
+            justify-content: center;
+            align-items: flex-start; 
+        }
+
+        .log-container-perm-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_perm_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 100px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes popInPerm-p5 { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
+        @keyframes fadeInResultPerm-p5 { from { opacity:0; transform: translateY(10px)} to { opacity:1; transform: translateY(0)} }
+        @keyframes pulse-perm-p5 { 0%,100% {transform: scale(1);} 50% {transform: scale(1.15);} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Backtracking: Permutations Animation (p5.js Tree)</h1>
+
+        <div class="controls-perm-p5">
+            <label for="nums_input_perm_p5">Nums (comma-separated):</label>
+            <input type="text" id="nums_input_perm_p5" value="1,2,3">
+            <button id="start_button_perm_p5">Start/Reset</button>
+            <button id="next_step_button_perm_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-perm-p5">
+            <div class="left-panel-perm-p5">
+                <div class="config-panel-perm-p5">
+                    <h2>Input & Current State</h2>
+                    <div>Nums Array: <div id="nums_array_perm_p5" class="display-area-perm-p5 nums-array-perm-p5"></div></div>
+                    <div>Used Array: <div id="used_array_perm_p5" class="display-area-perm-p5 used-array-perm-p5"></div></div>
+                    <div>Current Permutation: <div id="current_list_perm_p5" class="display-area-perm-p5 current-list-perm-p5"></div></div>
+                    <div id="current_action_perm_display_p5"></div>
+                </div>
+                <div class="results-panel-perm-p5">
+                    <h2>Result Permutations</h2>
+                    <div id="result_list_container_perm_p5" class="result-list-container-perm-p5"></div>
+                </div>
+            </div>
+            <div class="right-panel-perm-p5">
+                 <div class="recursion-tree-container-p5">
+                    <h2>Recursion Call Tree</h2>
+                    <div id="p5_canvas_target_div"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-perm-p5">
+            <h2>Log (Detailed Steps)</h2>
+            <pre id="log_output_perm_p5"></pre>
+        </div>
+    </div>
+
+<script>
+let p5Instance; 
+
+let NUMS_PERM = [];
+let N_PERM;
+let USED_PERM = [];
+let resultPERM_actual = [];
+let currentPERM = [];
+let callStackP5 = []; 
+let currentPhaseP5 = 'idle';
+let uniqueNodeIdCounterP5 = 0;
+let treeNodesP5 = {}; 
+let simulationRunning = false;
+
+let numsInputEl, startButton, nextStepButton, numsArrayDisplay, usedArrayDisplay,
+    currentListDisplay, currentActionDisplay, resultListContainer, logOutput,
+    p5CanvasTargetDiv; 
+
+const ANIMATION_DELAY = 600; 
+const TREE_NODE_WIDTH = 90;  
+const TREE_NODE_HEIGHT = 50; 
+const TREE_LEVEL_SEP = 75;   
+const TREE_SIBLING_SEP = 20; 
+const TREE_NODE_RADIUS = 15; // Added default value for node radius
+
+function logP5(message, indent = 0) {
+    const indentation = '  '.repeat(indent);
+    if(logOutput) logOutput.innerHTML += `${indentation}> ${message}\n`;
+    if(logOutput) logOutput.scrollTop = logOutput.scrollHeight;
+}
+
+function clearInteractionHighlightsP5() {
+    if(numsArrayDisplay) numsArrayDisplay.querySelectorAll('.element-perm-p5.highlight-current-eval').forEach(el => el.classList.remove('highlight-current-eval'));
+    if(usedArrayDisplay) usedArrayDisplay.querySelectorAll('.used-flag-perm-p5.highlight-check').forEach(el => el.classList.remove('highlight-check'));
+    if(currentActionDisplay) currentActionDisplay.textContent = '';
+}
+
+function renderNumsArrayAndUsedP5() {
+    if(!numsArrayDisplay || !usedArrayDisplay) return;
+    numsArrayDisplay.innerHTML = ''; usedArrayDisplay.innerHTML = '';
+    NUMS_PERM.forEach((val, index) => {
+        const el = document.createElement('div'); el.classList.add('element-perm-p5'); el.id = `num-el-p5-${index}`; el.textContent = val;
+        if (USED_PERM[index]) el.classList.add('is-used');
+        numsArrayDisplay.appendChild(el);
+        const usedEl = document.createElement('div'); usedEl.classList.add('used-flag-perm-p5'); usedEl.id = `used-el-p5-${index}`;
+        usedEl.textContent = USED_PERM[index] ? 'T' : 'F'; usedEl.classList.toggle('true', USED_PERM[index]); usedEl.classList.toggle('false', !USED_PERM[index]);
+        usedArrayDisplay.appendChild(usedEl);
+    });
+}
+
+function renderCurrentListP5() {
+    if(!currentListDisplay) return;
+    currentListDisplay.innerHTML = '';
+    currentPERM.forEach(val => {
+        const el = document.createElement('div'); el.classList.add('element-perm-p5'); el.textContent = val;
+        currentListDisplay.appendChild(el);
+    });
+}
+
+async function addCurrentToResultVisualP5() {
+    if(!resultListContainer) return;
+    const permutationCopy = [...currentPERM];
+    const permDiv = document.createElement('div'); permDiv.classList.add('result-permutation-perm-p5');
+    permutationCopy.forEach(val => {
+        const el = document.createElement('div'); el.classList.add('element-perm-p5'); el.textContent = val;
+        permDiv.appendChild(el);
+    });
+    resultListContainer.appendChild(permDiv); resultListContainer.scrollTop = resultListContainer.scrollHeight;
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+}
+
+const p5_sketch_definition = (p) => {
+    let canvas;
+    p.setup = () => {
+        const container = document.getElementById('p5_canvas_target_div');
+        const canvasWidth = Math.max(container.clientWidth - 2, 500); // Ensure minimum width
+        const canvasHeight = Math.max(container.clientHeight - 2, 400); // Ensure minimum height
+        canvas = p.createCanvas(canvasWidth, canvasHeight);
+        canvas.parent('p5_canvas_target_div');
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(9); 
+        p.noLoop(); 
+        logP5("p5.js sketch setup complete.");
+    };
+
+    p.draw = () => {
+        p.background(240, 242, 245); 
+        if (Object.keys(treeNodesP5).length === 0) return;
+
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        let hasValidNodes = false;
+        Object.values(treeNodesP5).forEach(node => {
+            if(node.x !== undefined && node.y !== undefined){
+                minX = Math.min(minX, node.x - TREE_NODE_WIDTH / 2);
+                maxX = Math.max(maxX, node.x + TREE_NODE_WIDTH / 2);
+                minY = Math.min(minY, node.y - TREE_NODE_HEIGHT / 2);
+                maxY = Math.max(maxY, node.y + TREE_NODE_HEIGHT / 2);
+                hasValidNodes = true;
+            }
+        });
+
+        if(!hasValidNodes) return;
+
+        const padding = TREE_NODE_RADIUS * 1.5 || 30; // Ensure TREE_NODE_RADIUS is defined or use a default
+        const contentWidth = maxX - minX;
+        const contentHeight = maxY - minY;
+        
+        const container = document.getElementById('p5_canvas_target_div');
+        const containerWidth = Math.max(container.clientWidth - 2, 500);
+        const containerHeight = Math.max(container.clientHeight - 2, 400);
+
+        const requiredWidth = Math.max(containerWidth, contentWidth + 2 * padding);
+        const requiredHeight = Math.max(containerHeight, contentHeight + 2 * padding);
+        
+        if (Math.abs(p.width - requiredWidth) > 5 || Math.abs(p.height - requiredHeight) > 5 ) { 
+             p.resizeCanvas(requiredWidth, requiredHeight);
+        }
+        
+        let viewOriginX = minX - padding;
+        let viewOriginY = minY - padding;
+
+        Object.values(treeNodesP5).forEach(node => {
+            if (node.parentId && treeNodesP5[node.parentId]) {
+                const parent = treeNodesP5[node.parentId];
+                if(parent.x !== undefined && node.x !== undefined){
+                    p.stroke(180, 180, 180, 180); 
+                    p.strokeWeight(1.5);
+                    p.line(parent.x - viewOriginX, parent.y - viewOriginY, node.x - viewOriginX, node.y - viewOriginY);
+                }
+            }
+        });
+
+        Object.values(treeNodesP5).forEach((node) => {
+            if(node.x === undefined || node.y === undefined) return;
+
+            p.strokeWeight(1.5);
+            p.stroke(108, 117, 125); 
+
+            let isActive = false;
+            if (callStackP5.length > 0 && node.nodeId === callStackP5[callStackP5.length - 1].nodeId && simulationRunning && currentPhaseP5 !== 'done' && !node.isReturning) {
+                 isActive = true;
+            }
+
+            if (node.isReturning) {
+                p.fill(222, 226, 230, 200); 
+            } else if (isActive) {
+                p.fill(255, 243, 205); 
+                p.stroke(255, 193, 7); p.strokeWeight(2.5);
+            } else {
+                p.fill(255); 
+            }
+            p.rectMode(p.CENTER);
+            p.rect(node.x - viewOriginX, node.y - viewOriginY, TREE_NODE_WIDTH, TREE_NODE_HEIGHT, 5); 
+
+            p.fill(30); p.noStroke(); p.textAlign(p.CENTER, p.CENTER); p.textSize(8.5); 
+            let label = `i=${node.loopIterator === undefined || node.loopIterator === -1 ? '-' : node.loopIterator}\n[${node.currentAtPath.join(',') || ' '}]`;
+            if(node.chosenNumInfo){
+                label = `Chose ${node.chosenNumInfo.num}\ni=${node.loopIterator === undefined || node.loopIterator === -1 ? '-' : node.loopIterator }\n[${node.currentAtPath.join(',') || ' '}]`;
+            } else if (node.parentId === null) { // Root node
+                 label = `P()\n[ ]`;
+            }
+            p.text(label, node.x- viewOriginX, node.y - viewOriginY, TREE_NODE_WIDTH - 4, TREE_NODE_HEIGHT - 4);
+        });
+    };
+    p.customRedraw = () => { if(p && typeof p.redraw === 'function' && p.width !== undefined) p.redraw(); }; // Check if p5 is ready
+};
+
+function calculateChildXOffset(parentX, childrenPlacedByParent, numPotentialSiblingsAtThisLevel) {
+    const totalChildrenToConsider = Math.max(1, numPotentialSiblingsAtThisLevel); // Avoid division by zero
+    const totalSpread = (totalChildrenToConsider - 1) * (TREE_NODE_WIDTH + TREE_SIBLING_SEP);
+    const firstChildRelativeX = -totalSpread / 2;
+    return parentX + firstChildRelativeX + childrenPlacedByParent * (TREE_NODE_WIDTH + TREE_SIBLING_SEP);
+}
+
+function updateButtonState() {
+    if (simulationRunning && callStackP5.length > 0 && currentPhaseP5 !== 'done') {
+        nextStepButton.disabled = false;
+    } else {
+        nextStepButton.disabled = true;
+        if (!simulationRunning || (callStackP5.length === 0 && currentPhaseP5 === 'done')) {
+            startButton.textContent = "Start/Reset";
+            if (currentActionDisplay && Object.keys(treeNodesP5).length > 0) { // Only update if initialized
+                 currentActionDisplay.textContent = "All permutations generated!";
+                 logP5("Algorithm complete (final state).");
+            }
+        }
+    }
+}
+
+
+function initializeAnimation() {
+    logP5("Initializing Permutations...");
+    simulationRunning = false; 
+    nextStepButton.disabled = true;
+    clearInteractionHighlightsP5(); 
+    try { NUMS_PERM = numsInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)); } 
+    catch (e) { alert("Invalid Nums input."); startButton.textContent = "Start/Reset"; return; }
+    
+    N_PERM = NUMS_PERM.length;
+    USED_PERM = new Array(N_PERM).fill(false);
+    resultPERM_actual = []; 
+    currentPERM = [];
+    callStackP5 = []; 
+    uniqueNodeIdCounterP5 = 0;
+    treeNodesP5 = {}; 
+
+    renderNumsArrayAndUsedP5();
+    renderCurrentListP5();
+    resultListContainer.innerHTML = ''; 
+    logOutput.innerHTML = ""; 
+    
+    startButton.textContent = "Reset";
+    currentPhaseP5 = 'idle'; 
+
+    if (p5Instance) {
+        // Ensure canvas size is reasonable for initial draw
+        const container = document.getElementById('p5_canvas_target_div');
+        p5Instance.resizeCanvas(container.clientWidth > 50 ? container.clientWidth -2 : 500, 400);
+        p5Instance.customRedraw();
+    }
+    
+    if (N_PERM >= 0) { 
+        const rootNodeId = `node-p5-${uniqueNodeIdCounterP5++}`;
+        const initialX = (p5CanvasTargetDiv.clientWidth || 600) / 2;
+        treeNodesP5[rootNodeId] = { 
+            x: initialX, y: TREE_LEVEL_SEP / 2, 
+            nodeId: rootNodeId, parentId: null, childrenIds: [], childrenPlacedThisCall: 0,
+            funcName: "P", currentAtPath: [], chosenNumInfo: null, isReturning: false, loopIterator: -1
+        };
+
+        callStackP5.push({ 
+            i: -1, 
+            nodeId: rootNodeId,
+            isReturning: false,
+        });
+        currentPhaseP5 = 'base_case_check'; 
+        simulationRunning = true; 
+        logP5(`Initialized. Nums: [${NUMS_PERM.join(', ')}].`);
+        currentActionDisplay.textContent = "Ready.";
+    } else { 
+        currentActionDisplay.textContent = "Input array invalid.";
+    }
+    if (p5Instance) p5Instance.customRedraw();
+    updateButtonState(); 
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+
+    nextStepButton.disabled = true;
+    clearInteractionHighlightsP5();
+
+    if (callStackP5.length === 0) {
+        simulationRunning = false;
+        updateButtonState();
+        if (p5Instance) p5Instance.customRedraw();
+        return;
+    }
+
+    let currentFrame = callStackP5[callStackP5.length - 1];
+    let currentTreeNodeData = treeNodesP5[currentFrame.nodeId];
+    const indent = callStackP5.length - 1;
+
+    if (currentPhaseP5 === 'base_case_check') {
+        currentActionDisplay.textContent = `Base Case: current.size (${currentPERM.length}) == N (${N_PERM})?`;
+        logP5(`Depth ${indent}: Base Case Check for [${currentTreeNodeData.currentAtPath.join(',')}]`, indent);
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+        if (!simulationRunning) { updateButtonState(); return; }
+
+        if (currentPERM.length === N_PERM) {
+            currentActionDisplay.textContent = `Permutation Found: [${currentPERM.join(',')}]`;
+            logP5(`  Depth ${indent}: Base Case TRUE. Adding permutation.`, indent);
+            resultPERM_actual.push([...currentPERM]);
+            await addCurrentToResultVisualP5();
+            if (!simulationRunning) { updateButtonState(); return; }
+
+            currentFrame.isReturning = true;
+            if (currentTreeNodeData) currentTreeNodeData.isReturning = true;
+            currentPhaseP5 = 'returning_from_call';
+        } else {
+            currentActionDisplay.textContent = `Base Case FALSE. Start loop.`;
+            logP5(`  Depth ${indent}: Base Case FALSE. Proceed to loop.`, indent);
+            currentFrame.i = -1;
+            if (currentTreeNodeData) currentTreeNodeData.loopIterator = currentFrame.i;
+            currentPhaseP5 = 'looping';
+        }
+    } else if (currentPhaseP5 === 'looping') {
+        currentFrame.i++;
+        if (currentTreeNodeData) currentTreeNodeData.loopIterator = currentFrame.i;
+
+        if (currentFrame.i < N_PERM) {
+            const numToConsider = NUMS_PERM[currentFrame.i];
+            const numEl = document.getElementById(`num-el-p5-${currentFrame.i}`);
+            const usedEl = document.getElementById(`used-el-p5-${currentFrame.i}`);
+
+            if (numEl) numEl.classList.add('highlight-current-eval');
+            if (usedEl) usedEl.classList.add('highlight-check');
+
+            currentActionDisplay.textContent = `Loop i=${currentFrame.i}: Try ${numToConsider}. Used? ${USED_PERM[currentFrame.i]}`;
+            logP5(`Depth ${indent}: Loop i=${currentFrame.i}. Considering num=${numToConsider}. used=${USED_PERM[currentFrame.i]}`, indent);
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            if (!simulationRunning) { updateButtonState(); return; }
+
+            if (numEl) numEl.classList.remove('highlight-current-eval');
+            if (usedEl) usedEl.classList.remove('highlight-check');
+
+            if (USED_PERM[currentFrame.i]) {
+                currentActionDisplay.textContent = `${numToConsider} (idx ${currentFrame.i}) used. Skip.`;
+                logP5(`  Depth ${indent}: num=${numToConsider} is used. Skipping.`, indent);
+            } else {
+                currentActionDisplay.textContent = `Choose ${numToConsider}. Mark used[${currentFrame.i}]=T. Add to current.`;
+                logP5(`  Depth ${indent}: Choosing num=${numToConsider}. Mark used=true.`, indent);
+                
+                USED_PERM[currentFrame.i] = true;
+                if(usedEl) { usedEl.textContent = 'T'; usedEl.classList.remove('false'); usedEl.classList.add('true', 'changing'); }
+                
+                currentPERM.push(numToConsider);
+                const tempEl = document.createElement('div'); 
+                tempEl.classList.add('element-perm-p5', 'adding-perm');
+                tempEl.textContent = numToConsider;
+                currentListDisplay.appendChild(tempEl);
+                await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+                if (!simulationRunning) { updateButtonState(); return; }
+                if(usedEl) usedEl.classList.remove('changing');
+                renderCurrentListP5(); 
+                renderNumsArrayAndUsedP5(); 
+
+                currentPhaseP5 = 'recursive_call_prep';
+            }
+        } else { 
+            currentActionDisplay.textContent = `Loop finished for call (Depth ${indent}). Returning.`;
+            logP5(`Depth ${indent}: Loop finished. Returning.`, indent);
+            currentFrame.isReturning = true;
+            if(currentTreeNodeData) currentTreeNodeData.isReturning = true;
+            currentPhaseP5 = 'returning_from_call';
+        }
+    }
+    else if (currentPhaseP5 === 'recursive_call_prep') {
+        currentActionDisplay.textContent = `Recurse...`;
+        logP5(`Depth ${indent}: RECURSE from [${currentPERM.join(',')}] after choosing ${NUMS_PERM[currentFrame.i]}`, indent);
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY/2));
+        if (!simulationRunning) { updateButtonState(); return; }
+        
+        const parentNodeId = currentFrame.nodeId;
+        const parentNode = treeNodesP5[parentNodeId];
+        
+        const childNodeId = `node-p5-${uniqueNodeIdCounterP5++}`;
+        const childDepth = callStackP5.length; 
+        
+        let childX;
+        let numPotentialSiblingsAtThisLevel = 0;
+        let tempUsedForSiblingCount = [...USED_PERM]; // Use a copy to count potential branches
+        for(let j=0; j < N_PERM; j++) { if(!tempUsedForSiblingCount[j]) numPotentialSiblingsAtThisLevel++;}
+
+
+        if (parentNode) {
+            parentNode.childrenPlacedThisCall = (parentNode.childrenPlacedThisCall || 0) + 1;
+            childX = calculateChildXOffset(parentNode.x, parentNode.childrenPlacedThisCall -1, Math.max(1,numPotentialSiblingsAtThisLevel) );
+            if (!parentNode.childrenIds) parentNode.childrenIds = [];
+            if(!parentNode.childrenIds.includes(childNodeId)) parentNode.childrenIds.push(childNodeId);
+        } else { 
+            childX = (p5CanvasTargetDiv.clientWidth || 600) / 2;
+        }
+        const childY = (childDepth + 0.5) * TREE_LEVEL_SEP;
+
+        treeNodesP5[childNodeId] = { 
+            x: childX, y: childY, 
+            nodeId: childNodeId, parentId: parentNodeId, childrenIds: [], childrenPlacedThisCall:0,
+            funcName: "P", currentAtPath: [...currentPERM], 
+            chosenNumInfo: { num: NUMS_PERM[currentFrame.i], index: currentFrame.i },
+            isReturning: false, loopIterator: -1
+        };
+
+        callStackP5.push({ 
+            i: -1, 
+            nodeId: childNodeId, 
+            isReturning: false,
+        }); 
+        currentPhaseP5 = 'base_case_check'; 
+    }
+    else if (currentPhaseP5 === 'returning_from_call') {
+        if (currentFrame) {
+            currentFrame.isReturning = true;
+            if(treeNodesP5[currentFrame.nodeId]) treeNodesP5[currentFrame.nodeId].isReturning = true;
+        }
+        currentActionDisplay.textContent = `Returning from call (Depth ${indent}).`;
+        logP5(`Depth ${indent}: Returned from call.`, indent);
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY/2));
+        if (!simulationRunning) { updateButtonState(); return; }
+
+        callStackP5.pop(); 
+        if (callStackP5.length === 0) { 
+            currentPhaseP5 = 'done'; 
+        } else {
+            currentFrame = callStackP5[callStackP5.length - 1]; 
+            if(treeNodesP5[currentFrame.nodeId]) treeNodesP5[currentFrame.nodeId].childrenPlacedThisCall = 0; // Reset for parent's next child branch
+            logP5(`Returned to Depth ${indent-1}: (Caller loop i=${currentFrame.i}). Backtrack.`, indent-1);
+            currentPhaseP5 = 'backtracking_remove'; 
+        }
+    }
+    else if (currentPhaseP5 === 'backtracking_remove') {
+        const indexInNumsToUnmark = currentFrame.i; 
+        if (currentPERM.length > 0 && indexInNumsToUnmark >=0 && indexInNumsToUnmark < N_PERM) {
+            const removedElement = currentPERM.pop(); 
+            currentActionDisplay.textContent = `Backtrack: Removed ${removedElement}. Unmark used[${indexInNumsToUnmark}]=F.`;
+            logP5(`Depth ${indent}: BACKTRACK: Rem ${removedElement} (nums[${indexInNumsToUnmark}]). Mark used=F.`, indent);
+            USED_PERM[indexInNumsToUnmark] = false;
+            
+            const usedEl = document.getElementById(`used-el-p5-${indexInNumsToUnmark}`);
+            if(usedEl) { usedEl.textContent = 'F'; usedEl.classList.remove('true'); usedEl.classList.add('false', 'changing');}
+            
+            if(currentListDisplay.lastElementChild){
+                currentListDisplay.lastElementChild.classList.add('removing-perm-p5');
+                 await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+            }
+            if (!simulationRunning) { updateButtonState(); return; }
+            if(usedEl) usedEl.classList.remove('changing');
+            renderCurrentListP5();
+            renderNumsArrayAndUsedP5(); 
+        } else {
+             logP5(`Depth ${indent}: BACKTRACK: currentPERM empty or invalid index.`, indent);
+        }
+        currentPhaseP5 = 'looping'; 
+    }
+
+    if (p5Instance) p5Instance.customRedraw(); 
+    updateButtonState(); 
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    numsInputEl = document.getElementById('nums_input_perm_p5');
+    startButton = document.getElementById('start_button_perm_p5');
+    nextStepButton = document.getElementById('next_step_button_perm_p5');
+    numsArrayDisplay = document.getElementById('nums_array_perm_p5');
+    usedArrayDisplay = document.getElementById('used_array_perm_p5');
+    currentListDisplay = document.getElementById('current_list_perm_p5');
+    currentActionDisplay = document.getElementById('current_action_perm_display_p5');
+    resultListContainer = document.getElementById('result_list_container_perm_p5');
+    logOutput = document.getElementById('log_output_perm_p5');
+    p5CanvasTargetDiv = document.getElementById('p5_canvas_target_div'); 
+
+    p5Instance = new p5(p5_sketch_definition);
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    initializeAnimation(); 
+    
+    window.addEventListener('resize', () => {
+        if(p5Instance && p5Instance.width !== undefined && typeof p5Instance.resizeCanvas === 'function') { 
+            const container = document.getElementById('p5_canvas_target_div');
+            let targetWidth = Math.max(container.clientWidth - 2, 500);
+            let targetHeight = Math.max(container.clientHeight - 2, 400);
+
+            let maxX = 0, maxY = 0;
+            let hasNodes = false;
+            Object.values(treeNodesP5).forEach(node => {
+                if(node.x !== undefined && node.y !== undefined){
+                    maxX = Math.max(maxX, node.x + TREE_NODE_WIDTH / 2);
+                    maxY = Math.max(maxY, node.y + TREE_NODE_HEIGHT / 2);
+                    hasNodes = true;
+                }
+            });
+            if(hasNodes){ // Try to fit content if it's larger than container
+                targetWidth = Math.max(targetWidth, maxX + TREE_SIBLING_SEP);
+                targetHeight = Math.max(targetHeight, maxY + TREE_LEVEL_SEP / 2);
+            } else { // Default size if no nodes yet
+                targetHeight = 400;
+            }
+
+            p5Instance.resizeCanvas(targetWidth, targetHeight);
+            p5Instance.customRedraw();
+        }
+    });
+});
+</script>
+</body>
+</html>

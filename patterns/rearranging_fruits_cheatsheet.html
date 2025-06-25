@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rearranging Fruits Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Rearranging Fruits – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Rearranging Fruits</b> problem involves making two baskets of fruits identical by swapping fruits between the baskets. Each swap has a cost, and the goal is to minimize the total cost of swaps. If it is impossible to make the baskets identical, return <code>-1</code>.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm with Frequency Count</h3>
+    <pre><code>import java.util.*;
+
+class Solution {
+    public long minCostToMakeIdentical(int[] basket1, int[] basket2) {
+        // Use a generic Map<Integer, Integer> to avoid raw types
+        Map<Integer, Integer> freq = new HashMap<>();
+        
+        // Count the frequency of fruits in basket1
+        for (int fruit : basket1) {
+            freq.put(fruit, freq.getOrDefault(fruit, 0) + 1);
+        }
+        
+        // Subtract the frequency of fruits in basket2
+        for (int fruit : basket2) {
+            freq.put(fruit, freq.getOrDefault(fruit, 0) - 1);
+        }
+
+        // Check if making baskets identical is possible
+        for (int count : freq.values()) {
+            if (count % 2 != 0) return -1; // Impossible if any fruit count is odd
+        }
+
+        // Collect excess fruits
+        List<Integer> excess = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : freq.entrySet()) {
+            int fruit = entry.getKey();
+            int count = Math.abs(entry.getValue()) / 2;
+            for (int i = 0; i < count; i++) {
+                excess.add(fruit);
+            }
+        }
+
+        // Sort excess fruits
+        Collections.sort(excess);
+        int minFruit = Math.min(Arrays.stream(basket1).min().getAsInt(), Arrays.stream(basket2).min().getAsInt());
+        long minCost = 0;
+
+        // Calculate the minimum cost
+        for (int i = 0; i < excess.size() / 2; i++) {
+            minCost += Math.min(excess.get(i), 2 * minFruit);
+        }
+
+        return minCost;
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/rearranging_fruits_animation.html'">▶️ View Animation</button>
+    <button onclick="window.location.href='../animations/rearranging_fruits_animation_v2.html'">▶️ View Animation v2</button>
+
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Frequency Count:</b> <code>O(N)</code>, where <code>N</code> is the total number of fruits.</li>
+      <li><b>Sorting:</b> <code>O(M log M)</code>, where <code>M</code> is the number of unique fruit types.</li>
+      <li><b>Total Complexity:</b> <code>O(N + M log M)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Minimizing costs in resource rearrangement problems.</li>
+      <li>Solving problems involving frequency counts and greedy selection.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/rearranging-fruits/" target="_blank" rel="noopener noreferrer">Rearranging Fruits</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: basket1 = [1, 2, 3], basket2 = [2, 3, 1]
+Output: 1
+
+Explanation:
+- Swap fruit 1 from basket1 with fruit 2 from basket2 at a cost of 1.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a frequency map to track the excess or deficit of each fruit type.</li>
+      <li>Sort the excess fruits to minimize the total cost of swaps.</li>
+      <li>Check for impossibility by ensuring all frequency differences are even.</li>
+      <li>Consider the smallest fruit cost for swaps to minimize the overall cost.</li>
+    </ul>
+  </div>
+</body>
+</html>

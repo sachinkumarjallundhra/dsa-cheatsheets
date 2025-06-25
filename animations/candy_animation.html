@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy (LeetCode 135) Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-candy-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-candy-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-candy-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; font-size: 1.1em; }
+        .controls-candy-p5 button { padding: 10px 15px; background-color: #d35400; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-candy-p5 button:hover { background-color: #a04000; }
+        .controls-candy-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-candy-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-candy-p5, .right-panel-candy-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-candy-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        /* --- CSS CORRECTION --- */
+        /* The visualization area itself is now the flex container */
+        .visualization-container-p5 {
+            min-height: 400px;
+            background: linear-gradient(to bottom, #87CEEB, #B0E0E6);
+            overflow-x: auto;
+            position: relative;
+            /* Flex properties to arrange children horizontally */
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+        }
+
+        /* The child box itself is a vertical flex container for its own items */
+        .child-box-p5 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 70px;
+            transition: all 0.3s ease-in-out;
+            position: relative; /* For pointer positioning */
+        }
+        /* --- END OF CORRECTION --- */
+
+        .child-rating { font-size: 1.5em; font-weight: bold; color: #2c3e50; background: #fff; border: 2px solid #bdc3c7; border-radius: 50%; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; margin-bottom: 5px; }
+        .child-icon { font-size: 3em; }
+        .child-candies { font-size: 1.2em; font-weight: bold; color: #e67e22; }
+        
+        .child-box-p5.highlight-i { transform: translateY(-15px); }
+        .child-box-p5.highlight-i .child-rating { border-color: #f1c40f; }
+        .child-box-p5.highlight-neighbor .child-rating { border-color: #3498db; }
+        .child-candies.updated { animation: pulse-gold 0.6s; }
+
+        @keyframes pulse-gold { 0%, 100% { transform: scale(1); color: #e67e22; } 50% { transform: scale(1.5); color: #f1c40f; } }
+        
+        #i_pointer { position: absolute; bottom: -20px; /* Position relative to child-box */ transform: translateX(-50%); font-family: 'Courier New', monospace; font-size: 1.5em; font-weight: bold; transition: left 0.4s ease-in-out; color: #c0392b; visibility: hidden; z-index: 5; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr; gap: 10px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; min-height: 1.2em; }
+        #total_candies_display_p5 { font-size: 2.2em; color: #d35400; }
+
+        #current_action_candy_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay.show { opacity: 1; }
+        .overlay-icon { font-size: 4em; }
+        .overlay-text { font-size: 1.8em; margin-top: 10px; }
+
+        .log-container-candy-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_candy_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @media (max-width: 1000px) {
+            .main-content-candy-p5 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Candy Distribution</h1>
+
+        <div class="controls-candy-p5">
+            <label for="ratings_input_p5">Child Ratings:</label>
+            <input type="text" id="ratings_input_p5" value="1,0,2">
+            <button id="start_button_candy_p5">Start/Reset</button>
+            <button id="next_step_button_candy_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-candy-p5">
+            <div class="left-panel-candy-p5">
+                <div class="state-panel-candy-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Current Pass</div><div id="pass_display_p5" class="value">-</div></div>
+                        <div class="state-item-p5"><div class="label">Total Candies</div><div id="total_candies_display_p5" class="value">0</div></div>
+                    </div>
+                    <div id="current_action_candy_display_p5"></div>
+                </div>
+                <div class="log-container-candy-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_candy_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-candy-p5">
+                 <div class="visualization-container-p5" id="visualization_container_p5">
+                    <!-- Children will be added here directly by JS -->
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <audio id="sound-move" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgACAAIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-calc" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8A/f8A/P8A/P8A/P8A/f8A/f8A//8A//8A//8A//8A//8A/f8A/P8A/P8A/P8A/P8A/f8A//8A/v8AAP//AP//AP//AP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8A//8A//8A//8A//8A//8A//8A"></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let isAudioUnlocked = false;
+
+// --- DOM ELEMENTS ---
+let ratingsInput, startButton, nextStepButton, passDisplay, totalCandiesDisplay,
+    currentActionDisplay, logOutput, vizContainer, overlay;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-move', 'sound-calc', 'sound-win'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(ratings) {
+    const steps = [];
+    const n = ratings.length;
+    if (n === 0) {
+        steps.push({ type: 'finish', total: 0, message: 'No children, 0 candies needed.' });
+        return steps;
+    }
+    
+    let candies = new Array(n).fill(1);
+
+    steps.push({
+        type: 'initial',
+        ratings: [...ratings],
+        candies: [...candies],
+        message: 'Rule 1: Every child gets at least one candy.'
+    });
+
+    steps.push({ type: 'pass_change', passName: 'Left to Right' });
+    for (let i = 1; i < n; i++) {
+        steps.push({
+            type: 'scan_left', i, ratings: [...ratings], candies: [...candies],
+            message: `Comparing child ${i} (rating ${ratings[i]}) with left neighbor ${i-1} (rating ${ratings[i-1]}).`
+        });
+        if (ratings[i] > ratings[i - 1]) {
+            const oldVal = candies[i];
+            candies[i] = candies[i - 1] + 1;
+            steps.push({
+                type: 'update', i, ratings: [...ratings], candies: [...candies], oldVal,
+                message: `Rating ${ratings[i]} > ${ratings[i-1]}. Child ${i} gets ${candies[i-1]} + 1 = ${candies[i]} candies.`
+            });
+        }
+    }
+
+    steps.push({ type: 'pass_change', passName: 'Right to Left' });
+    for (let i = n - 2; i >= 0; i--) {
+        steps.push({
+            type: 'scan_right', i, ratings: [...ratings], candies: [...candies],
+            message: `Comparing child ${i} (rating ${ratings[i]}) with right neighbor ${i+1} (rating ${ratings[i+1]}).`
+        });
+        if (ratings[i] > ratings[i + 1]) {
+            if (candies[i] <= candies[i+1]) {
+                const oldVal = candies[i];
+                candies[i] = candies[i + 1] + 1;
+                steps.push({
+                    type: 'update', i, ratings: [...ratings], candies: [...candies], oldVal,
+                    message: `Rating ${ratings[i]} > ${ratings[i+1]}, and current candy count ${oldVal} is not enough. Update to ${candies[i+1]} + 1 = ${candies[i]}.`
+                });
+            }
+        }
+    }
+
+    steps.push({ type: 'pass_change', passName: 'Summing Up' });
+    let total = 0;
+    for (let i = 0; i < n; i++) {
+        total += candies[i];
+        steps.push({
+            type: 'sum', i, total, ratings: [...ratings], candies: [...candies],
+            message: `Adding ${candies[i]} candies from child ${i}. Current total: ${total}.`
+        });
+    }
+
+    steps.push({
+        type: 'finish', total,
+        message: `All passes complete. The minimum total number of candies is ${total}.`
+    });
+    return steps;
+}
+
+function renderChildren(ratings, candies, highlights = {}) {
+    // Clear only children, keep overlay
+    vizContainer.querySelectorAll('.child-box-p5, #i_pointer').forEach(el => el.remove());
+
+    ratings.forEach((rating, index) => {
+        const childBox = document.createElement('div');
+        childBox.className = 'child-box-p5';
+        childBox.id = `child-${index}`;
+        
+        if (highlights.i === index) childBox.classList.add('highlight-i');
+        if (highlights.neighbor === index) childBox.classList.add('highlight-neighbor');
+        
+        const ratingDiv = document.createElement('div');
+        ratingDiv.className = 'child-rating';
+        ratingDiv.textContent = rating;
+
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'child-icon';
+        iconDiv.textContent = '🧍';
+
+        const candiesDiv = document.createElement('div');
+        candiesDiv.className = 'child-candies';
+        if (highlights.updatedIdx === index) candiesDiv.classList.add('updated');
+        candiesDiv.textContent = `🍬 ${candies[index]}`;
+
+        childBox.append(ratingDiv, iconDiv, candiesDiv);
+        vizContainer.insertBefore(childBox, overlay); // Insert before the overlay
+    });
+
+    if (highlights.i !== undefined) {
+        const iPointer = document.createElement('div');
+        iPointer.id = 'i_pointer';
+        iPointer.textContent = 'i';
+        
+        const childBox = document.getElementById(`child-${highlights.i}`);
+        if(childBox){
+            // Pointer is now a child of the box it points to, for simpler positioning
+            childBox.appendChild(iPointer);
+            iPointer.style.left = '50%';
+            iPointer.style.visibility = 'visible';
+        }
+    }
+}
+
+async function initializeAnimation() {
+    simulationRunning = false;
+    let ratings; 
+    try {
+        ratings = ratingsInput.value.split(',').map(s => parseInt(s.trim()));
+        if(ratings.some(isNaN)) throw new Error("Invalid ratings input.");
+    } catch(e) {
+        alert(e.message);
+        return;
+    }
+    
+    animationSteps = generateAnimationSteps(ratings);
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    passDisplay.textContent = '-';
+    totalCandiesDisplay.textContent = '0';
+    
+    const firstStep = animationSteps[0];
+    renderChildren(firstStep.ratings, firstStep.candies);
+    currentActionDisplay.textContent = firstStep.message;
+    log(firstStep.message);
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+    log(`\n--- Step ${currentStepIndex + 1}: ${step.type} ---`);
+    log(step.message);
+    currentActionDisplay.textContent = step.message;
+
+    switch (step.type) {
+        case 'initial':
+            renderChildren(step.ratings, step.candies);
+            break;
+        case 'pass_change':
+            passDisplay.textContent = step.passName;
+            if (currentStepIndex > 0) {
+                const prevState = animationSteps[currentStepIndex-1];
+                renderChildren(prevState.ratings, prevState.candies);
+            }
+            break;
+        case 'scan_left':
+            playSound('sound-move');
+            renderChildren(step.ratings, step.candies, { i: step.i, neighbor: step.i - 1 });
+            break;
+        case 'scan_right':
+            playSound('sound-move');
+            renderChildren(step.ratings, step.candies, { i: step.i, neighbor: step.i + 1 });
+            break;
+        case 'update':
+            playSound('sound-calc');
+            renderChildren(step.ratings, step.candies, { i: step.i, updatedIdx: step.i });
+            break;
+        case 'sum':
+            playSound('sound-calc');
+            totalCandiesDisplay.textContent = step.total;
+            renderChildren(step.ratings, step.candies, { i: step.i });
+            break;
+        case 'finish':
+            renderChildren(animationSteps[currentStepIndex-1].ratings, animationSteps[currentStepIndex-1].candies);
+            overlay.className = 'show';
+            playSound('sound-win');
+            overlay.innerHTML = `<span class="overlay-icon">🍬</span><span class="overlay-text">Total Candies: ${step.total}</span>`;
+            simulationRunning = false;
+            break;
+    }
+    
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    ratingsInput = document.getElementById('ratings_input_p5');
+    startButton = document.getElementById('start_button_candy_p5');
+    nextStepButton = document.getElementById('next_step_button_candy_p5');
+    passDisplay = document.getElementById('pass_display_p5');
+    totalCandiesDisplay = document.getElementById('total_candies_display_p5');
+    currentActionDisplay = document.getElementById('current_action_candy_display_p5');
+    logOutput = document.getElementById('log_output_candy_p5');
+    vizContainer = document.getElementById('visualization_container_p5');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

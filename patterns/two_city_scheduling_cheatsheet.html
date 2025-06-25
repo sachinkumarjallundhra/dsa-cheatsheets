@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two City Scheduling Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Two City Scheduling – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Two City Scheduling</b> problem involves sending <code>2N</code> people to two cities such that exactly <code>N</code> people go to each city, and the total cost is minimized. Each person has a cost for traveling to either city.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm</h3>
+    <pre><code>class Solution {
+    public int twoCitySchedCost(int[][] costs) {
+        // Sort by the difference in costs between the two cities
+        Arrays.sort(costs, (a, b) -> (a[0] - a[1]) - (b[0] - b[1]));
+        int totalCost = 0;
+        int n = costs.length / 2;
+
+        // Send the first N people to city A and the rest to city B
+        for (int i = 0; i < costs.length; i++) {
+            if (i < n) {
+                totalCost += costs[i][0]; // City A
+            } else {
+                totalCost += costs[i][1]; // City B
+            }
+        }
+
+        return totalCost;
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/two_city_scheduling_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Sorting:</b> <code>O(N log N)</code>, where <code>N</code> is the number of people.</li>
+      <li><b>Greedy Selection:</b> <code>O(N)</code>, for iterating through the sorted array.</li>
+      <li><b>Total Complexity:</b> <code>O(N log N)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Minimizing costs in resource allocation problems.</li>
+      <li>Solving problems involving balanced partitioning.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/two-city-scheduling/" target="_blank" rel="noopener noreferrer">1029. Two City Scheduling</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: costs = [[10,20],[30,200],[50,30],[20,50]]
+Output: 110
+
+Explanation:
+- Send person 0 and 3 to city A: 10 + 20 = 30
+- Send person 1 and 2 to city B: 200 + 30 = 230
+- Total cost = 30 + 230 = 110</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Sort the array by the cost difference between the two cities to prioritize the cheaper option.</li>
+      <li>Ensure exactly <code>N</code> people are sent to each city by dividing the sorted array.</li>
+      <li>Use a greedy approach to minimize the total cost efficiently.</li>
+    </ul>
+  </div>
+</body>
+</html>

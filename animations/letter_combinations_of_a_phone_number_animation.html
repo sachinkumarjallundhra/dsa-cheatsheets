@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Combinations of a Phone Number Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-phone-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-phone-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-phone-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 180px; }
+        .controls-phone-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-phone-p5 button:hover { background-color: #0056b3; }
+        .controls-phone-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-phone-p5 { display: grid; grid-template-columns: minmax(320px, 1.2fr) 2fr; gap: 15px; }
+        .left-panel-phone-p5, .right-panel-phone-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .config-panel-phone-p5, .results-panel-phone-p5, .recursion-tree-container-p5 {
+            padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .config-panel-phone-p5 > div { margin-bottom: 6px; font-size: 0.9em; }
+        .display-area-phone-p5 { padding: 5px; border: 1px dashed #ccc; min-height: 28px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 4px; }
+        .element-phone-p5 { padding: 3px 6px; border-radius: 3px; font-size: 0.85em; text-align: center; border: 1px solid #bdc3c7; background-color: #e9ecef; transition: all 0.3s ease; }
+        .string-display-phone-p5 { font-family: 'Courier New', Courier, monospace; font-size: 1.1em; font-weight: bold; color: #1967d2; }
+        
+        .input-digits-phone-p5 .element-phone-p5.highlight-current-eval { background-color: #ffc107 !important; border-color: #ffaa00 !important; transform: scale(1.1); box-shadow: 0 0 8px #ffc107; }
+
+        .results-panel-phone-p5 h2 { margin-bottom: 8px; }
+        .result-list-container-phone-p5 { max-height: 250px; overflow-y: auto; border: 1px dashed #a9dfbf; padding: 5px; }
+        .result-item-phone-p5 { display: inline-block; padding: 4px 8px; margin: 2px; border: 1px solid #a9dfbf; background-color: #e6f9f0; border-radius: 4px; animation: fadeInResultPhone-p5 0.5s ease-out; font-family: 'Courier New', Courier, monospace; }
+
+        #current_action_phone_display_p5 { text-align:center; margin:8px 0; font-weight:bold; min-height:1.1em; font-size:0.9em; transition: color 0.3s; }
+        #current_action_phone_display_p5.choose { color: #28a745; }
+        #current_action_phone_display_p5.backtrack { color: #dc3545; }
+        #current_action_phone_display_p5.info { color: #0d6efd; }
+        #current_action_phone_display_p5.return { color: #6c757d; }
+        
+        .recursion-tree-container-p5 { min-height: 450px; overflow: auto; position: relative; background-color: #f0f2f5; }
+        #p5_canvas_target_div_phone { width:100%; height:100%; min-height: 430px; display: flex; justify-content: center; align-items: flex-start; }
+
+        .log-container-phone-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_phone_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes fadeInResultPhone-p5 { from { opacity:0; transform: translateY(10px)} to { opacity:1; transform: translateY(0)} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Letter Combinations of a Phone Number</h1>
+
+        <div class="controls-phone-p5">
+            <label for="digits_input_phone_p5">Phone Digits:</label>
+            <input type="text" id="digits_input_phone_p5" value="23">
+            <button id="start_button_phone_p5">Start/Reset</button>
+            <button id="next_step_button_phone_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-phone-p5">
+            <div class="left-panel-phone-p5">
+                <div class="config-panel-phone-p5">
+                    <h2>Input & Current State</h2>
+                    <div>Input Digits: <div id="input_digits_phone_p5" class="display-area-phone-p5 input-digits-phone-p5"></div></div>
+                    <div>Current Combination: <div id="current_combo_phone_p5" class="display-area-phone-p5 string-display-phone-p5">""</div></div>
+                    <div id="current_action_phone_display_p5" class="info"></div>
+                </div>
+                <div class="results-panel-phone-p5">
+                    <h2>Result Combinations</h2>
+                    <div id="result_list_container_phone_p5" class="result-list-container-phone-p5"></div>
+                </div>
+            </div>
+            <div class="right-panel-phone-p5">
+                 <div class="recursion-tree-container-p5">
+                    <h2>Recursion Call Tree</h2>
+                    <div id="p5_canvas_target_div_phone"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-phone-p5">
+            <h2>Log (Detailed Steps)</h2>
+            <pre id="log_output_phone_p5"></pre>
+        </div>
+    </div>
+
+<script>
+let p5Instance; 
+
+// --- STATE VARIABLES ---
+let INPUT_DIGITS = "";
+let resultCombinations = [];
+let currentCombination = "";
+let callStack = []; 
+let currentPhase = 'idle';
+let uniqueNodeIdCounter = 0;
+let treeNodes = {}; 
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let digitsInputEl, startButton, nextStepButton, inputDigitsDisplay,
+    currentComboDisplay, currentActionDisplay, resultListContainer, logOutput,
+    p5CanvasTargetDiv; 
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 500; 
+const PHONE_MAP = {
+    '2': 'abc', '3': 'def', '4': 'ghi', '5': 'jkl', 
+    '6': 'mno', '7': 'pqrs', '8': 'tuv', '9': 'wxyz'
+};
+const TREE_NODE_WIDTH = 120;  
+const TREE_NODE_HEIGHT = 50; 
+const TREE_LEVEL_SEP = 100;
+const TREE_SIBLING_SEP = 20;
+
+// --- HELPER FUNCTIONS ---
+function log(message, indent = 0) {
+    const indentation = '  '.repeat(indent);
+    if(logOutput) logOutput.innerHTML += `${indentation}> ${message}\n`;
+    if(logOutput) logOutput.scrollTop = logOutput.scrollHeight;
+}
+
+function clearHighlights() {
+    if(inputDigitsDisplay) inputDigitsDisplay.querySelectorAll('.element-phone-p5.highlight-current-eval').forEach(el => el.classList.remove('highlight-current-eval'));
+}
+
+function renderInputDigits() {
+    if(!inputDigitsDisplay) return;
+    inputDigitsDisplay.innerHTML = '';
+    INPUT_DIGITS.split('').forEach((val, index) => {
+        const el = document.createElement('div');
+        el.classList.add('element-phone-p5');
+        el.id = `input-el-p5-${index}`;
+        el.textContent = val;
+        inputDigitsDisplay.appendChild(el);
+    });
+}
+function renderCurrentCombo() {
+    if(currentComboDisplay) currentComboDisplay.textContent = `"${currentCombination}"`;
+}
+async function addCurrentToResultVisual() {
+    if(!resultListContainer) return;
+    const resultDiv = document.createElement('div');
+    resultDiv.classList.add('result-item-phone-p5');
+    resultDiv.textContent = `"${currentCombination}"`;
+    resultListContainer.appendChild(resultDiv);
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY / 1.5));
+}
+
+// --- P5.JS SKETCH DEFINITION ---
+const p5_sketch_definition = (p) => {
+    function postOrderLayout(nodeId, depth, nextX) {
+        const node = treeNodes[nodeId];
+        node.y = depth * TREE_LEVEL_SEP;
+
+        if (!node.children || node.children.length === 0) {
+            node.x = nextX;
+            return nextX + TREE_NODE_WIDTH + TREE_SIBLING_SEP;
+        }
+        
+        let currentX = nextX;
+        for (const childId of node.children) {
+            currentX = postOrderLayout(childId, depth + 1, currentX);
+        }
+
+        const firstChild = treeNodes[node.children[0]];
+        const lastChild = treeNodes[node.children[node.children.length - 1]];
+        node.x = (firstChild.x + lastChild.x) / 2;
+
+        return currentX;
+    }
+
+    p.setup = () => {
+        const container = document.getElementById('p5_canvas_target_div_phone');
+        const canvas = p.createCanvas(container.clientWidth || 800, container.clientHeight || 450);
+        canvas.parent('p5_canvas_target_div_phone');
+        p.textAlign(p.CENTER, p.CENTER); p.textSize(10); p.noLoop();
+    };
+
+    p.draw = () => {
+        p.background(240, 242, 245); 
+        const rootNodeId = 'node-0';
+        if (!treeNodes[rootNodeId]) return;
+        
+        postOrderLayout(rootNodeId, 0, 0);
+        
+        const allNodes = Object.values(treeNodes);
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        allNodes.forEach(node => {
+            if (node.x !== undefined && node.y !== undefined) {
+                minX = Math.min(minX, node.x); maxX = Math.max(maxX, node.x);
+                minY = Math.min(minY, node.y); maxY = Math.max(maxY, node.y);
+            }
+        });
+
+        const padding = 60;
+        const requiredWidth = Math.max(p.width, (maxX - minX) + 2 * padding + TREE_NODE_WIDTH);
+        const requiredHeight = Math.max(p.height, (maxY - minY) + 2 * padding + TREE_NODE_HEIGHT);
+        if (Math.abs(p.width - requiredWidth) > 10 || Math.abs(p.height - requiredHeight) > 10) {
+            p.resizeCanvas(requiredWidth, requiredHeight);
+        }
+
+        const offsetX = (p.width / 2) - (minX + (maxX - minX) / 2);
+        const offsetY = padding;
+
+        allNodes.forEach(node => {
+            if (node.parentId && treeNodes[node.parentId]) {
+                const parent = treeNodes[node.parentId];
+                if (parent.x !== undefined && node.x !== undefined) {
+                    p.stroke(180); p.strokeWeight(1.5);
+                    p.line(parent.x + offsetX, parent.y + offsetY, node.x + offsetX, node.y + offsetY);
+                }
+            }
+        });
+
+        allNodes.forEach(node => {
+            if (node.x === undefined || node.y === undefined) return;
+            p.strokeWeight(1.5); p.stroke(108, 117, 125);
+            let isActive = callStack.length > 0 && node.nodeId === callStack[callStack.length - 1].nodeId && simulationRunning && !node.isReturning;
+            
+            if (node.isReturning) p.fill(222, 226, 230, 200); 
+            else if (isActive) { p.fill(255, 243, 205); p.stroke(255, 193, 7); p.strokeWeight(2.5); }
+            else p.fill(255);
+
+            p.rectMode(p.CENTER);
+            p.rect(node.x + offsetX, node.y + offsetY, TREE_NODE_WIDTH, TREE_NODE_HEIGHT, 5);
+
+            p.fill(30); p.noStroke(); p.textAlign(p.CENTER, p.CENTER); p.textSize(9.5);
+            const pathText = `Path: "${node.pathAtCall}"`;
+            const callText = `solve(idx=${node.index}, i=${node.loopIterator ?? ''})`;
+            p.text(`${callText}\n${pathText}`, node.x + offsetX, node.y + offsetY, TREE_NODE_WIDTH - 4, TREE_NODE_HEIGHT - 4);
+        });
+    };
+    p.customRedraw = () => { if(p && typeof p.redraw === 'function' && p.width) p.redraw(); };
+};
+
+// --- CORE LOGIC FUNCTIONS ---
+function updateButtonState() {
+    if (!nextStepButton || !startButton) return; 
+    nextStepButton.disabled = !(simulationRunning && currentPhase !== 'done');
+    if (currentPhase === 'done') {
+        startButton.textContent = "Reset";
+        if(currentActionDisplay) {
+            currentActionDisplay.textContent = "All combinations generated!";
+            currentActionDisplay.className = 'info';
+        }
+    }
+}
+
+function initializeAnimation() {
+    log("Initializing...");
+    simulationRunning = false; 
+    clearHighlights(); 
+    INPUT_DIGITS = digitsInputEl.value.replace(/[^2-9]/g, ''); // Filter for valid digits
+    digitsInputEl.value = INPUT_DIGITS;
+
+    resultCombinations = []; currentCombination = ""; callStack = []; 
+    uniqueNodeIdCounter = 0; treeNodes = {}; 
+
+    renderInputDigits(); renderCurrentCombo();
+    resultListContainer.innerHTML = ''; logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+
+    if (!INPUT_DIGITS) {
+        log("Empty input. Nothing to generate.");
+        currentPhase = 'done';
+        updateButtonState();
+        if (p5Instance) p5Instance.customRedraw();
+        return;
+    }
+    
+    const rootNodeId = `node-${uniqueNodeIdCounter++}`;
+    treeNodes[rootNodeId] = { 
+        nodeId: rootNodeId, parentId: null, children: [],
+        index: 0, pathAtCall: "", loopIterator: -1,
+        isReturning: false,
+    };
+    callStack.push({ 
+        nodeId: rootNodeId,
+        index: 0,
+        loopIterator: -1,
+        lettersToLoop: '',
+        phase: 'enter_function' 
+    });
+
+    currentPhase = 'running'; 
+    simulationRunning = true; 
+    log(`Initialized. Digits: "${INPUT_DIGITS}". Start recursion.`);
+    if(currentActionDisplay) {
+        currentActionDisplay.textContent = "Ready to generate combinations.";
+        currentActionDisplay.className = 'info';
+    }
+    
+    if (p5Instance) p5Instance.customRedraw();
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || callStack.length === 0) {
+        currentPhase = 'done';
+        updateButtonState();
+        return;
+    }
+    
+    nextStepButton.disabled = true; 
+    clearHighlights();
+    
+    let frame = callStack[callStack.length - 1];
+    let node = treeNodes[frame.nodeId];
+    const indent = callStack.length - 1;
+
+    // --- State Machine ---
+    if (frame.phase === 'enter_function') {
+        log(`Depth ${indent}: solve(index=${frame.index}, current="${currentCombination}")`, indent);
+        
+        if (frame.index === INPUT_DIGITS.length) {
+            log(`  Depth ${indent}: Base Case TRUE. Combination found.`, indent);
+            currentActionDisplay.textContent = `BASE CASE: Found "${currentCombination}"`;
+            currentActionDisplay.className = 'info';
+            resultCombinations.push(currentCombination);
+            await addCurrentToResultVisual();
+            frame.phase = 'return';
+        } else {
+            const currentDigit = INPUT_DIGITS[frame.index];
+            frame.lettersToLoop = PHONE_MAP[currentDigit] || '';
+            log(`  Depth ${indent}: Starting loop for digit '${currentDigit}' (letters: "${frame.lettersToLoop}")`, indent);
+            document.getElementById(`input-el-p5-${frame.index}`)?.classList.add('highlight-current-eval');
+            frame.loopIterator = -1;
+            frame.phase = 'loop_iteration';
+        }
+
+    } else if (frame.phase === 'loop_iteration') {
+        frame.loopIterator++;
+        node.loopIterator = frame.loopIterator;
+
+        if (frame.loopIterator < frame.lettersToLoop.length) {
+            const char = frame.lettersToLoop[frame.loopIterator];
+            log(`  Depth ${indent}: Loop i=${frame.loopIterator}. Choose char '${char}'`, indent);
+            currentActionDisplay.textContent = `Choose '${char}'`;
+            currentActionDisplay.className = 'choose';
+
+            currentCombination += char;
+            renderCurrentCombo();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+            frame.phase = 'recursive_call';
+        } else {
+            log(`  Depth ${indent}: Loop finished. Returning.`, indent);
+            frame.phase = 'return';
+        }
+    
+    } else if (frame.phase === 'recursive_call') {
+        const newIndex = frame.index + 1;
+        log(`  Depth ${indent}: Recurse -> solve(index=${newIndex}, ...)`, indent);
+        currentActionDisplay.textContent = `Recurse: solve(${newIndex}, ...)`;
+        currentActionDisplay.className = 'info';
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY/2));
+
+        const parentNode = treeNodes[frame.nodeId];
+        const childNodeId = `node-${uniqueNodeIdCounter++}`;
+        
+        treeNodes[childNodeId] = {
+            nodeId: childNodeId, parentId: frame.nodeId, children: [],
+            index: newIndex, pathAtCall: currentCombination,
+            loopIterator: -1, isReturning: false,
+        };
+        parentNode.children.push(childNodeId);
+
+        callStack.push({ nodeId: childNodeId, index: newIndex, loopIterator: -1, phase: 'enter_function' });
+        
+        frame.phase = 'backtrack';
+
+    } else if (frame.phase === 'backtrack') {
+        const char = currentCombination.slice(-1);
+        log(`  Depth ${indent}: Backtrack. Remove '${char}' (from i=${frame.loopIterator})`, indent);
+        currentActionDisplay.textContent = `Backtrack: Remove '${char}'`;
+        currentActionDisplay.className = 'backtrack';
+        
+        currentCombination = currentCombination.slice(0, -1);
+        renderCurrentCombo();
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+        
+        frame.phase = 'loop_iteration';
+
+    } else if (frame.phase === 'return') {
+        log(`Depth ${indent}: Return from call.`, indent);
+        currentActionDisplay.textContent = `Return from solve(index=${frame.index})`;
+        currentActionDisplay.className = 'return';
+        node.isReturning = true;
+        callStack.pop();
+
+        if (callStack.length > 0) {
+            callStack[callStack.length - 1].phase = 'backtrack';
+        }
+    }
+    
+    if (p5Instance) p5Instance.customRedraw();
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    digitsInputEl = document.getElementById('digits_input_phone_p5');
+    startButton = document.getElementById('start_button_phone_p5');
+    nextStepButton = document.getElementById('next_step_button_phone_p5');
+    inputDigitsDisplay = document.getElementById('input_digits_phone_p5');
+    currentComboDisplay = document.getElementById('current_combo_phone_p5');
+    currentActionDisplay = document.getElementById('current_action_phone_display_p5');
+    resultListContainer = document.getElementById('result_list_container_phone_p5');
+    logOutput = document.getElementById('log_output_phone_p5');
+    p5CanvasTargetDiv = document.getElementById('p5_canvas_target_div_phone'); 
+
+    p5Instance = new p5(p5_sketch_definition);
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    initializeAnimation(); 
+    
+    window.addEventListener('resize', () => {
+        if (p5Instance && p5Instance.width) {
+            const container = document.getElementById('p5_canvas_target_div_phone');
+            p5Instance.resizeCanvas(container.clientWidth || 800, p5Instance.height);
+            p5Instance.customRedraw();
+        }
+    });
+});
+</script>
+</body>
+</html>

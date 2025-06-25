@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Decomposer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Orbitron:wght@500;700&display=swap');
+
+        :root {
+            --bg-color: #0d0c1d;
+            --primary-glow: #00ffff;
+            --secondary-glow: #ff00ff;
+            --success-glow: #00ff7f;
+            --text-color: #e0e6f0;
+            --panel-bg: rgba(28, 25, 56, 0.6);
+            --border-color: rgba(0, 255, 255, 0.3);
+        }
+
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            margin: 0; 
+            padding: 10px; 
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        .container { 
+            width: 98%; 
+            max-width: 1400px; 
+            background: var(--panel-bg);
+            backdrop-filter: blur(5px);
+            padding: 20px; 
+            border-radius: 10px; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.1);
+        }
+
+        h1, h2 { 
+            font-family: 'Orbitron', sans-serif;
+            text-align: center; 
+            margin-bottom: 15px;
+            text-shadow: 0 0 5px var(--primary-glow);
+        }
+        h1 { font-size: 2em; color: var(--primary-glow); }
+        h2 { font-size: 1.2em; color: var(--text-color); border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-top: 10px; }
+
+        .controls-decomposer { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; padding: 15px; background-color: rgba(0,0,0,0.3); border-radius: 8px; align-items: center; justify-content: center;}
+        .controls-decomposer label { font-weight: bold; margin-right: 5px; color: var(--primary-glow); }
+        .controls-decomposer input { padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: #1c1938; color: var(--text-color); font-family: 'Courier New', monospace; width: 300px; font-size: 1.1em; }
+        .controls-decomposer button { padding: 10px 20px; background-color: transparent; color: var(--primary-glow); border: 2px solid var(--primary-glow); border-radius: 5px; cursor: pointer; transition: all 0.3s; font-family: 'Orbitron', sans-serif; }
+        .controls-decomposer button:hover:not(:disabled) { background-color: var(--primary-glow); color: var(--bg-color); box-shadow: 0 0 15px var(--primary-glow); }
+        .controls-decomposer button:disabled { border-color: #444; color: #666; cursor: not-allowed; }
+
+        .main-content-decomposer { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 20px; }
+        .left-panel-decomposer, .right-panel-decomposer { display: flex; flex-direction: column; gap: 15px; }
+        
+        .state-panel-decomposer, .visualization-container-decomposer { padding: 15px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; }
+        .visualization-container-decomposer { min-height: 250px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle fill="%231a1a2e" cx="10" cy="10" r="1.5"/></svg>'); overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center; }
+        
+        #binary-stream-container { display: flex; gap: 10px; }
+        .binary-block { width: 60px; height: 60px; background: var(--panel-bg); border: 2px solid var(--primary-glow); border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 2.5em; font-family: 'Orbitron'; color: var(--primary-glow); box-shadow: 0 0 10px var(--primary-glow); transition: all 0.4s ease; }
+        .binary-block.processed { background: #333; color: #666; border-color: #555; box-shadow: none; }
+
+        #scanner-head {
+            position: absolute;
+            width: 70px;
+            height: 120px;
+            border: 2px solid var(--success-glow);
+            box-shadow: 0 0 15px var(--success-glow);
+            border-radius: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: left 0.5s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            background: rgba(0, 255, 127, 0.1);
+        }
+        #carry-indicator { width: 30px; height: 30px; background: #444; border-radius: 50%; border: 2px solid #888; transition: all 0.3s; }
+        #carry-indicator.active { background: var(--secondary-glow); box-shadow: 0 0 15px var(--secondary-glow); border-color: var(--secondary-glow); }
+        .scanner-label { font-size: 0.8em; font-weight: bold; }
+
+        .state-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; }
+        .state-item .label { font-size: 1em; color: #aaa; }
+        .state-item .value { font-size: 2em; font-weight: bold; font-family: 'Orbitron', monospace; transition: all 0.3s; }
+        #steps-value { color: var(--success-glow); }
+        #carry-value { color: var(--secondary-glow); }
+        .value.pulse { animation: pulse-anim 0.5s ease-out; }
+
+        #narrator-display { text-align:center; margin-top:15px; font-weight:bold; min-height:1.5em; font-size:1.1em; font-style: italic; color: #f0f0f0; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 12, 29, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.5s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        #overlay span:first-child { font-family: 'Orbitron', sans-serif; font-size: 3em; color: var(--success-glow); text-shadow: 0 0 15px var(--success-glow); }
+        #overlay span:last-child { font-size: 1.8em; margin-top: 10px; }
+
+        .log-container-decomposer { background-color: rgba(0,0,0,0.5); color: #ccc; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log-output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.85em; }
+
+        @keyframes pulse-anim { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Binary Decomposer</h1>
+
+        <div class="controls-decomposer">
+            <label for="binary-input">Input Data Stream:</label>
+            <input type="text" id="binary-input" value="1101">
+            <button id="start-button">Initiate</button>
+            <button id="next-step-button" disabled>Next Cycle</button>
+        </div>
+
+        <div class="main-content-decomposer">
+            <div class="left-panel-decomposer">
+                <div class="state-panel-decomposer">
+                    <h2>Analysis Core</h2>
+                    <div class="state-grid">
+                        <div class="state-item">
+                            <div class="label">Decomposition Cycles</div>
+                            <div id="steps-value" class="value">0</div>
+                        </div>
+                        <div class="state-item">
+                            <div class="label">Carry Matrix</div>
+                            <div id="carry-value" class="value">0</div>
+                        </div>
+                    </div>
+                    <div id="narrator-display">Awaiting data stream...</div>
+                </div>
+                <div class="log-container-decomposer">
+                    <h2>Processing Log</h2>
+                    <pre id="log-output"></pre>
+                </div>
+            </div>
+            <div class="right-panel-decomposer">
+                 <div class="visualization-container-decomposer">
+                    <div id="binary-stream-container"></div>
+                    <div id="scanner-head" style="display: none;">
+                        <div class="scanner-label">Scanner</div>
+                        <div id="carry-indicator"></div>
+                    </div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+// --- STATE VARIABLES ---
+let binaryString = '';
+let steps = 0;
+let carry = 0;
+let currentIndex = 0;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+const binaryInput = document.getElementById('binary-input');
+const startButton = document.getElementById('start-button');
+const nextStepButton = document.getElementById('next-step-button');
+const stepsValueDisplay = document.getElementById('steps-value');
+const carryValueDisplay = document.getElementById('carry-value');
+const narratorDisplay = document.getElementById('narrator-display');
+const logOutput = document.getElementById('log-output');
+const streamContainer = document.getElementById('binary-stream-container');
+const scannerHead = document.getElementById('scanner-head');
+const carryIndicator = document.getElementById('carry-indicator');
+const overlay = document.getElementById('overlay');
+
+// --- HELPER FUNCTIONS ---
+function log(message) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; }
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+function updateDisplays(pulseElement = null) {
+    stepsValueDisplay.textContent = steps;
+    carryValueDisplay.textContent = carry;
+    carryIndicator.classList.toggle('active', carry === 1);
+    
+    if (pulseElement) {
+        const el = document.getElementById(pulseElement);
+        if (el) {
+            el.classList.add('pulse');
+            setTimeout(() => el.classList.remove('pulse'), 400);
+        }
+    }
+}
+
+function showOverlay() {
+    overlay.innerHTML = `<span>DECOMPOSITION COMPLETE</span><span>Total Cycles: ${steps}</span>`;
+    overlay.classList.add('show');
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    startButton.textContent = simulationRunning ? "Abort" : "Initiate";
+}
+
+function setupDecomposition() {
+    binaryString = binaryInput.value.trim();
+    if (!/^[01]+$/.test(binaryString) || binaryString === '0') {
+        alert("Invalid input. Please provide a valid binary string not equal to '0'.");
+        return;
+    }
+    
+    simulationRunning = true;
+    steps = 0;
+    carry = 0;
+    currentIndex = binaryString.length - 1;
+
+    logOutput.innerHTML = "";
+    overlay.classList.remove('show');
+    streamContainer.innerHTML = '';
+
+    log(`Initializing data stream: ${binaryString}`);
+    narratorDisplay.textContent = 'Scanner ready at the least significant bit.';
+    
+    // Create blocks
+    binaryString.split('').forEach((char, index) => {
+        const block = document.createElement('div');
+        block.className = 'binary-block';
+        block.id = `block-${index}`;
+        block.textContent = char;
+        streamContainer.appendChild(block);
+    });
+
+    // Position scanner
+    scannerHead.style.display = 'flex';
+    const lastBlock = document.getElementById(`block-${binaryString.length - 1}`);
+    scannerHead.style.left = `${lastBlock.offsetLeft}px`;
+    
+    updateDisplays();
+    updateButtonState();
+}
+
+async function performNextCycle() {
+    if (!simulationRunning) return;
+    
+    // Check if we are done with the loop
+    if (currentIndex <= 0) {
+        log("\n--- Final Carry Check ---");
+        if (carry === 1) {
+            steps++;
+            log("Final carry is 1. Adding 1 final cycle.");
+            narratorDisplay.textContent = "Final carry requires one last operation.";
+            updateDisplays('steps-value');
+        } else {
+            log("No final carry. No extra steps needed.");
+            narratorDisplay.textContent = "Processing complete.";
+        }
+        await sleep(500);
+        simulationRunning = false;
+        showOverlay();
+        updateButtonState();
+        scannerHead.style.display = 'none';
+        return;
+    }
+
+    nextStepButton.disabled = true;
+
+    // --- Start of a cycle ---
+    const currentBit = parseInt(binaryString.charAt(currentIndex));
+    const currentBlock = document.getElementById(`block-${currentIndex}`);
+    
+    // Move scanner
+    scannerHead.style.left = `${currentBlock.offsetLeft}px`;
+    await sleep(500);
+
+    log(`\n[Cycle for index ${currentIndex}]`);
+    log(`Scanning bit '${currentBit}'. Carry is ${carry}.`);
+    narratorDisplay.textContent = `Analyzing bit '${currentBit}' with carry '${carry}'...`;
+    
+    const effectiveValue = currentBit + carry;
+    
+    if (effectiveValue === 1) {
+        // ODD case: This is like having a '1' bit.
+        // It takes one step to add 1 (making it '...10'), and one step to divide by 2.
+        // The 'add 1' action creates a carry for the next position.
+        log("Result is 1 (ODD). Action: Add 1, then Divide.");
+        log("This requires 2 cycles and sets carry to 1.");
+        narratorDisplay.textContent = "Odd case. +2 cycles, carry becomes 1.";
+        
+        steps += 2;
+        carry = 1;
+
+        updateDisplays('steps-value');
+    } else {
+        // EVEN case: This is like having a '0' bit.
+        // It takes one step to divide by 2.
+        // The carry state is not changed by this operation in the algorithm's logic.
+        log("Result is 0 or 2 (EVEN). Action: Divide.");
+        log("This requires 1 cycle. Carry remains unchanged for next bit.");
+        narratorDisplay.textContent = "Even case. +1 cycle, carry is unchanged.";
+        
+        steps += 1;
+        // carry remains whatever it was
+        
+        updateDisplays('steps-value');
+    }
+
+    await sleep(800);
+    currentBlock.classList.add('processed');
+    currentIndex--;
+    nextStepButton.disabled = false;
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    startButton.addEventListener('click', setupDecomposition);
+    nextStepButton.addEventListener('click', performNextCycle);
+    setupDecomposition();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best Time to Buy and Sell Stock Animation</title>
+    <!-- D3.js is now loaded directly in the head for reliability -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-bscss-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-bscss-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-bscss-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; font-size: 1.1em; }
+        .controls-bscss-p5 button { padding: 10px 15px; background-color: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-bscss-p5 button:hover { background-color: #2471a3; }
+        .controls-bscss-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-bscss-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-bscss-p5, .right-panel-bscss-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-bscss-p5, .visualization-wrapper-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-wrapper-p5 { min-height: 400px; background-color: #f0f4f8; overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center; }
+        
+        #chart-container-p5 { width: 100%; height: 100%; }
+        .line { fill: none; stroke: #3498db; stroke-width: 2; }
+        .dot { fill: #3498db; cursor: pointer; }
+        .dot:hover { r: 8; }
+        .tooltip { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .dot:hover + .tooltip { opacity: 1; }
+        .scanner-line { stroke: #e74c3c; stroke-width: 2; stroke-dasharray: 4; transition: all 0.4s ease-in-out; }
+        
+        .buy-marker, .sell-marker { transition: all 0.4s ease-in-out; }
+        .buy-marker circle { fill: #2ecc71; stroke: #27ae60; stroke-width: 2; }
+        .buy-marker text { font-family: 'Segoe UI', sans-serif; font-weight: bold; fill: #27ae60; }
+        .sell-marker circle { fill: #e74c3c; stroke: #c0392b; stroke-width: 2; }
+        .sell-marker text { font-family: 'Segoe UI', sans-serif; font-weight: bold; fill: #c0392b; }
+        .profit-line { stroke: #2ecc71; stroke-width: 3; stroke-dasharray: 5; transition: all 0.4s ease-in-out; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; }
+        #max_profit_display_p5.updated { animation: pulse-green 0.6s; }
+        #min_price_display_p5.updated { animation: pulse-blue 0.6s; }
+        @keyframes pulse-green { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); color: #2ecc71; } }
+        @keyframes pulse-blue { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); color: #3498db; } }
+
+        #current_action_bscss_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay.show { opacity: 1; }
+
+        .log-container-bscss-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_bscss_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @media (max-width: 1000px) {
+            .main-content-bscss-p5 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Best Time to Buy and Sell Stock</h1>
+
+        <div class="controls-bscss-p5">
+            <label for="prices_input_p5">Stock Prices:</label>
+            <input type="text" id="prices_input_p5" value="7,1,5,3,6,4">
+            <button id="start_button_bscss_p5">Start/Reset</button>
+            <button id="next_step_button_bscss_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-bscss-p5">
+            <div class="left-panel-bscss-p5">
+                <div class="state-panel-bscss-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Min Price</div><div id="min_price_display_p5" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">Max Profit</div><div id="max_profit_display_p5" class="value">0</div></div>
+                    </div>
+                    <div id="current_action_bscss_display_p5"></div>
+                </div>
+                <div class="log-container-bscss-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_bscss_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-bscss-p5">
+                 <div class="visualization-wrapper-p5">
+                    <svg id="chart-container-p5"></svg>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <audio id="sound-move" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgACAAIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-calc" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8A/f8A/P8A/P8A/P8A/f8A/f8A//8A//8A//8A//8A//8A/f8A/P8A/P8A/P8A/P8A/f8A//8A/v8AAP//AP//AP//AP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8A//8A//8A//8A//8A//8A//8A"></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+
+<script>
+// --- All script logic is now wrapped in DOMContentLoaded listener ---
+document.addEventListener('DOMContentLoaded', () => {
+    // --- STATE VARIABLES ---
+    let animationSteps = [];
+    let currentStepIndex = 0;
+    let simulationRunning = false;
+    let isAudioUnlocked = false;
+    let pricesData = [];
+    let svg, xScale, yScale, width, height, margin;
+
+    // --- DOM ELEMENTS ---
+    const pricesInput = document.getElementById('prices_input_p5');
+    const startButton = document.getElementById('start_button_bscss_p5');
+    const nextStepButton = document.getElementById('next_step_button_bscss_p5');
+    const minPriceDisplay = document.getElementById('min_price_display_p5');
+    const maxProfitDisplay = document.getElementById('max_profit_display_p5');
+    const currentActionDisplay = document.getElementById('current_action_bscss_display_p5');
+    const logOutput = document.getElementById('log_output_bscss_p5');
+    const chartContainer = document.getElementById('chart-container-p5');
+    const overlay = document.getElementById('overlay');
+
+    // --- HELPER FUNCTIONS ---
+    function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+    function unlockAudio() {
+        if (isAudioUnlocked) return;
+        ['sound-move', 'sound-calc', 'sound-win'].forEach(id => {
+            const sound = document.getElementById(id);
+            if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+        });
+        isAudioUnlocked = true;
+    }
+    function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+    function updateButtonState() {
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+        startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+    }
+
+    function generateAnimationSteps(prices) {
+        const steps = [];
+        if (prices.length < 2) {
+            steps.push({ type: 'finish', minPrice: prices[0] || 0, maxProfit: 0, message: 'Not enough data to trade.' });
+            return steps;
+        }
+
+        let minPrice = prices[0];
+        let minPriceIndex = 0;
+        let maxProfit = 0;
+        let buyIndex = 0;
+        let sellIndex = 0;
+
+        steps.push({ type: 'initial', i: 0, minPrice, minPriceIndex, maxProfit, buyIndex, sellIndex, message: `Start. Initial min price is ${minPrice} on day 0.` });
+
+        for (let i = 1; i < prices.length; i++) {
+            steps.push({
+                type: 'scan', i, minPrice, minPriceIndex, maxProfit, buyIndex, sellIndex,
+                message: `Scanning day ${i}. Price is ${prices[i]}.`
+            });
+
+            if (prices[i] < minPrice) {
+                minPrice = prices[i];
+                minPriceIndex = i;
+                steps.push({
+                    type: 'update_buy', i, minPrice, minPriceIndex, maxProfit, buyIndex, sellIndex,
+                    message: `Found a new low price: ${minPrice}. This is a better day to buy.`
+                });
+            }
+
+            const potentialProfit = prices[i] - minPrice;
+            if (potentialProfit > maxProfit) {
+                maxProfit = potentialProfit;
+                buyIndex = minPriceIndex;
+                sellIndex = i;
+                steps.push({
+                    type: 'update_sell', i, minPrice, minPriceIndex, maxProfit, buyIndex, sellIndex,
+                    message: `New best profit! Buy on day ${buyIndex} (${prices[buyIndex]}), sell on day ${i} (${prices[i]}) for a profit of ${maxProfit}.`
+                });
+            }
+        }
+
+        steps.push({ type: 'finish', minPrice, maxProfit, buyIndex, sellIndex, message: `Finished! Maximum profit is ${maxProfit}.` });
+        return steps;
+    }
+
+    function drawChart(step) {
+        if (!svg) return;
+        svg.selectAll(".dynamic-element").remove();
+
+        if (!step) return;
+
+        minPriceDisplay.textContent = `$${step.minPrice}`;
+        maxProfitDisplay.textContent = `$${step.maxProfit}`;
+        minPriceDisplay.classList.toggle('updated', step.type === 'update_buy');
+        maxProfitDisplay.classList.toggle('updated', step.type === 'update_sell');
+
+        if (step.i !== undefined) {
+            svg.append("line")
+                .attr("class", "scanner-line dynamic-element")
+                .attr("x1", xScale(step.i))
+                .attr("x2", xScale(step.i))
+                .attr("y1", margin.top)
+                .attr("y2", height - margin.bottom);
+        }
+        
+        if(step.minPriceIndex !== undefined) {
+            const buyMarker = svg.append("g")
+                .attr("class", "buy-marker dynamic-element")
+                .attr("transform", `translate(${xScale(step.minPriceIndex)}, ${yScale(step.minPrice)})`);
+            buyMarker.append("circle").attr("r", 8);
+            buyMarker.append("text").attr("x", 12).attr("y", 5).text("B");
+        }
+
+        if(step.maxProfit > 0) {
+            const sellMarker = svg.append("g")
+                .attr("class", "sell-marker dynamic-element")
+                .attr("transform", `translate(${xScale(step.sellIndex)}, ${yScale(pricesData[step.sellIndex])})`);
+            sellMarker.append("circle").attr("r", 8);
+            sellMarker.append("text").attr("x", 12).attr("y", 5).text("S");
+
+            svg.append("line")
+                .attr("class", "profit-line dynamic-element")
+                .attr("x1", xScale(step.buyIndex))
+                .attr("y1", yScale(pricesData[step.buyIndex]))
+                .attr("x2", xScale(step.sellIndex))
+                .attr("y2", yScale(pricesData[step.sellIndex]));
+        }
+    }
+
+    function initializeAnimation() {
+        simulationRunning = false;
+        try {
+            pricesData = pricesInput.value.split(',').map(s => parseFloat(s.trim()));
+            if (pricesData.some(isNaN)) throw new Error("Invalid prices input.");
+        } catch (e) {
+            alert(e.message);
+            return;
+        }
+        
+        animationSteps = generateAnimationSteps(pricesData);
+        currentStepIndex = 0;
+        
+        logOutput.innerHTML = "";
+        log("Algorithm Initialized.");
+        overlay.className = '';
+
+        chartContainer.innerHTML = '';
+        
+        const wrapper = chartContainer.parentElement;
+        margin = { top: 20, right: 30, bottom: 40, left: 50 };
+        width = wrapper.clientWidth - margin.left - margin.right;
+        height = wrapper.clientHeight - margin.top - margin.bottom;
+
+        svg = d3.select(chartContainer)
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+        xScale = d3.scaleLinear()
+            .domain([0, pricesData.length > 1 ? pricesData.length - 1 : 1])
+            .range([0, width]);
+
+        yScale = d3.scaleLinear()
+            .domain([0, d3.max(pricesData) || 10])
+            .range([height - margin.bottom, margin.top]);
+        
+        svg.append("g")
+           .attr("transform", `translate(0,${height - margin.bottom})`)
+           .call(d3.axisBottom(xScale).ticks(pricesData.length -1).tickFormat(d3.format("d")));
+        svg.append("g").call(d3.axisLeft(yScale));
+
+        if(pricesData.length > 1) {
+            const line = d3.line()
+                .x((d, i) => xScale(i))
+                .y(d => yScale(d));
+            
+            svg.append("path")
+                .datum(pricesData)
+                .attr("class", "line")
+                .attr("d", line);
+
+            svg.selectAll(".dot")
+                .data(pricesData)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", (d, i) => xScale(i))
+                .attr("cy", d => yScale(d))
+                .attr("r", 5);
+                
+            svg.selectAll(".tooltip")
+                .data(pricesData)
+                .enter().append("text")
+                .attr("class", "tooltip")
+                .attr("x", (d,i) => xScale(i) + 10)
+                .attr("y", d => yScale(d) - 10)
+                .text(d => `$${d}`);
+        }
+
+        const firstStep = animationSteps[0];
+        drawChart(firstStep);
+        currentActionDisplay.textContent = firstStep.message;
+        log(firstStep.message);
+
+        simulationRunning = true; 
+        updateButtonState();
+    }
+
+    function performNextStep() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+        
+        nextStepButton.disabled = true;
+
+        try {
+            const step = animationSteps[currentStepIndex];
+            log(`\n--- Step ${currentStepIndex + 1}: ${step.type} ---`);
+            log(step.message);
+            currentActionDisplay.textContent = step.message;
+            
+            drawChart(step);
+            
+            switch (step.type) {
+                case 'scan':
+                     playSound('sound-move');
+                     break;
+                case 'update_buy':
+                    playSound('sound-calc');
+                    break;
+                case 'update_sell':
+                    playSound('sound-win');
+                    break;
+                case 'finish':
+                    overlay.className = 'show';
+                    playSound('sound-win');
+                    overlay.innerHTML = `<span style="font-size:3em">💰</span><div style="font-size:1.5em">Finished!</div><div style="font-size:1.8em">Max Profit: $${step.maxProfit}</div>`;
+                    simulationRunning = false;
+                    break;
+            }
+            
+            currentStepIndex++;
+        } catch (error) {
+            console.error("Error during animation step:", error);
+            log(`ERROR: ${error.message}`);
+            simulationRunning = false; // Stop on error
+        } finally {
+             updateButtonState();
+        }
+    }
+    
+    // Initial setup
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

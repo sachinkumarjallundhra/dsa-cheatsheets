@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jump Game II Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-jg2-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-jg2-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-jg2-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; font-size: 1.1em; }
+        .controls-jg2-p5 button { padding: 10px 15px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-jg2-p5 button:hover { background-color: #229954; }
+        .controls-jg2-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-jg2-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-jg2-p5, .right-panel-jg2-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-jg2-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        /* --- CSS CORRECTION FOR HORIZONTAL LAYOUT --- */
+        .visualization-wrapper-p5 {
+            min-height: 300px;
+            background-color: #e0f2f1;
+            overflow-x: auto;
+            position: relative;
+            display: flex;
+            flex-direction: row; /* Force horizontal arrangement */
+            align-items: center;
+            gap: 5px;
+            padding: 40px 20px;
+        }
+
+        .platform-box { width: 70px; height: 70px; background: #a5d6a7; border: 2px solid #388e3c; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold; color: #1b5e20; position: relative; flex-shrink: 0; }
+        .platform-box .value { font-size: 1.8em; }
+        .platform-box .index { font-size: 0.8em; color: #4caf50; position: absolute; top: 2px; }
+
+        #runner_p5 { position: absolute; bottom: 80px; font-size: 3em; transition: left 0.4s ease-in-out, bottom 0.4s ease-in-out; z-index: 3; transform: translateX(-50%); }
+        #runner_p5.is-jumping { animation: jump-anim 0.5s ease-out; }
+        
+        /* New jump animation for a higher arc */
+        @keyframes jump-anim {
+            0% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-60px); } /* Jump higher */
+            100% { transform: translateX(-50%) translateY(0); }
+        }
+        /* --- END OF CSS CORRECTIONS --- */
+
+        .overlay-region { position: absolute; bottom: 20px; height: 95px; border-radius: 8px; opacity: 0.3; transition: all 0.4s ease-in-out; z-index: 1; pointer-events: none; }
+        #current_end_overlay_p5 { background: #4fc3f7; border: 2px solid #039be5; }
+        #farthest_overlay_p5 { background: #81c784; border: 2px solid #388e3c; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; }
+        #jumps_display_p5.updated { animation: pulse-green 0.6s; }
+        @keyframes pulse-green { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); color: #27ae60; } }
+
+        #current_action_jg2_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay.show { opacity: 1; }
+
+        .log-container-jg2-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_jg2_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @media (max-width: 1000px) {
+            .main-content-jg2-p5 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Jump Game II</h1>
+
+        <div class="controls-jg2-p5">
+            <label for="nums_input_p5">Input Array:</label>
+            <input type="text" id="nums_input_p5" value="2,3,1,1,4">
+            <button id="start_button_jg2_p5">Start/Reset</button>
+            <button id="next_step_button_jg2_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-jg2-p5">
+            <div class="left-panel-jg2-p5">
+                <div class="state-panel-jg2-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Jumps</div><div id="jumps_display_p5" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">currentEnd</div><div id="current_end_display_p5" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">farthest</div><div id="farthest_display_p5" class="value">0</div></div>
+                    </div>
+                    <div id="current_action_jg2_display_p5"></div>
+                </div>
+                <div class="log-container-jg2-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_jg2_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-jg2-p5">
+                 <div class="visualization-wrapper-p5" id="visualization_wrapper_p5">
+                    <!-- Platforms are now direct children of the wrapper -->
+                    <div id="runner_p5">🏃</div>
+                    <div id="current_end_overlay_p5" class="overlay-region"></div>
+                    <div id="farthest_overlay_p5" class="overlay-region"></div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <audio id="sound-move" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgACAAIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-jump" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8A/P8A/P8A/f8AAP8AAP8AAAD/AAD/AAD//wD//wD//wD//wD//wD//wD//wD/AAD/AAD/AAAA/v8A/f8A/f8A/v8A//8A/v8A/P8A/P8A/f8A/v8A//8AAP//AP//AP//AP//AP//AP//AP//AP//AP//AP//AAAA/v8AAP//AAAA/v8A/f8A/f8A/v8AAP//AP//AP//AP//AP//AP//AP//AP//AP//AP//AP//AP//AP//AAAA"></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+    
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let isAudioUnlocked = false;
+
+// --- DOM ELEMENTS ---
+let numsInput, startButton, nextStepButton, jumpsDisplay, currentEndDisplay, farthestDisplay,
+    currentActionDisplay, logOutput, vizWrapper, overlay, runner, currentEndOverlay, farthestOverlay;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-move', 'sound-jump', 'sound-win'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(nums) {
+    const steps = [];
+    const n = nums.length;
+    if (n <= 1) {
+        steps.push({ type: 'finish', jumps: 0, message: 'Array is too short to need a jump.' });
+        return steps;
+    }
+
+    let jumps = 0, currentEnd = 0, farthest = 0;
+
+    steps.push({ type: 'initial', i: -1, jumps, currentEnd, farthest, message: 'Start. We need to reach the last index.' });
+
+    for (let i = 0; i < n - 1; i++) {
+        steps.push({
+            type: 'scan', i, jumps, currentEnd, farthest,
+            message: `At index ${i}, check potential reach.`
+        });
+
+        let oldFarthest = farthest;
+        farthest = Math.max(farthest, i + nums[i]);
+        if (farthest > oldFarthest) {
+            steps.push({
+                type: 'update_farthest', i, jumps, currentEnd, farthest,
+                message: `From index ${i}, we can reach ${i + nums[i]}. New farthest reach is ${farthest}.`
+            });
+        }
+
+        if (i === currentEnd) {
+            steps.push({
+                type: 'trigger_jump', i, jumps, currentEnd, farthest,
+                message: `Reached the end of the current jump range. We must jump!`
+            });
+            jumps++;
+            currentEnd = farthest;
+            steps.push({
+                type: 'commit_jump', i, jumps, currentEnd, farthest,
+                message: `Jumped! New jump range ends at ${currentEnd}. Total jumps: ${jumps}.`
+            });
+
+            if (currentEnd >= n - 1) {
+                 steps.push({ type: 'finish_early', i, jumps, currentEnd, farthest, message: `The new range reaches the end. We are done!` });
+                return steps;
+            }
+        }
+    }
+
+    steps.push({ type: 'finish', i: n-1, jumps, currentEnd, farthest, message: `Finished! Minimum jumps: ${jumps}.` });
+    return steps;
+}
+
+function renderState(step) {
+    jumpsDisplay.textContent = step.jumps;
+    currentEndDisplay.textContent = step.currentEnd;
+    farthestDisplay.textContent = step.farthest;
+    jumpsDisplay.classList.toggle('updated', step.type === 'commit_jump');
+    
+    const platforms = vizWrapper.querySelectorAll('.platform-box');
+    if (platforms.length === 0) return;
+    
+    if (step.i >= 0 && step.i < platforms.length) {
+        const platform = platforms[step.i];
+        runner.style.left = `${platform.offsetLeft + platform.offsetWidth / 2}px`;
+    } else {
+        runner.style.left = `-50px`;
+    }
+
+    const firstPlatform = platforms[0];
+    const platformWidth = firstPlatform.offsetWidth;
+    
+    const ceIndex = Math.min(step.currentEnd, platforms.length - 1);
+    const cePlatform = platforms[ceIndex];
+    if(cePlatform){
+        currentEndOverlay.style.left = `${firstPlatform.offsetLeft}px`;
+        currentEndOverlay.style.width = `${cePlatform.offsetLeft + platformWidth - firstPlatform.offsetLeft}px`;
+    }
+    
+    const fIndex = Math.min(step.farthest, platforms.length - 1);
+    const fPlatform = platforms[fIndex];
+    if(fPlatform){
+        farthestOverlay.style.left = `${firstPlatform.offsetLeft}px`;
+        farthestOverlay.style.width = `${fPlatform.offsetLeft + platformWidth - firstPlatform.offsetLeft}px`;
+    }
+}
+
+async function initializeAnimation() {
+    simulationRunning = false;
+    let nums;
+    try {
+        nums = numsInput.value.split(',').map(s => parseInt(s.trim()));
+        if (nums.some(isNaN)) throw new Error("Invalid array input.");
+    } catch (e) {
+        alert(e.message);
+        return;
+    }
+    
+    vizWrapper.querySelectorAll('.platform-box').forEach(p => p.remove());
+    nums.forEach((val, i) => {
+        const platform = document.createElement('div');
+        platform.className = 'platform-box';
+        platform.id = `platform-${i}`;
+        platform.innerHTML = `<span class="index">${i}</span><span class="value">${val}</span>`;
+        vizWrapper.insertBefore(platform, runner);
+    });
+
+    animationSteps = generateAnimationSteps(nums);
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    
+    setTimeout(() => {
+        const firstStep = animationSteps[0];
+        renderState(firstStep);
+        currentActionDisplay.textContent = firstStep.message;
+        log(firstStep.message);
+        simulationRunning = true; 
+        updateButtonState();
+    }, 100);
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+    log(`\n--- Step ${currentStepIndex + 1}: ${step.type} ---`);
+    log(step.message);
+    currentActionDisplay.textContent = step.message;
+    
+    renderState(step);
+    
+    switch (step.type) {
+        case 'scan':
+        case 'update_farthest':
+             playSound('sound-move');
+             break;
+        case 'trigger_jump':
+             // State shown before the jump action
+             break;
+        case 'commit_jump':
+            playSound('sound-jump');
+            runner.classList.add('is-jumping');
+            setTimeout(() => runner.classList.remove('is-jumping'), 500);
+            break;
+        case 'finish':
+        case 'finish_early':
+            overlay.className = 'show';
+            playSound('sound-win');
+            overlay.innerHTML = `<span style="font-size:3em">🏁</span><div style="font-size:1.5em">Finished!</div><div style="font-size:1.8em">Minimum Jumps: ${step.jumps}</div>`;
+            simulationRunning = false;
+            break;
+    }
+    
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    numsInput = document.getElementById('nums_input_p5');
+    startButton = document.getElementById('start_button_jg2_p5');
+    nextStepButton = document.getElementById('next_step_button_jg2_p5');
+    jumpsDisplay = document.getElementById('jumps_display_p5');
+    currentEndDisplay = document.getElementById('current_end_display_p5');
+    farthestDisplay = document.getElementById('farthest_display_p5');
+    currentActionDisplay = document.getElementById('current_action_jg2_display_p5');
+    logOutput = document.getElementById('log_output_jg2_p5');
+    vizWrapper = document.getElementById('visualization_wrapper_p5');
+    overlay = document.getElementById('overlay');
+    runner = document.getElementById('runner_p5');
+    currentEndOverlay = document.getElementById('current_end_overlay_p5');
+    farthestOverlay = document.getElementById('farthest_overlay_p5');
+
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

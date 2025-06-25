@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rearranging Fruits Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-fruit-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-fruit-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-fruit-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 220px; }
+        .controls-fruit-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-fruit-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-fruit-p5 { display: grid; grid-template-columns: minmax(320px, 1fr) 3fr; gap: 15px; }
+        .left-panel-fruit-p5, .right-panel-fruit-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-fruit-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 450px; background-color: #eceff1; overflow: hidden; position: relative; }
+        
+        .cost-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .cost-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; color: #28a745; }
+        .cost-item-p5 .value.pulse { animation: pulse-anim 0.5s ease-out; }
+
+        #current_action_fruit_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:2.4em; font-size:1em; }
+
+        .basket-container { position: absolute; top: 20px; width: 100%; height: 120px; border-bottom: 4px solid #795548; }
+        .basket-label { position: absolute; top: 0; font-size: 1.2em; font-weight: bold; padding: 5px 10px; border-radius: 5px 5px 0 0; color: white; }
+        #basket1-label { background-color: #0d6efd; left: 10%; }
+        #basket2-label { background-color: #dc3545; right: 10%; }
+        
+        .surplus-container { position: absolute; bottom: 20px; width: 45%; height: 120px; border-top: 2px dashed #90a4ae; background: rgba(255,255,255,0.5); border-radius: 5px; }
+        #surplus1-container { left: 2.5%; }
+        #surplus2-container { right: 2.5%; }
+        .surplus-label { text-align: center; font-size: 0.8em; color: #607d8b; padding-top: 5px; }
+
+        .fruit-p5 { width: 50px; height: 50px; position: absolute; transition: all 0.5s ease-in-out; text-align: center; }
+        .fruit-icon { font-size: 2.5em; line-height: 1; }
+        .fruit-label { font-size: 0.8em; font-weight: bold; }
+        .fruit-p5.highlight { transform: scale(1.15) translateY(-5px); box-shadow: 0 0 15px gold; border-radius: 50%; background: rgba(255,215,0,0.4); }
+
+        #crane { position: absolute; top: 150px; left: 50%; transform: translateX(-50%); font-size: 3em; transition: all 0.5s ease-in-out; z-index: 10; }
+        
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 20; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        #overlay span:first-child { font-size: 3em; }
+        #overlay span:last-child { font-size: 1.8em; margin-top: 10px; }
+        #overlay.success span:first-child { color: #90ee90; }
+        #overlay.failure span:first-child { color: #ff7f7f; }
+
+        .log-container-fruit-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_fruit_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes pulse-anim { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rearranging Fruits</h1>
+
+        <div class="controls-fruit-p5">
+            <label>Basket 1:</label>
+            <input type="text" id="basket1_input_p5" value="4,2,2,2">
+            <label>Basket 2:</label>
+            <input type="text" id="basket2_input_p5" value="1,4,1,2">
+            <button id="start_button_fruit_p5">Start/Reset</button>
+            <button id="next_step_button_fruit_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-fruit-p5">
+            <div class="left-panel-fruit-p5">
+                <div class="state-panel-fruit-p5">
+                    <h2>Factory Status</h2>
+                    <div class="cost-item-p5">
+                        <div class="label">Minimum Swap Cost</div>
+                        <div id="total_cost_display_p5" class="value">$0</div>
+                    </div>
+                    <div id="current_action_fruit_display_p5"></div>
+                </div>
+                <div class="log-container-fruit-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_fruit_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-fruit-p5">
+                 <div class="visualization-container-p5">
+                    <div id="basket1_container_p5" class="basket-container"><div id="basket1-label" class="basket-label">Basket 1</div></div>
+                    <div id="basket2_container_p5" class="basket-container" style="top: 150px;"><div id="basket2-label" class="basket-label">Basket 2</div></div>
+                    <div id="surplus1-container" class="surplus-container"><div class="surplus-label">Basket 1 Surplus</div></div>
+                    <div id="surplus2-container" class="surplus-container" style="top: 280px; bottom: auto;"><div class="surplus-label">Basket 2 Surplus</div></div>
+                    <div id="crane">🏗️</div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+// --- STATE VARIABLES ---
+let BASKET1_FRUITS = [], BASKET2_FRUITS = [];
+let surplus1 = [], surplus2 = [];
+let minCost = 0;
+let simulationRunning = false;
+let currentPhase = 'idle';
+let loop_i = 0, loop_j = 0; // Pointers for surplus lists
+
+// --- DOM ELEMENTS ---
+let b1Input, b2Input, startButton, nextStepButton, totalCostDisplay,
+    currentActionDisplay, logOutput, b1Container, b2Container, s1Container, s2Container,
+    crane, overlay;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 500; 
+const FRUIT_EMOJIS = ['🍎', '🍌', '🍊', '🍓', '🍇', '🥝', '🥭', '🍑', '🍒', '🍍'];
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+
+function updateStateDisplay() {
+    totalCostDisplay.textContent = `$${minCost}`;
+}
+
+function getFruitEmoji(value) { return FRUIT_EMOJIS[value % FRUIT_EMOJIS.length]; }
+
+function renderFruits(fruits, container, isSurplus = false) {
+    container.querySelectorAll('.fruit-p5').forEach(el => el.remove());
+    const PADDING = 20;
+    const SPACING = 60;
+    fruits.forEach((fruit, i) => {
+        const el = document.createElement('div');
+        el.className = 'fruit-p5';
+        el.id = `${isSurplus ? 's' : 'b'}${fruit.basket}-${fruit.originalIndex}`;
+        el.style.left = `${PADDING + i * SPACING}px`;
+        el.style.top = `40px`;
+        el.innerHTML = `<div class="fruit-icon">${getFruitEmoji(fruit.value)}</div><div class="fruit-label">$${fruit.value}</div>`;
+        container.appendChild(el);
+    });
+}
+
+function showOverlay(type, cost = 0) {
+    if (type === 'success') {
+        overlay.innerHTML = `<span>SUCCESS!</span><span>Minimum Cost: $${cost}</span>`;
+    } else {
+        overlay.innerHTML = `<span>IMPOSSIBLE!</span><span>Cannot make baskets equal.</span>`;
+    }
+    overlay.className = `show ${type}`;
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!simulationRunning) startButton.textContent = "Reset";
+}
+
+async function initializeAnimation() {
+    log("Starting Fruit Factory...");
+    simulationRunning = false; 
+    
+    try {
+        const b1 = b1Input.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        const b2 = b2Input.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        BASKET1_FRUITS = b1.map((value, originalIndex) => ({ value, originalIndex, basket: 1 }));
+        BASKET2_FRUITS = b2.map((value, originalIndex) => ({ value, originalIndex, basket: 2 }));
+    } catch (e) { alert("Invalid input."); return; }
+    
+    surplus1 = []; surplus2 = []; minCost = 0;
+    loop_i = 0; loop_j = 0;
+    
+    logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+    overlay.className = '';
+    
+    renderFruits(BASKET1_FRUITS, b1Container, false);
+    renderFruits(BASKET2_FRUITS, b2Container, false);
+    updateStateDisplay();
+
+    currentActionDisplay.textContent = `Click 'Next Step' to begin counting.`;
+    currentPhase = 'count_and_check';
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    nextStepButton.disabled = true;
+    document.querySelectorAll('.fruit-p5.highlight').forEach(el => el.classList.remove('highlight'));
+    
+    switch(currentPhase) {
+        case 'count_and_check':
+            log("--- Step 1: Count all fruits ---");
+            currentActionDisplay.textContent = "Counting all fruits to check if a solution is possible...";
+            
+            const totalCounts = new Map();
+            [...BASKET1_FRUITS, ...BASKET2_FRUITS].forEach(f => totalCounts.set(f.value, (totalCounts.get(f.value) || 0) + 1));
+            
+            log("Total counts: " + Array.from(totalCounts.entries()).map(([k,v]) => `${k}:${v}`).join(', '));
+            
+            let possible = true;
+            for (const [fruit, count] of totalCounts.entries()) {
+                if (count % 2 !== 0) {
+                    possible = false;
+                    log(`IMPOSSIBLE: Fruit ${fruit} has an odd total count (${count}).`);
+                    currentActionDisplay.textContent = `Cannot solve: Fruit ${getFruitEmoji(fruit)} ($${fruit}) has an odd count!`;
+                    showOverlay('failure');
+                    simulationRunning = false;
+                    break;
+                }
+            }
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY * 2));
+            if (possible) {
+                currentPhase = 'identify_surpluses';
+            }
+            break;
+
+        case 'identify_surpluses':
+            log("\n--- Step 2: Identify surplus fruits ---");
+            currentActionDisplay.textContent = "Separating surplus fruits from each basket...";
+            const counts1 = new Map(), counts2 = new Map();
+            BASKET1_FRUITS.forEach(f => counts1.set(f.value, (counts1.get(f.value) || 0) + 1));
+            BASKET2_FRUITS.forEach(f => counts2.set(f.value, (counts2.get(f.value) || 0) + 1));
+            
+            const allFruitTypes = new Set([...counts1.keys(), ...counts2.keys()]);
+
+            for (const fruitVal of allFruitTypes) {
+                const c1 = counts1.get(fruitVal) || 0;
+                const c2 = counts2.get(fruitVal) || 0;
+                const target = (c1 + c2) / 2;
+                
+                if (c1 > target) surplus1.push(...Array(c1 - target).fill(fruitVal));
+                if (c2 > target) surplus2.push(...Array(c2 - target).fill(fruitVal));
+            }
+            
+            log(`Basket 1 Surplus: [${surplus1.join(', ')}]`);
+            log(`Basket 2 Surplus: [${surplus2.join(', ')}]`);
+            // Visually update surplus areas (in a real scenario, you'd animate fruits moving)
+            renderFruits(surplus1.map((v, i) => ({value:v, basket:1, originalIndex:i})), s1Container, true);
+            renderFruits(surplus2.map((v, i) => ({value:v, basket:2, originalIndex:i})), s2Container, true);
+
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            currentPhase = 'sort_surpluses';
+            break;
+
+        case 'sort_surpluses':
+            log("\n--- Step 3: Sort surplus lists ---");
+            currentActionDisplay.textContent = "Sorting surplus fruits to find the cheapest swaps.";
+            surplus1.sort((a,b) => a-b);
+            surplus2.sort((a,b) => a-b);
+            renderFruits(surplus1.map((v, i) => ({value:v, basket:1, originalIndex:i})), s1Container, true);
+            renderFruits(surplus2.map((v, i) => ({value:v, basket:2, originalIndex:i})), s2Container, true);
+            log(`Sorted B1 Surplus: [${surplus1.join(', ')}]`);
+            log(`Sorted B2 Surplus: [${surplus2.join(', ')}]`);
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            currentPhase = 'check_swaps';
+            break;
+
+        case 'check_swaps':
+             if (loop_i >= surplus1.length || loop_j >= surplus2.length) {
+                currentActionDisplay.textContent = "No more direct swaps possible.";
+                log("Finished direct swaps.");
+                currentPhase = 'handle_remaining';
+                break;
+            }
+            log("\n--- Step 4: Perform direct swaps ---");
+            currentActionDisplay.textContent = "Finding the cheapest direct swaps...";
+            const s1FruitEl = document.getElementById(`s1-${loop_i}`);
+            const s2FruitEl = document.getElementById(`s2-${loop_j}`);
+            s1FruitEl?.classList.add('highlight');
+            s2FruitEl?.classList.add('highlight');
+
+            const cost = Math.min(surplus1[loop_i], surplus2[loop_j]);
+            log(`Swap ${surplus1[loop_i]} from B1 with ${surplus2[loop_j]} from B2. Cost: $${cost}`);
+            currentActionDisplay.textContent = `Swap ${getFruitEmoji(surplus1[loop_i])} with ${getFruitEmoji(surplus2[loop_j])}. Cost: $${cost}`;
+            minCost += cost;
+            updateStateDisplay();
+            totalCostDisplay.classList.add('pulse');
+            setTimeout(()=>totalCostDisplay.classList.remove('pulse'), 500);
+
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY * 2));
+            loop_i++; loop_j++;
+            currentPhase = 'check_swaps';
+            break;
+
+        case 'handle_remaining':
+            log("\n--- Step 5: Handle remaining surpluses ---");
+            // The remaining fruits in the longer list must be swapped internally.
+            // This is equivalent to swapping twice with the overall smallest fruit.
+            const minFruit = Math.min(...BASKET1_FRUITS.map(f=>f.value), ...BASKET2_FRUITS.map(f=>f.value));
+            const remaining = surplus1.length > surplus2.length ? surplus1.slice(loop_i) : surplus2.slice(loop_j);
+            
+            if (remaining.length > 0) {
+                 log(`Remaining fruits must be swapped with the cheapest fruit ($${minFruit}).`);
+                 currentActionDisplay.textContent = `Handling remaining fruits via indirect swaps...`;
+                 await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+                 
+                 const cost = 2 * minFruit * (remaining.length / 2);
+                 minCost += cost;
+                 log(`Cost for remaining ${remaining.length} fruits: ${remaining.length/2} * (2 * $${minFruit}) = $${cost}`);
+                 currentActionDisplay.textContent = `Added $${cost} for remaining swaps.`;
+                 updateStateDisplay();
+            } else {
+                 log("No remaining fruits to swap.");
+                 currentActionDisplay.textContent = "No indirect swaps needed.";
+            }
+
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            currentPhase = 'finish';
+            break;
+
+        case 'finish':
+            log(`\n--- Finished ---`);
+            log(`Total minimum cost: $${minCost}`);
+            currentActionDisplay.textContent = `Finished! Minimum cost is $${minCost}.`;
+            totalCostDisplay.classList.add('pulse');
+            showOverlay('success', minCost);
+            simulationRunning = false;
+            break;
+    }
+    
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    b1Input = document.getElementById('basket1_input_p5');
+    b2Input = document.getElementById('basket2_input_p5');
+    startButton = document.getElementById('start_button_fruit_p5');
+    nextStepButton = document.getElementById('next_step_button_fruit_p5');
+    totalCostDisplay = document.getElementById('total_cost_display_p5');
+    currentActionDisplay = document.getElementById('current_action_fruit_display_p5');
+    logOutput = document.getElementById('log_output_fruit_p5');
+    b1Container = document.getElementById('basket1_container_p5');
+    b2Container = document.getElementById('basket2_container_p5');
+    s1Container = document.getElementById('surplus1-container');
+    s2Container = document.getElementById('surplus2-container');
+    crane = document.getElementById('crane');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

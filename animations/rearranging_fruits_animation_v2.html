@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rearranging Fruits Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-fruit-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-fruit-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-fruit-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 220px; }
+        .controls-fruit-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-fruit-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-fruit-p5 { display: grid; grid-template-columns: 3fr minmax(350px, 1.2fr); gap: 15px; }
+        .right-panel-fruit-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-fruit-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 450px; background-color: #eceff1; overflow: hidden; position: relative; }
+        
+        .cost-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .cost-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; color: #28a745; }
+        .cost-item-p5 .value.pulse { animation: pulse-anim 0.5s ease-out; }
+
+        #current_action_fruit_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; font-size:1em; }
+        #analysis-box { margin-top: 10px; padding: 5px; border: 1px dashed #ccc; font-size: 0.9em; text-align: center; }
+        .cost-option.best-deal { background-color: #d4edda; border-color: #c3e6cb; font-weight: bold; }
+
+        .data-view-panel { height: 100%; display: flex; flex-direction: column; gap: 15px;}
+        .data-box { border: 1px solid #ccc; border-radius: 5px; padding: 10px; flex-grow: 1; }
+        .data-box h3 { text-align: center; margin: 0 0 10px 0; font-size: 1em; color: #343a40; }
+        .data-content { font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; font-size: 0.9em; }
+        .data-content span.highlight { background-color: #fff3cd; }
+        .data-content span.faded { opacity: 0.4; text-decoration: line-through; }
+        .data-content span.invalid { color: red; font-weight: bold; }
+        #excess-list-content { position: relative; }
+        #divider-line { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: #ffc107; transform: scaleY(0); transition: transform 0.3s; transform-origin: top;}
+
+        .basket-area { position: relative; width: 100%; min-height: 80px; padding: 40px 10px 10px 10px; margin-bottom: 10px; border: 2px dashed #90a4ae; border-radius: 5px; }
+        .basket-label { position: absolute; top: 5px; left: 10px; font-size: 1.2em; font-weight: bold; background: #eceff1; padding: 0 5px;}
+        #basket1-label { color: #0d6efd; }
+        #basket2-label { color: #dc3545; }
+        
+        .fruit-p5 { width: 50px; height: 50px; position: absolute; transition: all 0.5s ease-in-out; text-align: center; }
+        .fruit-icon { font-size: 2.5em; line-height: 1; }
+        .fruit-label { font-size: 0.8em; font-weight: bold; }
+        .fruit-p5.highlight { transform: scale(1.15); box-shadow: 0 0 15px gold; border-radius: 50%; z-index: 10; }
+        .fruit-p5.faded { opacity: 0.2; }
+        
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 20; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        #overlay span:first-child { font-size: 3em; }
+        #overlay span:last-child { font-size: 1.8em; margin-top: 10px; }
+        #overlay.success span:first-child { color: #90ee90; }
+        #overlay.failure span:first-child { color: #ff7f7f; }
+
+        @keyframes pulse-anim { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rearranging Fruits</h1>
+
+        <div class="controls-fruit-p5">
+            <label>Basket 1:</label>
+            <input type="text" id="basket1_input_p5" value="4,2,2,2">
+            <label>Basket 2:</label>
+            <input type="text" id="basket2_input_p5" value="1,4,1,2">
+            <button id="start_button_fruit_p5">Start/Reset</button>
+            <button id="next_step_button_fruit_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-fruit-p5">
+             <div class="visualization-container-p5">
+                <div id="basket1-area" class="basket-area"><div id="basket1-label">Basket 1</div></div>
+                <div id="basket2-area" class="basket-area" style="top: 170px;"><div id="basket2-label">Basket 2</div></div>
+                <div id="overlay"></div>
+             </div>
+            <div class="right-panel-fruit-p5">
+                 <div class="data-view-panel">
+                    <div class="data-box">
+                        <h3>Imbalance Map (freq)</h3>
+                        <div id="freq-map-content" class="data-content"></div>
+                    </div>
+                    <div class="data-box">
+                        <h3>Fruits to Swap (excess)</h3>
+                        <div id="excess-list-content" class="data-content">
+                             <div id="divider-line"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="state-panel-fruit-p5">
+                    <h2>Factory Status</h2>
+                    <div class="cost-item-p5">
+                        <div class="label">Minimum Swap Cost</div>
+                        <div id="total_cost_display_p5" class="value">$0</div>
+                    </div>
+                    <div id="current_action_fruit_display_p5"></div>
+                    <div id="analysis-box"></div>
+                </div>
+                <div class="log-container-fruit-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_fruit_p5"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+// --- STATE VARIABLES ---
+let BASKET1_DATA = [], BASKET2_DATA = [];
+let freqMap = new Map();
+let excessList = [];
+let minCost = 0, minFruitVal = Infinity;
+let simulationRunning = false;
+let currentPhase = 'idle';
+let loop_i = 0;
+
+// --- DOM ELEMENTS ---
+let b1Input, b2Input, startButton, nextStepButton, totalCostDisplay,
+    currentActionDisplay, logOutput, b1Container, b2Container, overlay, 
+    freqMapContent, excessListContent, dividerLine, analysisBox;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 400; 
+const FRUIT_EMOJIS = ['🍎', '🍌', '🍊', '🍓', '🍇', '🥝', '🥭', '🍑', '🍒', '🍍', '🥥', '🥑'];
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+
+function updateStateDisplay() { totalCostDisplay.textContent = `$${minCost}`; }
+function getFruitEmoji(value) { return FRUIT_EMOJIS[value % FRUIT_EMOJIS.length]; }
+
+function renderInitialBaskets() {
+    b1Container.innerHTML = `<div id="basket1-label" class="basket-label">Basket 1</div>`;
+    b2Container.innerHTML = `<div id="basket2-label" class="basket-label">Basket 2</div>`;
+    
+    [[BASKET1_DATA, b1Container, 1], [BASKET2_DATA, b2Container, 2]].forEach(([basket, container, id]) => {
+        basket.forEach((fruit, i) => {
+            const el = document.createElement('div');
+            el.className = 'fruit-p5';
+            el.id = `b${id}-orig-${fruit.originalIndex}`;
+            el.style.left = `${10 + i * 60}px`;
+            el.style.top = `35px`;
+            el.innerHTML = `<div class="fruit-icon">${getFruitEmoji(fruit.value)}</div><div class="fruit-label">$${fruit.value}</div>`;
+            container.appendChild(el);
+        });
+    });
+}
+
+function renderMap() {
+    freqMapContent.innerHTML = '';
+    const sortedMap = new Map([...freqMap.entries()].sort((a, b) => a[0] - b[0]));
+    for(const [fruit, count] of sortedMap) {
+        freqMapContent.innerHTML += `<div id="map-entry-${fruit}">${getFruitEmoji(fruit)} ($${fruit}): ${count > 0 ? '+' : ''}${count}</div>`;
+    }
+}
+
+function renderExcessList() {
+    excessListContent.innerHTML = '<div id="divider-line"></div>';
+    dividerLine = document.getElementById('divider-line');
+    if(currentPhase === 'start_swaps' || currentPhase === 'process_one_swap' || currentPhase === 'finish') {
+        dividerLine.style.transform = 'scaleY(1)';
+    }
+
+    let html = '[';
+    excessList.forEach((fruit, i) => {
+        const isFaded = i < loop_i;
+        const isHighlight = (i === loop_i || i === excessList.length - 1 - loop_i) && currentPhase === 'process_one_swap';
+        html += `<span id="excess-item-${i}" class="${isFaded ? 'faded' : ''} ${isHighlight ? 'highlight' : ''}">${fruit}</span>`;
+        if (i < excessList.length - 1) html += ', ';
+    });
+    html += ']';
+    excessListContent.innerHTML += html;
+}
+
+function showOverlay(type, cost = 0) {
+    if (type === 'success') {
+        overlay.innerHTML = `<span>SUCCESS!</span><span>Minimum Cost: $${cost}</span>`;
+    } else {
+        overlay.innerHTML = `<span>IMPOSSIBLE!</span><span>Cannot make baskets equal.</span>`;
+    }
+    overlay.className = `show ${type}`;
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!simulationRunning) startButton.textContent = "Reset";
+}
+
+async function initializeAnimation() {
+    log("Starting Fruit Marketplace...");
+    simulationRunning = false; 
+    
+    try {
+        const b1 = b1Input.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >=0);
+        const b2 = b2Input.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >=0);
+        BASKET1_DATA = b1.map((value, originalIndex) => ({ value, originalIndex }));
+        BASKET2_DATA = b2.map((value, originalIndex) => ({ value, originalIndex }));
+    } catch (e) { alert("Invalid input."); return; }
+    
+    freqMap.clear();
+    excessList = []; minCost = 0; loop_i = 0;
+    const allFruits = [...BASKET1_DATA, ...BASKET2_DATA];
+    minFruitVal = allFruits.length > 0 ? Math.min(...allFruits.map(f=>f.value)) : Infinity;
+
+    logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+    overlay.className = '';
+    analysisBox.innerHTML = '';
+    
+    renderInitialBaskets();
+    updateStateDisplay();
+    renderMap();
+    renderExcessList();
+
+    currentActionDisplay.textContent = `Click 'Next Step' to begin.`;
+    currentPhase = 'count_freqs_start';
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    nextStepButton.disabled = true;
+    
+    switch(currentPhase) {
+        case 'count_freqs_start':
+            log("--- Step 1: Calculating fruit imbalance ---");
+            currentActionDisplay.textContent = "Processing Basket 1 (+1 for each fruit)...";
+            loop_i = 0;
+            currentPhase = 'count_freqs_b1';
+            break;
+
+        case 'count_freqs_b1':
+            if (loop_i < BASKET1_DATA.length) {
+                const fruit = BASKET1_DATA[loop_i];
+                document.getElementById(`b1-orig-${fruit.originalIndex}`).classList.add('highlight');
+                freqMap.set(fruit.value, (freqMap.get(fruit.value) || 0) + 1);
+                renderMap();
+                await new Promise(r => setTimeout(r, 150));
+                document.getElementById(`b1-orig-${fruit.originalIndex}`).classList.remove('highlight');
+                loop_i++;
+            } else {
+                currentActionDisplay.textContent = "Processing Basket 2 (-1 for each fruit)...";
+                currentPhase = 'count_freqs_b2';
+                loop_i = 0; 
+            }
+            break;
+            
+        case 'count_freqs_b2':
+            if (loop_i < BASKET2_DATA.length) {
+                const fruit = BASKET2_DATA[loop_i];
+                document.getElementById(`b2-orig-${fruit.originalIndex}`).classList.add('highlight');
+                freqMap.set(fruit.value, (freqMap.get(fruit.value) || 0) - 1);
+                renderMap();
+                await new Promise(r => setTimeout(r, 150));
+                document.getElementById(`b2-orig-${fruit.originalIndex}`).classList.remove('highlight');
+                loop_i++;
+            } else {
+                log("Imbalance map created: " + Array.from(freqMap.entries()).map(([k,v]) => `${k}:${v}`).join(', '));
+                currentPhase = 'check_possibility_start';
+                loop_i = 0; 
+            }
+            break;
+
+        case 'check_possibility_start':
+            log("\n--- Step 2: Checking for possibility ---");
+            currentActionDisplay.textContent = "Checking if all imbalances are even...";
+            currentPhase = 'check_possibility_loop';
+            break;
+
+        case 'check_possibility_loop':
+            const fruitsToCheck = Array.from(freqMap.keys()).sort((a,b) => a-b);
+            if(loop_i < fruitsToCheck.length) {
+                const fruit = fruitsToCheck[loop_i];
+                const count = freqMap.get(fruit);
+                document.getElementById(`map-entry-${fruit}`).classList.add('highlight');
+                await new Promise(r => setTimeout(r, 200));
+                if (count % 2 !== 0) {
+                    document.getElementById(`map-entry-${fruit}`).classList.add('invalid');
+                    log(`IMPOSSIBLE: Fruit ${fruit} has an odd imbalance of ${count}.`);
+                    currentActionDisplay.textContent = `Cannot solve: Fruit ${getFruitEmoji(fruit)} has an odd count!`;
+                    showOverlay('failure');
+                    simulationRunning = false;
+                } else {
+                    document.getElementById(`map-entry-${fruit}`).classList.remove('highlight');
+                    loop_i++;
+                }
+            } else {
+                 log("All imbalances are even. A solution is possible.");
+                currentPhase = 'create_excess_list';
+            }
+            break;
+        
+        case 'create_excess_list':
+            log("\n--- Step 3: Creating the list of fruits to swap ---");
+            currentActionDisplay.textContent = "Identifying all fruits that must be moved...";
+            for (const [fruitVal, diff] of freqMap.entries()) {
+                const numToMove = Math.abs(diff) / 2;
+                if (numToMove > 0) {
+                    for (let i = 0; i < numToMove; i++) excessList.push(fruitVal);
+                }
+            }
+            renderExcessList();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            currentPhase = 'sort_excess_list';
+            break;
+
+        case 'sort_excess_list':
+            log("\n--- Step 4: Sorting fruits to be swapped by their value ---");
+            currentActionDisplay.textContent = "Sorting fruits to be swapped by their value...";
+            excessList.sort((a,b) => a - b);
+            log(`Sorted list of fruits to move: [${excessList.join(', ')}]`);
+            renderExcessList();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            currentPhase = 'start_swaps';
+            loop_i = 0;
+            break;
+            
+        case 'start_swaps':
+             log("\n--- Step 5: Calculating minimum cost ---");
+             if(excessList.length > 0) {
+                currentActionDisplay.textContent = "Analyzing cheapest half of swaps...";
+             } else {
+                currentActionDisplay.textContent = "Baskets are already balanced! Cost is $0.";
+             }
+             await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+             currentPhase = excessList.length > 0 ? 'process_one_swap' : 'finish';
+             break;
+
+        case 'process_one_swap':
+            if (loop_i >= excessList.length / 2) {
+                currentActionDisplay.textContent = "All swaps calculated!";
+                log("Finished all swaps.");
+                currentPhase = 'finish';
+                break;
+            }
+            const fruitToMove = excessList[loop_i];
+            
+            renderExcessList(); // To clear previous highlights
+            document.getElementById(`excess-item-${loop_i}`).classList.add('highlight');
+            document.getElementById(`excess-item-${excessList.length - 1 - loop_i}`).classList.add('highlight');
+
+            const costDirect = fruitToMove;
+            const costIndirect = 2 * minFruitVal;
+            const chosenCost = Math.min(costDirect, costIndirect);
+            
+            analysisBox.innerHTML = `<b>Swap Analysis for ${getFruitEmoji(fruitToMove)}:</b><br>
+                <div class="cost-option ${costDirect <= costIndirect ? 'best-deal' : ''}">Move this fruit directly: <b>$${costDirect}</b></div>
+                <div class="cost-option ${costIndirect < costDirect ? 'best-deal' : ''}">Use Cheapest Fruit (2 * $${minFruitVal}): <b>$${costIndirect}</b></div>`;
+
+            log(`Greedy Choice for fruit ${fruitToMove}: min($${costDirect}, $${costIndirect}) = $${chosenCost}`);
+            minCost += chosenCost;
+            
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY * 2));
+            updateStateDisplay();
+            totalCostDisplay.classList.add('pulse');
+            setTimeout(()=>totalCostDisplay.classList.remove('pulse'), 500);
+
+            document.getElementById(`excess-item-${loop_i}`).classList.add('faded');
+            document.getElementById(`excess-item-${excessList.length - 1 - loop_i}`).classList.add('faded');
+            
+            loop_i++;
+            break;
+
+        case 'finish':
+            log(`\n--- Finished ---`);
+            log(`Total minimum cost: $${minCost}`);
+            currentActionDisplay.textContent = `Finished! Minimum cost is $${minCost}.`;
+            showOverlay('success', minCost);
+            simulationRunning = false;
+            break;
+    }
+    
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    b1Input = document.getElementById('basket1_input_p5');
+    b2Input = document.getElementById('basket2_input_p5');
+    //costsInput = document.getElementById('costs_input_p5');
+    startButton = document.getElementById('start_button_fruit_p5');
+    nextStepButton = document.getElementById('next_step_button_fruit_p5');
+    totalCostDisplay = document.getElementById('total_cost_display_p5');
+    currentActionDisplay = document.getElementById('current_action_fruit_display_p5');
+    logOutput = document.getElementById('log_output_fruit_p5');
+    b1Container = document.getElementById('basket1-area');
+    b2Container = document.getElementById('basket2-area');
+    overlay = document.getElementById('overlay');
+    freqMapContent = document.getElementById('freq-map-content');
+    excessListContent = document.getElementById('excess-list-content');
+    analysisBox = document.getElementById('analysis-box');
+    
+    // Hide the separate costs input as it's not used in this version
+    //costsInput.parentElement.style.display = 'none';
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gas Station Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Gas Station – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Gas Station</b> problem involves finding the starting gas station index from which you can complete a circular route around all gas stations. Each station provides a certain amount of gas, and you need a certain amount of gas to travel to the next station.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm</h3>
+    <pre><code>class Solution {
+    public int canCompleteCircuit(int[] gas, int[] cost) {
+        int totalGas = 0, totalCost = 0, startIndex = 0, currentTank = 0;
+
+        for (int i = 0; i < gas.length; i++) {
+            totalGas += gas[i];
+            totalCost += cost[i];
+            currentTank += gas[i] - cost[i];
+
+            if (currentTank < 0) {
+                startIndex = i + 1; // Reset starting point
+                currentTank = 0;   // Reset current tank
+            }
+        }
+
+        return totalGas >= totalCost ? startIndex : -1; // Check if a solution exists
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/gas_station_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the number of gas stations. We iterate through the array once.</li>
+      <li><b>Space Complexity:</b> <code>O(1)</code>, as we use only a constant amount of extra space.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the optimal starting point in circular traversal problems.</li>
+      <li>Solving problems involving cumulative sums and resets.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/gas-station/" target="_blank" rel="noopener noreferrer">134. Gas Station</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: gas = [1,2,3,4,5], cost = [3,4,5,1,2]
+Output: 3
+
+Explanation:
+- Start at station 3 (0-based index).
+- Travel around the circuit and return to station 3 with a non-negative tank.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>If the total gas is less than the total cost, it's impossible to complete the circuit.</li>
+      <li>Reset the starting index whenever the current tank becomes negative.</li>
+      <li>Use a greedy approach to minimize unnecessary computations.</li>
+    </ul>
+
+    <h2>🎥 Video Explanation</h2>
+    <p>For a detailed explanation, watch this video:  
+      <a href="https://www.youtube.com/watch?v=SmTow5Ht4iU&ab_channel=ShradhaKhapra" target="_blank" rel="noopener noreferrer">
+        Gas Station Problem Explanation by Shradha Khapra
+      </a>
+    </p>
+  </div>
+</body>
+</html>

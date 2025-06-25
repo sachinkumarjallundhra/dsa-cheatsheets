@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number of Steps to Reduce a Binary Number to One Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Number of Steps to Reduce a Binary Number to One – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Number of Steps to Reduce a Binary Number to One</b> problem involves reducing a binary number (given as a string) to 1 by performing the following operations:</p>
+    <ul>
+      <li>If the number is even, divide it by 2.</li>
+      <li>If the number is odd, add 1 to it.</li>
+    </ul>
+    <p>The goal is to determine the minimum number of steps required to reduce the binary number to 1.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Simulating Binary Operations</h3>
+    <pre><code>class Solution {
+    public int numSteps(String s) {
+        int steps = 0;
+        int carry = 0;
+
+        // Start from the least significant bit and process toward the most significant bit
+        for (int i = s.length() - 1; i > 0; i--) {
+            if (s.charAt(i) - '0' + carry == 1) {
+                // If the bit is 1 (odd), add 1 (carry) and increment steps
+                carry = 1;
+                steps += 2; // Add 1 and divide by 2
+            } else {
+                // If the bit is 0 (even), just divide by 2
+                steps += 1;
+            }
+        }
+
+        // Handle the most significant bit
+        return steps + carry;
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/num_steps_binary_to_one_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the length of the binary string.</li>
+      <li><b>Space Complexity:</b> <code>O(1)</code>, as we use only a constant amount of extra space.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Simulating binary operations efficiently.</li>
+      <li>Understanding bit manipulation and binary arithmetic.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/number-of-steps-to-reduce-a-number-in-binary-representation-to-one/" target="_blank" rel="noopener noreferrer">1404. Number of Steps to Reduce a Number in Binary Representation to One</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Binary</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "1101"
+Output: 6
+
+Explanation:
+- "1101" is odd, add 1 → "1110"
+- "1110" is even, divide by 2 → "111"
+- "111" is odd, add 1 → "1000"
+- "1000" is even, divide by 2 → "100"
+- "100" is even, divide by 2 → "10"
+- "10" is even, divide by 2 → "1"</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Simulate the operations directly on the binary string without converting it to an integer.</li>
+      <li>Use a carry variable to handle the addition of 1 when the number is odd.</li>
+      <li>Focus on the most significant bit to determine when the process ends.</li>
+    </ul>
+
+    <h2>🎥 Video Explanation</h2>
+    <p>For a detailed explanation, watch this video:  
+      <a href="https://www.youtube.com/watch?v=qxt7_HD8Cag&ab_channel=NeetCodeIO" target="_blank" rel="noopener noreferrer">
+        Rearranging Fruits Problem Explanation by NeetCode IO
+      </a>
+    </p>
+  </div>
+</body>
+</html>

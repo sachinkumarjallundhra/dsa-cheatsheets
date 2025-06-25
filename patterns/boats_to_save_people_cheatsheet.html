@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boats to Save People Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Boats to Save People – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Boats to Save People</b> problem involves determining the minimum number of boats required to save people, given that each boat can carry at most two people and has a weight limit.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Two-Pointer Greedy Algorithm</h3>
+    <pre><code>class Solution {
+    public int numRescueBoats(int[] people, int limit) {
+        Arrays.sort(people); // Sort people by weight
+        int left = 0, right = people.length - 1;
+        int boats = 0;
+
+        while (left <= right) {
+            if (people[left] + people[right] <= limit) {
+                left++; // Pair the lightest and heaviest person
+            }
+            right--; // Always use a boat for the heaviest person
+            boats++;
+        }
+
+        return boats;
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/boats_to_save_people_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Sorting:</b> <code>O(N log N)</code>, where <code>N</code> is the number of people.</li>
+      <li><b>Two-Pointer Traversal:</b> <code>O(N)</code>, for iterating through the array.</li>
+      <li><b>Total Complexity:</b> <code>O(N log N)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Minimizing resources (boats) to transport people or items.</li>
+      <li>Solving problems involving pairing elements with constraints.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/boats-to-save-people/" target="_blank" rel="noopener noreferrer">881. Boats to Save People</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: people = [3, 2, 2, 1], limit = 3
+Output: 3
+
+Explanation:
+- Boat 1: [1, 2]
+- Boat 2: [2]
+- Boat 3: [3]</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Sort the array to efficiently pair the lightest and heaviest person.</li>
+      <li>Use two pointers: one starting from the lightest person and the other from the heaviest.</li>
+      <li>Always decrement the pointer for the heaviest person, as they must use a boat.</li>
+    </ul>
+  </div>
+</body>
+</html>

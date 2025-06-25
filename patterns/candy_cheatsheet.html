@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Candy Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Candy – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Candy</b> problem involves distributing candies to children standing in a line such that:</p>
+    <ul>
+      <li>Each child must have at least one candy.</li>
+      <li>Children with a higher rating than their neighbors must receive more candies than their neighbors.</li>
+    </ul>
+    <p>The goal is to determine the minimum number of candies required to satisfy these conditions.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Two-Pass Greedy Algorithm</h3>
+    <pre><code>class Solution {
+    public int candy(int[] ratings) {
+        int n = ratings.length;
+        int[] candies = new int[n];
+        Arrays.fill(candies, 1);
+
+        // Left-to-right pass
+        for (int i = 1; i < n; i++) {
+            if (ratings[i] > ratings[i - 1]) {
+                candies[i] = candies[i - 1] + 1;
+            }
+        }
+
+        // Right-to-left pass
+        for (int i = n - 2; i >= 0; i--) {
+            if (ratings[i] > ratings[i + 1]) {
+                candies[i] = Math.max(candies[i], candies[i + 1] + 1);
+            }
+        }
+
+        // Calculate the total candies
+        int totalCandies = 0;
+        for (int candy : candies) {
+            totalCandies += candy;
+        }
+
+        return totalCandies;
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/candy_animation.html'">▶️ View Animation</button>
+    <h2>🎥 Video Explanation</h2>
+    <p>For a detailed explanation, watch this video:  
+      <a href="https://www.youtube.com/watch?v=1IzCRCcK17A&ab_channel=NeetCodeIO" target="_blank" rel="noopener noreferrer">
+        Candy Problem Explanation by NeetCode IO
+      </a>
+    </p>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the number of children.</li>
+      <li><b>Space Complexity:</b> <code>O(N)</code>, for the candies array.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Optimizing resource allocation based on constraints.</li>
+      <li>Solving problems involving relative rankings or ratings.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/candy/" target="_blank" rel="noopener noreferrer">135. Candy</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: ratings = [1,0,2]
+Output: 5
+
+Explanation:
+- Give 2 candies to the child with a rating of 2.
+- Give 1 candy to the child with a rating of 0.
+- Give 2 candies to the child with a rating of 1.
+- Total candies = 2 + 1 + 2 = 5.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a two-pass greedy approach to ensure both left and right neighbors are satisfied.</li>
+      <li>In the left-to-right pass, ensure higher-rated children get more candies than their left neighbors.</li>
+      <li>In the right-to-left pass, ensure higher-rated children get more candies than their right neighbors.</li>
+      <li>Take the maximum value during the second pass to satisfy both conditions.</li>
+    </ul>
+  </div>
+</body>
+</html>

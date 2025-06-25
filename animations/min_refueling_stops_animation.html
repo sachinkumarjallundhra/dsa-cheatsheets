@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimum Refueling Stops Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-refuel-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-refuel-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-refuel-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 120px; }
+        .controls-refuel-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-refuel-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-refuel-p5 { display: grid; grid-template-columns: minmax(320px, 1.2fr) 3fr; gap: 15px; }
+        .left-panel-refuel-p5, .right-panel-refuel-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-refuel-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 250px; background: linear-gradient(#87ceeb, #a2d2ff); overflow: hidden; position: relative; }
+        
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.5em; font-weight: bold; font-family: 'Courier New', Courier, monospace; }
+        #stops_display_p5.pulse { animation: pulse-anim 0.5s ease-out; }
+
+        #current_action_refuel_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; font-size:1em; }
+        
+        .reserve-fuel-container { margin-top: 15px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f8f9fa; }
+        .reserve-fuel-container h3 { margin: 0 0 10px 0; text-align: center; font-size: 1em; color: #495057; }
+        .fuel-can-area { display: flex; flex-wrap: wrap; gap: 5px; min-height: 40px; align-items: center; justify-content: center; }
+        .fuel-can-p5 { display: flex; align-items: center; padding: 3px 6px; border: 1px solid #6c757d; background: #fff; border-radius: 4px; transition: all 0.4s ease-out; }
+        .fuel-can-p5.highlight { background: #fff3cd; transform: scale(1.1); box-shadow: 0 0 10px gold; }
+        .fuel-can-icon { font-size: 1.5em; margin-right: 5px; }
+        .fuel-can-text { font-size: 0.9em; font-weight: bold; }
+
+        .road-p5 { position: absolute; width: 100%; height: 40px; background: #6c757d; bottom: 0; border-top: 4px solid #495057; }
+        .road-line { position: absolute; width: 100%; height: 4px; background: repeating-linear-gradient(90deg, #f8f9fa, #f8f9fa 15px, #6c757d 15px, #6c757d 30px); top: 50%; transform: translateY(-50%); }
+
+        .scene-object { position: absolute; bottom: 40px; transform: translateX(-50%); text-align: center; width: 80px; }
+        .station-icon-p5 { font-size: 3em; }
+        .station-info-p5 { font-size: 0.8em; background: rgba(255,255,255,0.8); padding: 2px 4px; border-radius: 4px; white-space: nowrap; }
+        #car-container { position: absolute; bottom: 35px; transition: left 0.5s linear; z-index: 5;}
+        #car-p5 { font-size: 3em; }
+        #car-p5.sputter { animation: shake 0.5s; }
+        #reachable-aura { position: absolute; bottom: 0; height: 100%; background: rgba(0, 255, 0, 0.15); border-right: 3px solid rgba(0, 200, 0, 0.6); transition: all 0.4s ease-out; }
+        
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        #overlay span:first-child { font-size: 3em; }
+        #overlay span:last-child { font-size: 1.5em; margin-top: 10px; }
+        #overlay.success span:first-child { color: #90ee90; }
+        #overlay.failure span:first-child { color: #ff7f7f; }
+
+        .log-container-refuel-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_refuel_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes shake { 0%, 100% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(-2px, 0) rotate(-1deg); } 50% { transform: translate(2px, 0) rotate(1deg); } 75% { transform: translate(-2px, 0) rotate(-1deg); } }
+        @keyframes pulse-anim { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minimum Number of Refueling Stops</h1>
+
+        <div class="controls-refuel-p5">
+            <label>Target:</label>
+            <input type="number" id="target_input_p5" value="100">
+            <label>Start Fuel:</label>
+            <input type="number" id="start_fuel_input_p5" value="10">
+            <label>Stations [[dist,fuel],...]:</label>
+            <input type="text" id="stations_input_p5" value="[[10,60],[20,30],[30,30],[60,40]]">
+            <button id="start_button_refuel_p5">Start/Reset</button>
+            <button id="next_step_button_refuel_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-refuel-p5">
+            <div class="left-panel-refuel-p5">
+                <div class="state-panel-refuel-p5">
+                    <h2>Car Stats</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Location</div><div id="location_display_p5" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">Reachable Distance</div><div id="fuel_display_p5" class="value">0</div></div>
+                    </div>
+                     <div class="state-item-p5" style="margin-top: 10px;">
+                        <div class="label">Stops Made</div><div id="stops_display_p5" class="value">0</div>
+                    </div>
+                    <div id="current_action_refuel_display_p5"></div>
+                </div>
+                 <div class="reserve-fuel-container">
+                    <h3>Reserve Fuel Cans (Max Heap)</h3>
+                    <div id="fuel_can_area_p5" class="fuel-can-area"></div>
+                </div>
+                <div class="log-container-refuel-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_refuel_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-refuel-p5">
+                 <div class="visualization-container-p5">
+                    <div class="road-p5"><div class="road-line"></div></div>
+                    <div id="station_container_p5"></div>
+                    <div id="car-container"><div id="reachable-aura"></div><span id="car-p5">🚗</span></div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+// --- STATE VARIABLES ---
+let TARGET, START_FUEL;
+let STATIONS = [];
+let maxHeap = [];
+let stops = 0;
+let reachableDistance = 0;
+let currentLocation = 0;
+let stationIdx = 0;
+let simulationRunning = false;
+let currentPhase = 'idle';
+
+// --- DOM ELEMENTS ---
+let targetInput, startFuelInput, stationsInput, startButton, nextStepButton, 
+    locationDisplay, fuelDisplay, stopsDisplay, currentActionDisplay, logOutput, 
+    stationContainer, carContainer, overlay, fuelCanArea, reachableAura;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 600; 
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+
+function updateStateDisplay() {
+    locationDisplay.textContent = `${currentLocation}`;
+    fuelDisplay.textContent = `${reachableDistance}`;
+    stopsDisplay.textContent = stops;
+}
+
+function getX(dist) {
+    const PADDING = 40;
+    const totalWidth = stationContainer.offsetWidth - 2 * PADDING;
+    return PADDING + (dist / TARGET) * totalWidth;
+}
+
+function renderScene() {
+    stationContainer.innerHTML = '';
+    
+    STATIONS.forEach((station, i) => {
+        const [dist, fuel] = station;
+        const stationEl = document.createElement('div');
+        stationEl.className = 'scene-object';
+        stationEl.id = `station-${i}`;
+        stationEl.style.left = `${getX(dist)}px`;
+        stationEl.innerHTML = `<div class="station-icon-p5">⛽</div><div class="station-info-p5">Dist: ${dist}<br>+${fuel} fuel</div>`;
+        stationContainer.appendChild(stationEl);
+    });
+
+    const targetEl = document.createElement('div');
+    targetEl.className = 'scene-object';
+    targetEl.style.left = `${getX(TARGET)}px`;
+    targetEl.innerHTML = `<div class="station-icon-p5" style="font-size:2.5em; background: #28a745; border-color: #1c7430;">🏁</div><div class="station-info-p5">Target: ${TARGET}</div>`;
+    stationContainer.appendChild(targetEl);
+
+    reachableAura = document.createElement('div');
+    reachableAura.id = 'reachable-aura';
+    carContainer.insertBefore(reachableAura, carContainer.firstChild);
+}
+
+function updateCarAndAura() {
+    carContainer.style.left = `${getX(currentLocation)}px`;
+    reachableAura.style.width = `${getX(reachableDistance) - getX(currentLocation)}px`;
+    reachableAura.style.left = `0px`;
+}
+
+function renderMaxHeap() {
+    fuelCanArea.innerHTML = '';
+    maxHeap.sort((a,b) => b-a);
+    maxHeap.forEach((fuel, i) => {
+        const canEl = document.createElement('div');
+        canEl.className = 'fuel-can-p5';
+        canEl.id = `can-${i}`;
+        canEl.innerHTML = `<span class="fuel-can-icon">🛢️</span><span class="fuel-can-text">${fuel}</span>`;
+        fuelCanArea.appendChild(canEl);
+    });
+}
+
+function showOverlay(type) {
+    overlay.innerHTML = type === 'success' ? `<span>SUCCESS!</span><span>Made it in ${stops} stops.</span>` : `<span>IMPOSSIBLE!</span><span>Cannot reach the target.</span>`;
+    overlay.className = `show ${type}`;
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!simulationRunning) startButton.textContent = "Reset";
+}
+
+async function initializeAnimation() {
+    log("Starting the trip...");
+    simulationRunning = false; 
+    
+    try {
+        TARGET = parseInt(targetInput.value);
+        START_FUEL = parseInt(startFuelInput.value);
+        STATIONS = JSON.parse(stationsInput.value);
+        if (typeof TARGET !== 'number' || typeof START_FUEL !== 'number' || !Array.isArray(STATIONS)) throw new Error();
+    } catch (e) { alert("Invalid input format. Please check station data."); return; }
+    
+    stops = 0;
+    reachableDistance = START_FUEL;
+    currentLocation = 0;
+    stationIdx = 0;
+    maxHeap = [];
+    
+    logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+    overlay.className = '';
+    
+    renderScene();
+    updateCarAndAura();
+    updateStateDisplay();
+    renderMaxHeap();
+
+    currentActionDisplay.textContent = `Click 'Next Step' to begin the journey.`;
+    currentPhase = 'drive';
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    nextStepButton.disabled = true;
+
+    // --- REWRITTEN LINEAR LOGIC ---
+    // This function now performs all actions for a single "greedy choice" loop iteration
+    
+    log(`\n--- Car at ${currentLocation}, Range: ${reachableDistance} ---`);
+    currentActionDisplay.textContent = `At ${currentLocation} miles. Let's drive...`;
+    updateStateDisplay();
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+    // 1. Drive as far as possible, collecting all reachable stations into the heap
+    let stationsPassed = 0;
+    while(stationIdx < STATIONS.length && STATIONS[stationIdx][0] <= reachableDistance) {
+        const [dist, fuel] = STATIONS[stationIdx];
+        log(`Driving past station ${stationIdx} at ${dist}. Collecting ${fuel} fuel.`);
+        currentActionDisplay.textContent = `Collecting reserve fuel from station at ${dist}.`;
+        
+        currentLocation = dist; // Car moves to the station
+        updateCarAndAura();
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+        maxHeap.push(fuel);
+        renderMaxHeap();
+        document.getElementById(`station-${stationIdx}`).querySelector('.station-icon-p5').style.background = '#a5d6a7';
+        await new Promise(r => setTimeout(r, ANIMATION_DELAY / 2));
+        
+        stationIdx++;
+        stationsPassed++;
+    }
+
+    // After collecting, update car position to the farthest it could reach
+    currentLocation = reachableDistance;
+    updateCarAndAura();
+    log(`Drove to the edge of range: ${currentLocation} miles.`);
+    currentActionDisplay.textContent = `Reached the limit of my range: ${currentLocation} miles.`;
+    updateStateDisplay();
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+
+    // 2. Check if we've already won
+    if (reachableDistance >= TARGET) {
+        log("SUCCESS! Reached the target.");
+        currentActionDisplay.textContent = `Made it to the target!`;
+        showOverlay('success');
+        simulationRunning = false;
+        updateButtonState();
+        return;
+    }
+
+    // 3. Check if we're stuck (can't reach the target AND have no reserves)
+    if (maxHeap.length === 0) {
+        log("Cannot reach target and have no reserve fuel. Stranded!");
+        currentActionDisplay.textContent = "No fuel in reserves! Mission failed.";
+        carContainer.querySelector('#car-p5').classList.add('sputter');
+        showOverlay('failure');
+        simulationRunning = false;
+        updateButtonState();
+        return;
+    }
+
+    // 4. If we are here, we MUST refuel. Use the best can.
+    renderMaxHeap(); // Sort visually
+    const canToUseEl = document.getElementById('can-0');
+    if(canToUseEl) canToUseEl.classList.add('highlight');
+    
+    const bestFuel = maxHeap.shift();
+    log(`Refueling with the best can: ${bestFuel} fuel.`);
+    currentActionDisplay.textContent = `Using best can: +${bestFuel} fuel!`;
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+    
+    renderMaxHeap();
+    reachableDistance += bestFuel;
+    stops++;
+    
+    stopsDisplay.classList.add('pulse');
+    setTimeout(()=>stopsDisplay.classList.remove('pulse'), 500);
+
+    log(`New reachable distance is ${reachableDistance}. Stops: ${stops}.`);
+    currentActionDisplay.textContent = `New reachable distance is ${reachableDistance}!`;
+    updateCarAndAura();
+    updateStateDisplay();
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+    
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    targetInput = document.getElementById('target_input_p5');
+    startFuelInput = document.getElementById('start_fuel_input_p5');
+    stationsInput = document.getElementById('stations_input_p5');
+    startButton = document.getElementById('start_button_refuel_p5');
+    nextStepButton = document.getElementById('next_step_button_refuel_p5');
+    locationDisplay = document.getElementById('location_display_p5');
+    fuelDisplay = document.getElementById('fuel_display_p5');
+    stopsDisplay = document.getElementById('stops_display_p5');
+    currentActionDisplay = document.getElementById('current_action_refuel_display_p5');
+    logOutput = document.getElementById('log_output_refuel_p5');
+    stationContainer = document.getElementById('station_container_p5');
+    carContainer = document.getElementById('car-container');
+    overlay = document.getElementById('overlay');
+    fuelCanArea = document.getElementById('fuel_can_area_p5');
+    
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

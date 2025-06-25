@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Can Place Flowers Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Can Place Flowers – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Can Place Flowers</b> problem involves determining whether it is possible to plant a given number of flowers in a flowerbed without violating the rule that no two flowers can be adjacent.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm</h3>
+    <pre><code>class Solution {
+    public boolean canPlaceFlowers(int[] flowerbed, int n) {
+        int count = 0;
+
+        for (int i = 0; i < flowerbed.length; i++) {
+            if (flowerbed[i] == 0 &&
+                (i == 0 || flowerbed[i - 1] == 0) &&
+                (i == flowerbed.length - 1 || flowerbed[i + 1] == 0)) {
+                flowerbed[i] = 1; // Plant a flower
+                count++;
+            }
+
+            if (count >= n) {
+                return true; // Enough flowers planted
+            }
+        }
+
+        return count >= n; // Check if we could plant enough flowers
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/can_place_flowers_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the length of the flowerbed array.</li>
+      <li><b>Space Complexity:</b> <code>O(1)</code>, as we modify the flowerbed array in place.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Solving problems involving placement constraints.</li>
+      <li>Optimizing resource allocation in a linear structure.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/can-place-flowers/" target="_blank" rel="noopener noreferrer">605. Can Place Flowers</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: flowerbed = [1,0,0,0,1], n = 1
+Output: true
+
+Explanation:
+- Plant a flower at index 2. The flowerbed becomes [1,0,1,0,1].
+- It is possible to plant 1 flower.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a greedy approach to plant flowers in the first available spots.</li>
+      <li>Check the left and right neighbors to ensure no adjacent flowers.</li>
+      <li>Stop early if the required number of flowers has been planted.</li>
+    </ul>
+  </div>
+</body>
+</html>

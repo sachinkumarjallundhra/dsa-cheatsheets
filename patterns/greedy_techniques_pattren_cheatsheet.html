@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Greedy Techniques Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Greedy Techniques – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Greedy Technique</b> is an algorithmic paradigm that builds up a solution piece by piece, always choosing the next piece that offers the most immediate benefit. It is used for optimization problems where local choices lead to a globally optimal solution.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm</h3>
+    <pre><code>class Solution {
+    public int findMaxProfit(int[] tasks) {
+        Arrays.sort(tasks); // Sort tasks based on a specific criterion
+        int profit = 0;
+
+        for (int task : tasks) {
+            if (isFeasible(task)) { // Check if the task can be included
+                profit += task;
+            }
+        }
+
+        return profit;
+    }
+
+    private boolean isFeasible(int task) {
+        // Implement feasibility check logic
+        return true;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Sorting:</b> <code>O(N log N)</code>, where <code>N</code> is the size of the input.</li>
+      <li><b>Greedy Selection:</b> <code>O(N)</code>, for iterating through the sorted input.</li>
+      <li><b>Total Complexity:</b> <code>O(N log N)</code>.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the minimum number of coins for change (coin change problem).</li>
+      <li>Scheduling tasks to maximize profit.</li>
+      <li>Finding the minimum spanning tree (Prim's or Kruskal's algorithm).</li>
+      <li>Huffman encoding for data compression.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+        <li>
+          <a href="https://leetcode.com/problems/jump-game/" target="_blank" rel="noopener noreferrer">55. Jump Game</a>
+          <span class="badge badge-medium">[Medium]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="jump_game_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/boats-to-save-people/" target="_blank" rel="noopener noreferrer">881. Boats to Save People</a>
+          <span class="badge badge-medium">[Medium]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="boats_to_save_people_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/gas-station/" target="_blank" rel="noopener noreferrer">134. Gas Station</a>
+          <span class="badge badge-medium">[Medium]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="gas_station_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/two-city-scheduling/" target="_blank" rel="noopener noreferrer">1029. Two City Scheduling</a>
+          <span class="badge badge-medium">[Medium]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="two_city_scheduling_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/minimum-number-of-refueling-stops/" target="_blank" rel="noopener noreferrer">871. Minimum Number of Refueling Stops</a>
+          <span class="badge badge-hard">[Hard]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="minimum_number_of_refueling_stops_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/largest-palindromic-number/" target="_blank" rel="noopener noreferrer">2384. Largest Palindromic Number</a>
+          <span class="badge badge-medium">[Medium]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="largest_palindromic_number_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/assign-cookies/" target="_blank" rel="noopener noreferrer">455. Assign Cookies</a>
+          <span class="badge badge-easy">[Easy]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="assign_cookies_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/rearranging-fruits/" target="_blank" rel="noopener noreferrer">Rearranging Fruits</a>
+          <span class="badge badge-hard">[Hard]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="rearranging_fruits_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/number-of-steps-to-reduce-a-number-in-binary-representation-to-one/" target="_blank" rel="noopener noreferrer">1404. Number of Steps to Reduce a Binary Number to One</a>
+          <span class="badge badge-medium">[Medium]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="num_steps_binary_to_one_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/maximum-swap/" target="_blank" rel="noopener noreferrer">670. Maximum Swap</a>
+          <span class="badge badge-medium">[Medium]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="maximum_swap_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/can-place-flowers/" target="_blank" rel="noopener noreferrer">605. Can Place Flowers</a>
+          <span class="badge badge-easy">[Easy]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="can_place_flowers_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/largest-odd-number-in-string/" target="_blank" rel="noopener noreferrer">1903. Largest Odd Number in String</a>
+          <span class="badge badge-easy">[Easy]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="largest_odd_number_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/candy/" target="_blank" rel="noopener noreferrer">135. Candy</a>
+          <span class="badge badge-hard">[Hard]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="candy_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/minimum-replacements-to-sort-the-array/" target="_blank" rel="noopener noreferrer">2366. Minimum Replacements to Sort the Array</a>
+          <span class="badge badge-hard">[Hard]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="minimum_replacements_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/jump-game-ii/" target="_blank" rel="noopener noreferrer">45. Jump Game II</a>
+          <span class="badge badge-hard">[Hard]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="jump_game_ii_cheatsheet.html">Cheat Sheet</a>
+        </li>
+        <li>
+          <a href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock/" target="_blank" rel="noopener noreferrer">121. Best Time to Buy and Sell Stock</a>
+          <span class="badge badge-easy">[Easy]</span>
+          <span class="badge badge-tag">Greedy</span>
+           📄 <a href="best_time_to_buy_and_sell_stock_cheatsheet.html">Cheat Sheet</a>
+        </li>
+      </ul>
+
+    <h2>🧪 Example: Coin Change Problem</h2>
+    <pre><code>Input: coins = [1, 2, 5], amount = 11
+Output: 3
+
+Explanation:
+- Use coins [5, 5, 1] to make up the amount 11 with the minimum number of coins.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Greedy algorithms work best when the problem has the <b>greedy-choice property</b> (local optimal choices lead to a global optimum).</li>
+      <li>Always sort the input based on the problem's requirements (e.g., by value, weight, or ratio).</li>
+      <li>Test edge cases where the greedy approach might fail (e.g., when the problem doesn't satisfy the greedy-choice property).</li>
+    </ul>
+  </div>
+</body>
+</html>

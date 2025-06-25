@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boats to Save People Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1200px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-boat-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-boat-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-boat-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 180px; }
+        .controls-boat-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-boat-p5 button:hover { background-color: #0056b3; }
+        .controls-boat-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-boat-p5 { display: grid; grid-template-columns: minmax(280px, 1fr) 3fr; gap: 15px; }
+        .left-panel-boat-p5, .right-panel-boat-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-boat-p5, .visualization-container-p5 {
+            padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px;
+        }
+        .visualization-container-p5 { min-height: 300px; background-color: #e0f7fa; overflow: hidden; position: relative; }
+        .dock-p5 { height: 50%; border-bottom: 4px solid #a1887f; background-color: #efebe9; position: relative; }
+        .water-p5 { height: 50%; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
+        .state-item-p5 { padding: 8px; text-align: center; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; }
+        .state-item-p5 .label { font-size: 0.8em; color: #6c757d; display: block; margin-bottom: 5px; }
+        .state-item-p5 .value { font-size: 1.4em; font-weight: bold; color: #343a40; font-family: 'Courier New', Courier, monospace; }
+        .state-item-p5 .value.pulse { animation: pulse-anim 0.5s ease-out; }
+
+        #current_action_boat_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:2.4em; font-size:1em; transition: all 0.3s; }
+        .check-text { font-family: 'Courier New', Courier, monospace; font-size: 1.1em; }
+        .check-text.yes { color: #28a745; }
+        .check-text.no { color: #dc3545; }
+        .info-text { color: #0d6efd; }
+
+        .person-p5 { width: 50px; height: 50px; position: absolute; bottom: 20px; transition: all 0.5s ease-in-out; text-align: center; }
+        .person-p5 .icon { font-size: 2.5em; line-height: 1; }
+        .person-p5 .weight { font-size: 0.8em; font-weight: bold; background: white; border-radius: 3px; padding: 1px 3px; }
+        .person-p5.highlight { transform: scale(1.1) translateY(-5px); }
+        .person-p5.in-boat { bottom: -100px; /* Moves into the boat area visually */ }
+
+        .pointer-p5 { position: absolute; top: 10px; width: 50px; text-align: center; font-size: 0.8em; font-weight: bold; transition: left 0.5s ease-in-out; }
+        .pointer-p5.left { color: #28a745; }
+        .pointer-p5.right { color: #dc3545; }
+
+        .boat-p5 { width: 140px; height: 70px; background-color: #8d6e63; border-radius: 10px 10px 40px 40px; position: absolute; bottom: 30px; left: calc(50% - 70px); border: 4px solid #5d4037; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease-in-out; }
+        .boat-p5.sailing { transform: translateY(150px); }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; pointer-events: all; }
+        #overlay span:first-child { font-size: 3em; }
+        #overlay span:last-child { font-size: 1.5em; color: #e0e0e0; }
+
+        .log-container-boat-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_boat_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+        
+        @keyframes pulse-anim { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Boats to Save People</h1>
+
+        <div class="controls-boat-p5">
+            <label for="people_input_boat_p5">People's Weights:</label>
+            <input type="text" id="people_input_boat_p5" value="3,2,2,1">
+            <label for="limit_input_boat_p5">Boat Limit:</label>
+            <input type="number" id="limit_input_boat_p5" value="3" min="1">
+            <button id="start_button_boat_p5">Start/Reset</button>
+            <button id="next_step_button_boat_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-boat-p5">
+            <div class="left-panel-boat-p5">
+                <div class="state-panel-boat-p5">
+                    <h2>Current State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Left Pointer</div><div id="left_ptr_display_p5" class="value">-</div></div>
+                        <div class="state-item-p5"><div class="label">Right Pointer</div><div id="right_ptr_display_p5" class="value">-</div></div>
+                        <div class="state-item-p5"><div class="label">Boat Limit</div><div id="limit_display_p5" class="value">-</div></div>
+                        <div class="state-item-p5"><div class="label">Boat Weight</div><div id="boat_weight_display_p5" class="value">0</div></div>
+                    </div>
+                     <div class="state-item-p5" style="margin-top: 10px;">
+                        <div class="label">Boats Used</div><div id="boats_used_display_p5" class="value">0</div>
+                    </div>
+                    <div id="current_action_boat_display_p5"></div>
+                </div>
+                <div class="log-container-boat-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_boat_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-boat-p5">
+                 <div class="visualization-container-p5">
+                    <div class="dock-p5" id="people_container_p5"></div>
+                    <div class="water-p5">
+                         <div class="boat-p5" id="boat_p5">🚤</div>
+                    </div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <!-- Embedded Audio -->
+    <audio id="sound-sort" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAP//AP3/APv/APj/APL/AOz/ANz/AMv/AKD/AHT/AGH/ADz/ABf/APf+APb+APb+APf+APj+APr+AP/+AP//AP//AP/+APr+APj+APf+APb+APb+APf+APj+APr+AP/+AP//AP//AP/+APr+APj+APf+APb+APb+APf+APj+APr+AP/+AP//AP//AP/+APr+APj+APf+APb+APb+APf+APj+APr+AP/+AP//AAAA"></audio>
+    <audio id="sound-board" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgICAgICAgICAgICAgICAgIAAgACAgIAAgICAgACAAIAAgICAgICAgIAAgIAAgACAgICAgICAgIAAgICAgIAAgICAgICAgICAgIAAgACAgICAgIAAgACAgICAgACAgIAAgICAgICAgIAAgACAgICAgICAgIAAgACAgICAgICAgICAgICAgICAgICAgICAgICAgIAAgICAgICAgICAgICAgICAgIAAgICAgICAgICAgACAgICAgICAgIAAgIAAgACAgACAgICAgIAAgACAgIAAgICAgICAgICAgACAgIA=="></audio>
+    <audio id="sound-send" src="data:audio/mpeg;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8A/f8A/P8A/P8A/P8A/P8A/v8A//8A//8A//8A/v8A/v8A/v8A/P8A/P8A/v8A//8A//8A//8A//8A//8A//8A//8A//8A/P8A/f8A/v8A/f8A/P8A/P8A/v8A/f8A/P8A/P8A/v8A/v8A/v8A/v8A//8A//8A//8A//8A//8A/f8A/P8A/P8A/P8A/P8A/f8A/v8A/v8A//8A//8A//8A//8A//8A/f8A/P8A/f8A/f8A/f8A/f8A/f8A/P8A/P8A/f8A/v8A//8A//8A/f8A/P8A/f8A/f8A/P8A/P8A/v8A/v8A//8A//8A/v8A/v8A/f8A/P8A/P8A/P8A/f8A/f8A/f8A/f8A/v8A//8A//8A/v8A/v8A/v8A/P8A/P8A/P8A/f8A/v8A//8A//8A//8A//8A/f8A/v8A//8A//8A/v8A/P8A/P8A/P8A/f8A/v8A/v8A/v8A/v8A//8A//8A/v8A//8A/v8A/v8A/f8A/P8A/f8A/v8A/v8A/v8A/v8A//8A//8A"></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8CAP3/AP//AP//AP//AP//AP7/APz/APz/AP3/AP//AP//AP//AP7/APz/APz/APz/APv/APz/APv/AP//AAAAAAEAAgADAAQABQAHAAgACgALAA0ADgAQABEAEwAUABYAFwAZABoAHAAeAB8AIAAiACMAJAAkACQAJAAnACgAKgAqACsAKgApACgAJwAmACQAJAAnACgAKQAqACsAKQApACgAKQAnACYAJAAkACMAIQAfAB0AGgAXABIA//8A//8A//8A//8A//8A/v8A/P8A/P8A/f8A//8A//8A//8A/v8A/P8A/P8A/P8A/f8A/P8A/f8A//8AAAABAAMABAAFAAcACAAKAAwADAAOABAAEgATABUAFgAYABoAHAAeACAAIgAjACQAJgAmACYAJwApACoAKgArACoAKgApACgAJwAnACYAJAAjACIAIAAeABwAGgAXABIA//8A//8A//8A//8A"></audio>
+
+<script>
+// --- STATE VARIABLES ---
+let PEOPLE = [];
+let LIMIT;
+let leftPtr, rightPtr;
+let boatWeight = 0;
+let boatCount = 0;
+let currentPhase = 'idle';
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let peopleInputEl, limitInputEl, startButton, nextStepButton, leftPtrDisplay, rightPtrDisplay, 
+    limitDisplay, boatWeightDisplay, boatsUsedDisplay, currentActionDisplay, logOutput, 
+    peopleContainer, boat, overlay;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 600; 
+
+// --- HELPER FUNCTIONS ---
+function log(message) {
+    if(logOutput) logOutput.innerHTML += `> ${message}\n`;
+    if(logOutput) logOutput.scrollTop = logOutput.scrollHeight;
+}
+
+function playSound(id) {
+    const sound = document.getElementById(id);
+    if(sound) { sound.currentTime = 0; sound.play(); }
+}
+
+function updateStateDisplay() {
+    leftPtrDisplay.textContent = leftPtr < PEOPLE.length ? leftPtr : '-';
+    rightPtrDisplay.textContent = rightPtr >= 0 ? rightPtr : '-';
+    limitDisplay.textContent = LIMIT;
+    boatWeightDisplay.textContent = boatWeight;
+    boatsUsedDisplay.textContent = boatCount;
+}
+
+function clearHighlights() {
+    document.querySelectorAll('.person-p5.highlight').forEach(el => el.classList.remove('highlight'));
+}
+
+async function renderPeople(isSorting = false) {
+    const PADDING = 60;
+    const SPACING = 60;
+    const totalWidth = PEOPLE.length * SPACING;
+    const startLeft = (peopleContainer.offsetWidth - totalWidth) / 2;
+    
+    if (!isSorting) { // Initial placement
+        peopleContainer.innerHTML = '';
+        PEOPLE.forEach((person, index) => {
+            const personEl = document.createElement('div');
+            personEl.className = 'person-p5';
+            personEl.id = `person-orig-idx-${person.originalIndex}`;
+            personEl.style.left = `${startLeft + index * SPACING}px`;
+            personEl.innerHTML = `<span class="icon">🧍</span><span class="weight">${person.weight}</span>`;
+            peopleContainer.appendChild(personEl);
+        });
+    } else { // Animate to sorted positions
+        PEOPLE.forEach((person, index) => {
+            const personEl = document.getElementById(`person-orig-idx-${person.originalIndex}`);
+            personEl.style.left = `${startLeft + index * SPACING}px`;
+        });
+        await new Promise(r => setTimeout(r, 700)); // Wait for sorting animation
+    }
+}
+
+function showOverlay(finalCount) {
+    overlay.innerHTML = `<span>SUCCESS!</span><span>All safe in ${finalCount} boat${finalCount > 1 ? 's' : ''}.</span>`;
+    overlay.className = 'show';
+}
+
+// --- CORE LOGIC FUNCTIONS ---
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!simulationRunning) {
+        startButton.textContent = "Reset";
+    }
+}
+
+async function initializeAnimation() {
+    log("Evacuation started!");
+    simulationRunning = false; 
+    
+    try {
+        const peopleWeights = peopleInputEl.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+        PEOPLE = peopleWeights.map((weight, index) => ({ weight, originalIndex: index }));
+        LIMIT = parseInt(limitInputEl.value);
+        if (PEOPLE.some(p => p.weight > LIMIT)) {
+            alert("A person's weight cannot exceed the boat limit.");
+            return;
+        }
+    } catch (e) { alert("Invalid input."); return; }
+    
+    leftPtr = 0;
+    rightPtr = PEOPLE.length - 1;
+    boatWeight = 0;
+    boatCount = 0;
+    
+    logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+    overlay.className = '';
+    boat.className = 'boat-p5';
+
+    await renderPeople(false);
+    updateStateDisplay();
+    
+    currentActionDisplay.innerHTML = `<span class="info-text">Click 'Next Step' to begin sorting.</span>`;
+    
+    currentPhase = 'sorting'; 
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    nextStepButton.disabled = true;
+    clearHighlights();
+
+    switch(currentPhase) {
+        case 'sorting':
+            log("First, sort people by weight.");
+            currentActionDisplay.innerHTML = `<span class="info-text">Sorting people by weight...</span>`;
+            playSound('sound-sort');
+            PEOPLE.sort((a,b) => a.weight - b.weight);
+            await renderPeople(true);
+            
+            // Add pointers after sorting
+            const leftPointer = document.createElement('div');
+            leftPointer.className = 'pointer-p5 left'; leftPointer.id = 'left-ptr'; leftPointer.innerHTML = '&#9660; Lightest';
+            const rightPointer = document.createElement('div');
+            rightPointer.className = 'pointer-p5 right'; rightPointer.id = 'right-ptr'; rightPointer.innerHTML = '&#9660; Heaviest';
+            peopleContainer.appendChild(leftPointer); peopleContainer.appendChild(rightPointer);
+            
+            currentPhase = 'start_turn';
+            break;
+        
+        case 'start_turn':
+            if (leftPtr > rightPtr) {
+                currentPhase = 'end_game';
+                await performNextStep(); // Immediately end
+                return;
+            }
+            log(`\n--- New Boat (Boat #${boatCount + 1}) ---`);
+            log(`Pointers: Left at index ${leftPtr}, Right at index ${rightPtr}.`);
+
+            const leftPersonEl = document.querySelector(`#person-orig-idx-${PEOPLE[leftPtr].originalIndex}`);
+            const rightPersonEl = document.querySelector(`#person-orig-idx-${PEOPLE[rightPtr].originalIndex}`);
+            
+            document.getElementById('left-ptr').style.left = leftPersonEl.style.left;
+            document.getElementById('right-ptr').style.left = rightPersonEl.style.left;
+            
+            leftPersonEl.classList.add('highlight');
+            if (leftPtr !== rightPtr) rightPersonEl.classList.add('highlight');
+            
+            currentActionDisplay.innerHTML = `<span class="info-text">Considering the heaviest person (weight: ${PEOPLE[rightPtr].weight}).</span>`;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            currentPhase = 'heavy_person_boards';
+            break;
+
+        case 'heavy_person_boards':
+            const heavyPerson = PEOPLE[rightPtr];
+            log(`Heaviest person (weight ${heavyPerson.weight}) boards the boat.`);
+            currentActionDisplay.innerHTML = `<span class="info-text">Heaviest person boards.</span>`;
+            
+            document.querySelector(`#person-orig-idx-${heavyPerson.originalIndex}`).classList.add('in-boat');
+            playSound('sound-board');
+            boatWeight += heavyPerson.weight;
+            updateStateDisplay();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            
+            currentPhase = 'check_light_person';
+            break;
+            
+        case 'check_light_person':
+            if (leftPtr === rightPtr) { // Only one person left
+                log("Only one person left. They take the boat alone.");
+                currentPhase = 'send_boat';
+                await performNextStep(); // Skip to sending
+                return;
+            }
+
+            const lightPerson = PEOPLE[leftPtr];
+            const canFit = (boatWeight + lightPerson.weight) <= LIMIT;
+            log(`Check if lightest (weight ${lightPerson.weight}) can fit: ${boatWeight} + ${lightPerson.weight} <= ${LIMIT} -> ${canFit}`);
+            
+            currentActionDisplay.innerHTML = `<span>Check if lightest can fit: </span>
+                <span class="check-text ${canFit ? 'yes' : 'no'}">
+                    ${boatWeight} + ${lightPerson.weight} &le; ${LIMIT}? 
+                    ${canFit ? 'YES' : 'NO'}
+                </span>`;
+            
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY * 1.5));
+            
+            if (canFit) {
+                currentPhase = 'light_person_boards';
+            } else {
+                log("Too heavy. Heaviest person takes the boat alone.");
+                currentPhase = 'send_boat';
+            }
+            break;
+            
+        case 'light_person_boards':
+            const p = PEOPLE[leftPtr];
+            log(`Lightest person (weight ${p.weight}) fits and boards.`);
+            currentActionDisplay.innerHTML = `<span class="info-text">Lightest person fits! They board too.</span>`;
+            
+            document.querySelector(`#person-orig-idx-${p.originalIndex}`).classList.add('in-boat');
+            playSound('sound-board');
+            boatWeight += p.weight;
+            leftPtr++; // Move left pointer
+            updateStateDisplay();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            
+            currentPhase = 'send_boat';
+            break;
+            
+        case 'send_boat':
+            log("Sending boat...");
+            currentActionDisplay.innerHTML = `<span class="info-text">Sending boat...</span>`;
+            playSound('sound-send');
+            boat.classList.add('sailing');
+            
+            boatCount++;
+            boatsUsedDisplay.textContent = boatCount;
+            boatsUsedDisplay.classList.add('pulse');
+            setTimeout(()=>boatsUsedDisplay.classList.remove('pulse'), 500);
+            
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            
+            // Cleanup after boat sails
+            document.querySelectorAll('.person-p5.in-boat').forEach(el => el.remove());
+            boat.classList.remove('sailing');
+            boatWeight = 0;
+            rightPtr--; // Always move right pointer
+            updateStateDisplay();
+            
+            currentPhase = 'start_turn';
+            break;
+
+        case 'end_game':
+            log(`All people saved in ${boatCount} boats!`);
+            currentActionDisplay.innerHTML = `<span class="info-text">Finished!</span>`;
+            playSound('sound-win');
+            showOverlay(boatCount);
+            simulationRunning = false;
+            break;
+    }
+    
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    peopleInputEl = document.getElementById('people_input_boat_p5');
+    limitInputEl = document.getElementById('limit_input_boat_p5');
+    startButton = document.getElementById('start_button_boat_p5');
+    nextStepButton = document.getElementById('next_step_button_boat_p5');
+    leftPtrDisplay = document.getElementById('left_ptr_display_p5');
+    rightPtrDisplay = document.getElementById('right_ptr_display_p5');
+    limitDisplay = document.getElementById('limit_display_p5');
+    boatWeightDisplay = document.getElementById('boat_weight_display_p5');
+    boatsUsedDisplay = document.getElementById('boats_used_display_p5');
+    currentActionDisplay = document.getElementById('current_action_boat_display_p5');
+    logOutput = document.getElementById('log_output_boat_p5');
+    peopleContainer = document.getElementById('people_container_p5');
+    boat = document.getElementById('boat_p5');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

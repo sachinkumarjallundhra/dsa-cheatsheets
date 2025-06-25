@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assign Cookies Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-cookie-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-cookie-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-cookie-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 220px; }
+        .controls-cookie-p5 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-cookie-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-cookie-p5 { display: grid; grid-template-columns: minmax(280px, 1fr) 3fr; gap: 15px; }
+        .left-panel-cookie-p5, .right-panel-cookie-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-cookie-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 400px; background-color: #e0f2f1; overflow: hidden; position: relative; }
+        
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.5em; font-weight: bold; font-family: 'Courier New', Courier, monospace; }
+        #happy_kids_display_p5.pulse { animation: pulse-anim 0.5s ease-out; }
+
+        #current_action_cookie_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:1.2em; font-size:1em; }
+        .check-text { font-family: 'Courier New', Courier, monospace; font-size: 1.1em; }
+        .check-text.yes { color: #28a745; }
+        .check-text.no { color: #dc3545; }
+        .info-text { color: #0d6efd; }
+
+        .item-container-p5 { position: absolute; top: 100px; width: 100%; height: 80px; }
+        #cookie-tray-p5 { top: 250px; }
+        .item-p5 { width: 60px; height: 60px; position: absolute; transition: all 0.5s ease-in-out; text-align: center; }
+        .item-icon { font-size: 3em; line-height: 1; transition: all 0.3s; }
+        .item-label { font-size: 0.8em; font-weight: bold; background: rgba(255,255,255,0.8); border-radius: 3px; padding: 1px 3px; }
+        .child-p5 .item-label { color: #c62828; }
+        .cookie-p5 .item-label { color: #8d6e63; }
+        .item-p5.consumed { opacity: 0.2; transform: scale(0.8); }
+        .item-p5.happy .item-icon { transform: scale(1.2) rotate(10deg); filter: drop-shadow(0 0 5px gold); }
+        
+        .pointer-p5 { position: absolute; width: 80px; text-align: center; font-size: 0.9em; font-weight: bold; transition: left 0.5s ease-in-out; }
+        .pointer-p5.child-ptr { top: 70px; color: #c62828; }
+        .pointer-p5.cookie-ptr { top: 220px; color: #8d6e63; }
+        
+        #plus-one { position: absolute; font-size: 2em; color: #28a745; font-weight: bold; z-index: 20; opacity: 0; pointer-events: none; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        #overlay span:first-child { font-size: 3em; color: #90ee90; }
+        #overlay span:last-child { font-size: 1.8em; margin-top: 10px; }
+
+        .log-container-cookie-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_cookie_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes pulse-anim { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Assign Cookies</h1>
+
+        <div class="controls-cookie-p5">
+            <label>Child Greed Factors:</label>
+            <input type="text" id="greed_input_p5" value="1,2">
+            <label>Cookie Sizes:</label>
+            <input type="text" id="cookies_input_p5" value="1,2,3">
+            <button id="start_button_cookie_p5">Start/Reset</button>
+            <button id="next_step_button_cookie_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-cookie-p5">
+            <div class="left-panel-cookie-p5">
+                <div class="state-panel-cookie-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Child Pointer</div><div id="child_ptr_display_p5" class="value">-</div></div>
+                        <div class="state-item-p5"><div class="label">Cookie Pointer</div><div id="cookie_ptr_display_p5" class="value">-</div></div>
+                    </div>
+                     <div class="state-item-p5" style="margin-top: 10px;">
+                        <div class="label">Happy Kids</div><div id="happy_kids_display_p5" class="value">0</div>
+                    </div>
+                    <div id="current_action_cookie_display_p5"></div>
+                </div>
+                <div class="log-container-cookie-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_cookie_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-cookie-p5">
+                 <div class="visualization-container-p5">
+                    <div id="children_container_p5" class="item-container-p5"></div>
+                    <div id="cookie-tray-p5" class="item-container-p5"></div>
+                    <div id="plus-one">+1</div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+// --- STATE VARIABLES ---
+let G = [], S = []; // Greed factors and cookie sizes
+let childPtr = 0, cookiePtr = 0;
+let happyKids = 0;
+let simulationRunning = false;
+let currentPhase = 'idle';
+
+// --- DOM ELEMENTS ---
+let greedInput, cookiesInput, startButton, nextStepButton, childPtrDisplay, cookiePtrDisplay,
+    happyKidsDisplay, currentActionDisplay, logOutput, childrenContainer, cookieTray, overlay;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 600; 
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+
+function updateStateDisplay() {
+    childPtrDisplay.textContent = childPtr < G.length ? childPtr : '-';
+    cookiePtrDisplay.textContent = cookiePtr < S.length ? cookiePtr : '-';
+    happyKidsDisplay.textContent = happyKids;
+}
+
+async function renderItems(items, container, type) {
+    const PADDING = 60;
+    const SPACING = 80;
+    const totalWidth = items.length * SPACING;
+    const startLeft = (container.offsetWidth - totalWidth) / 2;
+    
+    // Animate to sorted positions
+    items.forEach((item, index) => {
+        const itemEl = document.getElementById(`${type}-orig-${item.originalIndex}`);
+        itemEl.style.left = `${startLeft + index * SPACING}px`;
+    });
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+}
+
+function initialRender() {
+    childrenContainer.innerHTML = '';
+    cookieTray.innerHTML = '';
+    
+    const PADDING = 60;
+    const SPACING = 80;
+    let totalWidth = G.length * SPACING;
+    let startLeft = (childrenContainer.offsetWidth - totalWidth) / 2;
+
+    G.forEach((item, i) => {
+        const el = document.createElement('div');
+        el.className = 'item-p5 child-p5';
+        el.id = `child-orig-${item.originalIndex}`;
+        el.style.left = `${startLeft + i * SPACING}px`;
+        el.innerHTML = `<div class="item-icon">😐</div><div class="item-label">Greed: ${item.value}</div>`;
+        childrenContainer.appendChild(el);
+    });
+    
+    totalWidth = S.length * SPACING;
+    startLeft = (cookieTray.offsetWidth - totalWidth) / 2;
+    
+    S.forEach((item, i) => {
+        const el = document.createElement('div');
+        el.className = 'item-p5 cookie-p5';
+        el.id = `cookie-orig-${item.originalIndex}`;
+        el.style.left = `${startLeft + i * SPACING}px`;
+        el.innerHTML = `<div class="item-icon">🍪</div><div class="item-label">Size: ${item.value}</div>`;
+        cookieTray.appendChild(el);
+    });
+
+    const childPointer = document.createElement('div');
+    childPointer.className = 'pointer-p5 child-ptr'; childPointer.id = 'child-ptr'; childPointer.innerHTML = '&#9660; Child';
+    childrenContainer.appendChild(childPointer);
+    const cookiePointer = document.createElement('div');
+    cookiePointer.className = 'pointer-p5 cookie-ptr'; cookiePointer.id = 'cookie-ptr'; cookiePointer.innerHTML = '&#9660; Cookie';
+    cookieTray.appendChild(cookiePointer);
+}
+
+function updatePointers() {
+    const childEl = document.querySelector(`#child-orig-${G[childPtr]?.originalIndex}`);
+    const cookieEl = document.querySelector(`#cookie-orig-${S[cookiePtr]?.originalIndex}`);
+    const childPtrEl = document.getElementById('child-ptr');
+    const cookiePtrEl = document.getElementById('cookie-ptr');
+    if (childEl && childPtrEl) childPtrEl.style.left = childEl.style.left;
+    if (cookieEl && cookiePtrEl) cookiePtrEl.style.left = cookieEl.style.left;
+}
+
+function showOverlay() {
+    overlay.innerHTML = `<span>SUCCESS!</span><span>Fed ${happyKids} happy kid${happyKids === 1 ? '' : 's'}.</span>`;
+    overlay.className = 'show';
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!simulationRunning) startButton.textContent = "Reset";
+}
+
+async function initializeAnimation() {
+    log("Time to hand out cookies!");
+    simulationRunning = false; 
+    
+    try {
+        const greedFactors = greedInput.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        const cookieSizes = cookiesInput.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        G = greedFactors.map((value, originalIndex) => ({ value, originalIndex }));
+        S = cookieSizes.map((value, originalIndex) => ({ value, originalIndex }));
+    } catch (e) { alert("Invalid input."); return; }
+    
+    childPtr = 0; cookiePtr = 0; happyKids = 0;
+    
+    logOutput.innerHTML = ""; 
+    startButton.textContent = "Reset";
+    overlay.className = '';
+    
+    initialRender();
+    updateStateDisplay();
+
+    currentActionDisplay.innerHTML = `<span class="info-text">Click 'Next Step' to begin sorting.</span>`;
+    currentPhase = 'sorting';
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    nextStepButton.disabled = true;
+
+    switch(currentPhase) {
+        case 'sorting':
+            log("--- Sorting kids and cookies ---");
+            currentActionDisplay.textContent = "First, sort everyone by greed and cookies by size.";
+            G.sort((a,b) => a.value - b.value);
+            S.sort((a,b) => a.value - b.value);
+            await renderItems(G, childrenContainer, 'child');
+            await renderItems(S, cookieTray, 'cookie');
+            log("Sorting complete. Now let's assign!");
+            currentPhase = 'check_pointers';
+            break;
+        
+        case 'check_pointers':
+            updatePointers();
+            if (childPtr >= G.length || cookiePtr >= S.length) {
+                currentPhase = 'end_game';
+                await performNextStep(); return;
+            }
+            log(`\n--- Pointers: Child ${childPtr}, Cookie ${cookiePtr} ---`);
+            currentActionDisplay.innerHTML = `<span class="info-text">Checking if cookie ${cookiePtr} can satisfy child ${childPtr}...</span>`;
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            currentPhase = 'compare';
+            break;
+
+        case 'compare':
+            const child = G[childPtr];
+            const cookie = S[cookiePtr];
+            const canSatisfy = cookie.value >= child.value;
+
+            log(`Comparing: Cookie size ${cookie.value} >= Child greed ${child.value}? -> ${canSatisfy}`);
+            currentActionDisplay.innerHTML = `<span>Can cookie of size <b>${cookie.value}</b> satisfy greed of <b>${child.value}</b>? </span>
+                <span class="check-text ${canSatisfy ? 'yes' : 'no'}">
+                    ${canSatisfy ? 'YES!' : 'NO!'}
+                </span>`;
+            
+            if (canSatisfy) {
+                currentPhase = 'assign_cookie';
+            } else {
+                currentPhase = 'discard_cookie';
+            }
+            break;
+        
+        case 'assign_cookie':
+            const happyChild = G[childPtr];
+            const givenCookie = S[cookiePtr];
+            const childEl = document.getElementById(`child-orig-${happyChild.originalIndex}`);
+            const cookieEl = document.getElementById(`cookie-orig-${givenCookie.originalIndex}`);
+
+            log(`Success! Assigning cookie ${cookiePtr} to child ${childPtr}.`);
+            currentActionDisplay.textContent = "It fits! One happy kid!";
+            
+            childEl.classList.add('happy');
+            childEl.querySelector('.item-icon').textContent = '🥳';
+            cookieEl.classList.add('consumed');
+            
+            const plusOne = document.getElementById('plus-one');
+            plusOne.style.left = `${childEl.offsetLeft + 20}px`;
+            plusOne.style.top = `${childEl.offsetTop}px`;
+            plusOne.style.transition = 'none';
+            plusOne.style.opacity = '1';
+            plusOne.style.transform = 'translateY(0)';
+            await new Promise(r => setTimeout(r, 50));
+            plusOne.style.transition = 'all 0.5s ease-out';
+            plusOne.style.transform = 'translateY(-30px)';
+            plusOne.style.opacity = '0';
+            
+            happyKids++;
+            happyKidsDisplay.classList.add('pulse');
+            setTimeout(()=>happyKidsDisplay.classList.remove('pulse'), 500);
+
+            childPtr++;
+            cookiePtr++;
+            updateStateDisplay();
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            currentPhase = 'check_pointers';
+            break;
+
+        case 'discard_cookie':
+            const discardedCookie = S[cookiePtr];
+            const discardEl = document.getElementById(`cookie-orig-${discardedCookie.originalIndex}`);
+            const sadChildEl = document.getElementById(`child-orig-${G[childPtr].originalIndex}`);
+            
+            log(`Cookie ${cookiePtr} is too small. Discarding it.`);
+            currentActionDisplay.textContent = "Cookie too small. Find a bigger one for this child.";
+            
+            discardEl.classList.add('consumed');
+            sadChildEl.querySelector('.item-icon').textContent = '😔';
+            await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+            sadChildEl.querySelector('.item-icon').textContent = '😐';
+
+            cookiePtr++;
+            updateStateDisplay();
+            currentPhase = 'check_pointers';
+            break;
+
+        case 'end_game':
+            log(`Finished! Total happy kids: ${happyKids}.`);
+            if (childPtr >= G.length) {
+                currentActionDisplay.textContent = `All kids checked! We made ${happyKids} happy.`;
+            } else {
+                currentActionDisplay.textContent = `No more cookies! We made ${happyKids} happy.`;
+            }
+            showOverlay();
+            simulationRunning = false;
+            break;
+    }
+    
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    greedInput = document.getElementById('greed_input_p5');
+    cookiesInput = document.getElementById('cookies_input_p5');
+    startButton = document.getElementById('start_button_cookie_p5');
+    nextStepButton = document.getElementById('next_step_button_cookie_p5');
+    childPtrDisplay = document.getElementById('child_ptr_display_p5');
+    cookiePtrDisplay = document.getElementById('cookie_ptr_display_p5');
+    happyKidsDisplay = document.getElementById('happy_kids_display_p5');
+    currentActionDisplay = document.getElementById('current_action_cookie_display_p5');
+    logOutput = document.getElementById('log_output_cookie_p5');
+    childrenContainer = document.getElementById('children_container_p5');
+    cookieTray = document.getElementById('cookie-tray-p5');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

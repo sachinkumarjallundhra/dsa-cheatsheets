@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maximum Swap Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Maximum Swap – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Maximum Swap</b> problem involves finding the largest number possible by swapping two digits in a given non-negative integer. You can perform at most one swap.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm</h3>
+    <pre><code>class Solution {
+    public int maximumSwap(int num) {
+        char[] digits = Integer.toString(num).toCharArray();
+        int n = digits.length;
+
+        // Track the maximum digit and its index from the right
+        int maxIdx = n - 1;
+        int leftIdx = -1, rightIdx = -1;
+
+        // Traverse the digits from right to left
+        for (int i = n - 2; i >= 0; i--) {
+            if (digits[i] > digits[maxIdx]) {
+                maxIdx = i; // Update the max index
+            } else if (digits[i] < digits[maxIdx]) {
+                // Found a potential swap
+                leftIdx = i;
+                rightIdx = maxIdx;
+            }
+        }
+
+        // If a swap is possible, perform it
+        if (leftIdx != -1) {
+            char temp = digits[leftIdx];
+            digits[leftIdx] = digits[rightIdx];
+            digits[rightIdx] = temp;
+        }
+
+        // Return the result as an integer
+        return Integer.parseInt(new String(digits));
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/maximum_swap_animation.html'">▶️ View Animation</button>
+
+    <h2>🎥 Video Explanation</h2>
+    <p>For a detailed explanation, watch this video:  
+      <a href="https://www.youtube.com/watch?v=4FZtJ8420m8&ab_channel=NeetCodeIO" target="_blank" rel="noopener noreferrer">
+        Maximum Swap Problem Explanation by NeetCode IO
+      </a>
+    </p>
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the number of digits in the input number.</li>
+      <li><b>Space Complexity:</b> <code>O(1)</code>, as we use only a constant amount of extra space.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Maximizing the value of a number with minimal changes.</li>
+      <li>Solving problems involving digit manipulation.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/maximum-swap/" target="_blank" rel="noopener noreferrer">670. Maximum Swap</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: num = 2736
+Output: 7236
+
+Explanation:
+- Swap the digits 2 and 7 to get the largest number 7236.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a greedy approach to find the first digit that can be swapped to maximize the number.</li>
+      <li>Keep track of the last occurrence of each digit to efficiently find the best swap.</li>
+      <li>If no swap is possible, return the original number.</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Can Place Flowers Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-cpf-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-cpf-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-cpf-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        #flowerbed_input_p5 { width: 220px; }
+        #n_input_p5 { width: 50px; }
+        .controls-cpf-p5 button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-cpf-p5 button:hover { background-color: #218838; }
+        .controls-cpf-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-cpf-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-cpf-p5, .right-panel-cpf-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-cpf-p5, .visualization-container-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-container-p5 { min-height: 400px; background-color: #e6f3e6; overflow-x: auto; position: relative; display: flex; justify-content: center; align-items: center;}
+        
+        .plot-container-p5 { display: flex; gap: 10px; position: relative; top: -50px; padding: 20px; }
+        .plot-box-p5 { width: 70px; height: 70px; background: #a0522d; border: 3px solid #8b4513; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 2.5em; transition: all 0.3s ease-in-out; }
+        .plot-box-p5.planted { background: #6B8E23; border-color: #556B2F; }
+        .plot-box-p5.highlight-i { transform: translateY(-15px); border-color: #fbc02d; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
+        .plot-box-p5.highlight-neighbor { border-color: #4682B4; }
+        .plot-box-p5.invalid { animation: shake 0.4s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) translateY(-15px); }
+            25% { transform: translateX(-5px) translateY(-15px); }
+            75% { transform: translateX(5px) translateY(-15px); }
+        }
+
+        #i_pointer { position: absolute; top: 0; transform: translateX(-50%); font-family: 'Courier New', monospace; font-size: 1.5em; font-weight: bold; transition: left 0.4s ease-in-out; color: #d35400; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; }
+        #result_display_p5 { grid-column: 1 / -1; font-size: 1.4em; font-weight: bold; margin-top: 10px; }
+        #result_display_p5.yes { color: #28a745; }
+        #result_display_p5.no { color: #dc3545; }
+
+        #current_action_cpf_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:3em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none;}
+        #overlay.show { opacity: 1; }
+        .overlay-icon { font-size: 4em; }
+        .overlay-text { font-size: 1.8em; margin-top: 10px; }
+
+        .log-container-cpf-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_cpf_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Can Place Flowers</h1>
+
+        <div class="controls-cpf-p5">
+            <label for="flowerbed_input_p5">Flowerbed:</label>
+            <input type="text" id="flowerbed_input_p5" value="1,0,0,0,1">
+            <label for="n_input_p5">n:</label>
+            <input type="number" id="n_input_p5" value="1" min="0">
+            <button id="start_button_cpf_p5">Start/Reset</button>
+            <button id="next_step_button_cpf_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-cpf-p5">
+            <div class="left-panel-cpf-p5">
+                <div class="state-panel-cpf-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Flowers to Plant (n)</div><div id="n_display_p5" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">Flowers Planted</div><div id="planted_display_p5" class="value">0</div></div>
+                        <div id="result_display_p5">Result: ?</div>
+                    </div>
+                    <div id="current_action_cpf_display_p5"></div>
+                </div>
+                <div class="log-container-cpf-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_cpf_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-cpf-p5">
+                 <div class="visualization-container-p5">
+                    <div id="plot_container_p5"></div>
+                    <div id="i_pointer">i</div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <audio id="sound-move" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgACAAIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-plant" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8A/f8A/P8A/P8A/P8A/f8A/f8A//8A//8A//8A//8A//8A/f8A/P8A/P8A/P8A/P8A/f8A//8A/v8AAP//AP//AP//AP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8A//8A//8A//8A//8A//8A//8A"></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+    <audio id="sound-fail" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A"></audio>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let isAudioUnlocked = false;
+let initialN = 0;
+
+// --- DOM ELEMENTS ---
+let flowerbedInput, nInput, startButton, nextStepButton, nDisplay, plantedDisplay,
+    resultDisplay, currentActionDisplay, logOutput, plotContainer, iPointer, overlay;
+
+// --- CONSTANTS ---
+const ANIMATION_DELAY = 500; 
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-move', 'sound-plant', 'sound-win', 'sound-fail'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(flowerbed, n) {
+    const steps = [];
+    let count = 0;
+    const fb = [...flowerbed]; // Make a mutable copy
+
+    steps.push({
+        type: 'initial',
+        flowerbed: [...fb],
+        n,
+        count,
+        message: 'Starting the process. We need to plant ' + n + ' flower(s).'
+    });
+
+    for (let i = 0; i < fb.length; i++) {
+        if (count >= n) {
+            steps.push({ type: 'early_exit', message: `We have planted ${count} flowers, which meets our goal of ${n}. No need to check further.` });
+            break;
+        }
+
+        steps.push({
+            type: 'scan', i, n, count, flowerbed: [...fb],
+            message: `Scanning plot at index ${i}.`
+        });
+
+        const isCurrentEmpty = fb[i] === 0;
+        const isPrevEmpty = (i === 0) || (fb[i - 1] === 0);
+        const isNextEmpty = (i === fb.length - 1) || (fb[i + 1] === 0);
+
+        if (isCurrentEmpty && isPrevEmpty && isNextEmpty) {
+            steps.push({
+                type: 'can_plant', i, n, count, flowerbed: [...fb],
+                message: `Plot ${i} is empty and its neighbors are empty. A flower can be planted here!`
+            });
+            fb[i] = 1;
+            count++;
+            steps.push({
+                type: 'plant', i, n, count, flowerbed: [...fb],
+                message: `Planted a flower at plot ${i}. Total planted: ${count}.`
+            });
+        } else {
+            let reason = !isCurrentEmpty ? "it's already occupied." : !isPrevEmpty ? "its left neighbor is occupied." : "its right neighbor is occupied.";
+            steps.push({
+                type: 'cannot_plant', i, n, count, flowerbed: [...fb],
+                message: `Cannot plant at plot ${i} because ${reason}`
+            });
+        }
+    }
+
+    const canPlace = count >= n;
+    steps.push({
+        type: 'finish',
+        canPlace,
+        count,
+        n,
+        message: canPlace ? `Success! We planted ${count} flowers, meeting the goal of ${n}.` : `Failure! We could only plant ${count} out of the ${n} required flowers.`
+    });
+
+    return steps;
+}
+
+function renderFlowerbed(flowerbed, highlights = {}) {
+    plotContainer.innerHTML = '';
+    flowerbed.forEach((plot, index) => {
+        const plotBox = document.createElement('div');
+        plotBox.className = 'plot-box-p5';
+        plotBox.id = `plot-${index}`;
+        
+        if (plot === 1) {
+            plotBox.classList.add('planted');
+            plotBox.textContent = '🌸';
+        } else {
+            plotBox.textContent = '🟫';
+        }
+
+        if (highlights.i === index) plotBox.classList.add('highlight-i');
+        if (highlights.invalid === index) plotBox.classList.add('invalid');
+        if (highlights.neighbors && highlights.neighbors.includes(index)) {
+            plotBox.classList.add('highlight-neighbor');
+        }
+
+        plotContainer.appendChild(plotBox);
+    });
+
+    if (highlights.i !== undefined) {
+        const plotBox = document.getElementById(`plot-${highlights.i}`);
+        if(plotBox){
+            iPointer.style.left = `${plotBox.offsetLeft + plotBox.offsetWidth / 2}px`;
+            iPointer.style.visibility = 'visible';
+        }
+    } else {
+        iPointer.style.visibility = 'hidden';
+    }
+}
+
+function updateStateDisplay(planted, n) {
+    nDisplay.textContent = initialN;
+    plantedDisplay.textContent = planted;
+    
+    const canPlace = planted >= initialN;
+    if (currentStepIndex === animationSteps.length-1) { // Only show final result at the end
+        resultDisplay.textContent = `Result: ${canPlace ? 'Yes' : 'No'}`;
+        resultDisplay.className = canPlace ? 'yes' : 'no';
+    } else {
+        resultDisplay.textContent = 'Result: ?';
+        resultDisplay.className = '';
+    }
+}
+
+async function initializeAnimation() {
+    simulationRunning = false; 
+    try {
+        const fbRaw = flowerbedInput.value.split(',').map(s => parseInt(s.trim()));
+        if(fbRaw.some(isNaN)) throw new Error("Invalid flowerbed input.");
+        initialN = parseInt(nInput.value);
+        if(isNaN(initialN) || initialN < 0) throw new Error("Invalid 'n' value.");
+
+        animationSteps = generateAnimationSteps(fbRaw, initialN);
+    } catch(e) {
+        alert(e.message);
+        return;
+    }
+    
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    
+    const firstStep = animationSteps[0];
+    renderFlowerbed(firstStep.flowerbed);
+    updateStateDisplay(0, initialN);
+    currentActionDisplay.textContent = firstStep.message;
+    log(firstStep.message);
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+    log(`\n--- Step ${currentStepIndex + 1}: ${step.type} ---`);
+    log(step.message);
+    currentActionDisplay.textContent = step.message;
+
+    switch (step.type) {
+        case 'scan':
+            playSound('sound-move');
+            renderFlowerbed(step.flowerbed, { i: step.i });
+            break;
+        case 'can_plant':
+            renderFlowerbed(step.flowerbed, { i: step.i, neighbors: [step.i - 1, step.i + 1] });
+            break;
+        case 'plant':
+            playSound('sound-plant');
+            renderFlowerbed(step.flowerbed, { i: step.i });
+            break;
+        case 'cannot_plant':
+            renderFlowerbed(step.flowerbed, { i: step.i, invalid: step.i, neighbors: [step.i - 1, step.i + 1] });
+            break;
+        case 'early_exit':
+             renderFlowerbed(animationSteps[currentStepIndex-1].flowerbed);
+             iPointer.style.visibility = 'hidden';
+             break;
+        case 'finish':
+            const finalState = animationSteps[currentStepIndex - 1].flowerbed;
+            renderFlowerbed(finalState || []);
+            iPointer.style.visibility = 'hidden';
+            overlay.className = 'show';
+            if (step.canPlace) {
+                playSound('sound-win');
+                overlay.innerHTML = `<span class="overlay-icon">✅</span><span class="overlay-text">Success!</span>`;
+            } else {
+                playSound('sound-fail');
+                overlay.innerHTML = `<span class="overlay-icon">❌</span><span class="overlay-text">Failure!</span>`;
+            }
+            simulationRunning = false;
+            break;
+    }
+    
+    updateStateDisplay(step.count || 0, step.n);
+    currentStepIndex++;
+    if(simulationRunning) {
+        updateButtonState();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    flowerbedInput = document.getElementById('flowerbed_input_p5');
+    nInput = document.getElementById('n_input_p5');
+    startButton = document.getElementById('start_button_cpf_p5');
+    nextStepButton = document.getElementById('next_step_button_cpf_p5');
+    nDisplay = document.getElementById('n_display_p5');
+    plantedDisplay = document.getElementById('planted_display_p5');
+    resultDisplay = document.getElementById('result_display_p5');
+    currentActionDisplay = document.getElementById('current_action_cpf_display_p5');
+    logOutput = document.getElementById('log_output_cpf_p5');
+    plotContainer = document.getElementById('plot_container_p5');
+    iPointer = document.getElementById('i_pointer');
+    overlay = document.getElementById('overlay');
+    
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

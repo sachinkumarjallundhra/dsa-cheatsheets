@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jump Game II Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Jump Game II – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Jump Game II</b> problem involves finding the minimum number of jumps required to reach the last index of an array. Each element in the array represents the maximum jump length at that position.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <h3>Greedy Algorithm</h3>
+    <pre><code>class Solution {
+    public int jump(int[] nums) {
+        int jumps = 0, currentEnd = 0, farthest = 0;
+
+        for (int i = 0; i < nums.length - 1; i++) {
+            farthest = Math.max(farthest, i + nums[i]);
+
+            if (i == currentEnd) {
+                jumps++;
+                currentEnd = farthest;
+
+                if (currentEnd >= nums.length - 1) {
+                    break;
+                }
+            }
+        }
+
+        return jumps;
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/jump_game_ii_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the length of the array.</li>
+      <li><b>Space Complexity:</b> <code>O(1)</code>, as no additional space is used.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Solving problems involving minimum steps or jumps in arrays.</li>
+      <li>Optimizing traversal in linear structures.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/jump-game-ii/" target="_blank" rel="noopener noreferrer">45. Jump Game II</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Greedy</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: nums = [2, 3, 1, 1, 4]
+Output: 2
+
+Explanation:
+- Jump 1 step from index 0 to index 1.
+- Then jump 3 steps to the last index.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a greedy approach to always jump to the farthest reachable index.</li>
+      <li>Track the current jump range (`currentEnd`) and update it when the range is exhausted.</li>
+      <li>Break early if the last index is reachable within the current jump.</li>
+    </ul>
+  </div>
+</body>
+</html>
