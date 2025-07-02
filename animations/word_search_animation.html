@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Search Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-ws-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-ws-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-ws-p5 input, .controls-ws-p5 textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; }
+        #word_input_p5 { width: 150px; }
+        #board_input_p5 { width: 300px; height: 80px; font-family: 'Courier New', monospace; }
+        .controls-ws-p5 button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-ws-p5 button:hover { background-color: #2980b9; }
+        .controls-ws-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-ws-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 2.5fr; gap: 15px; }
+        .left-panel-ws-p5, .right-panel-ws-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-ws-p5, .visualization-wrapper-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-wrapper-p5 { min-height: 500px; background-color: #f5f5f5; overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center; }
+        
+        #grid-container-p5 { display: grid; border: 2px solid #333; }
+        .cell-p5 { width: 100%; height: 100%; aspect-ratio: 1/1; display: flex; justify-content: center; align-items: center; font-size: 2em; font-weight: bold; transition: all 0.2s; background-color: #fff; border: 1px solid #eee; }
+        .cell-p5.is-probe { background-color: #f1c40f !important; }
+        .cell-p5.is-path { background-color: #3498db !important; color: white; }
+        .cell-p5.is-success { animation: flash-green 0.8s; }
+
+        @keyframes flash-green { 0%, 100% { background-color: #3498db; } 50% { background-color: #2ecc71; } }
+        
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr; gap: 10px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.6em; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px; }
+        .word-display-char { display: inline-block; padding: 2px 5px; margin: 1px; border-radius: 3px; background-color: #ecf0f1; }
+        .word-display-char.found { background-color: #2ecc71; color: white; }
+        
+        #result_display_p5 { font-size: 1.4em; font-weight: bold; margin-top: 10px; }
+        #result_display_p5.yes { color: #2ecc71; }
+        #result_display_p5.no { color: #e74c3c; }
+
+        #current_action_ws_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay.show { opacity: 1; }
+
+        .log-container-ws-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_ws_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @media (max-width: 1200px) {
+            .main-content-ws-p5 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Word Search (Backtracking)</h1>
+
+        <div class="controls-ws-p5">
+            <label for="board_input_p5">Board (JSON format):</label>
+            <textarea id="board_input_p5">[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]]</textarea>
+            <label for="word_input_p5">Word:</label>
+            <input type="text" id="word_input_p5" value="ABCCED">
+            <button id="start_button_ws_p5">Start/Reset</button>
+            <button id="next_step_button_ws_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-ws-p5">
+            <div class="left-panel-ws-p5">
+                <div class="state-panel-ws-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Word to Find</div><div id="word_display_p5" class="value"></div></div>
+                        <div id="result_display_p5" class="state-item-p5">Result: ?</div>
+                    </div>
+                    <div id="current_action_ws_display_p5"></div>
+                </div>
+                <div class="log-container-ws-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_ws_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-ws-p5">
+                 <div class="visualization-wrapper-p5">
+                    <div id="grid-container-p5"></div>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <audio id="sound-probe" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgIAAgACAAIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-backtrack" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A"></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let isAudioUnlocked = false;
+let targetWord = "";
+
+// --- DOM ELEMENTS ---
+let boardInput, wordInput, startButton, nextStepButton, wordDisplay, resultDisplay,
+    currentActionDisplay, logOutput, gridContainer, overlay;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-probe', 'sound-backtrack', 'sound-win'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(board, word) {
+    const steps = [];
+    const R = board.length, C = board[0].length;
+    let path = [];
+    let found = false;
+
+    function backtrack(r, c, k) {
+        if (found) return;
+
+        steps.push({
+            type: 'probe', r, c, k, path: [...path],
+            message: `Probing (${r},${c}) for letter '${word[k]}'.`
+        });
+
+        if (r < 0 || r >= R || c < 0 || c >= C || board[r][c] !== word[k]) {
+            steps.push({
+                type: 'fail', r, c, k, path: [...path],
+                message: `Invalid or wrong letter at (${r},${c}).`
+            });
+            return;
+        }
+
+        path.push([r, c]);
+        const originalChar = board[r][c];
+        board[r][c] = '#'; // Mark as visited
+
+        steps.push({
+            type: 'add_path', r, c, k, path: [...path],
+            message: `Found '${word[k]}'. Added to path. Looking for '${word[k+1]}'...`
+        });
+        
+        if (k === word.length - 1) {
+            found = true;
+            steps.push({
+                type: 'found_word', path: [...path],
+                message: `Found the full word "${word}"!`
+            });
+            board[r][c] = originalChar; // Backtrack for cleanup, though not strictly needed here
+            return;
+        }
+
+        // Explore neighbors
+        backtrack(r + 1, c, k + 1); if(found) { board[r][c] = originalChar; return; }
+        backtrack(r - 1, c, k + 1); if(found) { board[r][c] = originalChar; return; }
+        backtrack(r, c + 1, k + 1); if(found) { board[r][c] = originalChar; return; }
+        backtrack(r, c - 1, k + 1); if(found) { board[r][c] = originalChar; return; }
+        
+        // Backtrack
+        board[r][c] = originalChar;
+        path.pop();
+        steps.push({
+            type: 'backtrack', r, c, k, path: [...path],
+            message: `Dead end from (${r},${c}). Backtracking.`
+        });
+    }
+
+    steps.push({ type: 'initial', path: [], message: `Starting search for "${word}".` });
+
+    for (let r = 0; r < R; r++) {
+        for (let c = 0; c < C; c++) {
+            if (found) break;
+            backtrack(r, c, 0);
+        }
+        if (found) break;
+    }
+
+    steps.push({ type: 'finish', found, message: found ? "Search successful!" : "Word not found in board." });
+    return steps;
+}
+
+
+function renderGrid(step) {
+    const { board, probeR, probeC, path, type } = step;
+    const R = board.length, C = board[0].length;
+    
+    gridContainer.innerHTML = '';
+    gridContainer.style.gridTemplateColumns = `repeat(${C}, 1fr)`;
+    const fontSize = C > 5 ? '1.5em' : '2em';
+
+    const pathSet = new Set(path.map(p => `${p[0]}-${p[1]}`));
+    
+    board.forEach((row, r) => {
+        row.forEach((cell, c) => {
+            const cellDiv = document.createElement('div');
+            cellDiv.className = 'cell-p5';
+            cellDiv.style.fontSize = fontSize;
+            cellDiv.textContent = cell === '#' ? '' : cell;
+            
+            if (pathSet.has(`${r}-${c}`)) {
+                cellDiv.classList.add('is-path');
+            }
+            if (type === 'found_word' && pathSet.has(`${r}-${c}`)) {
+                cellDiv.classList.add('is-success');
+            }
+            if (probeR === r && probeC === c && type === 'probe') {
+                 cellDiv.classList.add('is-probe');
+            }
+
+            gridContainer.appendChild(cellDiv);
+        });
+    });
+}
+
+function renderWordDisplay(step) {
+    const k = step.path ? step.path.length : 0;
+    wordDisplay.innerHTML = '';
+    for(let i=0; i < targetWord.length; i++) {
+        const charSpan = document.createElement('span');
+        charSpan.className = 'word-display-char';
+        charSpan.textContent = targetWord[i];
+        if (i < k || step.type === 'found_word' || step.type === 'finish' && step.found) {
+            charSpan.classList.add('found');
+        }
+        wordDisplay.appendChild(charSpan);
+    }
+}
+
+async function initializeAnimation() {
+    simulationRunning = false;
+    let board;
+    try {
+        board = JSON.parse(boardInput.value);
+        targetWord = wordInput.value;
+        if (!Array.isArray(board) || !targetWord) throw new Error("Invalid input.");
+    } catch (e) {
+        alert("Invalid board format. Please use a valid JSON 2D array.");
+        return;
+    }
+    
+    animationSteps = generateAnimationSteps(board.map(row => [...row]), targetWord);
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    
+    const firstStep = animationSteps[0];
+    renderGrid({ board: board, path: [] });
+    renderWordDisplay(firstStep);
+    resultDisplay.textContent = "Result: ?";
+    resultDisplay.className = "state-item-p5";
+    currentActionDisplay.textContent = firstStep.message;
+    log(firstStep.message);
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+    log(`\n--- ${step.message} ---`);
+    currentActionDisplay.textContent = step.message;
+    
+    const board = JSON.parse(boardInput.value); // Use original board for display
+    renderGrid({...step, board});
+    renderWordDisplay(step);
+
+    switch (step.type) {
+        case 'probe':
+        case 'add_path':
+             playSound('sound-probe');
+             break;
+        case 'backtrack':
+            playSound('sound-backtrack');
+             break;
+        case 'found_word':
+            playSound('sound-win');
+            break;
+        case 'finish':
+            const isFound = step.found;
+            resultDisplay.textContent = `Result: ${isFound ? 'Found' : 'Not Found'}`;
+            resultDisplay.className = `state-item-p5 ${isFound ? 'yes' : 'no'}`;
+            overlay.className = 'show';
+            playSound(isFound ? 'sound-win' : 'sound-backtrack');
+            overlay.innerHTML = `<span style="font-size:3em">${isFound ? '✅' : '❌'}</span><div style="font-size:1.8em">Word ${isFound ? 'Found!' : 'Not Found!'}</div>`;
+            simulationRunning = false;
+            break;
+    }
+    
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    boardInput = document.getElementById('board_input_p5');
+    wordInput = document.getElementById('word_input_p5');
+    startButton = document.getElementById('start_button_ws_p5');
+    nextStepButton = document.getElementById('next_step_button_ws_p5');
+    wordDisplay = document.getElementById('word_display_p5');
+    resultDisplay = document.getElementById('result_display_p5');
+    currentActionDisplay = document.getElementById('current_action_ws_display_p5');
+    logOutput = document.getElementById('log_output_ws_p5');
+    gridContainer = document.getElementById('grid-container-p5');
+    overlay = document.getElementById('overlay');
+
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Paths - Backtracking Animation</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --panel-bg: #ffffff;
+            --text-color: #343a40;
+            --primary-accent: #007bff;
+            --success-color: #28a745;
+            --backtrack-color: #ffc107;
+            --border-color: #dee2e6;
+            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-family-mono: 'Consolas', 'Menlo', 'monospace';
+            --animation-speed: 0.5s;
+        }
+
+        body {
+            font-family: var(--font-family-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 1fr 450px;
+            gap: 25px;
+            grid-template-areas: "header header" "left-panel right-panel";
+        }
+
+        header {
+            grid-area: header;
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+
+        h1 { color: var(--primary-accent); margin: 0 0 10px 0; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #tree-panel { grid-area: left-panel; min-height: 600px; overflow: auto; }
+        .right-panel-container { grid-area: right-panel; display: flex; flex-direction: column; gap: 20px; }
+
+        .panel h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            font-weight: 600;
+        }
+
+        /* Controls */
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; font-weight: 500; margin-bottom: 8px; }
+        .control-group input[type="text"], .control-group input[type="range"] { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .button-grid button { cursor: pointer; font-weight: 600; color: #fff; border: none; padding: 10px; border-radius: 5px; transition: background-color 0.2s; }
+        .button-grid button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #init-btn { background-color: var(--primary-accent); }
+        #play-pause-btn { background-color: var(--success-color); }
+        #next-btn { background-color: #17a2b8; }
+        #reset-btn { background-color: var(--text-color); }
+        
+        /* Tree SVG */
+        #tree-svg { width: 100%; height: 100%; }
+        .tree-node, .tree-node text, .tree-node circle, .tree-link { transition: all var(--animation-speed); }
+        .tree-node circle { stroke-width: 2px; fill: #fff; stroke: var(--text-muted); }
+        .tree-node text { font-family: var(--font-family-mono); font-size: 16px; text-anchor: middle; dominant-baseline: central; fill: var(--text-color); }
+        .tree-link { stroke: var(--border-color); stroke-width: 2px; }
+
+        .on-path circle { stroke: var(--primary-accent); fill: #e3f2fd; }
+        .on-path text { fill: var(--primary-accent); font-weight: bold; }
+        .visiting circle { stroke: var(--success-color); stroke-width: 4px; }
+        .visiting-link { stroke: var(--primary-accent); stroke-width: 3px; }
+
+        /* State Panels */
+        #current-path-display { font-family: var(--font-family-mono); font-size: 1.2rem; background: #e9ecef; padding: 10px; border-radius: 5px; min-height: 25px; }
+        #paths-found-list { list-style: none; padding: 0; margin: 0; font-family: var(--font-family-mono); font-size: 1.1rem; }
+        #paths-found-list li { background-color: #e6f7ec; color: var(--success-color); padding: 5px 10px; border-radius: 4px; margin-bottom: 5px; opacity: 0; animation: fade-in 0.5s forwards; }
+        @keyframes fade-in { to { opacity: 1; } }
+
+        /* Call Stack & Log */
+        #call-stack { display: flex; flex-direction: column-reverse; gap: 5px; }
+        .stack-frame { background: #e3f2fd; border-left: 4px solid var(--primary-accent); padding: 8px; border-radius: 4px; font-family: var(--font-family-mono); opacity: 0; transform: translateY(10px); transition: all 0.3s; }
+        .stack-frame.active { opacity: 1; transform: translateY(0); }
+        #log-display { font-family: var(--font-family-mono); font-size: 13px; background: #ecf0f1; border: 1px solid var(--border-color); border-radius: 5px; padding: 10px; flex-grow: 1; overflow-y: auto; min-height: 150px; }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <header>
+            <h1>Binary Tree Paths Animation</h1>
+            <p>Visualize the recursive DFS traversal to find all root-to-leaf paths.</p>
+        </header>
+
+        <div class="panel" id="tree-panel">
+            <svg id="tree-svg"></svg>
+        </div>
+        
+        <div class="right-panel-container">
+             <div class="panel">
+                <h3>Controls</h3>
+                <div class="control-group">
+                    <label for="tree-input">Tree Input (e.g., [1, 2, 3, null, 5])</label>
+                    <input type="text" id="tree-input" value="[1,2,3,null,5,6,7,null,null,8]">
+                </div>
+                <div class="button-grid">
+                    <button id="init-btn">Initialize Tree</button>
+                    <button id="reset-btn" disabled>Reset</button>
+                    <button id="play-pause-btn" disabled>Play</button>
+                    <button id="next-btn" disabled>Next Step</button>
+                </div>
+                <div class="control-group" style="margin-top: 15px;">
+                    <label for="speed-slider">Animation Speed:</label>
+                    <input type="range" id="speed-slider" min="0" max="1000" value="500">
+                </div>
+            </div>
+            <div class="panel">
+                <h3>Current Path</h3>
+                <div id="current-path-display">[]</div>
+            </div>
+             <div class="panel">
+                <h3>Paths Found</h3>
+                <ul id="paths-found-list"></ul>
+            </div>
+            <div class="panel">
+                <h3>Call Stack</h3>
+                <div id="call-stack"></div>
+            </div>
+            <div class="panel" style="flex-grow: 1; min-height: 0;">
+                <h3>Execution Log</h3>
+                <div id="log-display"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // DOM Elements
+    const treeInput = document.getElementById('tree-input'), initBtn = document.getElementById('init-btn'),
+          resetBtn = document.getElementById('reset-btn'), playPauseBtn = document.getElementById('play-pause-btn'),
+          nextBtn = document.getElementById('next-btn'), speedSlider = document.getElementById('speed-slider'),
+          treeSvg = document.getElementById('tree-svg'), currentPathDisplay = document.getElementById('current-path-display'),
+          pathsFoundList = document.getElementById('paths-found-list'), callStackDiv = document.getElementById('call-stack'),
+          logDisplay = document.getElementById('log-display');
+
+    // State
+    let animationQueue = [], flatNodes = {}, iterator, isAnimating = false, isPaused = true, animationInterval = null;
+
+    // --- Tree Building & Positioning ---
+    function buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        flatNodes = {};
+        let idCounter = 0;
+        const root = { id: idCounter++, val: arr[0], children: [], depth: 0 };
+        flatNodes[root.id] = root;
+        const queue = [root];
+        let i = 1;
+        while (queue.length > 0 && i < arr.length) {
+            const curr = queue.shift();
+            if (arr[i] !== null && arr[i] !== undefined) {
+                const left = { id: idCounter++, val: arr[i], children: [], depth: curr.depth + 1, parentId: curr.id };
+                curr.left = left; flatNodes[left.id] = left; queue.push(left);
+            }
+            i++;
+            if (i < arr.length && arr[i] !== null && arr[i] !== undefined) {
+                const right = { id: idCounter++, val: arr[i], children: [], depth: curr.depth + 1, parentId: curr.id };
+                curr.right = right; flatNodes[right.id] = right; queue.push(right);
+            }
+            i++;
+        }
+        calculatePositions(root);
+        return root;
+    }
+
+    function calculatePositions(root) {
+        let x = 0;
+        function inOrder(node) {
+            if (!node) return;
+            inOrder(node.left);
+            node.x = x * 80 + 50;
+            node.y = node.depth * 100 + 50;
+            x++;
+            inOrder(node.right);
+        }
+        inOrder(root);
+    }
+    
+    // --- Rendering ---
+    function renderTree() {
+        treeSvg.innerHTML = '';
+        const allNodes = Object.values(flatNodes);
+        if (allNodes.length === 0) return;
+
+        let maxX = 0, maxY = 0;
+        allNodes.forEach(node => {
+            if (node.parentId !== undefined) {
+                const parent = flatNodes[node.parentId];
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('id', `path-to-${node.id}`);
+                path.setAttribute('class', 'tree-link');
+                path.setAttribute('d', `M${parent.x},${parent.y} L${node.x},${node.y}`);
+                treeSvg.appendChild(path);
+            }
+            maxX = Math.max(maxX, node.x);
+            maxY = Math.max(maxY, node.y);
+        });
+
+        allNodes.forEach(node => {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('id', `node-${node.id}`);
+            g.setAttribute('class', 'tree-node');
+            g.setAttribute('transform', `translate(${node.x},${node.y})`);
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.textContent = node.val;
+            g.appendChild(circle);
+            g.appendChild(text);
+            treeSvg.appendChild(g);
+        });
+        treeSvg.setAttribute('viewBox', `0 0 ${maxX + 50} ${maxY + 50}`);
+    }
+
+    // --- Animation Step Generation ---
+    function* generateSteps(node, path) {
+        if (!node) return;
+        const stackId = `stack-${node.id}-${path.length}`;
+        yield { type: 'VISIT', nodeId: node.id, path: [...path], stackId };
+        
+        path.push(node.val);
+        yield { type: 'ADD_TO_PATH', path: [...path] };
+
+        if (!node.left && !node.right) {
+            yield { type: 'FOUND_PATH', path: [...path] };
+        } else {
+            if (node.left) yield* generateSteps(node.left, path);
+            if (node.right) yield* generateSteps(node.right, path);
+        }
+        
+        path.pop();
+        yield { type: 'BACKTRACK', nodeId: node.id, path: [...path], stackId };
+    }
+
+    // --- Animation Player ---
+    function processNextStep() {
+        if (!iterator) return;
+        const result = iterator.next();
+        if (result.done) {
+            isAnimating = false; isPaused = true; clearInterval(animationInterval);
+            playPauseBtn.disabled = true; nextBtn.disabled = true; resetBtn.disabled = false;
+            logMessage('✅ Traversal Complete!', 'success');
+            // Clear last highlight
+            document.querySelectorAll('.visiting, .visiting-link').forEach(el => el.classList.remove('visiting', 'visiting-link'));
+            return;
+        }
+
+        const action = result.value;
+        document.querySelectorAll('.visiting, .visiting-link').forEach(el => el.classList.remove('visiting', 'visiting-link'));
+        
+        switch (action.type) {
+            case 'VISIT':
+                logMessage(`Visiting node ${flatNodes[action.nodeId].val}.`);
+                document.getElementById(`node-${action.nodeId}`)?.classList.add('visiting', 'on-path');
+                document.getElementById(`path-to-${action.nodeId}`)?.classList.add('visiting-link', 'on-path');
+                
+                const frame = document.createElement('div');
+                frame.className = 'stack-frame';
+                frame.id = action.stackId;
+                frame.textContent = `dfs(node: ${flatNodes[action.nodeId].val}, path: [${action.path.join(', ')}])`;
+                callStackDiv.appendChild(frame);
+                setTimeout(() => frame.classList.add('active'), 10);
+                break;
+            case 'ADD_TO_PATH':
+                currentPathDisplay.textContent = `[${action.path.join(' → ')}]`;
+                break;
+            case 'FOUND_PATH':
+                logMessage(`Found root-to-leaf path: [${action.path.join(' → ')}]`, 'success');
+                const li = document.createElement('li');
+                li.textContent = action.path.join(' → ');
+                pathsFoundList.appendChild(li);
+                break;
+            case 'BACKTRACK':
+                logMessage(`Backtracking from node ${flatNodes[action.nodeId].val}.`, 'backtrack');
+                document.getElementById(`node-${action.nodeId}`)?.classList.remove('on-path');
+                document.getElementById(`path-to-${action.nodeId}`)?.classList.remove('on-path');
+                currentPathDisplay.textContent = `[${action.path.join(' → ')}]`;
+                
+                const frameToRemove = document.getElementById(action.stackId);
+                if (frameToRemove) { frameToRemove.classList.remove('active'); setTimeout(() => frameToRemove.remove(), 300); }
+                break;
+        }
+    }
+
+    function logMessage(msg, type) {
+        const p = document.createElement('p');
+        p.textContent = `> ${msg}`;
+        if (type === 'success') p.style.color = 'var(--success-color)';
+        if (type === 'backtrack') p.style.color = 'var(--backtrack-color)';
+        logDisplay.prepend(p);
+    }
+    
+    // --- Controls Logic ---
+    function resetAll() {
+        clearInterval(animationInterval);
+        isAnimating = false;
+        isPaused = true;
+        iterator = null;
+        animationQueue = [];
+        flatNodes = {};
+        treeSvg.innerHTML = '';
+        currentPathDisplay.textContent = '[]';
+        pathsFoundList.innerHTML = '';
+        callStackDiv.innerHTML = '';
+        logDisplay.innerHTML = '';
+        
+        initBtn.disabled = false;
+        resetBtn.disabled = true;
+        playPauseBtn.disabled = true;
+        nextBtn.disabled = true;
+        playPauseBtn.textContent = 'Play';
+    }
+
+    initBtn.addEventListener('click', () => {
+        try {
+            const arr = JSON.parse(treeInput.value);
+            if (!Array.isArray(arr)) throw new Error();
+            const root = buildTree(arr);
+            renderTree();
+            iterator = generateSteps(root, []);
+            
+            isAnimating = true; isPaused = true;
+            initBtn.disabled = true; resetBtn.disabled = false;
+            playPauseBtn.disabled = false; nextBtn.disabled = false;
+            logMessage("Tree initialized. Press 'Play' or 'Next Step' to begin.");
+        } catch (e) {
+            alert('Invalid array format. Please use a valid JSON array like [1, 2, null, 3].');
+        }
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+        isPaused = !isPaused;
+        if (isPaused) {
+            playPauseBtn.textContent = 'Play';
+            clearInterval(animationInterval);
+        } else {
+            playPauseBtn.textContent = 'Pause';
+            const interval = 1050 - speedSlider.value;
+            processNextStep();
+            animationInterval = setInterval(processNextStep, Math.max(50, interval));
+        }
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (!isPaused) { isPaused = true; playPauseBtn.textContent = 'Play'; clearInterval(animationInterval); }
+        processNextStep();
+    });
+
+    resetBtn.addEventListener('click', resetAll);
+
+    // Initial Load
+    resetAll();
+
+</script>
+</body>
+</html>

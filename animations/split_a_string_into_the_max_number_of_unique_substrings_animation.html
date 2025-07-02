@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Max Unique Substrings - Backtracking Animation</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f5;
+            --panel-bg: #ffffff;
+            --text-color: #111827;
+            --text-muted: #6b7280;
+            --primary-accent: #4f46e5;
+            --success-color: #16a34a;
+            --error-color: #dc2626;
+            --candidate-color: #f59e0b;
+            --border-color: #e5e7eb;
+            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-family-mono: 'Menlo', 'Consolas', 'monospace';
+            --animation-speed: 0.5s;
+        }
+        body {
+            font-family: var(--font-family-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 480px;
+            grid-template-rows: auto 1fr;
+            grid-template-areas: 
+                "header header"
+                "viz controls";
+            gap: 25px;
+            height: 100%;
+        }
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+        #viz-container {
+            grid-area: viz;
+            min-height: 0;
+        }
+        #controls-container {
+            grid-area: controls;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        header {
+            grid-area: header;
+            text-align: center;
+        }
+        header h1 {
+            color: var(--text-color);
+            font-weight: 700;
+        }
+        .panel h3 {
+            margin-top: 0; margin-bottom: 20px; padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color); font-weight: 600;
+        }
+        #string-display {
+            position: relative;
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        #string-container, #path-container {
+            display: flex;
+            position: relative;
+            height: 50px;
+        }
+        .letter-box {
+            width: 50px; height: 50px;
+            display: inline-flex; justify-content: center; align-items: center;
+            font-family: var(--font-family-mono); font-size: 24px; font-weight: bold;
+            border: 1px solid #d1d5db; background-color: white;
+            margin-right: -1px; /* Overlap borders */
+        }
+        .substring-block {
+            position: absolute;
+            height: 100%;
+            border-radius: 6px;
+            display: flex; justify-content: center; align-items: center;
+            color: white; font-family: var(--font-family-mono); font-weight: bold;
+            transition: all var(--animation-speed) ease;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .substring-block.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .substring-block.candidate {
+            border: 3px dashed var(--candidate-color);
+            background-color: #fefce8 !important;
+            color: var(--candidate-color);
+            z-index: 10;
+        }
+        #used-set, #best-solution-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .set-item {
+            background-color: var(--primary-accent);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-family: var(--font-family-mono);
+            font-size: 14px;
+            transition: all 0.3s ease;
+            opacity: 0; transform: scale(0.8);
+        }
+        .set-item.visible {
+            opacity: 1; transform: scale(1);
+        }
+        .set-item.best {
+            background-color: var(--success-color);
+        }
+        .set-item.checking {
+            animation: pulse 0.6s;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        #log-display {
+            font-family: var(--font-family-mono); font-size: 13px;
+            background: #f9fafb; border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 15px;
+            flex-grow: 1;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        input[type="text"], input[type="range"], button { width: 100%; box-sizing: border-box; }
+        button {
+            cursor: pointer; font-weight: 600; color: #fff; border: none;
+            padding: 10px; border-radius: 8px; transition: background-color 0.2s;
+        }
+        button:disabled { background-color: #d1d5db !important; cursor: not-allowed; }
+        #init-btn { background-color: var(--primary-accent); }
+        #play-pause-btn { background-color: var(--success-color); }
+        #next-btn { background-color: #2563eb; }
+        #reset-btn { background-color: var(--text-color); }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <header>
+            <h1>Split a String Into the Max Number of Unique Substrings</h1>
+        </header>
+
+        <div class="panel" id="viz-container">
+            <div id="string-display">
+                <div id="string-container"></div>
+                <div id="path-container"></div>
+            </div>
+            <h3>Execution Log</h3>
+            <div id="log-display"></div>
+        </div>
+
+        <div id="controls-container">
+            <div class="panel">
+                <h3>Controls</h3>
+                <label for="string-input" style="margin-bottom: 5px; display:block;">Input String:</label>
+                <input type="text" id="string-input" value="abacaba" style="margin-bottom: 15px; padding: 8px;">
+                <div class="button-grid">
+                    <button id="init-btn">Initialize</button>
+                    <button id="reset-btn">Reset</button>
+                </div>
+                <div class="button-grid" style="margin-top: 10px;">
+                    <button id="play-pause-btn" disabled>Pause</button>
+                    <button id="next-btn" disabled>Next Step</button>
+                </div>
+                <label for="speed-slider" style="margin-top: 15px; margin-bottom: 5px; display:block;">Animation Speed:</label>
+                <input type="range" id="speed-slider" min="50" max="1000" value="500">
+            </div>
+            <div class="panel">
+                <h3>Current Path's Used Set</h3>
+                <div id="used-set"></div>
+            </div>
+            <div class="panel">
+                <h3>Best Solution Found</h3>
+                <div id="best-solution-display"></div>
+            </div>
+            <div class="panel">
+                <h3>State</h3>
+                <p style="margin:0;">Current Index: <b id="state-index">_</b></p>
+                <p style="margin:0;">Max Substrings: <b id="state-max">_</b></p>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM Elements ---
+    const stringInput = document.getElementById('string-input'),
+          initBtn = document.getElementById('init-btn'),
+          resetBtn = document.getElementById('reset-btn'),
+          playPauseBtn = document.getElementById('play-pause-btn'),
+          nextBtn = document.getElementById('next-btn'),
+          speedSlider = document.getElementById('speed-slider'),
+          stringContainer = document.getElementById('string-container'),
+          pathContainer = document.getElementById('path-container'),
+          logDisplay = document.getElementById('log-display'),
+          usedSetContainer = document.getElementById('used-set'),
+          bestSolutionContainer = document.getElementById('best-solution-display'),
+          stateIndex = document.getElementById('state-index'),
+          stateMax = document.getElementById('state-max');
+
+    // --- State ---
+    let iterator, animationInterval = null, isPaused = true;
+    const colors = ['#ef4444', '#f97316', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899'];
+
+    // --- Generator Algorithm ---
+    function* solveGenerator(s) {
+        let maxCount = 0;
+        let bestSolution = [];
+
+        function* backtrack(index, currentPath, usedSet) {
+            yield { type: 'UPDATE_STATE', index, max: maxCount };
+
+            if (index >= s.length) {
+                if (currentPath.length > maxCount) {
+                    maxCount = currentPath.length;
+                    bestSolution = [...currentPath];
+                    yield { type: 'LOG', msg: `New best solution found! Length: ${maxCount}`, style: 'success' };
+                    yield { type: 'UPDATE_MAX', solution: bestSolution };
+                }
+                return;
+            }
+
+            for (let i = index; i < s.length; i++) {
+                const sub = s.substring(index, i + 1);
+                yield { type: 'HIGHLIGHT_CANDIDATE', start: index, end: i };
+                yield { type: 'LOG', msg: `Trying substring "${sub}"`, depth: currentPath.length };
+                
+                yield { type: 'CHECK_UNIQUENESS', sub, isUsed: usedSet.has(sub) };
+                if (!usedSet.has(sub)) {
+                    yield { type: 'LOG', msg: `"${sub}" is unique. Recursing.`, style: 'success', depth: currentPath.length };
+                    
+                    usedSet.add(sub);
+                    currentPath.push(sub);
+                    yield { type: 'ADD_SUBSTRING', sub, start: index, end: i, color: colors[currentPath.length % colors.length] };
+                    
+                    yield* backtrack(i + 1, currentPath, usedSet);
+                    
+                    // Backtrack
+                    yield { type: 'LOG', msg: `Backtracking. Removing "${sub}".`, style: 'backtrack', depth: currentPath.length - 1};
+                    currentPath.pop();
+                    usedSet.delete(sub);
+                    yield { type: 'REMOVE_SUBSTRING', start: index, end: i };
+
+                } else {
+                    yield { type: 'LOG', msg: `"${sub}" is already in the set. Skipping.`, style: 'error', depth: currentPath.length };
+                }
+            }
+        }
+        
+        yield { type: 'LOG', msg: '--- Starting Search ---' };
+        yield* backtrack(0, [], new Set());
+        yield { type: 'LOG', msg: '--- Search Complete ---', style: 'final' };
+        yield { type: 'FINISH' };
+    }
+
+    // --- Animation Runner ---
+    function processNextStep() {
+        if (!iterator) return;
+        const result = iterator.next();
+        if (result.done) {
+            pausePlaying();
+            playPauseBtn.disabled = true;
+            nextBtn.disabled = true;
+            return;
+        }
+
+        const action = result.value;
+        const letterWidth = 50;
+        s = stringInput.value;
+
+        document.querySelectorAll('.substring-block.candidate').forEach(el => el.remove());
+
+        switch(action.type) {
+            case 'LOG':
+                log(action.msg, action.style, action.depth);
+                break;
+            case 'UPDATE_STATE':
+                stateIndex.textContent = action.index;
+                stateMax.textContent = action.max;
+                break;
+            case 'HIGHLIGHT_CANDIDATE':
+                const candBlock = document.createElement('div');
+                candBlock.className = 'substring-block candidate visible';
+                candBlock.style.left = `${action.start * letterWidth}px`;
+                candBlock.style.width = `${(action.end - action.start + 1) * letterWidth}px`;
+                candBlock.textContent = s.substring(action.start, action.end + 1);
+                pathContainer.appendChild(candBlock);
+                break;
+            case 'CHECK_UNIQUENESS':
+                const itemToCheck = document.getElementById(`used-${action.sub}`);
+                if (itemToCheck) {
+                    itemToCheck.classList.add('checking');
+                    setTimeout(() => itemToCheck.classList.remove('checking'), 600);
+                }
+                break;
+            case 'ADD_SUBSTRING':
+                const pathBlock = document.createElement('div');
+                pathBlock.id = `path-${action.start}-${action.end}`;
+                pathBlock.className = 'substring-block';
+                pathBlock.style.left = `${action.start * letterWidth}px`;
+                pathBlock.style.width = `${(action.end - action.start + 1) * letterWidth}px`;
+                pathBlock.style.backgroundColor = action.color;
+                pathBlock.textContent = action.sub;
+                pathContainer.appendChild(pathBlock);
+                setTimeout(() => pathBlock.classList.add('visible'), 10);
+
+                const usedItem = document.createElement('div');
+                usedItem.id = `used-${action.sub}`;
+                usedItem.className = 'set-item';
+                usedItem.textContent = action.sub;
+                usedSetContainer.appendChild(usedItem);
+                setTimeout(() => usedItem.classList.add('visible'), 10);
+                break;
+            case 'REMOVE_SUBSTRING':
+                document.getElementById(`path-${action.start}-${action.end}`)?.remove();
+                const usedItemToRemove = document.getElementById(`used-${s.substring(action.start, action.end + 1)}`);
+                if (usedItemToRemove) {
+                    usedItemToRemove.classList.remove('visible');
+                    setTimeout(() => usedItemToRemove.remove(), 300);
+                }
+                break;
+            case 'UPDATE_MAX':
+                bestSolutionContainer.innerHTML = '';
+                action.solution.forEach(sub => {
+                    const bestItem = document.createElement('div');
+                    bestItem.className = 'set-item best visible';
+                    bestItem.textContent = sub;
+                    bestSolutionContainer.appendChild(bestItem);
+                });
+                break;
+            case 'FINISH':
+                document.querySelectorAll('.substring-block.candidate').forEach(el => el.remove());
+                break;
+        }
+    }
+    
+    // --- UI & Control Functions ---
+    let s = '';
+    function init() {
+        resetState();
+        s = stringInput.value;
+        if (!s) { alert("Please enter a string."); return; }
+        
+        stringContainer.innerHTML = '';
+        for (const char of s) {
+            const letter = document.createElement('div');
+            letter.className = 'letter-box';
+            letter.textContent = char;
+            stringContainer.appendChild(letter);
+        }
+
+        iterator = solveGenerator(s);
+        initBtn.disabled = true;
+        playPauseBtn.disabled = false;
+        nextBtn.disabled = false;
+        startPlaying();
+    }
+    
+    function resetState() {
+        pausePlaying();
+        iterator = null;
+        stringContainer.innerHTML = '';
+        pathContainer.innerHTML = '';
+        usedSetContainer.innerHTML = '';
+        bestSolutionContainer.innerHTML = '';
+        logDisplay.innerHTML = '';
+        stateIndex.textContent = '_';
+        stateMax.textContent = '_';
+        initBtn.disabled = false;
+        playPauseBtn.disabled = true;
+        playPauseBtn.textContent = 'Pause';
+        nextBtn.disabled = true;
+    }
+
+    function log(message, style, depth = 0) {
+        const p = document.createElement('p');
+        p.style.margin = '0 0 5px 0';
+        let icon = '';
+        if (style === 'success') {
+            icon = '✅ ';
+            p.style.color = 'var(--success-color)';
+        } else if (style === 'error') {
+            icon = '❌ ';
+            p.style.color = 'var(--error-color)';
+        } else if (style === 'backtrack') {
+            icon = '↩️ ';
+            p.style.color = 'var(--error-color)';
+        } else if (style === 'final') {
+            p.style.fontWeight = 'bold';
+        }
+        
+        const indentation = depth > 0 ? '&nbsp;&nbsp;'.repeat(depth) : '';
+        p.innerHTML = indentation + icon + message;
+        logDisplay.prepend(p);
+    }
+    
+    function startPlaying() {
+        if (!iterator) return;
+        isPaused = false;
+        playPauseBtn.textContent = 'Pause';
+        const interval = 1050 - speedSlider.value;
+        animationInterval = setInterval(processNextStep, Math.max(50, interval));
+    }
+
+    function pausePlaying() {
+        isPaused = true;
+        playPauseBtn.textContent = 'Play';
+        clearInterval(animationInterval);
+        animationInterval = null;
+    }
+
+    // --- Event Listeners ---
+    initBtn.addEventListener('click', init);
+    resetBtn.addEventListener('click', resetState);
+    playPauseBtn.addEventListener('click', () => { isPaused ? startPlaying() : pausePlaying(); });
+    nextBtn.addEventListener('click', () => { 
+        if (!isPaused) pausePlaying();
+        processNextStep();
+    });
+    speedSlider.addEventListener('input', () => {
+        if (!isPaused) {
+            clearInterval(animationInterval);
+            const interval = 1050 - speedSlider.value;
+            animationInterval = setInterval(processNextStep, Math.max(50, interval));
+        }
+    });
+
+    // Initial setup
+    resetState();
+});
+</script>
+</body>
+</html>

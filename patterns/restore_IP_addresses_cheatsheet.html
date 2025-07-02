@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restore IP Addresses Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🌐 Restore IP Addresses – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Restore IP Addresses</b> problem asks you to return all possible valid IP address combinations from a given string containing only digits. Each IP address consists of four integers (0-255) separated by dots, and each integer cannot have leading zeros.
+    </p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public List&lt;String&gt; restoreIpAddresses(String s) {
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        backtrack(s, 0, 0, "", result);
+        return result;
+    }
+
+    private void backtrack(String s, int idx, int dots, String path, List&lt;String&gt; result) {
+        if (dots == 4 &amp;&amp; idx == s.length()) {
+            result.add(path.substring(0, path.length() - 1)); // remove last dot
+            return;
+        }
+        if (dots > 4) return;
+        for (int len = 1; len &lt;= 3 &amp;&amp; idx + len &lt;= s.length(); len++) {
+            String part = s.substring(idx, idx + len);
+            if ((part.startsWith("0") &amp;&amp; part.length() &gt; 1) || Integer.parseInt(part) &gt; 255) continue;
+            backtrack(s, idx + len, dots + 1, path + part + ".", result);
+        }
+    }
+}</code></pre>
+
+    <button onclick="window.location.href='../animations/restore _IP_addresses_animations.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(1)</code> (since the max length is 12, the number of possible splits is constant).</li>
+      <li><b>Space Complexity:</b> <code>O(1)</code> (excluding the output list).</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>String partitioning with constraints.</li>
+      <li>Backtracking with pruning.</li>
+      <li>IP address validation and formatting.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/restore-ip-addresses/" target="_blank" rel="noopener noreferrer">
+          93. Restore IP Addresses
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "25525511135"
+Output: ["255.255.11.135","255.255.111.35"]
+
+Explanation:
+- All possible valid IP addresses that can be formed by inserting three dots.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Prune early if a segment is invalid (e.g., leading zeros, >255).</li>
+      <li>Each valid IP must have exactly 4 segments and use all digits.</li>
+      <li>Edge cases: Too short or too long input strings.</li>
+    </ul>
+  </div>
+</body>
+</html>

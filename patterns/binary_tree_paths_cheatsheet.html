@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Binary Tree Paths Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🌳 Binary Tree Paths – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Binary Tree Paths</b> problem asks you to return all root-to-leaf paths in a binary tree as strings. Each path should be represented as a string with node values separated by "->".
+    </p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public List&lt;String&gt; binaryTreePaths(TreeNode root) {
+        List&lt;String&gt; paths = new ArrayList&lt;&gt;();
+        if (root != null) {
+            dfs(root, "", paths);
+        }
+        return paths;
+    }
+
+    private void dfs(TreeNode node, String path, List&lt;String&gt; paths) {
+        if (node.left == null &amp;&amp; node.right == null) {
+            paths.add(path + node.val);
+            return;
+        }
+        if (node.left != null) {
+            dfs(node.left, path + node.val + "->", paths);
+        }
+        if (node.right != null) {
+            dfs(node.right, path + node.val + "->", paths);
+        }
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/binary_tree_paths_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N^2)</code>, where <code>N</code> is the number of nodes (since each path can be up to <code>N</code> in length).</li>
+      <li><b>Space Complexity:</b> <code>O(N^2)</code>, for storing all paths and recursion stack.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding all root-to-leaf paths in a binary tree.</li>
+      <li>Tree traversal and path construction problems.</li>
+      <li>Recursive DFS on trees.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/binary-tree-paths/" target="_blank" rel="noopener noreferrer">
+          257. Binary Tree Paths
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">DFS</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: root = [1,2,3,null,5]
+Output: ["1->2->5","1->3"]
+
+Explanation:
+- There are two root-to-leaf paths: 1->2->5 and 1->3.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use DFS to build the path as you traverse the tree.</li>
+      <li>When you reach a leaf node, add the current path to the result list.</li>
+      <li>Edge cases: Empty tree (return empty list), single-node tree.</li>
+    </ul>
+  </div>
+</body>
+</html>

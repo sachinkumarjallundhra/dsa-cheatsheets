@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Optimal Account Balancing Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>💸 Optimal Account Balancing – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Optimal Account Balancing</b> problem asks for the minimum number of transactions required to settle all debts among a group of people, given a list of transactions. Each transaction is represented as <code>[from, to, amount]</code>.
+    </p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int minTransfers(int[][] transactions) {
+        Map&lt;Integer, Integer&gt; balance = new HashMap&lt;&gt;();
+        for (int[] t : transactions) {
+            balance.put(t[0], balance.getOrDefault(t[0], 0) - t[2]);
+            balance.put(t[1], balance.getOrDefault(t[1], 0) + t[2]);
+        }
+        List&lt;Integer&gt; debts = new ArrayList&lt;&gt;();
+        for (int amt : balance.values()) {
+            if (amt != 0) debts.add(amt);
+        }
+        return dfs(debts, 0);
+    }
+
+    private int dfs(List&lt;Integer&gt; debts, int start) {
+        while (start &lt; debts.size() &amp;&amp; debts.get(start) == 0) start++;
+        if (start == debts.size()) return 0;
+        int min = Integer.MAX_VALUE;
+        for (int i = start + 1; i &lt; debts.size(); i++) {
+            if (debts.get(i) * debts.get(start) &lt; 0) {
+                debts.set(i, debts.get(i) + debts.get(start));
+                min = Math.min(min, 1 + dfs(debts, start + 1));
+                debts.set(i, debts.get(i) - debts.get(start)); // backtrack
+            }
+        }
+        return min == Integer.MAX_VALUE ? 0 : min;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/optimal_account_balancing_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N!)</code>, where <code>N</code> is the number of people with non-zero net balance (due to backtracking all possible settlements).</li>
+      <li><b>Space Complexity:</b> <code>O(N)</code>, for the debts list and recursion stack.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Splitting bills and minimizing transactions in groups.</li>
+      <li>Debt settlement and account balancing.</li>
+      <li>Combinatorial optimization with backtracking.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/optimal-account-balancing/" target="_blank" rel="noopener noreferrer">
+          465. Optimal Account Balancing
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: transactions = [[0,1,10],[2,0,5]]
+Output: 2
+
+Explanation:
+- Person 0 pays 10 to 1, and 2 pays 5 to 0.
+- Two transactions are needed to settle all debts.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>First, compute each person's net balance.</li>
+      <li>Use backtracking to try all possible settlements between debtors and creditors.</li>
+      <li>Prune branches early if a settlement doesn't reduce the number of transactions.</li>
+      <li>Edge cases: No transactions, all balances already zero.</li>
+    </ul>
+  </div>
+</body>
+</html>

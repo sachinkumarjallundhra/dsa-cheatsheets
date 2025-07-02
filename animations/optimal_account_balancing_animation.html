@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimal Account Balancing - Animation</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --panel-bg: #ffffff;
+            --text-color: #1c1e21;
+            --text-muted: #606770;
+            --primary-accent: #1877f2;
+            --debtor-color: #fa383e;
+            --creditor-color: #45bd62;
+            --settled-color: #6c757d;
+            --border-color: #dddfe2;
+            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-family-mono: 'Consolas', 'Menlo', 'monospace';
+            --animation-speed: 0.6s;
+        }
+
+        /* FIX: Allow the main page to scroll if content overflows the viewport */
+        html, body {
+            font-family: var(--font-family-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* FIX: Simplified main layout to be a flexible vertical stack */
+        .main-container {
+            max-width: 1800px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        h1 { color: var(--primary-accent); margin: 0 0 10px 0; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* FIX: Give visualization panel a flexible height relative to the viewport */
+        #visualization-panel { 
+            position: relative;
+            height: 60vh; /* 60% of the viewport height */
+            min-height: 400px; /* Minimum height to stay usable */
+        }
+
+        #phase-display {
+            position: absolute; top: 15px; left: 20px; font-size: 1.2rem;
+            font-weight: 600; color: var(--text-color); background: rgba(255,255,255,0.8);
+            padding: 5px 10px; border-radius: 6px; z-index: 10;
+        }
+        
+        #bottom-panel {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 25px;
+            flex-shrink: 0;
+        }
+
+        /* FIX: Let the controls container size itself naturally to prevent overlap */
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel h3 {
+            margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px; font-weight: 600; flex-shrink: 0;
+        }
+
+        /* Controls */
+        #transactions-input {
+            width: 100%; height: 90px; box-sizing: border-box; font-family: var(--font-family-mono);
+            font-size: 14px; border: 1px solid var(--border-color); border-radius: 5px;
+            padding: 8px; margin-bottom: 10px; resize: vertical;
+        }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .button-grid button { cursor: pointer; font-weight: 600; color: #fff; border: none; padding: 10px; border-radius: 5px; transition: background-color 0.2s; width: 100%; }
+        .button-grid button:disabled { background-color: #ced4da; cursor: not-allowed; }
+        #init-btn { background-color: var(--primary-accent); }
+        #play-pause-btn { background-color: var(--creditor-color); }
+        #next-btn { background-color: #17a2b8; }
+        #reset-btn { background-color: var(--text-color); }
+        
+        /* Visualization SVG */
+        #main-svg { width: 100%; height: 100%; }
+        .node { transition: transform var(--animation-speed) ease-in-out; }
+        .node-circle { stroke-width: 3px; transition: all var(--animation-speed); }
+        .node-name { font-weight: bold; font-size: 16px; text-anchor: middle; }
+        .node-balance { font-size: 20px; font-weight: bold; text-anchor: middle; transition: fill var(--animation-speed), opacity var(--animation-speed); }
+        .transaction-path {
+            stroke-width: 3px; stroke-dasharray: 8; fill: none;
+            animation: dash-flow 1s linear infinite; transition: opacity 0.4s;
+        }
+        @keyframes dash-flow { to { stroke-dashoffset: -16; } }
+
+        /* State & Log */
+        #state-display { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+        #state-display div { background-color: #f0f2f5; padding: 10px; border-radius: 5px; }
+        #state-display span { display: block; font-size: 1.5rem; font-weight: bold; }
+        
+        /* FIX: Ensure log panel can scroll and has a max height */
+        #log-panel {
+            min-height: 0;
+        }
+        #log-display {
+            font-family: var(--font-family-mono); font-size: 13px;
+            flex-grow: 1; /* Makes it fill the panel */
+            overflow-y: auto; /* Guarantees scrolling */
+            background: #f0f2f5; padding: 10px; border-radius: 5px;
+            max-height: 350px; /* Give it a max height to prevent infinite growth */
+        }
+        #final-transactions ul { list-style: none; padding-left: 0; margin: 0; }
+        #final-transactions li { background: var(--creditor-color); color: white; padding: 5px 10px; border-radius: 5px; margin-bottom: 5px; font-family: var(--font-family-mono); }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <header>
+            <h1>Optimal Account Balancing</h1>
+            <p>Visualize the backtracking algorithm to find the minimum number of transactions to settle all debts.</p>
+        </header>
+        
+        <div class="panel" id="visualization-panel">
+            <div id="phase-display">Input Transactions</div>
+            <svg id="main-svg">
+                <defs>
+                    <marker id="arrow-creditor" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--creditor-color)"></path>
+                    </marker>
+                </defs>
+            </svg>
+        </div>
+
+        <div id="bottom-panel">
+            <div class="controls-container">
+                <div class="panel">
+                    <h3>Controls</h3>
+                    <textarea id="transactions-input" placeholder="Enter transactions, one per line.&#10;Format: From,To,Amount&#10;Example:&#10;Alice,Bob,20&#10;Bob,Charlie,10">Alice,Bob,20
+Bob,Charlie,10
+David,Alice,5</textarea>
+                    <div class="button-grid">
+                        <button id="init-btn">Initialize & Animate</button>
+                        <button id="reset-btn">Reset</button>
+                    </div>
+                    <div class="button-grid" style="margin-top: 10px;">
+                        <button id="play-pause-btn" disabled>Play</button>
+                        <button id="next-btn" disabled>Next Step</button>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <label for="speed-slider">Animation Speed:</label>
+                        <input type="range" id="speed-slider" min="50" max="1000" value="400" style="width:100%;">
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Algorithm State</h3>
+                    <div id="state-display">
+                        <div>Depth <span id="state-depth">_</span></div>
+                        <div>Min Transactions <span id="state-min-found">_</span></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Final Transactions</h3>
+                    <div id="final-transactions"><ul></ul></div>
+                </div>
+            </div>
+
+            <div class="panel" id="log-panel">
+                <h3>Execution Log</h3>
+                <div id="log-display"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- UI Elements ---
+    const initBtn = document.getElementById('init-btn'),
+          resetBtn = document.getElementById('reset-btn'),
+          playPauseBtn = document.getElementById('play-pause-btn'),
+          nextBtn = document.getElementById('next-btn'),
+          speedSlider = document.getElementById('speed-slider'),
+          transactionsInput = document.getElementById('transactions-input'),
+          mainSvg = document.getElementById('main-svg'),
+          phaseDisplay = document.getElementById('phase-display'),
+          logDisplay = document.getElementById('log-display'),
+          stateDepth = document.getElementById('state-depth'),
+          stateMinFound = document.getElementById('state-min-found'),
+          finalTransactionsList = document.querySelector('#final-transactions ul');
+
+    // --- State ---
+    let iterator, animationInterval = null, isPaused = true;
+    let people = {};
+    
+    // --- Generator Algorithm ---
+    function* solveGenerator(transactions) {
+        yield { type: 'PHASE', text: '1. Calculating Balances' };
+        yield { type: 'LOG', msg: '--- Phase 1: Calculating Balances ---' };
+        
+        const balances = new Map();
+        for (const { from, to, amount } of transactions) {
+            balances.set(from, (balances.get(from) || 0) - amount);
+            balances.set(to, (balances.get(to) || 0) + amount);
+            yield { type: 'LOG', msg: `${from} → ${to} ($${amount})` };
+            yield { type: 'ADD_PEOPLE', names: [from, to] };
+        }
+
+        for (const [name, balance] of balances.entries()) {
+            yield { type: 'SET_BALANCE', name, balance };
+        }
+        yield { type: 'LOG', msg: 'Final balances calculated.' };
+
+        yield { type: 'PHASE', text: '2. Separating Groups' };
+        yield { type: 'LOG', msg: '\n--- Phase 2: Separating Groups ---' };
+        const debtors = [];
+        const creditors = [];
+        for (const [name, balance] of balances.entries()) {
+            if (Math.abs(balance) < 0.01) {
+                 yield { type: 'SETTLE_NODE', name, reason: 'zero balance' };
+            } else if (balance < 0) {
+                 debtors.push({ name, amount: -balance });
+            } else {
+                 creditors.push({ name, amount: balance });
+            }
+        }
+        yield { type: 'ARRANGE_GROUPS', debtors, creditors };
+        
+        yield { type: 'PHASE', text: '3. Backtracking Search' };
+        yield { type: 'LOG', msg: '\n--- Phase 3: Backtracking Search ---' };
+        let minTransactions = Infinity;
+        let finalSolution = [];
+        
+        function* backtrack(debtorIndex, currentTransactions, currentSolution) {
+            yield { type: 'UPDATE_STATE', depth: debtorIndex, min: minTransactions === Infinity ? '∞' : minTransactions };
+
+            while (debtorIndex < debtors.length && Math.abs(debtors[debtorIndex].amount) < 0.01) {
+                debtorIndex++;
+            }
+
+            if (debtorIndex === debtors.length) {
+                if(currentTransactions < minTransactions) {
+                    minTransactions = currentTransactions;
+                    finalSolution = JSON.parse(JSON.stringify(currentSolution));
+                    yield { type: 'UPDATE_STATE', depth: debtorIndex, min: minTransactions };
+                    yield { type: 'LOG', msg: `✅ Found a solution with ${minTransactions} transactions.`, style: 'creditor' };
+                }
+                return;
+            }
+
+            const currentDebtor = debtors[debtorIndex];
+            yield { type: 'LOG', msg: `Settling ${currentDebtor.name} (owes $${currentDebtor.amount.toFixed(2)})`, depth: debtorIndex };
+            
+            for (let i = 0; i < creditors.length; i++) {
+                const currentCreditor = creditors[i];
+                if (currentCreditor.amount < 0.01) continue;
+                
+                const originalCreditorAmount = currentCreditor.amount;
+                const originalDebtorAmount = currentDebtor.amount;
+                const settledAmount = Math.min(currentDebtor.amount, currentCreditor.amount);
+                
+                yield { type: 'LOG', msg: `  → Trying to pay ${currentCreditor.name} ($${settledAmount.toFixed(2)})`, depth: debtorIndex };
+                yield { type: 'ADD_TRANSACTION', from: currentDebtor.name, to: currentCreditor.name };
+
+                currentDebtor.amount -= settledAmount;
+                currentCreditor.amount -= settledAmount;
+                currentSolution.push({ from: currentDebtor.name, to: currentCreditor.name, amount: settledAmount });
+                
+                yield { type: 'UPDATE_NODE_BALANCE', name: currentDebtor.name, amount: -currentDebtor.amount };
+                yield { type: 'UPDATE_NODE_BALANCE', name: currentCreditor.name, amount: currentCreditor.amount };
+
+                yield* backtrack(debtorIndex + (currentDebtor.amount < 0.01 ? 1 : 0), currentTransactions + 1, currentSolution);
+                
+                currentSolution.pop();
+                currentDebtor.amount = originalDebtorAmount;
+                currentCreditor.amount = originalCreditorAmount;
+                yield { type: 'LOG', msg: `  ← Backtracking from ${currentCreditor.name}`, depth: debtorIndex, style: 'muted' };
+                yield { type: 'REMOVE_TRANSACTION', from: currentDebtor.name, to: currentCreditor.name };
+                yield { type: 'UPDATE_NODE_BALANCE', name: currentDebtor.name, amount: -currentDebtor.amount };
+                yield { type: 'UPDATE_NODE_BALANCE', name: currentCreditor.name, amount: currentCreditor.amount };
+            }
+        }
+
+        yield* backtrack(0, 0, []);
+
+        yield { type: 'PHASE', text: '4. Solution Found!' };
+        yield { type: 'LOG', msg: `\n--- Search Complete! ---` };
+        yield { type: 'LOG', msg: `Minimum transactions needed: ${minTransactions}`, style: 'creditor' };
+        yield { type: 'SHOW_FINAL_SOLUTION', solution: finalSolution };
+    }
+
+    // --- Animation Runner ---
+    function processNextStep() {
+        if (!iterator) return; 
+        const result = iterator.next();
+        if (result.done) {
+            pausePlaying();
+            playPauseBtn.disabled = true;
+            nextBtn.disabled = true;
+            return;
+        }
+        const action = result.value;
+        switch (action.type) {
+            case 'PHASE': phaseDisplay.textContent = action.text; break;
+            case 'LOG': log(action.msg, action.style, action.depth); break;
+            case 'ADD_PEOPLE': action.names.forEach(name => addPerson(name)); layoutNodes(); break;
+            case 'SET_BALANCE': setNodeBalance(action.name, action.balance); break;
+            case 'SETTLE_NODE': settleNode(action.name, action.reason); break;
+            case 'ARRANGE_GROUPS': arrangeGroups(action.debtors, action.creditors); break;
+            case 'UPDATE_STATE':
+                stateDepth.textContent = action.depth;
+                stateMinFound.textContent = action.min;
+                break;
+            case 'ADD_TRANSACTION': addTransactionPath(action.from, action.to); break;
+            case 'REMOVE_TRANSACTION': removeTransactionPath(action.from, action.to); break;
+            case 'UPDATE_NODE_BALANCE': updateNodeBalance(action.name, action.amount); break;
+            case 'SHOW_FINAL_SOLUTION': showFinalSolution(action.solution); break;
+        }
+    }
+
+    // --- Visual/SVG Functions ---
+    function addPerson(name) {
+        if (people[name]) return;
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.id = `node-${name}`; g.classList.add('node');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 35); circle.style.fill = 'var(--panel-bg)';
+        circle.style.stroke = 'var(--settled-color)'; circle.classList.add('node-circle');
+        const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        nameText.textContent = name; nameText.setAttribute('dy', '-8px'); nameText.classList.add('node-name');
+        const balanceText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        balanceText.textContent = '$0.00'; balanceText.setAttribute('dy', '15px'); balanceText.classList.add('node-balance');
+        g.appendChild(circle); g.appendChild(nameText); g.appendChild(balanceText);
+        mainSvg.appendChild(g);
+        people[name] = { el: g, name: name, balance: 0 };
+    }
+
+    function layoutNodes() {
+        const width = mainSvg.clientWidth; const height = mainSvg.clientHeight;
+        const nodeNames = Object.keys(people); const angleStep = (2 * Math.PI) / nodeNames.length;
+        const radius = Math.min(width, height) / 3.5;
+        nodeNames.forEach((name, i) => {
+            const person = people[name];
+            person.x = width / 2 + radius * Math.cos(i * angleStep - Math.PI / 2);
+            person.y = height / 2 + radius * Math.sin(i * angleStep - Math.PI / 2);
+            person.el.setAttribute('transform', `translate(${person.x}, ${person.y})`);
+        });
+    }
+
+    function setNodeBalance(name, balance) {
+        if (!people[name]) return;
+        people[name].balance = balance;
+        updateNodeBalance(name, balance);
+    }
+
+    function updateNodeBalance(name, balance) {
+        const person = people[name]; if (!person) return;
+        const circle = person.el.querySelector('.node-circle');
+        const balanceText = person.el.querySelector('.node-balance');
+        const isSettled = Math.abs(balance) < 0.01;
+        balanceText.style.opacity = isSettled ? 0.7 : 1;
+        if (isSettled) {
+            circle.style.stroke = 'var(--settled-color)'; balanceText.style.fill = 'var(--settled-color)';
+            balanceText.textContent = '$0.00';
+        } else if (balance > 0) {
+            circle.style.stroke = 'var(--creditor-color)'; balanceText.style.fill = 'var(--creditor-color)';
+            balanceText.textContent = `+$${balance.toFixed(2)}`;
+        } else {
+            circle.style.stroke = 'var(--debtor-color)'; balanceText.style.fill = 'var(--debtor-color)';
+            balanceText.textContent = `-$${(-balance).toFixed(2)}`;
+        }
+    }
+
+    function settleNode(name, reason) {
+        const person = people[name]; if (!person) return;
+        person.el.querySelector('.node-circle').style.strokeDasharray = '5 5';
+        log(`Settled ${name} (${reason}).`, 'muted');
+    }
+
+    function arrangeGroups(debtors, creditors) {
+        const width = mainSvg.clientWidth; const height = mainSvg.clientHeight;
+        const debtorYStep = height / (debtors.length + 1);
+        const creditorYStep = height / (creditors.length + 1);
+        debtors.forEach((d, i) => {
+            const person = people[d.name]; person.x = width * 0.25; person.y = (i + 1) * debtorYStep;
+            person.el.setAttribute('transform', `translate(${person.x}, ${person.y})`);
+        });
+        creditors.forEach((c, i) => {
+            const person = people[c.name]; person.x = width * 0.75; person.y = (i + 1) * creditorYStep;
+            person.el.setAttribute('transform', `translate(${person.x}, ${person.y})`);
+        });
+    }
+
+    function addTransactionPath(fromName, toName) {
+        removeTransactionPath(fromName, toName);
+        const from = people[fromName]; const to = people[toName];
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.id = `path-${fromName}-${toName}`; path.classList.add('transaction-path');
+        path.setAttribute('d', `M${from.x},${from.y} L${to.x},${to.y}`);
+        path.style.stroke = 'var(--creditor-color)'; path.setAttribute('marker-end', 'url(#arrow-creditor)');
+        mainSvg.prepend(path);
+    }
+    
+    function removeTransactionPath(fromName, toName) {
+        const path = document.getElementById(`path-${fromName}-${toName}`);
+        if (path) path.remove();
+    }
+    
+    function showFinalSolution(solution) {
+        finalTransactionsList.innerHTML = '';
+        if (solution.length === 0) { finalTransactionsList.innerHTML = '<li>All accounts are balanced!</li>'; return; }
+        solution.forEach(({from, to, amount}) => {
+            if (amount < 0.01) return;
+            const li = document.createElement('li');
+            li.textContent = `${from} → ${to}: $${amount.toFixed(2)}`;
+            finalTransactionsList.appendChild(li);
+            addTransactionPath(from, to, amount);
+        });
+    }
+
+    // --- Control Functions ---
+    function log(message, style, depth = -1) {
+        const p = document.createElement('p');
+        const indentation = depth >= 0 ? '&nbsp;&nbsp;'.repeat(depth + 1) : '';
+        p.innerHTML = indentation + message;
+        if (style === 'creditor') p.style.color = 'var(--creditor-color)';
+        if (style === 'debtor') p.style.color = 'var(--debtor-color)';
+        if (style === 'muted') p.style.color = 'var(--text-muted)';
+        logDisplay.prepend(p);
+    }
+
+    function reset() {
+        pausePlaying(); iterator = null; isPaused = true; people = {};
+        mainSvg.innerHTML = `
+            <defs>
+                <marker id="arrow-creditor" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--creditor-color)"></path>
+                </marker>
+            </defs>`;
+        logDisplay.innerHTML = ''; finalTransactionsList.innerHTML = '';
+        stateDepth.textContent = '_'; stateMinFound.textContent = '_';
+        phaseDisplay.textContent = 'Input Transactions';
+        playPauseBtn.disabled = true; nextBtn.disabled = true; initBtn.disabled = false;
+        transactionsInput.disabled = false;
+    }
+
+    function startPlaying() {
+        if (!iterator) return;
+        isPaused = false; playPauseBtn.textContent = 'Pause';
+        const interval = 1050 - speedSlider.value;
+        animationInterval = setInterval(processNextStep, Math.max(20, interval));
+    }
+
+    function pausePlaying() {
+        isPaused = true; playPauseBtn.textContent = 'Play';
+        clearInterval(animationInterval); animationInterval = null;
+    }
+    
+    initBtn.addEventListener('click', () => {
+        const rawText = transactionsInput.value.trim();
+        if (!rawText) { alert("Please enter at least one transaction."); return; }
+        const transactions = rawText.split('\n').map(line => {
+            const [from, to, amountStr] = line.split(',').map(s => s.trim());
+            const amount = parseFloat(amountStr);
+            return { from, to, amount };
+        }).filter(t => t.from && t.to && !isNaN(t.amount) && t.amount > 0);
+        if (transactions.length === 0) { alert("Input is invalid. Please use the format 'From,To,Amount'."); return; }
+        reset();
+        iterator = solveGenerator(transactions);
+        initBtn.disabled = true; transactionsInput.disabled = true;
+        playPauseBtn.disabled = false; nextBtn.disabled = false;
+        startPlaying();
+    });
+
+    playPauseBtn.addEventListener('click', () => { isPaused ? startPlaying() : pausePlaying(); });
+
+    nextBtn.addEventListener('click', () => {
+        if (!iterator) return;
+        if (!isPaused) pausePlaying();
+        processNextStep();
+    });
+
+    speedSlider.addEventListener('input', () => {
+        if (!isPaused) {
+            clearInterval(animationInterval);
+            const interval = 1050 - speedSlider.value;
+            animationInterval = setInterval(processNextStep, Math.max(20, interval));
+        }
+    });
+
+    resetBtn.addEventListener('click', reset);
+    reset();
+});
+</script>
+</body>
+</html>

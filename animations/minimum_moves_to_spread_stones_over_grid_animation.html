@@ -97,7 +97,7 @@
             font-weight: bold;
             cursor: pointer;
             user-select: none;
-            transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+            transition: background-color 0.3s, border-color 0.3s;
         }
         .grid-cell.excess { border-color: var(--success-color); color: var(--success-color); background-color: #e6f7ec; }
         .grid-cell.empty { border-color: var(--danger-color); color: var(--danger-color); background-color: #fdecea; }
@@ -106,7 +106,7 @@
 
         #svg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .move-path {
-            stroke-width: 5px;
+            stroke-width: 4px;
             stroke-linecap: round;
             fill: none;
             stroke: var(--primary-accent);
@@ -118,11 +118,7 @@
 
         /* State Lists (Sources/Dests) */
         .state-list { display: flex; flex-direction: column; gap: 5px; }
-        .state-item { background: #f8f9fa; padding: 5px 10px; border-radius: 4px; font-family: var(--font-family-mono); transition: background-color 0.3s; }
-        .state-item.highlight-source { background-color: #e6f7ec; }
-        .state-item.highlight-dest { background-color: #fdecea; }
-        .state-item.used { text-decoration: line-through; color: var(--text-muted); }
-
+        .state-item { background: #f8f9fa; padding: 5px 10px; border-radius: 4px; font-family: var(--font-family-mono); }
 
         /* Call Stack & Log */
         #call-stack { display: flex; flex-direction: column-reverse; gap: 5px; }
@@ -136,7 +132,7 @@
     <div class="main-container">
         <header>
             <h1>Minimum Moves to Spread Stones Over Grid</h1>
-            <p>This animation perfectly matches the common backtracking approach of iterating through sources and placing them in available destinations.</p>
+            <p>Visualize the backtracking algorithm as it finds the cheapest way to match empty cells with cells having excess stones. Total stones must be 9.</p>
         </header>
 
         <div class="left-panel">
@@ -205,7 +201,7 @@
     // --- Grid Setup ---
     function setupGrid() {
         gridContainer.innerHTML = '';
-        gridState = [[0,3,0],[1,2,3],[3,0,0]]; // A good default example
+        gridState = [[1,1,1],[1,1,1],[1,1,1]];
         cells = [];
         for (let r = 0; r < 3; r++) {
             cells[r] = [];
@@ -214,8 +210,19 @@
                 cell.classList.add('grid-cell');
                 cell.dataset.r = r;
                 cell.dataset.c = c;
-                cell.addEventListener('click', () => { if(isAnimating) return; gridState[r][c] = (gridState[r][c] + 1) % 10; updateGridDisplay(); });
-                cell.addEventListener('contextmenu', (e) => { e.preventDefault(); if(isAnimating) return; gridState[r][c] = (gridState[r][c] - 1 + 10) % 10; updateGridDisplay(); });
+                // Left-click to increase
+                cell.addEventListener('click', () => {
+                    if(isAnimating) return;
+                    gridState[r][c] = (gridState[r][c] + 1) % 10;
+                    updateGridDisplay();
+                });
+                // Right-click to decrease
+                cell.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    if(isAnimating) return;
+                    gridState[r][c] = (gridState[r][c] - 1 + 10) % 10;
+                    updateGridDisplay();
+                });
                 gridContainer.appendChild(cell);
                 cells[r][c] = cell;
             }
@@ -238,51 +245,44 @@
         document.querySelector('header p').style.color = totalStones !== 9 ? 'var(--danger-color)' : 'var(--text-color)';
     }
 
-    // --- ALGORITHM MIRRORING THE JAVA CODE ---
-    function* solveGenerator(sources, dests) {
+    // --- Backtracking Algorithm (Generator) ---
+    function* solveGenerator(initialSources, initialDests) {
         let minMoves = Infinity;
-        let usedDests = new Array(dests.length).fill(false);
 
-        function* backtrack(sourceIndex, currentMoves) {
-            const stackId = `stack-${sourceIndex}`;
-            yield { type: 'STACK_PUSH', sourceIndex, stackId };
-
+        function* backtrack(dests, sources, currentMoves) {
+            const stackId = `stack-${dests.length}`;
             if (currentMoves >= minMoves) {
                 yield { type: 'PRUNE', current: currentMoves, min: minMoves };
-                yield { type: 'STACK_POP', stackId };
                 return;
             }
-            if (sourceIndex === sources.length) {
+            if (dests.length === 0) {
                 if (currentMoves < minMoves) {
                     minMoves = currentMoves;
                     yield { type: 'NEW_MIN', moves: minMoves };
                 }
-                yield { type: 'STACK_POP', stackId };
                 return;
             }
 
-            const from = sources[sourceIndex];
+            const targetDest = dests[0];
+            const remainingDests = dests.slice(1);
+            
+            yield { type: 'STACK_PUSH', dest: targetDest, stackId };
 
-            for (let i = 0; i < dests.length; i++) {
-                if (!usedDests[i]) {
-                    usedDests[i] = true;
-                    const to = dests[i];
-                    const cost = Math.abs(from.r - to.r) + Math.abs(from.c - to.c);
-                    
-                    yield { type: 'TRY_MOVE', sourceIndex, destIndex: i, from, to, cost };
-                    yield* backtrack(sourceIndex + 1, currentMoves + cost);
-                    
-                    usedDests[i] = false;
-                    yield { type: 'BACKTRACK', sourceIndex, destIndex: i, from, to, cost };
-                }
+            for (let i = 0; i < sources.length; i++) {
+                const source = sources[i];
+                const remainingSources = sources.slice(0, i).concat(sources.slice(i + 1));
+                const cost = Math.abs(source.r - targetDest.r) + Math.abs(source.c - targetDest.c);
+                yield { type: 'TRY_MOVE', from: source, to: targetDest, cost };
+                yield* backtrack(remainingDests, remainingSources, currentMoves + cost);
+                yield { type: 'BACKTRACK', from: source, to: targetDest, cost: cost };
             }
+
             yield { type: 'STACK_POP', stackId };
         }
 
-        yield* backtrack(0, 0);
+        yield* backtrack(initialDests, initialSources, 0);
         yield { type: 'END', moves: minMoves };
     }
-
 
     // --- Animation Runner ---
     function processNextStep() {
@@ -293,8 +293,12 @@
         removePath();
         
         if (result.done) {
-            isAnimating = false; isPaused = true; clearInterval(animationInterval);
-            playPauseBtn.disabled = true; nextBtn.disabled = true; resetBtn.disabled = false;
+            isAnimating = false;
+            isPaused = true;
+            clearInterval(animationInterval);
+            playPauseBtn.disabled = true;
+            nextBtn.disabled = true;
+            resetBtn.disabled = false; // Allow reset after completion
             return;
         }
         
@@ -302,41 +306,41 @@
         
         switch (action.type) {
             case 'STACK_PUSH':
-                logMessage(`Placing stone from source #${action.sourceIndex}`);
+                logMessage(`Trying to fill empty cell (${action.dest.r}, ${action.dest.c}).`);
                 const frame = document.createElement('div');
                 frame.className = 'stack-frame';
                 frame.id = action.stackId;
-                frame.textContent = `Place source #${action.sourceIndex}`;
+                frame.textContent = `Fill (${action.dest.r},${action.dest.c})`;
                 callStackDiv.appendChild(frame);
                 setTimeout(() => frame.classList.add('active'), 10);
-                document.querySelectorAll('#sources-list .state-item')[action.sourceIndex]?.classList.add('highlight-source');
                 break;
             case 'STACK_POP':
                 const frameToRemove = document.getElementById(action.stackId);
-                if (frameToRemove) { frameToRemove.classList.remove('active'); setTimeout(() => frameToRemove.remove(), 300); }
+                if (frameToRemove) {
+                    frameToRemove.classList.remove('active');
+                    setTimeout(() => frameToRemove.remove(), 300);
+                }
                 break;
             case 'TRY_MOVE':
-                logMessage(`  -> Trying to fill dest #${action.destIndex} (${action.to.r},${action.to.c}) with cost ${action.cost}`);
+                logMessage(`  -> Trying move from (${action.from.r},${action.from.c}) with cost ${action.cost}`);
                 currentMovesVal.textContent = parseInt(currentMovesVal.textContent) + action.cost;
                 cells[action.from.r][action.from.c].classList.add('highlight-from');
                 cells[action.to.r][action.to.c].classList.add('highlight-to');
-                drawManhattanPath(cells[action.from.r][action.from.c], cells[action.to.r][action.to.c]);
-                document.querySelectorAll('#dests-list .state-item')[action.destIndex].classList.add('used', 'highlight-dest');
+                drawPath(cells[action.from.r][action.from.c], cells[action.to.r][action.to.c]);
                 break;
             case 'BACKTRACK':
-                logMessage(`  <- Backtracking from dest #${action.destIndex} (${action.to.r},${action.to.c})`);
+                logMessage(`  <- Backtracking move from (${action.from.r},${action.from.c})`);
                 currentMovesVal.textContent = parseInt(currentMovesVal.textContent) - action.cost;
-                document.querySelectorAll('#dests-list .state-item')[action.destIndex].classList.remove('used', 'highlight-dest');
-                // Also highlight the cells on backtrack for clarity
-                cells[action.from.r][action.from.c].classList.add('highlight-from');
-                cells[action.to.r][action.to.c].classList.add('highlight-to');
                 break;
             case 'NEW_MIN':
                 logMessage(`🎉 New minimum found: ${action.moves} moves!`, 'solution');
                 minMovesVal.textContent = action.moves;
                 minMovesVal.parentElement.style.transition = 'none';
                 minMovesVal.parentElement.style.backgroundColor = '#d4af37';
-                setTimeout(() => { minMovesVal.parentElement.style.transition = 'background-color 0.5s'; minMovesVal.parentElement.style.backgroundColor = '#fffbe6'; }, 100);
+                setTimeout(() => {
+                    minMovesVal.parentElement.style.transition = 'background-color 0.5s';
+                    minMovesVal.parentElement.style.backgroundColor = '#fffbe6';
+                }, 100);
                 break;
             case 'PRUNE':
                 logMessage(`❌ Pruning branch. ${action.current} >= ${action.min}`, 'prune');
@@ -357,38 +361,24 @@
         if (type === 'prune') p.style.color = 'var(--danger-color)';
         logDisplay.prepend(p);
     }
-    function clearHighlights() {
-        document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('highlight-from', 'highlight-to'));
-        document.querySelectorAll('.state-item').forEach(i => i.classList.remove('highlight-source', 'highlight-dest'));
-    }
-    
-    // ⭐ CORRECTED Manhattan Path Drawing Function ⭐
-    function drawManhattanPath(fromCell, toCell) {
+    function clearHighlights() { document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('highlight-from', 'highlight-to')); }
+    function drawPath(fromCell, toCell) {
         const fromRect = fromCell.getBoundingClientRect();
         const toRect = toCell.getBoundingClientRect();
         const containerRect = gridContainer.getBoundingClientRect();
-        
         const x1 = fromRect.left + fromRect.width / 2 - containerRect.left;
         const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
         const x2 = toRect.left + toRect.width / 2 - containerRect.left;
         const y2 = toRect.top + toRect.height / 2 - containerRect.top;
 
-        // Determine the elbow point for a clean L-shape
-        // This creates a path like: Start -> Elbow -> End
-        // We have two choices for the elbow, we pick one arbitrarily.
-        const elbowX = x2;
-        const elbowY = y1;
-        
-        const pathData = `M${x1},${y1} L${elbowX},${elbowY} L${x2},${y2}`;
-
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', pathData);
+        path.setAttribute('d', `M${x1},${y1} L${x2},${y2}`);
         path.classList.add('move-path');
         svgOverlay.appendChild(path);
     }
     function removePath() { svgOverlay.innerHTML = ''; }
 
-    // --- Event Listeners ---
+    // --- ⭐ CORRECTED Event Listeners ⭐ ---
     initBtn.addEventListener('click', () => {
         let sources = [], dests = [], totalStones = 0;
         for (let r = 0; r < 3; r++) {
@@ -404,15 +394,26 @@
         if (totalStones !== 9) { alert('Total number of stones must be exactly 9!'); return; }
         if (sources.length !== dests.length) { alert('Internal error: Mismatch between empty and excess cells.'); return; }
 
-        sourcesList.innerHTML = sources.map((s,i) => `<div class="state-item">#${i}: (${s.r}, ${s.c})</div>`).join('');
-        destsList.innerHTML = dests.map((d,i) => `<div class="state-item">#${i}: (${d.r}, ${d.c})</div>`).join('');
-        logDisplay.innerHTML = ''; callStackDiv.innerHTML = ''; currentMovesVal.textContent = '0'; minMovesVal.textContent = 'Infinity';
+        // Setup UI for animation
+        sourcesList.innerHTML = sources.map(s => `<div class="state-item">(${s.r}, ${s.c})</div>`).join('');
+        destsList.innerHTML = dests.map(d => `<div class="state-item">(${d.r}, ${d.c})</div>`).join('');
+        logDisplay.innerHTML = '';
+        callStackDiv.innerHTML = '';
+        currentMovesVal.textContent = '0';
+        minMovesVal.textContent = 'Infinity';
         
-        isAnimating = true; isPaused = true;
+        // Setup state but DO NOT start playing
+        isAnimating = true;
+        isPaused = true;
         iterator = solveGenerator(sources, dests);
         
-        initBtn.disabled = true; resetBtn.disabled = false; playPauseBtn.disabled = false;
-        playPauseBtn.textContent = 'Play'; nextBtn.disabled = false;
+        // Update button states
+        initBtn.disabled = true;
+        resetBtn.disabled = false;
+        playPauseBtn.disabled = false;
+        playPauseBtn.textContent = 'Play';
+        nextBtn.disabled = false;
+
         logMessage("Algorithm initialized. Press 'Play' or 'Next Step' to begin.");
     });
 
@@ -425,24 +426,44 @@
         } else {
             playPauseBtn.textContent = 'Pause';
             const interval = 1050 - speedSlider.value;
-            processNextStep();
+            // Call once immediately, then set interval
+            processNextStep(); 
             animationInterval = setInterval(processNextStep, Math.max(50, interval));
         }
     });
 
     nextBtn.addEventListener('click', () => {
         if (!isAnimating) return;
-        if (!isPaused) { isPaused = true; playPauseBtn.textContent = 'Play'; clearInterval(animationInterval); }
+        // Pause if it's currently playing
+        if (!isPaused) {
+            isPaused = true;
+            playPauseBtn.textContent = 'Play';
+            clearInterval(animationInterval);
+        }
         processNextStep();
     });
 
     resetBtn.addEventListener('click', () => {
-        isAnimating = false; isPaused = true;
+        isAnimating = false;
+        isPaused = true;
         clearInterval(animationInterval);
-        initBtn.disabled = false; resetBtn.disabled = false; playPauseBtn.disabled = true; nextBtn.disabled = true;
-        sourcesList.innerHTML = ''; destsList.innerHTML = ''; callStackDiv.innerHTML = ''; logDisplay.innerHTML = '';
-        currentMovesVal.textContent = '0'; minMovesVal.textContent = 'Infinity';
+
+        // Reset button states to initial
+        initBtn.disabled = false;
+        resetBtn.disabled = false; // It's a bit redundant but safe
+        playPauseBtn.disabled = true;
+        nextBtn.disabled = true;
+        
+        // Clear UI
+        sourcesList.innerHTML = '';
+        destsList.innerHTML = '';
+        callStackDiv.innerHTML = '';
+        logDisplay.innerHTML = '';
+        currentMovesVal.textContent = '0';
+        minMovesVal.textContent = 'Infinity';
         removePath();
+        
+        // Reset grid to default
         setupGrid();
     });
 

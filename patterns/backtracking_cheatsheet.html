@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backtracking Pattern Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔄 Backtracking – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>Backtracking is a technique for solving recursive problems by trying all possible solutions and undoing the last step if the solution is not feasible. It is commonly used for problems involving permutations, combinations, and constraints.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>void backtrack(List&lt;Integer&gt; current, int[] nums, int start) {
+    // Base case: If a solution is found, process it
+    if (isSolution(current)) {
+        results.add(new ArrayList<>(current));
+        return;
+    }
+
+    for (int i = start; i < nums.length; i++) {
+        // Make a choice
+        current.add(nums[i]);
+
+        // Explore further
+        backtrack(current, nums, i + 1);
+
+        // Undo the choice
+        current.remove(current.size() - 1);
+    }
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Generating all subsets, permutations, or combinations</li>
+      <li>Solving constraint satisfaction problems (e.g., N-Queens, Sudoku)</li>
+      <li>Finding paths in a maze or graph</li>
+      <li>Partitioning problems (e.g., Palindrome Partitioning)</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/subsets/" target="_blank" rel="noopener noreferrer">78. Subsets</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="subsets_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/permutations/" target="_blank" rel="noopener noreferrer">46. Permutations</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="permutations_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/combinations/" target="_blank" rel="noopener noreferrer">77. Combinations</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="combinations_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/n-queens/" target="_blank" rel="noopener noreferrer">51. N-Queens</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/n-queens-ii/" target="_blank" rel="noopener noreferrer">52. N-Queens II</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="N-Queens_II_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/word-search/" target="_blank" rel="noopener noreferrer">79. Word Search</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="word_search_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/house-robber-iii/" target="_blank" rel="noopener noreferrer">337. House Robber III</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Tree</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="house_robber_iii_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/restore-ip-addresses/" target="_blank" rel="noopener noreferrer">93. Restore IP Addresses</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="restore_ip_addresses_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/flood-fill/" target="_blank" rel="noopener noreferrer">733. Flood Fill</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">DFS</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="flood_fill_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/minimum-moves-to-spread-stones-over-grid/" target="_blank" rel="noopener noreferrer">2736. Minimum Moves to Spread Stones Over Grid</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="minimum_moves_to_spread_stones_over_grid_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/binary-tree-paths/" target="_blank" rel="noopener noreferrer">257. Binary Tree Paths</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">DFS</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="binary_tree_paths_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/binary-watch/" target="_blank" rel="noopener noreferrer">401. Binary Watch</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="binary_watch_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/optimal-account-balancing/" target="_blank" rel="noopener noreferrer">465. Optimal Account Balancing</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="optimal_account_balancing_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/split-a-string-into-the-max-number-of-unique-substrings/" target="_blank" rel="noopener noreferrer">1593. Split a String Into the Max Number of Unique Substrings</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="split_a_string_into_the_max_number_of_unique_substrings_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/all-paths-from-source-to-target/" target="_blank" rel="noopener noreferrer">797. All Paths From Source to Target</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="all_paths_from_source_to_target_animation.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/remove-invalid-parentheses/" target="_blank" rel="noopener noreferrer">301. Remove Invalid Parentheses</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="remove_invalid_parentheses_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/sudoku-solver/" target="_blank" rel="noopener noreferrer">37. Sudoku Solver</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        📄 <a href="sudoku_solver_cheatsheet.html">Cheat Sheet</a>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Subsets</h2>
+    <pre><code>Input: nums = [1,2,3]
+Output: [[],[1],[2],[3],[1,2],[1,3],[2,3],[1,2,3]]
+
+Explanation:
+- Use backtracking to explore all possible subsets.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use recursion to explore all possibilities.</li>
+      <li>Always undo the last choice (backtrack) before moving to the next possibility.</li>
+      <li>Prune unnecessary branches early to optimize performance.</li>
+      <li>Edge cases: empty input, single-element input.</li>
+    </ul>
+  </div>
+</body>
+</html>

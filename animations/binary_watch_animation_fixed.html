@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Watch - Backtracking Animation</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --panel-bg: #ffffff;
+            --text-color: #343a40;
+            --text-muted: #6c757d;
+            --primary-accent: #007bff;
+            --led-off-color: #e9ecef;
+            --led-on-color: #ffc107;
+            --solution-color: #28a745;
+            --prune-color: #adb5bd;
+            --border-color: #dee2e6;
+            --on-color: #28a745;
+            --off-color: #dc3545;
+            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-family-mono: 'Consolas', 'Menlo', 'monospace';
+            --animation-speed: 0.4s;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            font-family: var(--font-family-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .main-container {
+            flex-grow: 1;
+            max-width: 1800px;
+            width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 500px;
+            gap: 25px;
+            grid-template-rows: auto 1fr;
+            grid-template-areas: "header header" "left-panel right-panel";
+            min-height: 0;
+        }
+
+        header {
+            grid-area: header;
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+
+        h1 { color: var(--primary-accent); margin: 0 0 10px 0; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        #watch-panel { 
+            grid-area: left-panel; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        .right-panel-container { 
+            grid-area: right-panel; 
+            display: grid;
+            grid-template-rows: auto auto auto 1fr 1fr;
+            gap: 20px;
+            min-height: 0;
+        }
+
+        .panel h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        /* Controls */
+        .control-group { margin-bottom: 15px; }
+        .control-group:last-child { margin-bottom: 0; }
+        .control-group label { display: block; font-weight: 500; margin-bottom: 8px; }
+        .control-group input[type="range"] { width: 100%; box-sizing: border-box; }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .button-grid button { cursor: pointer; font-weight: 600; color: #fff; border: none; padding: 10px; border-radius: 5px; transition: background-color 0.2s; }
+        .button-grid button:disabled { background-color: #ced4da; cursor: not-allowed; }
+        #init-btn { background-color: var(--primary-accent); }
+        #play-pause-btn { background-color: var(--solution-color); }
+        #next-btn { background-color: #17a2b8; }
+        #reset-btn { background-color: var(--text-color); }
+        
+        /* Binary Watch SVG */
+        #watch-svg-container { width: 100%; max-width: 700px; padding: 10px; }
+        #watch-svg { width: 100%; aspect-ratio: 500 / 300; }
+        .led { transition: fill var(--animation-speed); }
+        .led-label { font-family: var(--font-family-mono); font-size: 20px; fill: var(--text-muted); text-anchor: middle; dominant-baseline: central; }
+        .time-display { font-family: var(--font-family-mono); font-size: 80px; fill: var(--text-color); text-anchor: middle; dominant-baseline: central; transition: fill 0.3s; }
+        .time-display.invalid { fill: var(--off-color); }
+
+        /* Tree & Log Panel Inner Layout */
+        #tree-container-inner {
+            flex-grow: 1;
+            overflow: auto;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            min-height: 0; /* Crucial fix */
+        }
+        #log-display {
+            font-family: var(--font-family-mono);
+            font-size: 13px;
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse;
+            min-height: 0; /* Crucial fix */
+        }
+        
+        /* Recursion Tree */
+        #tree-svg { display: block; min-width: 100%; min-height: 100%; }
+        .tree-node, .tree-node circle, .tree-link { transition: all var(--animation-speed); }
+        .tree-node circle { stroke-width: 2px; }
+        .tree-link { stroke-width: 2px; fill: none; }
+        .current-path-node circle { stroke: var(--primary-accent); stroke-width: 4px; }
+        .current-path-link { stroke: var(--primary-accent) !important; stroke-width: 4px !important; }
+
+        /* State & Results */
+        #state-display { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; text-align: center; }
+        #state-display div { background-color: #e9ecef; padding: 10px; border-radius: 5px; }
+        #state-display span { display: block; font-size: 1.5rem; font-weight: bold; }
+        #results-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+        #results-list li { background-color: var(--solution-color); color: #fff; padding: 3px 8px; border-radius: 4px; font-family: var(--font-family-mono); }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <header>
+            <h1>Binary Watch Animation</h1>
+            <p>Visualize the backtracking algorithm as it decides to turn each of the 10 LEDs ON or OFF to find all valid times.</p>
+        </header>
+        
+        <div class="panel" id="watch-panel">
+            <div id="watch-svg-container">
+                <svg id="watch-svg" viewBox="0 0 500 300"></svg>
+            </div>
+        </div>
+
+        <div class="right-panel-container">
+             <div class="panel">
+                <h3>Controls</h3>
+                <div class="control-group">
+                    <label for="led-input">Number of LEDs to Turn On (0-8): <span id="led-count-label">1</span></label>
+                    <input type="range" id="led-input" min="0" max="8" value="1">
+                </div>
+                <div class="button-grid">
+                    <button id="init-btn">Initialize</button>
+                    <button id="reset-btn" disabled>Reset</button>
+                    <button id="play-pause-btn" disabled>Play</button>
+                    <button id="next-btn" disabled>Next Step</button>
+                </div>
+                <div class="control-group">
+                    <label for="speed-slider">Animation Speed:</label>
+                    <input type="range" id="speed-slider" min="50" max="1000" value="600">
+                </div>
+            </div>
+            <div class="panel">
+                <h3>Current State</h3>
+                <div id="state-display">
+                    <div>Index<span id="state-index">_</span></div>
+                    <div>Hour<span id="state-hour">_</span></div>
+                    <div>Minute<span id="state-minute">_</span></div>
+                    <div>LEDs Left<span id="state-leds">_</span></div>
+                </div>
+            </div>
+            <div class="panel">
+                <h3>Valid Times Found</h3>
+                <ul id="results-list"></ul>
+            </div>
+            <div class="panel" id="tree-panel">
+                <h3>Recursion Tree (ON vs OFF)</h3>
+                <div id="tree-container-inner">
+                    <svg id="tree-svg"></svg>
+                </div>
+            </div>
+            <div class="panel" id="log-panel">
+                <h3>Execution Log</h3>
+                <div id="log-display"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const ledInput = document.getElementById('led-input'), ledCountLabel = document.getElementById('led-count-label'),
+            initBtn = document.getElementById('init-btn'), resetBtn = document.getElementById('reset-btn'),
+            playPauseBtn = document.getElementById('play-pause-btn'), nextBtn = document.getElementById('next-btn'),
+            speedSlider = document.getElementById('speed-slider'), watchSvg = document.getElementById('watch-svg'),
+            treeSvg = document.getElementById('tree-svg'), stateIndex = document.getElementById('state-index'),
+            stateHour = document.getElementById('state-hour'), stateMinute = document.getElementById('state-minute'),
+            stateLeds = document.getElementById('state-leds'), resultsList = document.getElementById('results-list'),
+            logDisplay = document.getElementById('log-display');
+
+        const ledValues = [8, 4, 2, 1, 32, 16, 8, 4, 2, 1];
+        let iterator, isAnimating = false, isPaused = true, animationInterval = null,
+            flatTreeNodes = {}, nodeIdCounter = 0, rootNodeId = -1, currentPath = [];
+
+        function drawWatch() {
+            watchSvg.innerHTML = '';
+            const labels = ['8h', '4h', '2h', '1h', '32m', '16m', '8m', '4m', '2m', '1m'];
+            for (let i = 0; i < 4; i++) { watchSvg.appendChild(createLed(i, 50 + i * 60, 50, labels[i])); }
+            for (let i = 0; i < 6; i++) { watchSvg.appendChild(createLed(i + 4, 20 + (i + 1) * 60, 130, labels[i+4])); }
+            const timeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            timeText.setAttribute('id', 'time-display'); timeText.setAttribute('class', 'time-display');
+            timeText.setAttribute('x', '250'); timeText.setAttribute('y', '240'); timeText.textContent = '0:00';
+            watchSvg.appendChild(timeText);
+        }
+        
+        function createLed(id, x, y, label) {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('id', `led-${id}`); circle.setAttribute('class', 'led');
+            circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 20);
+            circle.style.fill = 'var(--led-off-color)';
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('class', 'led-label'); text.setAttribute('x', x); text.setAttribute('y', y + 35);
+            text.textContent = label;
+            g.appendChild(circle); g.appendChild(text);
+            return g;
+        }
+
+        function* solveGenerator(num) {
+            rootNodeId = nodeIdCounter++;
+            const root = { id: rootNodeId, children: [], depth: -1, parentId: null };
+            flatTreeNodes[root.id] = root;
+            yield { type: 'ADD_NODE', nodeData: root, decision: 'ROOT' };
+            
+            function* backtrack(index, hour, minute, ledsToPlace, parentId) {
+                currentPath.push(parentId);
+                yield { type: 'UPDATE_STATE', index, hour, minute, ledsToPlace };
+                
+                if (hour > 11 || minute > 59) { yield { type: 'PRUNE', reason: 'Invalid time', nodeId: parentId }; currentPath.pop(); return; }
+                if (ledsToPlace === 0) { yield { type: 'SOLUTION', hour, minute, nodeId: parentId }; currentPath.pop(); return; }
+                if (index === 10) { yield { type: 'PRUNE', reason: 'End of LEDs', nodeId: parentId }; currentPath.pop(); return; }
+
+                const val = ledValues[index], isHour = index < 4;
+                
+                yield { type: 'TRY_OFF', index };
+                const offChild = { id: nodeIdCounter++, children: [], depth: index, parentId };
+                yield { type: 'ADD_NODE', nodeData: offChild, decision: 'OFF' };
+                yield* backtrack(index + 1, hour, minute, ledsToPlace, offChild.id);
+                
+                yield { type: 'TRY_ON', index };
+                const onChild = { id: nodeIdCounter++, children: [], depth: index, parentId };
+                yield { type: 'ADD_NODE', nodeData: onChild, decision: 'ON' };
+                yield* backtrack(index + 1, isHour ? hour + val : hour, !isHour ? minute + val : minute, ledsToPlace - 1, onChild.id);
+                yield { type: 'BACKTRACK_ON', index };
+                
+                currentPath.pop();
+            }
+
+            yield* backtrack(0, 0, 0, num, root.id);
+            yield { type: 'END' };
+        }
+
+        function processNextStep() {
+            if (!iterator) return;
+            const result = iterator.next();
+            if (result.done) {
+                isAnimating = false; isPaused = true; clearInterval(animationInterval);
+                playPauseBtn.disabled = true; nextBtn.disabled = true; resetBtn.disabled = false;
+                playPauseBtn.textContent = 'Play';
+                return;
+            }
+            
+            const action = result.value;
+            const led = action.index !== undefined ? document.getElementById(`led-${action.index}`) : null;
+            
+            switch (action.type) {
+                case 'UPDATE_STATE':
+                    stateIndex.textContent = action.index; stateHour.textContent = action.hour; stateMinute.textContent = action.minute; stateLeds.textContent = action.ledsToPlace;
+                    document.getElementById('time-display').textContent = `${action.hour}:${String(action.minute).padStart(2, '0')}`;
+                    document.getElementById('time-display').classList.toggle('invalid', action.hour > 11 || action.minute > 59);
+                    logMessage(`backtrack(idx:${action.index}, h:${action.hour}, m:${action.minute}, left:${action.ledsToPlace})`);
+                    updatePathHighlights();
+                    break;
+                case 'TRY_ON': if(led) led.style.fill = 'var(--led-on-color)'; logMessage(`  -> Try ON for LED ${action.index}`); break;
+                case 'BACKTRACK_ON': if(led) led.style.fill = 'var(--led-off-color)'; break;
+                case 'TRY_OFF': logMessage(`  -> Try OFF for LED ${action.index}`); break;
+                case 'SOLUTION':
+                    logMessage(`🎉 Valid time: ${action.hour}:${String(action.minute).padStart(2, '0')}`, 'solution');
+                    const li = document.createElement('li'); li.textContent = `${action.hour}:${String(action.minute).padStart(2, '0')}`;
+                    resultsList.appendChild(li); 
+                    const solutionNode = document.getElementById(`node-${action.nodeId}`)?.querySelector('circle');
+                    if (solutionNode) solutionNode.style.fill = 'var(--solution-color)';
+                    break;
+                case 'PRUNE': 
+                    logMessage(`❌ Pruning: ${action.reason}`, 'prune'); 
+                    const pruneNode = document.getElementById(`node-${action.nodeId}`)?.querySelector('circle');
+                    if (pruneNode) pruneNode.style.fill = 'var(--prune-color)';
+                    break;
+                case 'ADD_NODE': addNodeToTree(action.nodeData, action.decision); break;
+                case 'END': logMessage('✅ Search Complete!', 'solution'); currentPath = []; updatePathHighlights(); break;
+            }
+        }
+
+        let layoutBounds = { minX: 0, maxX: 0, maxY: 0 };
+        function addNodeToTree(nodeData, decision) {
+            flatTreeNodes[nodeData.id] = nodeData;
+            const Y_SEP = 50;
+            nodeData.y = (nodeData.depth + 1) * Y_SEP + 30;
+            if (nodeData.parentId === null) {
+                nodeData.x = 0;
+            } else {
+                const parent = flatTreeNodes[nodeData.parentId];
+                const xOffset = 800 / Math.pow(2.2, nodeData.depth + 1);
+                nodeData.x = parent.x + (parent.children.length === 0 ? -xOffset : xOffset);
+                parent.children.push(nodeData);
+            }
+            layoutBounds.minX = Math.min(layoutBounds.minX, nodeData.x);
+            layoutBounds.maxX = Math.max(layoutBounds.maxX, nodeData.x);
+            layoutBounds.maxY = Math.max(layoutBounds.maxY, nodeData.y);
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('id', `node-${nodeData.id}`);
+            g.setAttribute('class', 'tree-node');
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 10);
+            const color = decision === 'ON' ? 'var(--on-color)' : (decision === 'OFF' ? 'var(--off-color)' : 'var(--primary-accent)');
+            circle.style.fill = color; circle.style.stroke = color;
+            g.appendChild(circle);
+            if (nodeData.parentId !== null) {
+                const parent = flatTreeNodes[nodeData.parentId];
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('id', `path-to-${nodeData.id}`);
+                path.setAttribute('class', 'tree-link');
+                path.setAttribute('d', `M${parent.x},${parent.y} L${parent.x},${parent.y}`);
+                path.style.stroke = color;
+                treeSvg.prepend(path);
+                 setTimeout(() => { path.setAttribute('d', `M${parent.x},${parent.y} L${nodeData.x},${nodeData.y}`); }, 20);
+            }
+            treeSvg.appendChild(g);
+            setTimeout(() => { g.setAttribute('transform', `translate(${nodeData.x}, ${nodeData.y})`); }, 20);
+            updateTreeViewBox();
+        }
+        
+        function updateTreeViewBox() {
+            const PADDING = 30;
+            const width = layoutBounds.maxX - layoutBounds.minX + PADDING * 2;
+            const height = layoutBounds.maxY + PADDING;
+            treeSvg.setAttribute('viewBox', `${layoutBounds.minX - PADDING} 0 ${width > 0 ? width : 200} ${height > 0 ? height : 200}`);
+        }
+
+        function updatePathHighlights() {
+            document.querySelectorAll('.current-path-node, .current-path-link').forEach(el => el.classList.remove('current-path-node', 'current-path-link'));
+            currentPath.forEach(id => {
+                const node = document.getElementById(`node-${id}`);
+                if (node) {
+                    node.classList.add('current-path-node');
+                    document.getElementById(`path-to-${id}`)?.classList.add('current-path-link');
+                }
+            });
+        }
+
+        function logMessage(msg, type) { 
+            const p = document.createElement('p'); 
+            p.textContent = msg; 
+            if (type === 'solution') p.style.color = 'var(--solution-color)'; 
+            if (type === 'prune') p.style.color = 'var(--text-muted)'; 
+            logDisplay.prepend(p); 
+        }
+        
+        function resetAll() {
+            clearInterval(animationInterval);
+            animationInterval = null; isAnimating = false; isPaused = true; iterator = null; flatTreeNodes = {}; nodeIdCounter = 0; rootNodeId = -1; currentPath = [];
+            layoutBounds = { minX: 0, maxX: 0, maxY: 0 };
+            initBtn.disabled = false; resetBtn.disabled = true; playPauseBtn.disabled = true; nextBtn.disabled = true;
+            playPauseBtn.textContent = 'Play';
+            drawWatch(); treeSvg.innerHTML = '';
+            stateIndex.textContent = '_'; stateHour.textContent = '_'; stateMinute.textContent = '_'; stateLeds.textContent = '_';
+            resultsList.innerHTML = ''; logDisplay.innerHTML = '';
+            updateTreeViewBox();
+        }
+
+        function startPlaying() {
+            isPaused = false; playPauseBtn.textContent = 'Pause';
+            const interval = 1050 - speedSlider.value;
+            processNextStep();
+            animationInterval = setInterval(processNextStep, Math.max(20, interval));
+        }
+
+        function pausePlaying() {
+            isPaused = true; playPauseBtn.textContent = 'Play'; 
+            clearInterval(animationInterval); animationInterval = null;
+        }
+
+        initBtn.addEventListener('click', () => {
+            resetAll();
+            const numLeds = parseInt(ledInput.value);
+            iterator = solveGenerator(numLeds);
+            isAnimating = true; isPaused = true;
+            initBtn.disabled = true; resetBtn.disabled = false; playPauseBtn.disabled = false; nextBtn.disabled = false;
+            logMessage("Algorithm initialized. Press 'Play' or 'Next Step' to begin.");
+        });
+
+        playPauseBtn.addEventListener('click', () => { isPaused ? startPlaying() : pausePlaying(); });
+
+        nextBtn.addEventListener('click', () => {
+            if (!isPaused) { pausePlaying(); }
+            processNextStep();
+        });
+
+        speedSlider.addEventListener('input', () => {
+            if (!isPaused && animationInterval) {
+                clearInterval(animationInterval);
+                const interval = 1050 - speedSlider.value;
+                animationInterval = setInterval(processNextStep, Math.max(20, interval));
+            }
+        });
+
+        resetBtn.addEventListener('click', resetAll);
+        ledInput.addEventListener('input', e => { ledCountLabel.textContent = e.target.value; });
+
+        resetAll();
+    });
+</script>
+</body>
+</html>

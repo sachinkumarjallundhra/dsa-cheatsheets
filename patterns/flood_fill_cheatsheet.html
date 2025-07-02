@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flood Fill Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🖌️ Flood Fill – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Flood Fill</b> problem involves changing the color of a region in a 2D image starting from a given pixel and replacing all connected pixels of the same color with a new color. It is commonly used in image editing and path-finding algorithms.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int[][] floodFill(int[][] image, int sr, int sc, int newColor) {
+        int originalColor = image[sr][sc];
+        if (originalColor != newColor) {
+            dfs(image, sr, sc, originalColor, newColor);
+        }
+        return image;
+    }
+
+    private void dfs(int[][] image, int r, int c, int color, int newColor) {
+        if (r &lt; 0 || r &gt;= image.length || c &lt; 0 || c &gt;= image[0].length || image[r][c] != color) {
+            return;
+        }
+        image[r][c] = newColor;
+        dfs(image, r + 1, c, color, newColor);
+        dfs(image, r - 1, c, color, newColor);
+        dfs(image, r, c + 1, color, newColor);
+        dfs(image, r, c - 1, color, newColor);
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/flood_fill_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the number of pixels in the image. Each pixel is visited at most once.</li>
+      <li><b>Space Complexity:</b> <code>O(N)</code>, for the recursion stack in the worst case (all pixels are connected).</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Image editing (paint bucket tool).</li>
+      <li>Connected component labeling in grids.</li>
+      <li>Path-finding and region-filling algorithms.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/flood-fill/" target="_blank" rel="noopener noreferrer">733. Flood Fill</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">DFS</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: image = [[1,1,1],[1,1,0],[1,0,1]], sr = 1, sc = 1, newColor = 2
+Output: [[2,2,2],[2,2,0],[2,0,1]]
+
+Explanation:
+- Starting from (1,1), all connected 1's are changed to 2.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Always check for the base case to avoid infinite recursion.</li>
+      <li>Use BFS for iterative solutions to avoid stack overflow on large images.</li>
+      <li>Edge cases: The new color is the same as the original color, or the image is empty.</li>
+    </ul>
+  </div>
+</body>
+</html>

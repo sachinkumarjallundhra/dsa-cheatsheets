@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restore IP Addresses - Dynamic Tree Animation</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --panel-bg: #ffffff;
+            --text-color: #343a40;
+            --text-muted: #6c757d;
+            --primary-accent: #007bff;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --solution-color: #d4af37; /* Gold */
+            --border-color: #dee2e6;
+            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-family-mono: 'Consolas', 'Menlo', 'monospace';
+        }
+
+        body {
+            font-family: var(--font-family-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .main-container {
+            max-width: 1600px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            grid-template-areas:
+                "header header"
+                "left-panel right-panel";
+        }
+
+        header {
+            grid-area: header;
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: var(--primary-accent);
+            margin: 0 0 10px 0;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .left-panel-container {
+            grid-area: left-panel;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        #tree-panel {
+            grid-area: right-panel;
+            overflow: auto; /* Allow scrolling for large trees */
+        }
+
+        .panel h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--text-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            font-weight: 600;
+        }
+
+        /* Controls */
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: center; }
+        .controls-grid label { font-weight: 500; }
+        .controls-grid input, .controls-grid button { width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 5px; border: 1px solid var(--border-color); font-family: var(--font-family-mono); }
+        .controls-grid button { cursor: pointer; font-family: var(--font-family-sans); font-weight: 600; color: #fff; border: none; transition: background-color 0.2s; }
+        #init-btn { background-color: var(--primary-accent); }
+        #init-btn:hover { background-color: #0069d9; }
+        #play-pause-btn { background-color: var(--success-color); }
+        #play-pause-btn:hover { background-color: #218838; }
+        #next-btn { background-color: var(--info-color); }
+        #next-btn:hover { background-color: #138496; }
+        #reset-btn { background-color: var(--text-muted); }
+        #reset-btn:hover { background-color: #5a6268; }
+        .controls-grid button:disabled { background-color: #ced4da; cursor: not-allowed; }
+
+        /* Visualization Elements */
+        #input-string-display { font-family: var(--font-family-mono); font-size: 22px; letter-spacing: 2px; word-break: break-all; padding: 10px; background-color: #e9ecef; border-radius: 5px; }
+        #input-string-display span { transition: all 0.3s; padding: 2px 0; border-radius: 3px; }
+        .char-highlight-try { background-color: var(--info-color); color: #fff; }
+
+        #current-path-display { font-family: var(--font-family-mono); font-size: 22px; font-weight: bold; color: var(--success-color); min-height: 30px; }
+
+        #log-display { font-family: var(--font-family-mono); font-size: 13px; flex-grow: 1; overflow-y: auto; background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 5px; padding: 10px; }
+        #log-display p { margin: 0 0 5px 0; line-height: 1.5; }
+        .log-call { color: var(--primary-accent); }
+        .log-success { color: var(--success-color); }
+        .log-fail { color: var(--danger-color); }
+        .log-backtrack { color: var(--warning-color); }
+        .log-solution { color: var(--solution-color); font-weight: bold; }
+
+        /* Recursion Tree SVG */
+        #recursion-tree-svg { width: 100%; height: 100%; min-height: 600px; }
+        .tree-node circle { stroke-width: 2px; transition: all 0.3s ease; }
+        .tree-node text { font-family: var(--font-family-mono); font-size: 14px; text-anchor: middle; dominant-baseline: middle; fill: var(--text-color); pointer-events: none; }
+        .tree-link { stroke: var(--border-color); stroke-width: 2px; transition: stroke 0.3s ease, opacity 0.3s; opacity: 0; }
+        .tree-node { opacity: 0; transition: opacity 0.3s ease; }
+        .visible { opacity: 1; }
+
+        /* Tree Node States */
+        .node-state-default circle { fill: #fff; stroke: var(--text-muted); }
+        .node-state-visiting circle { fill: var(--info-color); stroke: var(--info-color); }
+        .node-state-visiting text { fill: #fff; }
+        .node-state-valid circle { fill: var(--success-color); stroke: var(--success-color); }
+        .node-state-valid text { fill: #fff; }
+        .node-state-invalid circle { fill: var(--danger-color); stroke: var(--danger-color); }
+        .node-state-invalid text { fill: #fff; }
+        .node-state-solution circle { fill: var(--solution-color); stroke: #c89c1c; stroke-width: 3px; }
+        .node-state-solution text { fill: #fff; font-weight: bold; }
+        
+        @media (max-width: 1200px) {
+            .main-container { grid-template-columns: 1fr; grid-template-areas: "header" "left-panel" "right-panel"; }
+            #tree-panel { min-height: 500px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <header>
+            <h1>Restore IP Addresses - Dynamic Tree Animation</h1>
+            <p>The recursion tree is built dynamically. Use the "Next Step" button to drive the algorithm forward.</p>
+        </header>
+
+        <div class="left-panel-container">
+            <div class="panel">
+                <h3>Controls</h3>
+                <div class="controls-grid">
+                    <label for="ip-input">Input String:</label>
+                    <input type="text" id="ip-input" value="19216811" maxlength="12">
+                    
+                    <label for="speed-slider">Speed (ms):</label>
+                    <input type="range" id="speed-slider" min="0" max="1000" value="400" step="25">
+
+                    <button id="init-btn">Initialize</button>
+                    <button id="reset-btn" disabled>Reset</button>
+                    
+                    <button id="play-pause-btn" disabled>Play</button>
+                    <button id="next-btn" disabled>Next Step</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Visualization</h3>
+                <h4 style="margin: 0 0 5px 0;">Input:</h4>
+                <div id="input-string-display"></div>
+                <h4 style="margin: 15px 0 5px 0;">Current IP:</h4>
+                <div id="current-path-display"></div>
+                 <h4 style="margin: 15px 0 5px 0;">Found Solutions:</h4>
+                <div id="results-display" style="font-family: var(--font-family-mono);"></div>
+            </div>
+            
+            <div class="panel" style="flex-grow: 1;">
+                <h3>Execution Log</h3>
+                <div id="log-display"></div>
+            </div>
+        </div>
+        
+        <div class="panel" id="tree-panel">
+            <h3>Recursion Tree</h3>
+            <svg id="recursion-tree-svg"></svg>
+        </div>
+    </div>
+
+<script>
+    // DOM Elements
+    const ipInput = document.getElementById('ip-input');
+    const initBtn = document.getElementById('init-btn');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const speedSlider = document.getElementById('speed-slider');
+    const inputStringDisplay = document.getElementById('input-string-display');
+    const currentPathDisplay = document.getElementById('current-path-display');
+    const logDisplay = document.getElementById('log-display');
+    const resultsDisplay = document.getElementById('results-display');
+    const treeSvg = document.getElementById('recursion-tree-svg');
+
+    // State
+    let iterator;
+    let isPaused = true;
+    let animationInterval = null;
+    
+    // Tree state
+    let flatTreeNodes = {};
+    let xCounters = {};
+    let nodeIdCounter = 0;
+    let svgMaxX = 0;
+    let svgMaxY = 0;
+
+    // --- Core Algorithm: Generator Function ---
+    function* backtrackGenerator(s, startIndex, parts, parentNodeId) {
+        const callNodeId = parentNodeId;
+        yield { type: 'CALL', startIndex, parts, nodeId: callNodeId };
+
+        if (parts.length === 4 && startIndex === s.length) {
+            yield { type: 'SOLUTION', parts: [...parts], nodeId: callNodeId };
+            yield { type: 'RETURN', fromNodeId: callNodeId };
+            return;
+        }
+
+        if (parts.length === 4 || startIndex >= s.length) {
+            yield { type: 'LOG', message: 'Dead end. Backtracking...', class: 'log-backtrack' };
+            yield { type: 'RETURN', fromNodeId: callNodeId };
+            return;
+        }
+
+        for (let len = 1; len <= 3; len++) {
+            if (startIndex + len > s.length) continue;
+
+            const segment = s.substring(startIndex, startIndex + len);
+            const end = startIndex + len;
+            const newParts = [...parts, segment];
+
+            const choiceNode = { id: nodeIdCounter++, label: segment, children: [], depth: parts.length + 1, parentId: parentNodeId, x:0, y:0 };
+            yield { type: 'ADD_NODE', nodeData: choiceNode };
+            yield { type: 'TRY', start: startIndex, end, segment, nodeId: choiceNode.id, parts: newParts };
+
+            const num = parseInt(segment);
+            const isValid = !((segment.length > 1 && segment.startsWith('0')) || num > 255);
+            
+            if (isValid) {
+                yield { type: 'VALID', nodeId: choiceNode.id };
+                yield* backtrackGenerator(s, end, newParts, choiceNode.id);
+                yield { type: 'BACKTRACK', part: segment, nodeId: choiceNode.id, parts: parts };
+            } else {
+                const reason = (num > 255) ? '> 255' : 'leading zero';
+                yield { type: 'INVALID', reason, nodeId: choiceNode.id };
+            }
+        }
+        yield { type: 'RETURN', fromNodeId: callNodeId };
+    }
+
+    // --- UI Update and Animation Control ---
+    function resetUI(inputStr) {
+        inputStringDisplay.innerHTML = inputStr ? inputStr.split('').map(char => `<span>${char}</span>`).join('') : '';
+        currentPathDisplay.textContent = '';
+        logDisplay.innerHTML = '';
+        resultsDisplay.innerHTML = '';
+        treeSvg.innerHTML = '';
+        
+        clearInterval(animationInterval);
+        isPaused = true;
+        playPauseBtn.textContent = 'Play';
+        
+        initBtn.disabled = false;
+        playPauseBtn.disabled = true;
+        nextBtn.disabled = true;
+        resetBtn.disabled = true;
+        ipInput.disabled = false;
+        
+        // Reset tree state
+        iterator = null;
+        flatTreeNodes = {};
+        xCounters = {};
+        nodeIdCounter = 0;
+        svgMaxX = 0;
+        svgMaxY = 0;
+    }
+
+    function processNextStep() {
+        if (!iterator) return;
+
+        const result = iterator.next();
+        if (result.done) {
+            logMessage('✅ Algorithm Finished.', 'log-call');
+            clearInterval(animationInterval);
+            playPauseBtn.disabled = true;
+            nextBtn.disabled = true;
+            isPaused = true;
+            playPauseBtn.textContent = 'Play';
+            return;
+        }
+
+        const action = result.value;
+        const nodeEl = action.nodeId !== undefined ? document.getElementById(`node-${action.nodeId}`) : null;
+
+        // Reset previous visiting highlights
+        document.querySelectorAll('.node-state-visiting').forEach(el => el.classList.replace('node-state-visiting', 'node-state-valid'));
+        clearHighlights();
+        
+        switch (action.type) {
+            case 'ADD_NODE':
+                addNodeToSvg(action.nodeData);
+                break;
+            case 'CALL':
+                currentPathDisplay.textContent = action.parts.join('.');
+                if (nodeEl) nodeEl.classList.add('node-state-visiting');
+                break;
+            case 'TRY':
+                logMessage(`Trying segment: "${action.segment}"`);
+                highlightChars(action.start, action.end, 'char-highlight-try');
+                if (nodeEl) nodeEl.classList.add('node-state-visiting');
+                break;
+            case 'VALID':
+                logMessage('Segment is valid, descending deeper.', 'log-success');
+                if (nodeEl) nodeEl.classList.replace('node-state-visiting', 'node-state-valid');
+                break;
+            case 'INVALID':
+                logMessage(`Segment invalid: ${action.reason}`, 'log-fail');
+                if (nodeEl) nodeEl.classList.replace('node-state-visiting', 'node-state-invalid');
+                break;
+            case 'SOLUTION':
+                const ip = action.parts.join('.');
+                logMessage(`🎉 Solution Found: ${ip}`, 'log-solution');
+                resultsDisplay.innerHTML += `<div style="color:var(--solution-color); font-weight:bold;">${ip}</div>`;
+                if (nodeEl) nodeEl.classList.add('node-state-solution');
+                break;
+            case 'BACKTRACK':
+                logMessage(`Backtracking from "${action.part}"`, 'log-backtrack');
+                currentPathDisplay.textContent = action.parts.join('.');
+                break;
+        }
+    }
+
+    // ⭐ MODIFIED FUNCTION ⭐
+    function addNodeToSvg(nodeData) {
+        const NODE_X_SEP = 70;
+        const NODE_Y_SEP = 80;
+        const MIN_VIEWBOX_WIDTH = 600;
+        const MIN_VIEWBOX_HEIGHT = 400;
+
+        flatTreeNodes[nodeData.id] = nodeData;
+
+        // Dynamic Layout Calculation
+        const y = nodeData.depth * NODE_Y_SEP + 40;
+        if (!xCounters[nodeData.depth]) xCounters[nodeData.depth] = NODE_X_SEP / 2;
+        const x = xCounters[nodeData.depth];
+        xCounters[nodeData.depth] += NODE_X_SEP;
+        
+        nodeData.x = x;
+        nodeData.y = y;
+
+        // Update SVG viewBox to fit the new node, enforcing a minimum size
+        svgMaxX = Math.max(svgMaxX, x + 40);
+        svgMaxY = Math.max(svgMaxY, y + 40);
+        const effectiveWidth = Math.max(MIN_VIEWBOX_WIDTH, svgMaxX);
+        const effectiveHeight = Math.max(MIN_VIEWBOX_HEIGHT, svgMaxY);
+        treeSvg.setAttribute('viewBox', `0 0 ${effectiveWidth} ${effectiveHeight}`);
+
+        // Create Link
+        if (nodeData.parentId !== null) {
+            const parent = flatTreeNodes[nodeData.parentId];
+            const link = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            link.setAttribute('class', 'tree-link');
+            link.setAttribute('x1', parent.x);
+            link.setAttribute('y1', parent.y);
+            link.setAttribute('x2', x);
+            link.setAttribute('y2', y);
+            treeSvg.appendChild(link);
+            setTimeout(() => link.classList.add('visible'), 10);
+        }
+
+        // Create Node
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('id', `node-${nodeData.id}`);
+        g.setAttribute('class', 'tree-node node-state-default');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 20); // ⭐ CHANGED from 25 to 20 for better aesthetics
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.textContent = nodeData.label;
+
+        g.appendChild(circle);
+        g.appendChild(text);
+        treeSvg.appendChild(g);
+        setTimeout(() => g.classList.add('visible'), 10);
+    }
+
+    function clearHighlights() { inputStringDisplay.querySelectorAll('span').forEach(span => span.className = ''); }
+    function highlightChars(start, end, className) {
+        const spans = inputStringDisplay.querySelectorAll('span');
+        for (let i = start; i < end; i++) if(spans[i]) spans[i].className = className;
+    }
+    function logMessage(message, className = '') {
+        const p = document.createElement('p');
+        p.innerHTML = `> ${message}`;
+        if (className) p.classList.add(className);
+        logDisplay.appendChild(p);
+        logDisplay.scrollTop = logDisplay.scrollHeight;
+    }
+
+    // --- Event Listeners ---
+    initBtn.addEventListener('click', () => {
+        const inputStr = ipInput.value.replace(/[^0-9]/g, '');
+        if (inputStr.length < 4 || inputStr.length > 12) {
+            alert("Input length must be between 4 and 12 digits.");
+            return;
+        }
+        
+        resetUI(inputStr);
+
+        const rootNode = { id: nodeIdCounter++, label: "root", children: [], depth: 0, parentId: null, x:0, y:0 };
+        addNodeToSvg(rootNode);
+        
+        iterator = backtrackGenerator(inputStr, 0, [], rootNode.id);
+
+        ipInput.disabled = true;
+        initBtn.disabled = true;
+        playPauseBtn.disabled = false;
+        nextBtn.disabled = false;
+        resetBtn.disabled = false;
+
+        logMessage("Initialized. Click 'Next Step' or 'Play' to begin.");
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (!isPaused) {
+            isPaused = true;
+            clearInterval(animationInterval);
+            playPauseBtn.textContent = 'Play';
+        }
+        processNextStep();
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+        isPaused = !isPaused;
+        if (isPaused) {
+            clearInterval(animationInterval);
+            playPauseBtn.textContent = 'Play';
+        } else {
+            playPauseBtn.textContent = 'Pause';
+            const intervalTime = 1050 - speedSlider.value;
+            animationInterval = setInterval(processNextStep, Math.max(50, intervalTime));
+            processNextStep();
+        }
+    });
+
+    resetBtn.addEventListener('click', () => resetUI(''));
+
+    // Initial page load
+    resetUI('');
+    ipInput.value = '19216811';
+
+</script>
+</body>
+</html>

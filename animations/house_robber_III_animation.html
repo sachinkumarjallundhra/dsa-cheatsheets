@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Robber III Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1600px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-hr3-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-hr3-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-hr3-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 300px; font-size: 1.1em; }
+        .controls-hr3-p5 button { padding: 10px 15px; background-color: #c0392b; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-hr3-p5 button:hover { background-color: #a93226; }
+        .controls-hr3-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-hr3-p5 { display: grid; grid-template-columns: minmax(350px, 1fr) 3fr; gap: 15px; }
+        .left-panel-hr3-p5, .right-panel-hr3-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-hr3-p5, .visualization-wrapper-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-wrapper-p5 { min-height: 500px; background-color: #fdfdfd; overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center; }
+        
+        #tree-container-p5 { width: 100%; height: 100%; }
+        .tree-node circle { stroke-width: 2px; transition: all 0.3s; fill: #fff; }
+        .tree-node text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .tree-node .node-val { font-size: 1.2em; font-weight: bold; }
+        .tree-node .memo-val { font-size: 0.8em; fill: #666; }
+        .tree-node .decision-val { font-size: 1.5em; }
+        
+        .tree-node.probe > circle { stroke: #f1c40f; stroke-width: 4px; }
+        .tree-node.calc-rob > circle { stroke: #2ecc71; fill: #e8f8f5; }
+        .tree-node.calc-skip > circle { stroke: #e74c3c; fill: #feefef; }
+        .tree-node.finalized > circle { stroke: #34495e; }
+
+        .tree-link { stroke: #bdc3c7; stroke-width: 2px; fill: none; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr; gap: 10px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; }
+        #max_profit_display_p5.updated { animation: pulse-red 0.6s; }
+        @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); color: #c0392b; } }
+
+        #current_action_hr3_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay.show { opacity: 1; }
+
+        .log-container-hr3-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_hr3_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @media (max-width: 1200px) {
+            .main-content-hr3-p5 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>House Robber III (DP on Trees)</h1>
+
+        <div class="controls-hr3-p5">
+            <label for="tree_input_p5">Tree (array format):</label>
+            <input type="text" id="tree_input_p5" value="[3,2,3,null,3,null,1]">
+            <button id="start_button_hr3_p5">Start/Reset</button>
+            <button id="next_step_button_hr3_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-hr3-p5">
+            <div class="left-panel-hr3-p5">
+                <div class="state-panel-hr3-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Max Profit</div><div id="max_profit_display_p5" class="value">0</div></div>
+                    </div>
+                    <div id="current_action_hr3_display_p5"></div>
+                </div>
+                <div class="log-container-hr3-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_hr3_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-hr3-p5">
+                 <div class="visualization-wrapper-p5">
+                    <svg id="tree-container-p5"></svg>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <audio id="sound-probe" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgIAAgACAAIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-calc" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8A/f8A/P8A/P8A/P8A/f8A/f8A//8A//8A//8A//8A//8A/f8A/P8A/P8A/P8A/P8A/f8A//8A/v8AAP//AP//AP//AP//AP//AP//AP//AP//AP//AAAA/v8AAP//AP//AP//AP//AP//AP//AAAA/v8A//8A//8A//8A//8A//8A//8A"></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let isAudioUnlocked = false;
+let treeData = {};
+
+// --- DOM ELEMENTS ---
+let treeInput, startButton, nextStepButton, maxProfitDisplay,
+    currentActionDisplay, logOutput, treeContainer, overlay;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-probe', 'sound-calc', 'sound-win'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+// --- CORRECTED PARSE AND BUILD TREE ---
+function arrayToTree(arr) {
+    if (!arr || arr.length === 0 || arr[0] === null) return null;
+    
+    // Create nodes with a unique ID for D3
+    const nodes = arr.map((val, i) => val === null ? null : ({ val, id: i, children: [] }));
+    
+    const root = nodes[0];
+    const queue = [root];
+    let i = 1;
+
+    while (queue.length > 0 && i < nodes.length) {
+        const node = queue.shift();
+        if(!node) continue;
+
+        // Left child
+        if (nodes[i]) {
+            node.children.push(nodes[i]);
+            queue.push(nodes[i]);
+        }
+        i++;
+
+        // Right child
+        if (i < nodes.length && nodes[i]) {
+            node.children.push(nodes[i]);
+            queue.push(nodes[i]);
+        }
+        i++;
+    }
+    return root;
+}
+
+
+// --- ALGORITHM LOGIC & STEP GENERATION ---
+function generateAnimationSteps(root) {
+    const steps = [];
+    const memo = new Map();
+
+    function robRecursive(node) {
+        if (!node) return [0, 0];
+        
+        steps.push({ type: 'probe', nodeId: node.id, message: `Visiting house with value ${node.val}.`});
+
+        if (memo.has(node.id)) {
+            steps.push({ type: 'memo_hit', nodeId: node.id, val: memo.get(node.id), message: `Found memoized result for house ${node.val}.` });
+            return memo.get(node.id);
+        }
+
+        const leftVals = robRecursive(node.children?.[0]);
+        const rightVals = robRecursive(node.children?.[1]);
+        
+        steps.push({
+            type: 'calc_rob', nodeId: node.id, val: node.val, leftSkip: leftVals[1], rightSkip: rightVals[1],
+            message: `✅ If we rob house ${node.val}, we get ${node.val} + ${leftVals[1]} (left skip) + ${rightVals[1]} (right skip).`
+        });
+        const robVal = node.val + leftVals[1] + rightVals[1];
+
+        steps.push({
+            type: 'calc_skip', nodeId: node.id, val: node.val, leftMax: Math.max(...leftVals), rightMax: Math.max(...rightVals),
+            message: `❌ If we skip house ${node.val}, we get max(${leftVals}) (left) + max(${rightVals}) (right).`
+        });
+        const skipVal = Math.max(...leftVals) + Math.max(...rightVals);
+        
+        const result = [robVal, skipVal];
+        memo.set(node.id, result);
+        
+        steps.push({ type: 'memo_set', nodeId: node.id, val: result, message: `Result for house ${node.val}: [Rob: ${robVal}, Skip: ${skipVal}]. Storing result.` });
+
+        return result;
+    }
+    
+    steps.push({ type: 'initial', message: 'Starting to calculate max profit.' });
+    const finalResult = robRecursive(root);
+    const maxProfit = Math.max(...finalResult);
+    steps.push({ type: 'finish', maxProfit, message: `Finished! Max profit is ${maxProfit}.` });
+    return steps;
+}
+
+// --- D3 RENDERING ---
+function renderTree(step) {
+    const root = d3.hierarchy(treeData, d => d.children);
+    const treeLayout = d3.tree();
+    
+    const wrapper = treeContainer;
+    const { width, height } = wrapper.getBoundingClientRect();
+    if(width === 0 || height === 0) return;
+    treeLayout.size([width - 100, height - 100]);
+    
+    treeLayout(root);
+    
+    d3.select(treeContainer).selectAll('*').remove();
+    const g = d3.select(treeContainer).append('g').attr('transform', 'translate(50, 50)');
+
+    g.selectAll('.tree-link').data(root.links()).enter()
+        .append('path')
+        .attr('class', 'tree-link')
+        .attr('d', d3.linkVertical().x(d => d.x).y(d => d.y));
+
+    const nodes = g.selectAll('.tree-node').data(root.descendants()).enter()
+        .append('g')
+        .attr('class', 'tree-node')
+        .attr('id', d => `node-${d.data.id}`)
+        .attr('transform', d => `translate(${d.x},${d.y})`);
+
+    nodes.append('circle').attr('r', 25);
+    nodes.append('text')
+        .attr('class', 'node-val')
+        .attr('dy', '.35em')
+        .attr('text-anchor', 'middle')
+        .text(d => d.data.val);
+        
+    if(step.nodeId !== undefined) {
+        d3.select(`#node-${step.nodeId}`).classed(step.type, true);
+    }
+    
+    if(step.type === 'calc_rob') {
+         d3.select(`#node-${step.nodeId}`).append('text')
+            .attr('class', 'decision-val')
+            .attr('dy', '-2.2em').attr('text-anchor', 'middle').attr('fill', '#2ecc71')
+            .text(`✅ ${step.val + step.leftSkip + step.rightSkip}`);
+    }
+    if(step.type === 'calc_skip') {
+        d3.select(`#node-${step.nodeId}`).append('text')
+            .attr('class', 'decision-val')
+            .attr('dy', '3.2em').attr('text-anchor', 'middle').attr('fill', '#e74c3c')
+            .text(`❌ ${step.leftMax + step.rightMax}`);
+    }
+
+    animationSteps.slice(0, currentStepIndex + 1).forEach(s => {
+        if(s.type === 'memo_set' && s.nodeId !== undefined) {
+            const node = d3.select(`#node-${s.nodeId}`);
+            node.classed('finalized', true);
+            node.selectAll('.memo-val').remove(); // Avoid duplicates
+            node.append('text')
+              .attr('class', 'memo-val')
+              .attr('dy', '3em').attr('text-anchor', 'middle')
+              .text(`[${s.val[0]}, ${s.val[1]}]`);
+        }
+    });
+}
+
+
+async function initializeAnimation() {
+    simulationRunning = false;
+    let treeArr;
+    try {
+        treeArr = JSON.parse(treeInput.value);
+    } catch (e) {
+        alert("Invalid tree format. Please use a JSON array like [3,2,3,null,3,null,1].");
+        return;
+    }
+    
+    treeData = arrayToTree(treeArr);
+    if (!treeData) {
+        alert("Cannot create a tree from the provided input.");
+        return;
+    }
+    
+    animationSteps = generateAnimationSteps(treeData);
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    
+    const firstStep = animationSteps[0];
+    renderTree(firstStep);
+    maxProfitDisplay.textContent = '0';
+    currentActionDisplay.textContent = firstStep.message;
+    log(firstStep.message);
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+    log(`\n--- ${step.message} ---`);
+    currentActionDisplay.textContent = step.message;
+    
+    renderTree(step);
+    
+    switch (step.type) {
+        case 'probe': playSound('sound-probe'); break;
+        case 'calc_rob':
+        case 'calc_skip':
+        case 'memo_set': 
+            playSound('sound-calc'); 
+            break;
+        case 'finish':
+            playSound('sound-win');
+            maxProfitDisplay.textContent = step.maxProfit;
+            maxProfitDisplay.classList.add('updated');
+            overlay.className = 'show';
+            overlay.innerHTML = `<span style="font-size:3em">💰</span><div style="font-size:1.5em">Finished!</div><div style="font-size:1.8em">Max Profit: ${step.maxProfit}</div>`;
+            simulationRunning = false;
+            break;
+    }
+    
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input_p5');
+    startButton = document.getElementById('start_button_hr3_p5');
+    nextStepButton = document.getElementById('next_step_button_hr3_p5');
+    maxProfitDisplay = document.getElementById('max_profit_display_p5');
+    currentActionDisplay = document.getElementById('current_action_hr3_display_p5');
+    logOutput = document.getElementById('log_output_hr3_p5');
+    treeContainer = document.getElementById('tree-container-p5');
+    overlay = document.getElementById('overlay');
+
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

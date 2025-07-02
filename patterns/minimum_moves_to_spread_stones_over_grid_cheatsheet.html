@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimum Moves to Spread Stones Over Grid Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🪨 Minimum Moves to Spread Stones Over Grid – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Minimum Moves to Spread Stones Over Grid</b> problem asks for the minimum number of moves required to distribute stones in a grid so that every cell contains exactly one stone. In each move, you can transfer a stone from one cell to an adjacent cell (up, down, left, or right).
+    </p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    int minMoves = Integer.MAX_VALUE;
+
+    public int minimumMoves(int[][] grid) {
+        List&lt;int[]&gt; extra = new ArrayList&lt;&gt;();
+        List&lt;int[]&gt; empty = new ArrayList&lt;&gt;();
+
+        // Collect positions with extra stones and empty cells
+        for (int i = 0; i &lt; 3; i++) {
+            for (int j = 0; j &lt; 3; j++) {
+                if (grid[i][j] &gt; 1) {
+                    for (int k = 1; k &lt; grid[i][j]; k++) {
+                        extra.add(new int[]{i, j});
+                    }
+                } else if (grid[i][j] == 0) {
+                    empty.add(new int[]{i, j});
+                }
+            }
+        }
+
+        backtrack(extra, empty, 0, new boolean[empty.size()], 0);
+        return minMoves;
+    }
+
+    private void backtrack(List&lt;int[]&gt; extra, List&lt;int[]&gt; empty, int idx, boolean[] used, int moves) {
+        if (idx == extra.size()) {
+            minMoves = Math.min(minMoves, moves);
+            return;
+        }
+        for (int i = 0; i &lt; empty.size(); i++) {
+            if (!used[i]) {
+                used[i] = true;
+                int[] from = extra.get(idx);
+                int[] to = empty.get(i);
+                int dist = Math.abs(from[0] - to[0]) + Math.abs(from[1] - to[1]);
+                backtrack(extra, empty, idx + 1, used, moves + dist);
+                used[i] = false;
+            }
+        }
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/minimum_moves_to_spread_stones_over_grid_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(k!)</code>, where <code>k</code> is the number of extra stones (since we try all permutations).</li>
+      <li><b>Space Complexity:</b> <code>O(k)</code>, for the recursion stack and used array.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Grid-based movement and distribution problems.</li>
+      <li>Assignment and matching problems with minimum cost.</li>
+      <li>Backtracking and combinatorial optimization.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/minimum-moves-to-spread-stones-over-grid/" target="_blank" rel="noopener noreferrer">
+          2736. Minimum Moves to Spread Stones Over Grid
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: grid = [[1,1,0],[1,1,1],[1,2,1]]
+Output: 2
+
+Explanation:
+- Move one stone from (2,1) to (0,2) in 2 moves (down then left).</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use backtracking to try all assignments of extra stones to empty cells.</li>
+      <li>Prune branches early if the current moves already exceed the minimum found.</li>
+      <li>For larger grids, consider using the Hungarian Algorithm for optimal assignment.</li>
+    </ul>
+  </div>
+</body>
+</html>

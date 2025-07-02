@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Binary Watch Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>⌚ Binary Watch – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Binary Watch</b> problem asks you to return all possible times a binary watch could represent with a given number of LEDs turned on. The watch has 4 LEDs for hours (0-11) and 6 LEDs for minutes (0-59).
+    </p>
+
+    <h2>🧱 Pattern Template (Bit Manipulation)</h2>
+    <pre><code>class Solution {
+    public List&lt;String&gt; readBinaryWatch(int turnedOn) {
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        for (int h = 0; h &lt; 12; h++) {
+            for (int m = 0; m &lt; 60; m++) {
+                if (Integer.bitCount(h) + Integer.bitCount(m) == turnedOn) {
+                    result.add(String.format("%d:%02d", h, m));
+                }
+            }
+        }
+        return result;
+    }
+}</code></pre>
+
+    <h2>🧱 Pattern Template (Backtracking)</h2>
+    <pre><code>class Solution {
+    public List&lt;String&gt; readBinaryWatch(int turnedOn) {
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        backtrack(result, new int[10], 0, turnedOn);
+        return result;
+    }
+
+    private void backtrack(List&lt;String&gt; result, int[] leds, int idx, int turnedOn) {
+        if (turnedOn == 0) {
+            int hour = ledsToInt(leds, 0, 4);
+            int minute = ledsToInt(leds, 4, 10);
+            if (hour &lt; 12 &amp;&amp; minute &lt; 60) {
+                result.add(hour + ":" + String.format("%02d", minute));
+            }
+            return;
+        }
+        for (int i = idx; i &lt; 10; i++) {
+            leds[i] = 1;
+            backtrack(result, leds, i + 1, turnedOn - 1);
+            leds[i] = 0;
+        }
+    }
+
+    private int ledsToInt(int[] leds, int start, int end) {
+        int val = 0;
+        for (int i = start; i &lt; end; i++) {
+            val = (val &lt;&lt; 1) | leds[i];
+        }
+        return val;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/binary_watch_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(720)</code> (since there are 12 hours × 60 minutes).</li>
+      <li><b>Space Complexity:</b> <code>O(1)</code> (excluding the output list).</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Bit manipulation and counting set bits.</li>
+      <li>Generating combinations based on constraints.</li>
+      <li>Formatting and validating time strings.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/binary-watch/" target="_blank" rel="noopener noreferrer">
+          401. Binary Watch
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        <span class="badge badge-tag">Bit Manipulation</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: turnedOn = 1
+Output: ["0:01","0:02","0:04","0:08","0:16","0:32","1:00","2:00","4:00","8:00"]
+
+Explanation:
+- Each output string represents a valid time with exactly 1 LED on.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use <code>Integer.bitCount()</code> to count the number of set bits in an integer.</li>
+      <li>Format minutes with leading zeros using <code>String.format("%02d", m)</code>.</li>
+      <li>Edge cases: <code>turnedOn = 0</code> (only "0:00"), <code>turnedOn &gt; 8</code> (no valid times).</li>
+    </ul>
+  </div>
+</body>
+</html>

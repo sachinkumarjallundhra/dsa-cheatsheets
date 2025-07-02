@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Paths From Source to Target Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🛣️ All Paths From Source to Target – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>All Paths From Source to Target</b> problem asks you to find all possible paths from node 0 to node n-1 in a directed acyclic graph (DAG) represented as an adjacency list.
+    </p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; allPathsSourceTarget(int[][] graph) {
+        List&lt;List&lt;Integer&gt;&gt; result = new ArrayList&lt;&gt;();
+        List&lt;Integer&gt; path = new ArrayList&lt;&gt;();
+        path.add(0);
+        dfs(graph, 0, path, result);
+        return result;
+    }
+
+    private void dfs(int[][] graph, int node, List&lt;Integer&gt; path, List&lt;List&lt;Integer&gt;&gt; result) {
+        if (node == graph.length - 1) {
+            result.add(new ArrayList&lt;&gt;(path));
+            return;
+        }
+        for (int next : graph[node]) {
+            path.add(next);
+            dfs(graph, next, path, result);
+            path.remove(path.size() - 1); // backtrack
+        }
+    }
+}</code></pre>
+<button onclick="window.location.href='../animations/all_paths_from_source_to_target_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(2^N * N)</code>, where <code>N</code> is the number of nodes (since there can be up to 2^N paths in the worst case).</li>
+      <li><b>Space Complexity:</b> <code>O(2^N * N)</code>, for storing all paths and the recursion stack.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding all possible paths in a DAG.</li>
+      <li>Backtracking and path enumeration in graphs.</li>
+      <li>Problems involving traversal from source to target.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/all-paths-from-source-to-target/" target="_blank" rel="noopener noreferrer">
+          797. All Paths From Source to Target
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+        <span class="badge badge-tag">Graph</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: graph = [[1,2],[3],[3],[]]
+Output: [[0,1,3],[0,2,3]]
+
+Explanation:
+- There are two paths from node 0 to node 3: 0→1→3 and 0→2→3.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use DFS with backtracking to explore all possible paths.</li>
+      <li>Since the graph is a DAG, you don't need to worry about cycles.</li>
+      <li>Edge cases: No path exists, or only one path exists.</li>
+    </ul>
+  </div>
+</body>
+</html>

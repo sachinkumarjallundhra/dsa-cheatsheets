@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>House Robber III Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🏠 House Robber III – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>House Robber III</b> problem involves finding the maximum amount of money a thief can rob from houses arranged in a binary tree. The constraint is that no two directly connected houses can be robbed.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int rob(TreeNode root) {
+        int[] result = robHelper(root);
+        return Math.max(result[0], result[1]);
+    }
+
+    private int[] robHelper(TreeNode node) {
+        if (node == null) {
+            return new int[]{0, 0}; // {max if not robbed, max if robbed}
+        }
+
+        int[] left = robHelper(node.left);
+        int[] right = robHelper(node.right);
+
+        // If the current node is not robbed, take the max of both children
+        int notRobbed = Math.max(left[0], left[1]) + Math.max(right[0], right[1]);
+
+        // If the current node is robbed, add its value to the "not robbed" values of children
+        int robbed = node.val + left[0] + right[0];
+
+        return new int[]{notRobbed, robbed};
+    }
+}</code></pre>
+<button onclick="window.location.href='../animations/house_robber_III_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the number of nodes in the tree. Each node is visited once.</li>
+      <li><b>Space Complexity:</b> <code>O(H)</code>, where <code>H</code> is the height of the tree, for the recursion stack.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Solving problems involving binary trees with constraints.</li>
+      <li>Understanding dynamic programming on trees.</li>
+      <li>Optimizing resource allocation in hierarchical structures.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/house-robber/" target="_blank" rel="noopener noreferrer">198. House Robber</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Dynamic Programming</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/house-robber-ii/" target="_blank" rel="noopener noreferrer">213. House Robber II</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Dynamic Programming</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/house-robber-iii/" target="_blank" rel="noopener noreferrer">337. House Robber III</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Dynamic Programming</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: root = [3,2,3,null,3,null,1]
+Output: 7
+
+Explanation:
+- Rob house 3 (root) and houses 3 and 1 (children of the right subtree).
+- Maximum amount = 3 + 3 + 1 = 7.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a helper function that returns two values: max money if the node is robbed and max money if it is not robbed.</li>
+      <li>Prune unnecessary branches early by returning <code>{0, 0}</code> for null nodes.</li>
+      <li>Edge cases: Empty tree, single-node tree.</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>N-Queens II Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>♛ N-Queens II – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>N-Queens II</b> problem involves finding the number of distinct solutions to the N-Queens problem. The goal is to place <code>N</code> queens on an <code>N x N</code> chessboard such that no two queens threaten each other.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public int totalNQueens(int n) {
+        return solve(0, n, new boolean[n], new boolean[2 * n], new boolean[2 * n]);
+    }
+
+    private int solve(int row, int n, boolean[] cols, boolean[] d1, boolean[] d2) {
+        if (row == n) {
+            return 1; // Found a valid solution
+        }
+
+        int count = 0;
+        for (int col = 0; col < n; col++) {
+            int id1 = col - row + n; // Diagonal 1
+            int id2 = col + row;     // Diagonal 2
+
+            if (cols[col] || d1[id1] || d2[id2]) continue; // Skip invalid positions
+
+            // Place the queen
+            cols[col] = d1[id1] = d2[id2] = true;
+
+            // Recurse to the next row
+            count += solve(row + 1, n, cols, d1, d2);
+
+            // Backtrack
+            cols[col] = d1[id1] = d2[id2] = false;
+        }
+
+        return count;
+    }
+}</code></pre>
+<button onclick="window.location.href='../animations/n_queens_ii_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N!)</code>, where <code>N</code> is the size of the board. This is because we try all possible placements for each queen.</li>
+      <li><b>Space Complexity:</b> <code>O(N)</code>, for the arrays tracking column and diagonal usage.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Solving constraint satisfaction problems.</li>
+      <li>Understanding backtracking and pruning techniques.</li>
+      <li>Exploring combinatorial problems.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/n-queens/" target="_blank" rel="noopener noreferrer">51. N-Queens</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/n-queens-ii/" target="_blank" rel="noopener noreferrer">52. N-Queens II</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: n = 4
+Output: 2
+
+Explanation:
+- There are two distinct solutions to the 4-Queens problem.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use arrays to track column and diagonal usage for efficient pruning.</li>
+      <li>Backtrack by undoing the placement of queens after exploring a branch.</li>
+      <li>Edge cases: <code>n = 1</code> (1 solution), <code>n = 2</code> or <code>n = 3</code> (0 solutions).</li>
+    </ul>
+  </div>
+</body>
+</html>

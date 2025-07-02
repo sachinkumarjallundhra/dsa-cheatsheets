@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remove Invalid Parentheses - BFS Animation</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-color: #0f172a;
+            --text-muted: #64748b;
+            --primary-accent: #6366f1;
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --processing-color: #f59e0b;
+            --border-color: #e2e8f0;
+            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-family-mono: 'Menlo', 'Consolas', 'monospace';
+            --animation-speed: 0.6s;
+        }
+        body {
+            font-family: var(--font-family-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 450px;
+            gap: 25px;
+        }
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 25px;
+        }
+        .panel h3 {
+            margin-top: 0; margin-bottom: 20px; padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color); font-weight: 600;
+        }
+        #viz-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: 600px;
+        }
+        #processing-area {
+            text-align: center;
+            border: 2px dashed var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 80px;
+        }
+        .string-block {
+            display: inline-block;
+            font-family: var(--font-family-mono);
+            font-size: 1.2rem;
+            font-weight: 500;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid;
+            transition: all var(--animation-speed) ease;
+        }
+        #current-string-block {
+            border-color: var(--processing-color);
+            background-color: #fffbeb;
+            color: var(--processing-color);
+        }
+        .queue-container, .set-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f1f5f9;
+            min-height: 48px;
+        }
+        .queue-item {
+            border-color: var(--primary-accent);
+            background-color: #eef2ff;
+            color: var(--primary-accent);
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .queue-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .set-item {
+             background-color: var(--text-muted);
+             color: white; padding: 5px 12px; border-radius: 20px;
+             font-family: var(--font-family-mono); font-size: 14px;
+             transition: all 0.3s ease;
+             opacity: 0; transform: scale(0.8);
+        }
+        .set-item.visible { opacity: 1; transform: scale(1); }
+        .solution-item {
+            border-color: var(--success-color);
+            background-color: #f0fdf4;
+            color: var(--success-color);
+        }
+        /* Controls & Log */
+        #log-display {
+            font-family: var(--font-family-mono); font-size: 13px;
+            background: #f1f5f9; border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 15px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        input[type="text"], input[type="range"], button { width: 100%; box-sizing: border-box; }
+        button {
+            cursor: pointer; font-weight: 600; color: #fff; border: none;
+            padding: 10px; border-radius: 8px; transition: background-color 0.2s;
+        }
+        button:disabled { background-color: #d1d5db !important; cursor: not-allowed; }
+        #init-btn { background-color: var(--primary-accent); }
+        #play-pause-btn { background-color: var(--success-color); }
+        #next-btn { background-color: #2563eb; }
+        #reset-btn { background-color: var(--text-color); }
+    </style>
+</head>
+<body>
+    <header style="text-align:center; margin-bottom: 20px;">
+        <h1>Remove Invalid Parentheses</h1>
+        <p>Visualizing a Breadth-First Search (BFS) to find all valid strings by removing the minimum number of parentheses.</p>
+    </header>
+    <div class="main-container">
+        <div class="panel" id="viz-panel">
+            <h3>BFS Queue (<span id="level-display">Level 0</span>)</h3>
+            <div class="queue-container" id="queue-container"></div>
+            <h3>Processing Area</h3>
+            <div id="processing-area"></div>
+            <h3>Execution Log</h3>
+            <div id="log-display"></div>
+        </div>
+        
+        <div id="right-column" style="display:flex; flex-direction:column; gap:25px;">
+             <div class="panel">
+                <h3>Controls</h3>
+                <label for="string-input" style="margin-bottom: 5px; display:block;">Input String:</label>
+                <input type="text" id="string-input" value="(a)())()" style="margin-bottom: 15px; padding: 8px;">
+                <div class="button-grid">
+                    <button id="init-btn">Initialize</button>
+                    <button id="reset-btn">Reset</button>
+                </div>
+                <div class="button-grid" style="margin-top: 10px;">
+                    <button id="play-pause-btn" disabled>Play</button>
+                    <button id="next-btn" disabled>Next Step</button>
+                </div>
+                <label for="speed-slider" style="margin-top: 15px; margin-bottom: 5px; display:block;">Animation Speed:</label>
+                <input type="range" id="speed-slider" min="50" max="1000" value="400">
+            </div>
+            <div class="panel">
+                <h3>Visited Set</h3>
+                <div class="set-container" id="visited-set-container"></div>
+            </div>
+            <div class="panel">
+                <h3>Solutions Found</h3>
+                <div class="set-container" id="solutions-container"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM Elements ---
+    const stringInput = document.getElementById('string-input'),
+          initBtn = document.getElementById('init-btn'),
+          resetBtn = document.getElementById('reset-btn'),
+          playPauseBtn = document.getElementById('play-pause-btn'),
+          nextBtn = document.getElementById('next-btn'),
+          speedSlider = document.getElementById('speed-slider'),
+          queueContainer = document.getElementById('queue-container'),
+          processingArea = document.getElementById('processing-area'),
+          logDisplay = document.getElementById('log-display'),
+          visitedContainer = document.getElementById('visited-set-container'),
+          solutionsContainer = document.getElementById('solutions-container'),
+          levelDisplay = document.getElementById('level-display');
+
+    // --- State ---
+    let iterator, animationInterval = null, isPaused = true;
+    
+    // --- Helper ---
+    function isValid(s) {
+        let count = 0;
+        for (const char of s) {
+            if (char === '(') count++;
+            else if (char === ')') count--;
+            if (count < 0) return false;
+        }
+        return count === 0;
+    }
+
+    // --- Generator Algorithm ---
+    function* solveGenerator(s) {
+        let queue = [s];
+        let visited = new Set([s]);
+        let found = false;
+        let level = 0;
+
+        yield { type: 'ENQUEUE', str: s, isInitial: true };
+        yield { type: 'ADD_TO_VISITED', str: s };
+
+        while (queue.length > 0) {
+            yield { type: 'START_LEVEL', level };
+            let levelSize = queue.length;
+            let nextLevelQueue = [];
+            
+            for (let i = 0; i < levelSize; i++) {
+                const currentStr = queue[i];
+                yield { type: 'PROCESS_STRING', str: currentStr };
+                yield { type: 'LOG', msg: `Processing "${currentStr}"...` };
+                
+                if (isValid(currentStr)) {
+                    yield { type: 'VALID_FOUND', str: currentStr };
+                    yield { type: 'LOG', msg: `✅ "${currentStr}" is valid! Added to solutions.`, style: 'success' };
+                    found = true;
+                }
+                
+                if (found) continue;
+
+                yield { type: 'LOG', msg: `❌ "${currentStr}" is invalid. Generating children.` };
+                for (let j = 0; j < currentStr.length; j++) {
+                    if (currentStr[j] === '(' || currentStr[j] === ')') {
+                        const childStr = currentStr.substring(0, j) + currentStr.substring(j + 1);
+                        if (!visited.has(childStr)) {
+                            yield { type: 'GENERATE_CHILD', child: childStr, parent: currentStr };
+                            yield { type: 'ADD_TO_VISITED', str: childStr };
+                            visited.add(childStr);
+                            nextLevelQueue.push(childStr);
+                        } else {
+                            yield { type: 'LOG', msg: `  - Skipping "${childStr}" (already visited).`, style: 'muted' };
+                        }
+                    }
+                }
+            }
+            
+            if (found) {
+                yield { type: 'LOG', msg: 'Solution(s) found. Halting search.', style: 'final' };
+                break;
+            }
+            
+            queue = nextLevelQueue;
+            for(const str of queue) {
+                yield { type: 'ENQUEUE', str, isInitial: false };
+            }
+            level++;
+        }
+        
+        yield { type: 'LOG', msg: '--- Search Complete ---', style: 'final' };
+    }
+
+    // --- Animation Runner ---
+    async function processNextStep() {
+        if (!iterator) return;
+        const result = await iterator.next();
+        if (result.done) {
+            pausePlaying();
+            playPauseBtn.disabled = true;
+            nextBtn.disabled = true;
+            return;
+        }
+
+        const action = result.value;
+
+        switch(action.type) {
+            case 'START_LEVEL':
+                levelDisplay.textContent = `Level ${action.level}`;
+                log(`--- Processing Level ${action.level} ---`, 'level');
+                break;
+            case 'ENQUEUE':
+                const queueEl = document.createElement('div');
+                queueEl.id = `queue-${action.str}-${Math.random()}`;
+                queueEl.className = 'string-block queue-item';
+                queueEl.textContent = action.str;
+                queueContainer.appendChild(queueEl);
+                if (action.isInitial) {
+                    setTimeout(() => queueEl.classList.add('visible'), 10);
+                } else {
+                    // This will be handled by GENERATE_CHILD animation
+                }
+                break;
+            case 'ADD_TO_VISITED':
+                const visitedEl = document.createElement('div');
+                visitedEl.className = 'set-item';
+                visitedEl.textContent = action.str;
+                visitedContainer.appendChild(visitedEl);
+                setTimeout(() => visitedEl.classList.add('visible'), 10);
+                break;
+            case 'PROCESS_STRING':
+                processingArea.innerHTML = '';
+                const currentBlock = document.createElement('div');
+                currentBlock.id = 'current-string-block';
+                currentBlock.className = 'string-block';
+                currentBlock.textContent = action.str;
+                processingArea.appendChild(currentBlock);
+                
+                const qItem = Array.from(queueContainer.children).find(el => el.textContent === action.str);
+                if(qItem) {
+                    qItem.style.opacity = '0';
+                    qItem.style.transform = 'scale(0.8)';
+                    setTimeout(() => qItem.remove(), 500);
+                }
+                break;
+            case 'VALID_FOUND':
+                const solutionEl = document.createElement('div');
+                solutionEl.className = 'string-block solution-item';
+                solutionEl.textContent = action.str;
+                solutionsContainer.appendChild(solutionEl);
+                break;
+            case 'GENERATE_CHILD':
+                const childBlock = document.createElement('div');
+                childBlock.id = `queue-${action.child}-${Math.random()}`; // Give temp id
+                childBlock.className = 'string-block queue-item';
+                childBlock.textContent = action.child;
+                childBlock.style.position = 'absolute';
+                
+                const procRect = processingArea.getBoundingClientRect();
+                const queueRect = queueContainer.getBoundingClientRect();
+
+                childBlock.style.left = `${procRect.left}px`;
+                childBlock.style.top = `${procRect.top}px`;
+                document.body.appendChild(childBlock);
+                childBlock.classList.add('visible');
+
+                // Animate to queue
+                setTimeout(() => {
+                    const targetEl = document.createElement('div');
+                    targetEl.style.visibility = 'hidden';
+                    queueContainer.appendChild(targetEl);
+                    const targetRect = targetEl.getBoundingClientRect();
+                    
+                    childBlock.style.left = `${targetRect.left}px`;
+                    childBlock.style.top = `${targetRect.top}px`;
+                    
+                    setTimeout(() => {
+                        childBlock.remove();
+                        targetEl.remove();
+                        const finalQueueEl = document.createElement('div');
+                        finalQueueEl.id = `queue-${action.child}-${Math.random()}`;
+                        finalQueueEl.className = 'string-block queue-item visible';
+                        finalQueueEl.textContent = action.child;
+                        queueContainer.appendChild(finalQueueEl);
+                    }, 500);
+
+                }, 50);
+                log(`  - Generated "${action.child}"`, 'muted');
+                break;
+        }
+    }
+    
+    // --- UI & Control Functions ---
+    function init() {
+        resetState();
+        const s = stringInput.value;
+        if (!s) { alert("Please enter a string."); return; }
+        
+        iterator = solveGenerator(s);
+        initBtn.disabled = true;
+        playPauseBtn.disabled = false;
+        nextBtn.disabled = false;
+        startPlaying();
+    }
+    
+    function resetState() {
+        pausePlaying(); iterator = null;
+        queueContainer.innerHTML = '';
+        processingArea.innerHTML = '';
+        visitedContainer.innerHTML = '';
+        solutionsContainer.innerHTML = '';
+        logDisplay.innerHTML = '';
+        levelDisplay.textContent = 'Level 0';
+        initBtn.disabled = false;
+        playPauseBtn.disabled = true;
+        playPauseBtn.textContent = 'Play';
+        nextBtn.disabled = true;
+    }
+
+    function log(message, style) {
+        const p = document.createElement('p');
+        p.style.margin = '0 0 5px 0';
+        if (style === 'success') p.style.color = 'var(--success-color)';
+        if (style === 'error') p.style.color = 'var(--error-color)';
+        if (style === 'muted') p.style.color = 'var(--text-muted)';
+        if (style === 'level') p.style.fontWeight = 'bold';
+        if (style === 'final') { p.style.fontWeight = 'bold'; p.style.color = 'var(--primary-accent)';}
+        p.innerHTML = message;
+        logDisplay.prepend(p);
+    }
+    
+    function startPlaying() {
+        if (!iterator) return;
+        isPaused = false;
+        playPauseBtn.textContent = 'Pause';
+        const interval = 1050 - speedSlider.value;
+        animationInterval = setInterval(processNextStep, Math.max(50, interval));
+    }
+
+    function pausePlaying() {
+        isPaused = true;
+        playPauseBtn.textContent = 'Play';
+        clearInterval(animationInterval);
+        animationInterval = null;
+    }
+
+    // --- Event Listeners ---
+    initBtn.addEventListener('click', init);
+    resetBtn.addEventListener('click', resetState);
+    playPauseBtn.addEventListener('click', () => { isPaused ? startPlaying() : pausePlaying(); });
+    nextBtn.addEventListener('click', () => { 
+        if (!isPaused) pausePlaying();
+        processNextStep();
+    });
+    speedSlider.addEventListener('input', () => {
+        if (!isPaused) {
+            clearInterval(animationInterval);
+            const interval = 1050 - speedSlider.value;
+            animationInterval = setInterval(processNextStep, Math.max(50, interval));
+        }
+    });
+
+    resetState();
+});
+</script>
+</body>
+</html>

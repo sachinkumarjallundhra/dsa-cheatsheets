@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Paths From Source to Target - Animation</title>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --panel-bg: #ffffff;
+            --text-color: #1f2937;
+            --text-muted: #6b7280;
+            --primary-accent: #3b82f6;
+            --path-color: #f97316;
+            --solution-color: #22c55e;
+            --border-color: #e5e7eb;
+            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-family-mono: 'Menlo', 'Consolas', 'monospace';
+            --animation-speed: 0.5s;
+        }
+
+        /* FIX: Allow main page scrolling */
+        body {
+            font-family: var(--font-family-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .main-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header { text-align: center; }
+        h1 { color: var(--primary-accent); margin: 0 0 10px 0; }
+        .panel h3 {
+            margin-top: 0; margin-bottom: 20px; padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color); font-weight: 600;
+        }
+        
+        /* NEW: Two-tier layout */
+        #top-section {
+            display: grid;
+            grid-template-columns: 1fr 450px;
+            gap: 25px;
+            height: 60vh; /* Give it a viewport-relative height */
+            min-height: 500px;
+        }
+        #bottom-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        /* Controls */
+        #graph-input {
+            width: 100%; height: 120px; box-sizing: border-box; font-family: var(--font-family-mono);
+            font-size: 14px; border: 1px solid var(--border-color); border-radius: 8px;
+            padding: 10px; resize: vertical;
+        }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button {
+            cursor: pointer; font-weight: 600; color: #fff; border: none;
+            padding: 10px; border-radius: 8px; transition: background-color 0.2s;
+        }
+        button:disabled { background-color: #d1d5db !important; cursor: not-allowed; }
+        #init-btn { background-color: var(--primary-accent); grid-column: 1 / -1; }
+        #play-pause-btn { background-color: var(--solution-color); }
+        #next-btn { background-color: #2563eb; }
+        
+        /* Visualization SVG */
+        #main-svg { width: 100%; height: 100%; }
+        .node circle {
+            stroke-width: 3px; stroke: var(--text-muted); fill: var(--panel-bg);
+            transition: all var(--animation-speed);
+        }
+        .node text { font-size: 18px; font-weight: bold; text-anchor: middle; dominant-baseline: central; fill: var(--text-color); }
+        .node.current circle { stroke: var(--path-color); stroke-width: 5px; }
+        .node.source circle { fill: var(--path-color); stroke: var(--path-color); }
+        .node.source text { fill: white; }
+        .node.target circle { fill: var(--solution-color); stroke: var(--solution-color); }
+        .node.target text { fill: white; }
+
+        .edge {
+            stroke: var(--text-muted); stroke-width: 2px;
+            transition: stroke var(--animation-speed), stroke-width var(--animation-speed);
+        }
+        .edge.current-path { stroke: var(--path-color); stroke-width: 4px; }
+        .edge.solution-path {
+            stroke: var(--solution-color); stroke-width: 5px;
+            animation: glow 1.5s infinite alternate;
+        }
+        @keyframes glow { from { opacity: 0.7; } to { opacity: 1; } }
+
+        /* State & Log */
+        #current-path-display, #solutions-found {
+            font-family: var(--font-family-mono); font-size: 16px;
+            padding: 10px; background: #f9fafb; border-radius: 8px;
+            min-height: 24px;
+        }
+        #solutions-found ul { list-style: none; padding: 0; margin: 0; }
+        #solutions-found li { margin-bottom: 5px; color: var(--solution-color); }
+        
+        #log-panel { min-height: 250px; }
+        #log-display {
+            font-family: var(--font-family-mono); font-size: 13px;
+            background: #f9fafb; border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 15px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <header>
+            <h1>All Paths From Source to Target</h1>
+            <p>Visualizing Depth First Search and Backtracking to find all possible routes in a directed graph.</p>
+        </header>
+
+        <div id="top-section">
+            <div class="panel" id="viz-container">
+                <svg id="main-svg">
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"></path>
+                        </marker>
+                        <marker id="arrow-path" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--path-color)"></path>
+                        </marker>
+                        <marker id="arrow-solution" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--solution-color)"></path>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+
+            <div class="panel" id="controls-container">
+                <h3>Controls</h3>
+                <label for="graph-input">Graph Edges (from, to):</label>
+                <textarea id="graph-input" placeholder="e.g., [[0,1], [0,2], [1,3], [2,3]]">[[0,1],[0,2],[1,3],[2,3]]</textarea>
+                <button id="init-btn">Initialize & Animate</button>
+                <div class="button-grid" style="margin-top: 10px;">
+                    <button id="play-pause-btn" disabled>Play</button>
+                    <button id="next-btn" disabled>Next Step</button>
+                </div>
+                <label for="speed-slider" style="margin-top: 15px; display:block;">Animation Speed:</label>
+                <input type="range" id="speed-slider" min="50" max="1000" value="500" style="width:100%;">
+            </div>
+        </div>
+
+        <div id="bottom-section">
+            <div class="panel" id="live-state-container">
+                <h3>Live State</h3>
+                <p style="margin:0 0 5px 0;">Current Path:</p>
+                <div id="current-path-display"></div>
+                <h3 style="margin-top:20px;">Solutions Found</h3>
+                <div id="solutions-found"><ul></ul></div>
+            </div>
+            <div class="panel" id="log-panel">
+                <h3>Execution Log</h3>
+                <div id="log-display"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM Elements ---
+    const graphInput = document.getElementById('graph-input'),
+          initBtn = document.getElementById('init-btn'),
+          playPauseBtn = document.getElementById('play-pause-btn'),
+          nextBtn = document.getElementById('next-btn'),
+          speedSlider = document.getElementById('speed-slider'),
+          mainSvg = document.getElementById('main-svg'),
+          logDisplay = document.getElementById('log-display'),
+          currentPathDisplay = document.getElementById('current-path-display'),
+          solutionsFoundList = document.querySelector('#solutions-found ul');
+
+    // --- State ---
+    let iterator, animationInterval = null, isPaused = true;
+    let nodes = [], edges = [];
+    
+    // --- Generator Algorithm ---
+    function* solveGenerator(adj, source, target) {
+        const solutions = [];
+
+        function* dfs(u, path) {
+            path.push(u);
+            yield { type: 'ENTER_NODE', node: u, path: [...path] };
+
+            if (u === target) {
+                solutions.push([...path]);
+                yield { type: 'SOLUTION_FOUND', path: [...path] };
+                yield { type: 'LOG', msg: `✅ Found path: ${path.join(' → ')}`, style: 'success' };
+            } else {
+                for (const v of (adj[u] || [])) {
+                    yield { type: 'TRAVERSE_EDGE', from: u, to: v };
+                    yield { type: 'LOG', msg: `Exploring from ${u} → ${v}`};
+                    yield* dfs(v, path);
+                }
+            }
+            
+            // Backtrack
+            path.pop();
+            yield { type: 'LEAVE_NODE', node: u, path: [...path] };
+            yield { type: 'LOG', msg: `↩️ Backtracking from ${u}`, style: 'muted' };
+        }
+
+        yield { type: 'LOG', msg: '--- Starting Search from Node ' + source + ' ---' };
+        yield* dfs(source, []);
+        yield { type: 'LOG', msg: '--- Search Complete ---' };
+    }
+
+    // --- Animation Runner ---
+    function processNextStep() {
+        if (!iterator) return;
+        const result = iterator.next();
+        if (result.done) {
+            pausePlaying();
+            playPauseBtn.disabled = true;
+            nextBtn.disabled = true;
+            return;
+        }
+
+        const action = result.value;
+        const currentPath = action.path || [];
+
+        currentPathDisplay.textContent = currentPath.join(' → ');
+
+        document.querySelectorAll('.node.current').forEach(n => n.classList.remove('current'));
+        document.querySelectorAll('.edge.current-path').forEach(e => {
+            e.classList.remove('current-path');
+            e.setAttribute('marker-end', 'url(#arrow)');
+        });
+        
+        for (let i = 0; i < currentPath.length; i++) {
+            document.getElementById(`node-${currentPath[i]}`)?.classList.add('current');
+            if (i > 0) {
+                const edgeId = `edge-${currentPath[i-1]}-${currentPath[i]}`;
+                const edgeEl = document.getElementById(edgeId);
+                if (edgeEl && !edgeEl.classList.contains('solution-path')) {
+                     edgeEl.classList.add('current-path');
+                     edgeEl.setAttribute('marker-end', 'url(#arrow-path)');
+                }
+            }
+        }
+        
+        switch(action.type) {
+            case 'LOG':
+                log(action.msg, action.style);
+                break;
+            case 'SOLUTION_FOUND':
+                const li = document.createElement('li');
+                li.textContent = action.path.join(' → ');
+                solutionsFoundList.appendChild(li);
+                for (let i = 0; i < action.path.length - 1; i++) {
+                    const edgeId = `edge-${action.path[i]}-${action.path[i+1]}`;
+                    const edgeEl = document.getElementById(edgeId);
+                    if (edgeEl) {
+                        edgeEl.classList.add('solution-path');
+                        edgeEl.setAttribute('marker-end', 'url(#arrow-solution)');
+                    }
+                }
+                break;
+        }
+    }
+
+    // --- UI, Drawing & Control Functions ---
+    function init() {
+        reset();
+        let rawEdges;
+        try {
+            rawEdges = JSON.parse(graphInput.value);
+            if (!Array.isArray(rawEdges) || !rawEdges.every(e => Array.isArray(e) && e.length === 2)) {
+                 throw new Error("Invalid edge format.");
+            }
+        } catch (e) {
+            alert("Invalid graph format. Please provide an array of edges, e.g., [[0,1], [1,2]]");
+            return;
+        }
+
+        const nodeSet = new Set();
+        rawEdges.forEach(([from, to]) => {
+            nodeSet.add(from);
+            nodeSet.add(to);
+        });
+
+        if (nodeSet.size === 0) {
+            alert("Graph is empty. Please define at least one edge.");
+            return;
+        }
+        
+        const numNodes = Math.max(...Array.from(nodeSet)) + 1;
+        const source = 0, target = numNodes - 1;
+
+        const adj = Array.from({ length: numNodes }, () => []);
+        rawEdges.forEach(([from, to]) => adj[from].push(to));
+
+        drawGraph(numNodes, rawEdges, source, target);
+        
+        iterator = solveGenerator(adj, source, target);
+        initBtn.disabled = true;
+        playPauseBtn.disabled = false;
+        nextBtn.disabled = false;
+        startPlaying();
+    }
+    
+    function drawGraph(numNodes, rawEdges, source, target) {
+        const svgWidth = mainSvg.clientWidth;
+        const svgHeight = mainSvg.clientHeight;
+        const radius = Math.min(svgWidth, svgHeight) / 2.5;
+        const nodeRadius = 25;
+
+        nodes = Array.from({ length: numNodes }, (_, i) => {
+            const angle = (i / numNodes) * 2 * Math.PI - (Math.PI / 2);
+            return {
+                id: i,
+                x: svgWidth / 2 + radius * Math.cos(angle),
+                y: svgHeight / 2 + radius * Math.sin(angle),
+            };
+        });
+        
+        rawEdges.forEach(([from, to]) => {
+            const fromNode = nodes[from];
+            const toNode = nodes[to];
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.id = `edge-${from}-${to}`;
+            line.classList.add('edge');
+            
+            const angle = Math.atan2(toNode.y - fromNode.y, toNode.x - fromNode.x);
+            line.setAttribute('x1', fromNode.x);
+            line.setAttribute('y1', fromNode.y);
+            line.setAttribute('x2', toNode.x - (nodeRadius * 1.4) * Math.cos(angle));
+            line.setAttribute('y2', toNode.y - (nodeRadius * 1.4) * Math.sin(angle));
+            line.setAttribute('marker-end', 'url(#arrow)');
+            mainSvg.appendChild(line);
+        });
+
+        nodes.forEach(node => {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.id = `node-${node.id}`;
+            g.classList.add('node');
+            if (node.id === source) g.classList.add('source');
+            if (node.id === target) g.classList.add('target');
+            g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', nodeRadius);
+            
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.textContent = node.id;
+            
+            g.appendChild(circle);
+            g.appendChild(text);
+            mainSvg.appendChild(g);
+        });
+    }
+
+    function reset() {
+        pausePlaying(); iterator = null;
+        mainSvg.innerHTML = `
+            <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--text-muted)"></path></marker>
+                <marker id="arrow-path" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--path-color)"></path></marker>
+                <marker id="arrow-solution" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--solution-color)"></path></marker>
+            </defs>`;
+        logDisplay.innerHTML = ''; currentPathDisplay.innerHTML = '';
+        solutionsFoundList.innerHTML = '';
+        initBtn.disabled = false; playPauseBtn.disabled = true;
+        nextBtn.disabled = true; playPauseBtn.textContent = 'Play';
+    }
+
+    function log(message, style) {
+        const p = document.createElement('p');
+        p.style.margin = '0 0 5px 0';
+        if (style === 'success') p.style.color = 'var(--solution-color)';
+        if (style === 'muted') p.style.color = 'var(--text-muted)';
+        p.innerHTML = message;
+        logDisplay.prepend(p);
+    }
+    
+    function startPlaying() {
+        if (!iterator) return;
+        isPaused = false;
+        playPauseBtn.textContent = 'Pause';
+        const interval = 1050 - speedSlider.value;
+        animationInterval = setInterval(processNextStep, Math.max(50, interval));
+    }
+
+    function pausePlaying() {
+        isPaused = true;
+        playPauseBtn.textContent = 'Play';
+        clearInterval(animationInterval);
+        animationInterval = null;
+    }
+
+    // --- Event Listeners ---
+    initBtn.addEventListener('click', init);
+    playPauseBtn.addEventListener('click', () => { isPaused ? startPlaying() : pausePlaying(); });
+    nextBtn.addEventListener('click', () => { 
+        if (!isPaused) pausePlaying();
+        processNextStep();
+    });
+    speedSlider.addEventListener('input', () => {
+        if (!isPaused) {
+            clearInterval(animationInterval);
+            const interval = 1050 - speedSlider.value;
+            animationInterval = setInterval(processNextStep, Math.max(50, interval));
+        }
+    });
+
+    // Handle window resize for graph redrawing
+    window.addEventListener('resize', () => {
+        if (iterator) {
+            // A simple way to handle resize is to just re-init, but this loses state.
+            // For this visualization, we can just live with the fact that it might look odd on resize.
+            // A more complex solution would re-calculate all node positions and update SVGs.
+        }
+    });
+
+    reset();
+});
+</script>
+</body>
+</html>

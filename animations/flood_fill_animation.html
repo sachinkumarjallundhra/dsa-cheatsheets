@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Fill Algorithm (DFS) Animation</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --panel-bg: #ffffff;
+            --text-color: #34495e;
+            --primary-accent: #8e44ad; /* Purple for DFS/Stack */
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f1c40f;
+            --wall-color: #34495e;
+            --target-color: #ecf0f1;
+            --in-stack-color: #d7bde2;
+            --border-color: #e1e8ed;
+            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --animation-speed: 0.3s;
+        }
+
+        body {
+            font-family: var(--font-family-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 25px;
+            grid-template-areas: "header header" "left-panel right-panel";
+        }
+
+        header {
+            grid-area: header;
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: var(--primary-accent);
+            margin: 0 0 10px 0;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .left-panel-container {
+            grid-area: left-panel;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        #grid-panel {
+            grid-area: right-panel;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .panel h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            font-weight: 600;
+        }
+
+        /* Controls */
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; font-weight: 500; margin-bottom: 8px; }
+        .control-group input[type="range"], .control-group input[type="color"] { width: 100%; box-sizing: border-box; }
+        .radio-group label { display: inline-block; margin-right: 15px; }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .button-grid button { cursor: pointer; font-weight: 600; color: #fff; border: none; padding: 10px; border-radius: 5px; transition: background-color 0.2s, transform 0.1s; }
+        .button-grid button:active { transform: scale(0.98); }
+        .button-grid button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #start-btn { background-color: var(--success-color); }
+        #play-pause-btn { background-color: var(--primary-accent); }
+        #next-btn { background-color: #2980b9; }
+        #reset-btn { background-color: var(--text-color); }
+        
+        /* Grid */
+        #grid-container {
+            display: grid;
+            border: 2px solid var(--border-color);
+            touch-action: none;
+            width: 95%;
+            max-width: 700px;
+            aspect-ratio: 1;
+        }
+        .grid-cell {
+            background-color: var(--target-color);
+            transition: background-color var(--animation-speed) ease;
+        }
+        .grid-cell.wall { background-color: var(--wall-color); }
+        .grid-cell.start { background-color: var(--warning-color); }
+        .grid-cell.processing { background-color: var(--danger-color); }
+        .grid-cell.in-stack { background-color: var(--in-stack-color); }
+
+        /* Stack Visualization */
+        #stack-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            min-height: 24px;
+        }
+        .stack-item {
+            background-color: var(--primary-accent);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            animation: pop-in 0.3s ease-out forwards;
+        }
+        .stack-item.removing { animation: fade-out 0.3s ease-out forwards; }
+        @keyframes pop-in { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes fade-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0.5); opacity: 0; } }
+
+        /* Log */
+        #log-display {
+            font-family: monospace;
+            font-size: 13px;
+            background: #ecf0f1;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 10px;
+            /* ⭐ CSS FIX IS HERE ⭐ */
+            flex-grow: 1;      /* Fill available vertical space in the parent panel */
+            overflow-y: auto;  /* Add a scrollbar if content overflows */
+            min-height: 0;     /* CRITICAL: Allows the div to shrink and not be defined by its content */
+        }
+
+        @media (max-width: 1000px) {
+            .main-container { grid-template-columns: 1fr; grid-template-areas: "header" "right-panel" "left-panel"; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <header>
+            <h1>Flood Fill Algorithm (DFS)</h1>
+            <p>Draw walls, pick a start point, and watch the algorithm explore the grid using a Stack.</p>
+        </header>
+
+        <div class="left-panel-container">
+            <div class="panel">
+                <h3>Controls</h3>
+                <div class="control-group">
+                    <label for="size-slider">Grid Size: <span id="size-label">20x20</span></label>
+                    <input type="range" id="size-slider" min="10" max="30" value="20">
+                </div>
+                <div class="control-group">
+                    <label>Drawing Mode:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="draw-mode" value="wall" checked> Wall</label>
+                        <label><input type="radio" name="draw-mode" value="start"> Start</label>
+                    </div>
+                </div>
+                 <div class="control-group">
+                    <label for="fill-color-picker">Fill Color:</label>
+                    <input type="color" id="fill-color-picker" value="#2ecc71">
+                </div>
+                <div class="button-grid">
+                    <button id="start-btn">Start</button>
+                    <button id="play-pause-btn" disabled>Play</button>
+                    <button id="next-btn" disabled>Next Step</button>
+                    <button id="reset-btn">Reset Grid</button>
+                </div>
+                 <div class="control-group" style="margin-top: 20px;">
+                    <label for="speed-slider">Animation Speed:</label>
+                    <input type="range" id="speed-slider" min="0" max="500" value="250">
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Stack (Cells to Visit)</h3>
+                <div id="stack-container"></div>
+            </div>
+            
+            <div class="panel" style="flex-grow: 1;">
+                <h3>Execution Log</h3>
+                <div id="log-display"></div>
+            </div>
+        </div>
+        
+        <div class="panel" id="grid-panel">
+            <div id="grid-container"></div>
+        </div>
+    </div>
+
+<script>
+    // DOM Elements
+    const sizeSlider = document.getElementById('size-slider'), sizeLabel = document.getElementById('size-label'),
+          gridContainer = document.getElementById('grid-container'), fillColorPicker = document.getElementById('fill-color-picker'),
+          startBtn = document.getElementById('start-btn'), playPauseBtn = document.getElementById('play-pause-btn'),
+          nextBtn = document.getElementById('next-btn'), resetBtn = document.getElementById('reset-btn'),
+          speedSlider = document.getElementById('speed-slider'), stackContainer = document.getElementById('stack-container'),
+          logDisplay = document.getElementById('log-display');
+
+    // State
+    let gridSize = 20, gridState = [], startCoords = null, isDrawing = false;
+    let iterator, isAnimating = false, isPaused = true, animationInterval = null;
+
+    // --- Grid Setup and Drawing ---
+    function setupGrid() {
+        gridContainer.innerHTML = '';
+        gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+        gridState = Array(gridSize).fill(0).map(() => Array(gridSize).fill(0));
+        startCoords = null;
+        logMessage('Grid reset. Draw walls or set a start point.');
+
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+                const cell = document.createElement('div');
+                cell.classList.add('grid-cell');
+                cell.dataset.row = r;
+                cell.dataset.col = c;
+                gridContainer.appendChild(cell);
+            }
+        }
+    }
+
+    gridContainer.addEventListener('pointerdown', e => {
+        if (isAnimating || !e.target.classList.contains('grid-cell')) return;
+        isDrawing = true;
+        handleCellClick(e.target);
+        e.preventDefault();
+    });
+    gridContainer.addEventListener('pointerover', e => {
+        if (isDrawing && e.target.classList.contains('grid-cell')) {
+            handleCellClick(e.target);
+        }
+    });
+    document.addEventListener('pointerup', () => { isDrawing = false; });
+
+    function handleCellClick(cell) {
+        const r = parseInt(cell.dataset.row), c = parseInt(cell.dataset.col);
+        const mode = document.querySelector('input[name="draw-mode"]:checked').value;
+
+        if (mode === 'wall') {
+            if (startCoords && startCoords.r === r && startCoords.c === c) startCoords = null;
+            cell.classList.toggle('wall');
+            gridState[r][c] = cell.classList.contains('wall') ? 1 : 0;
+        } else if (mode === 'start') {
+            if (startCoords) {
+                const oldStart = document.querySelector(`.grid-cell.start`);
+                if(oldStart) oldStart.classList.remove('start');
+            }
+            if (cell.classList.contains('wall')) {
+                cell.classList.remove('wall');
+                gridState[r][c] = 0;
+            }
+            cell.classList.add('start');
+            startCoords = { r, c };
+        }
+    }
+
+    // --- DFS Algorithm (Generator Function) ---
+    function* floodFillGenerator(startR, startC, newColor) {
+        if (gridState[startR][startC] === 1) {
+            yield { type: 'LOG', msg: `Start point (${startR},${startC}) is a wall. Cannot fill.` };
+            return;
+        }
+        
+        const stack = []; // Use a stack for DFS
+        const visited = Array(gridSize).fill(false).map(() => Array(gridSize).fill(false));
+        
+        stack.push({ r: startR, c: startC });
+        visited[startR][startC] = true;
+        yield { type: 'PUSH', r: startR, c: startC };
+
+        while (stack.length > 0) {
+            const { r, c } = stack.pop(); // LIFO behavior
+            yield { type: 'POP', r, c };
+            yield { type: 'PROCESS', r, c };
+            yield { type: 'FILL', r, c, color: newColor };
+
+            const neighbors = [{ dr: -1, dc: 0 }, { dr: 1, dc: 0 }, { dr: 0, dc: -1 }, { dr: 0, dc: 1 }]; // N, S, W, E
+            for (const { dr, dc } of neighbors) {
+                const nr = r + dr, nc = c + dc;
+                if (nr >= 0 && nr < gridSize && nc >= 0 && nc < gridSize && !visited[nr][nc] && gridState[nr][nc] !== 1) {
+                    visited[nr][nc] = true;
+                    stack.push({ r: nr, c: nc });
+                    yield { type: 'PUSH', r: nr, c: nc };
+                }
+            }
+            yield { type: 'SLEEP' }; // Pause after checking all neighbors of a cell
+        }
+        yield { type: 'END' };
+    }
+
+    // --- Animation Runner ---
+    function processNextStep() {
+        if (!iterator || (isPaused && playPauseBtn.textContent === 'Play')) return;
+        
+        const result = iterator.next();
+        if (result.done) {
+            isAnimating = false; isPaused = true; clearInterval(animationInterval);
+            playPauseBtn.disabled = true; nextBtn.disabled = true; playPauseBtn.textContent = 'Play';
+            return;
+        }
+        
+        const action = result.value;
+        const cell = action.r !== undefined ? document.querySelector(`.grid-cell[data-row="${action.r}"][data-col="${action.c}"]`) : null;
+        
+        switch (action.type) {
+            case 'PUSH':
+                logMessage(`Pushing (${action.r},${action.c}) to stack.`);
+                if (cell) cell.classList.add('in-stack');
+                const stackItem = document.createElement('div');
+                stackItem.classList.add('stack-item');
+                stackItem.textContent = `(${action.r},${action.c})`;
+                stackContainer.prepend(stackItem);
+                break;
+            case 'POP':
+                logMessage(`Popping (${action.r},${action.c}) from stack.`);
+                const itemToRemove = stackContainer.firstChild;
+                if (itemToRemove) {
+                    itemToRemove.classList.add('removing');
+                    setTimeout(() => itemToRemove.remove(), 300);
+                }
+                break;
+            case 'PROCESS':
+                 if (cell) cell.classList.add('processing');
+                break;
+            case 'FILL':
+                logMessage(`Filling (${action.r},${action.c}).`, 'success');
+                if(cell) {
+                    cell.classList.remove('processing', 'in-stack', 'start');
+                    cell.style.backgroundColor = action.color;
+                }
+                break;
+            case 'LOG': logMessage(action.msg); break;
+            case 'END': logMessage('Flood Fill Complete!', 'success'); break;
+            case 'SLEEP': break;
+        }
+
+        if (isPaused) {
+            clearInterval(animationInterval);
+            playPauseBtn.textContent = 'Play';
+        }
+    }
+    
+    function logMessage(msg, type = 'info') {
+        const p = document.createElement('p');
+        p.textContent = `> ${msg}`;
+        if (type === 'success') p.style.color = 'var(--success-color)';
+        logDisplay.appendChild(p);
+        logDisplay.scrollTop = logDisplay.scrollHeight;
+    }
+
+    // --- Event Listeners ---
+    sizeSlider.addEventListener('input', e => { gridSize = parseInt(e.target.value); sizeLabel.textContent = `${gridSize}x${gridSize}`; });
+    sizeSlider.addEventListener('change', setupGrid);
+    
+    startBtn.addEventListener('click', () => {
+        if (isAnimating) return;
+        if (!startCoords) { alert('Please set a start point on the grid.'); return; }
+        isAnimating = true; isPaused = false;
+        startBtn.disabled = true; resetBtn.disabled = true; playPauseBtn.disabled = false; nextBtn.disabled = false;
+        playPauseBtn.textContent = 'Pause';
+        
+        iterator = floodFillGenerator(startCoords.r, startCoords.c, fillColorPicker.value);
+        const interval = 550 - speedSlider.value;
+        animationInterval = setInterval(processNextStep, Math.max(20, interval));
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+        if (!isAnimating) return;
+        isPaused = !isPaused;
+        if (isPaused) { playPauseBtn.textContent = 'Play'; clearInterval(animationInterval); } 
+        else {
+            playPauseBtn.textContent = 'Pause';
+            const interval = 550 - speedSlider.value;
+            animationInterval = setInterval(processNextStep, Math.max(20, interval));
+        }
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (!isAnimating) return;
+        isPaused = true;
+        playPauseBtn.textContent = 'Play';
+        clearInterval(animationInterval);
+        processNextStep();
+    });
+    
+    resetBtn.addEventListener('click', () => {
+        isAnimating = false; isPaused = true;
+        clearInterval(animationInterval);
+        startBtn.disabled = false; resetBtn.disabled = false; playPauseBtn.disabled = true; nextBtn.disabled = true;
+        playPauseBtn.textContent = 'Play';
+        stackContainer.innerHTML = ''; logDisplay.innerHTML = '';
+        setupGrid();
+    });
+
+    // Initial Setup
+    setupGrid();
+
+</script>
+</body>
+</html>

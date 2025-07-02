@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Search Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔤 Word Search – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>The <b>Word Search</b> problem involves determining if a given word exists in a 2D grid of characters. The word can be constructed from letters of sequentially adjacent cells, where "adjacent" cells are horizontally or vertically neighboring. The same letter cell may not be used more than once.</p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public boolean exist(char[][] board, String word) {
+        int rows = board.length, cols = board[0].length;
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (backtrack(board, word, i, j, 0)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean backtrack(char[][] board, String word, int row, int col, int index) {
+        // Base case: If the entire word is found
+        if (index == word.length()) {
+            return true;
+        }
+
+        // Check boundaries and if the current cell matches the word's character
+        if (row < 0 || row >= board.length || col < 0 || col >= board[0].length || board[row][col] != word.charAt(index)) {
+            return false;
+        }
+
+        // Mark the cell as visited
+        char temp = board[row][col];
+        board[row][col] = '#';
+
+        // Explore all four directions
+        boolean found = backtrack(board, word, row + 1, col, index + 1) ||
+                        backtrack(board, word, row - 1, col, index + 1) ||
+                        backtrack(board, word, row, col + 1, index + 1) ||
+                        backtrack(board, word, row, col - 1, index + 1);
+
+        // Backtrack: Restore the cell's original value
+        board[row][col] = temp;
+
+        return found;
+    }
+}</code></pre>
+
+<button onclick="window.location.href='../animations/word_search_animation.html'">▶️ View Animation</button>
+
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N * 3^L)</code>, where <code>N</code> is the total number of cells in the grid and <code>L</code> is the length of the word. Each cell has at most 3 unvisited neighbors to explore.</li>
+      <li><b>Space Complexity:</b> <code>O(L)</code>, where <code>L</code> is the length of the word, for the recursion stack.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding paths in a grid with constraints.</li>
+      <li>Solving word puzzles or games.</li>
+      <li>Exploring backtracking techniques in 2D grids.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/word-search/" target="_blank" rel="noopener noreferrer">79. Word Search</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/word-search-ii/" target="_blank" rel="noopener noreferrer">212. Word Search II</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: board = [
+  ['A','B','C','E'],
+  ['S','F','C','S'],
+  ['A','D','E','E']
+], word = "ABCCED"
+Output: true
+
+Explanation:
+- The word "ABCCED" can be constructed from the path: board[0][0] → board[0][1] → board[0][2] → board[1][2] → board[2][2] → board[2][1].</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Mark cells as visited by modifying their value temporarily and restore them during backtracking.</li>
+      <li>Prune unnecessary branches early by checking boundaries and character matches.</li>
+      <li>Edge cases: Empty grid, word longer than the total number of cells, or word not present in the grid.</li>
+    </ul>
+  </div>
+</body>
+</html>

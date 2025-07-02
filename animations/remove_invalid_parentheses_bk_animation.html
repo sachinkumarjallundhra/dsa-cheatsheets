@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remove Invalid Parentheses - Backtracking Animation</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-color: #0f172a;
+            --text-muted: #64748b;
+            --primary-accent: #8b5cf6;
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --path-color: #3b82f6;
+            --border-color: #e2e8f0;
+            --prune-color: #94a3b8;
+            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-family-mono: 'Menlo', 'Consolas', 'monospace';
+            --animation-speed: 0.5s;
+        }
+        body {
+            font-family: var(--font-family-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .main-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 450px 1fr 450px;
+            gap: 25px;
+            height: calc(100vh - 80px); /* Adjusted for header */
+        }
+        header {
+            grid-column: 1 / -1; /* Span all columns */
+            text-align: center;
+            margin-bottom: -10px;
+        }
+        .panel {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .panel h3 {
+            margin-top: 0; margin-bottom: 20px; padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color); font-weight: 600;
+        }
+        #viz-panel { display: flex; flex-direction: column; gap: 20px; }
+        #string-display-area {
+            position: relative;
+            background: #f1f5f9;
+            padding: 40px 20px 20px 20px;
+            border-radius: 8px;
+        }
+        .string-container {
+            display: flex; position: relative;
+            min-height: 50px; 
+            /* FIX: Removed justify-content for stable positioning */
+        }
+        .char-box {
+            width: 45px; height: 45px;
+            display: inline-flex; justify-content: center; align-items: center;
+            font-family: var(--font-family-mono); font-size: 22px; font-weight: bold;
+            border: 1px solid #cbd5e1; background-color: white;
+            margin-right: -1px;
+            transition: background-color var(--animation-speed);
+            flex-shrink: 0;
+        }
+        .char-box.discarded { background-color: #fee2e2; color: var(--error-color); }
+        #scanner {
+            position: absolute; top: 0px;
+            left: 0; /* JS will control this */
+            width: 30px; height: 30px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238b5cf6'%3E%3Cpath d='M12 2.25a.75.75 0 01.75.75v16.19l6.22-6.22a.75.75 0 111.06 1.06l-7.5 7.5a.75.75 0 01-1.06 0l-7.5-7.5a.75.75 0 111.06-1.06l6.22 6.22V3a.75.75 0 01.75-.75z' /%3E%3C/svg%3E");
+            transition: transform var(--animation-speed) ease;
+            transform: translateX(-100px); /* Start off-screen */
+        }
+        #current-expression-container .char-box {
+            background-color: var(--path-color); border-color: #1d4ed8; color: white;
+            opacity: 0; transform: scale(0.7); transition: all var(--animation-speed) ease;
+        }
+        #current-expression-container .char-box.visible { opacity: 1; transform: scale(1); }
+        .solutions-container { display: flex; flex-wrap: wrap; gap: 10px; }
+        .solution-item {
+            display: inline-block; font-family: var(--font-family-mono);
+            font-size: 1rem; padding: 8px 12px; border-radius: 8px;
+            background-color: #dcfce7; color: #166534; border: 1px solid #4ade80;
+        }
+        #log-display {
+            font-family: var(--font-family-mono); font-size: 13px;
+            background: #f1f5f9; border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 15px;
+            flex-grow: 1; overflow-y: auto; min-height: 150px;
+        }
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        input, button { width: 100%; box-sizing: border-box; }
+        button {
+            cursor: pointer; font-weight: 600; color: #fff; border: none;
+            padding: 10px; border-radius: 8px; transition: background-color 0.2s;
+        }
+        button:disabled { background-color: #d1d5db !important; cursor: not-allowed; }
+        #init-btn { background-color: var(--primary-accent); }
+        #play-pause-btn { background-color: var(--success-color); }
+        #next-btn { background-color: var(--path-color); }
+        #reset-btn { background-color: var(--text-color); }
+        #state-display { text-align: center; }
+        #state-display span { font-weight: bold; font-size: 1.2rem; margin: 0 10px; }
+
+        #tree-container { overflow: auto; flex-grow: 1; background-color: #f8fafc; }
+        #tree-svg { display: block; }
+        .tree-node circle { stroke-width: 2px; transition: all var(--animation-speed); }
+        .tree-node text { font-family: var(--font-family-mono); font-size: 10px; text-anchor: middle; dominant-baseline: central;}
+        .tree-link { stroke: var(--text-muted); stroke-width: 2px; fill: none; transition: stroke var(--animation-speed); }
+        .current-path-node circle { stroke: var(--path-color); stroke-width: 4px; }
+        .current-path-link { stroke: var(--path-color); }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <header>
+            <h1>Remove Invalid Parentheses</h1>
+            <p>Visualizing a Backtracking (DFS) solution to find all valid strings by removing the minimum number of parentheses.</p>
+        </header>
+
+        <div id="left-controls" class="panel">
+            <h3>Controls</h3>
+            <label for="string-input" style="margin-bottom: 5px; display:block;">Input String:</label>
+            <input type="text" id="string-input" value="(a)())()" style="margin-bottom: 15px; padding: 8px;">
+            <div class="button-grid">
+                <button id="init-btn">Initialize</button>
+                <button id="reset-btn">Reset</button>
+            </div>
+            <div class="button-grid" style="margin-top: 10px;">
+                <button id="play-pause-btn" disabled>Play</button>
+                <button id="next-btn" disabled>Next Step</button>
+            </div>
+            <label for="speed-slider" style="margin-top: 15px; margin-bottom: 5px; display:block;">Animation Speed:</label>
+            <input type="range" id="speed-slider" min="50" max="1000" value="500">
+            <h3 style="margin-top:20px;">State</h3>
+            <div id="state-display">
+                Idx: <span id="state-index">_</span> |
+                L-rem: <span id="state-left-rem">_</span> |
+                R-rem: <span id="state-right-rem">_</span>
+            </div>
+            <h3 style="margin-top:20px;">Solutions Found</h3>
+            <div class="solutions-container" id="solutions-container"></div>
+        </div>
+
+        <div class="panel" id="viz-panel">
+            <div id="string-display-area">
+                <div id="scanner"></div>
+                <h3>Original String</h3>
+                <div id="original-string-container" class="string-container"></div>
+                <h3 style="margin-top: 30px;">Current Expression</h3>
+                <div id="current-expression-container" class="string-container"></div>
+            </div>
+            <h3>Execution Log</h3>
+            <div id="log-display"></div>
+        </div>
+        
+        <div class="panel" id="tree-panel">
+            <h3>Recursion Tree</h3>
+            <div id="tree-container">
+                <svg id="tree-svg"></svg>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM Elements ---
+    const stringInput = document.getElementById('string-input'),
+          initBtn = document.getElementById('init-btn'),
+          resetBtn = document.getElementById('reset-btn'),
+          playPauseBtn = document.getElementById('play-pause-btn'),
+          nextBtn = document.getElementById('next-btn'),
+          speedSlider = document.getElementById('speed-slider'),
+          originalStringContainer = document.getElementById('original-string-container'),
+          currentExpressionContainer = document.getElementById('current-expression-container'),
+          scanner = document.getElementById('scanner'),
+          logDisplay = document.getElementById('log-display'),
+          solutionsContainer = document.getElementById('solutions-container'),
+          stateIndex = document.getElementById('state-index'),
+          stateLeftRem = document.getElementById('state-left-rem'),
+          stateRightRem = document.getElementById('state-right-rem'),
+          treeSvg = document.getElementById('tree-svg');
+
+    // --- State ---
+    let iterator, animationInterval = null, isPaused = true;
+    let flatTreeNodes = {}, nodeIdCounter = 0, currentRecursivePath = [];
+    
+    // --- Generator Algorithm ---
+    function* solveGenerator(s) {
+        let leftRem = 0, rightRem = 0;
+        for (const char of s) {
+            if (char === '(') leftRem++;
+            else if (char === ')') {
+                if (leftRem > 0) leftRem--;
+                else rightRem++;
+            }
+        }
+
+        const solutions = new Set();
+        
+        function* backtrack(index, leftCount, rightCount, leftRem, rightRem, expr, parentId) {
+            currentRecursivePath.push(parentId);
+            yield { type: 'UPDATE_STATE', index, leftRem, rightRem, expr: expr.join('') };
+            
+            if (index === s.length) {
+                if (leftRem === 0 && rightRem === 0 && !solutions.has(expr.join(''))) {
+                    solutions.add(expr.join(''));
+                    yield { type: 'ADD_SOLUTION', solution: expr.join(''), nodeId: parentId };
+                } else {
+                    yield { type: 'PRUNE', reason: 'End of string, invalid', nodeId: parentId };
+                }
+                currentRecursivePath.pop();
+                return;
+            }
+
+            const char = s[index];
+            
+            // Choice 1: Discard the character
+            if ((char === '(' && leftRem > 0) || (char === ')' && rightRem > 0)) {
+                const discardNodeId = nodeIdCounter++;
+                yield { type: 'ADD_TREE_NODE', id: discardNodeId, parentId, label: `Discard '${char}'` };
+                yield { type: 'DISCARD_CHAR', index };
+                yield { type: 'LOG', msg: `Choice: Discard '${char}'`, depth: expr.length, style: 'error' };
+                yield* backtrack(index + 1, leftCount, rightCount, leftRem - (char === '(' ? 1 : 0), rightRem - (char === ')' ? 1 : 0), expr, discardNodeId);
+                yield { type: 'UNDISCARD_CHAR', index };
+            }
+            
+            // Choice 2: Keep the character
+            const keepNodeId = nodeIdCounter++;
+            yield { type: 'ADD_TREE_NODE', id: keepNodeId, parentId, label: `Keep '${char}'` };
+            
+            let shouldRecurse = true;
+            if (char === ')' && leftCount <= rightCount) {
+                shouldRecurse = false;
+                yield { type: 'PRUNE', reason: 'Invalid prefix', nodeId: keepNodeId };
+                yield { type: 'LOG', msg: `❌ Pruning: Cannot keep ')'`, depth: expr.length, style: 'error' };
+            }
+            
+            if (shouldRecurse) {
+                yield { type: 'LOG', msg: `Choice: Keep '${char}'`, depth: expr.length };
+                expr.push(char);
+                yield { type: 'ADD_CHAR', char, exprIndex: expr.length - 1 };
+                yield* backtrack(index + 1, leftCount + (char === '(' ? 1 : 0), rightCount + (char === ')' ? 1 : 0), leftRem, rightRem, expr, keepNodeId);
+                yield { type: 'LOG', msg: `↩️ Backtrack from expr "${expr.join('')}"`, depth: expr.length - 1, style: 'muted' };
+                yield { type: 'REMOVE_CHAR', exprIndex: expr.length - 1 };
+                expr.pop();
+            }
+            
+            currentRecursivePath.pop();
+        }
+        
+        const rootId = nodeIdCounter++;
+        yield { type: 'ADD_TREE_NODE', id: rootId, parentId: null, label: 'Start' };
+        yield { type: 'LOG', msg: `Initial removals needed: ${leftRem} left, ${rightRem} right.` };
+        yield* backtrack(0, 0, 0, leftRem, rightRem, [], rootId);
+        yield { type: 'UPDATE_STATE', index: s.length, leftRem:0, rightRem:0, expr:'' };
+        yield { type: 'LOG', msg: '--- Search Complete ---', style: 'final' };
+    }
+
+    // --- Animation Runner ---
+    function processNextStep() {
+        if (!iterator) return;
+        const result = iterator.next();
+        if (result.done) {
+            pausePlaying();
+            playPauseBtn.disabled = true; nextBtn.disabled = true;
+            return;
+        }
+
+        const action = result.value;
+
+        switch(action.type) {
+            case 'UPDATE_STATE':
+                stateIndex.textContent = action.index;
+                stateLeftRem.textContent = action.leftRem;
+                stateRightRem.textContent = action.rightRem;
+                log(`backtrack(idx:${action.index}, lrem:${action.leftRem}, rrem:${action.rightRem}, expr:"${action.expr}")`);
+                
+                // --- ARROW POSITIONING FIX ---
+                const charBox = document.getElementById(`orig-char-${action.index}`);
+                if (charBox) {
+                    const charWidth = 45;
+                    const scannerWidth = 30;
+                    const newX = charBox.offsetLeft + (charWidth / 2) - (scannerWidth / 2);
+                    scanner.style.transform = `translateX(${newX}px)`;
+                } else if (action.index >= stringInput.value.length) {
+                    const lastCharBox = document.getElementById(`orig-char-${action.index - 1}`);
+                    if(lastCharBox) scanner.style.transform = `translateX(${lastCharBox.offsetLeft + 45}px)`;
+                }
+
+                updateTreePathHighlights();
+                break;
+            case 'LOG': log(action.msg, action.style, action.depth); break;
+            case 'DISCARD_CHAR': document.getElementById(`orig-char-${action.index}`).classList.add('discarded'); break;
+            case 'UNDISCARD_CHAR': document.getElementById(`orig-char-${action.index}`).classList.remove('discarded'); break;
+            case 'ADD_CHAR':
+                const addBox = document.createElement('div');
+                addBox.id = `expr-char-${action.exprIndex}`;
+                addBox.className = 'char-box';
+                addBox.textContent = action.char;
+                currentExpressionContainer.appendChild(addBox);
+                setTimeout(() => addBox.classList.add('visible'), 10);
+                break;
+            case 'REMOVE_CHAR':
+                const remBox = document.getElementById(`expr-char-${action.exprIndex}`);
+                if (remBox) {
+                    remBox.classList.remove('visible');
+                    setTimeout(() => remBox.remove(), 500);
+                }
+                break;
+            case 'ADD_SOLUTION':
+                const solEl = document.createElement('div');
+                solEl.className = 'solution-item';
+                solEl.textContent = action.solution;
+                solutionsContainer.appendChild(solEl);
+                document.querySelector(`#node-${action.nodeId} circle`).style.fill = 'var(--success-color)';
+                break;
+            case 'ADD_TREE_NODE': addNodeToTree(action.id, action.parentId, action.label); break;
+            case 'PRUNE':
+                document.querySelector(`#node-${action.nodeId} circle`).style.fill = 'var(--prune-color)';
+                break;
+        }
+    }
+    
+    // --- Tree Drawing ---
+    let layoutBounds = { minX: 0, maxX: 0, maxY: 0 };
+    function addNodeToTree(id, parentId, label) {
+        const nodeData = { id, parentId, children: [], label };
+        flatTreeNodes[id] = nodeData;
+
+        const Y_SEP = 45, X_SEP_BASE = 400;
+        if (parentId === null) {
+            nodeData.y = 30;
+            nodeData.x = 0;
+            nodeData.depth = 0;
+        } else {
+            const parent = flatTreeNodes[parentId];
+            nodeData.depth = parent.depth + 1;
+            nodeData.y = parent.y + Y_SEP;
+            const xOffset = X_SEP_BASE / Math.pow(1.9, nodeData.depth);
+            const siblingOffset = (parent.children.length - 0.5) * xOffset;
+            nodeData.x = parent.x + siblingOffset;
+            parent.children.push(nodeData);
+        }
+        
+        layoutBounds.minX = Math.min(layoutBounds.minX, nodeData.x);
+        layoutBounds.maxX = Math.max(layoutBounds.maxX, nodeData.x);
+        layoutBounds.maxY = Math.max(layoutBounds.maxY, nodeData.y);
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.id = `node-${id}`;
+        g.setAttribute('class', 'tree-node');
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 12);
+        circle.style.fill = 'var(--panel-bg)'; circle.style.stroke = 'var(--text-muted)';
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.textContent = label; text.setAttribute('dy', '-18px');
+        g.appendChild(circle); g.appendChild(text);
+
+        if (parentId !== null) {
+            const parent = flatTreeNodes[parentId];
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.id = `path-to-${id}`; path.setAttribute('class', 'tree-link');
+            path.setAttribute('d', `M${parent.x},${parent.y} L${parent.x},${parent.y}`);
+            treeSvg.prepend(path);
+            setTimeout(() => { path.setAttribute('d', `M${parent.x},${parent.y} L${nodeData.x},${nodeData.y}`); }, 10);
+        }
+        treeSvg.appendChild(g);
+        setTimeout(() => { g.setAttribute('transform', `translate(${nodeData.x}, ${nodeData.y})`); }, 10);
+        updateTreeViewBox();
+    }
+
+    function updateTreeViewBox() {
+        const PADDING = 40;
+        const width = layoutBounds.maxX - layoutBounds.minX + PADDING * 2;
+        const height = layoutBounds.maxY + PADDING;
+        treeSvg.setAttribute('viewBox', `${layoutBounds.minX - PADDING/2} 0 ${width > 0 ? width : 200} ${height > 0 ? height : 200}`);
+    }
+
+    function updateTreePathHighlights() {
+        document.querySelectorAll('.current-path-node, .current-path-link').forEach(el => el.classList.remove('current-path-node', 'current-path-link'));
+        currentRecursivePath.forEach(id => {
+            const node = document.getElementById(`node-${id}`);
+            if (node) {
+                node.classList.add('current-path-node');
+                document.getElementById(`path-to-${id}`)?.classList.add('current-path-link');
+            }
+        });
+    }
+
+    // --- UI & Control Functions ---
+    function init() {
+        resetState();
+        const s = stringInput.value;
+        if (!s) { alert("Please enter a string."); return; }
+        
+        s.split('').forEach((char, i) => {
+            const box = document.createElement('div');
+            box.id = `orig-char-${i}`; box.className = 'char-box';
+            box.textContent = char; originalStringContainer.appendChild(box);
+        });
+
+        iterator = solveGenerator(s);
+        initBtn.disabled = true;
+        playPauseBtn.disabled = false; nextBtn.disabled = false;
+        startPlaying();
+    }
+    
+    function resetState() {
+        pausePlaying(); iterator = null; flatTreeNodes = {}; nodeIdCounter = 0; currentRecursivePath = [];
+        layoutBounds = { minX: 0, maxX: 0, maxY: 0 };
+        originalStringContainer.innerHTML = ''; currentExpressionContainer.innerHTML = '';
+        solutionsContainer.innerHTML = ''; logDisplay.innerHTML = ''; treeSvg.innerHTML = '';
+        stateIndex.textContent = '_'; stateLeftRem.textContent = '_'; stateRightRem.textContent = '_';
+        scanner.style.transform = 'translateX(-100px)';
+        initBtn.disabled = false;
+        playPauseBtn.disabled = true; playPauseBtn.textContent = 'Play'; nextBtn.disabled = true;
+    }
+
+    function log(message, style, depth = 0) {
+        const p = document.createElement('p');
+        p.style.margin = '0 0 5px 0';
+        if (style === 'success') p.style.color = 'var(--success-color)';
+        if (style === 'error') p.style.color = 'var(--error-color)';
+        if (style === 'muted') p.style.color = 'var(--text-muted)';
+        if (style === 'final') { p.style.fontWeight = 'bold'; p.style.color = 'var(--primary-accent)';}
+        
+        const indentation = depth > 0 ? '&nbsp;&nbsp;'.repeat(depth) : '';
+        p.innerHTML = indentation + message;
+        logDisplay.prepend(p);
+    }
+    
+    function startPlaying() {
+        if (!iterator) return;
+        isPaused = false;
+        playPauseBtn.textContent = 'Pause';
+        const interval = 1050 - speedSlider.value;
+        animationInterval = setInterval(processNextStep, Math.max(50, interval));
+    }
+
+    function pausePlaying() {
+        isPaused = true;
+        playPauseBtn.textContent = 'Play';
+        clearInterval(animationInterval); animationInterval = null;
+    }
+
+    // --- Event Listeners ---
+    initBtn.addEventListener('click', init);
+    resetBtn.addEventListener('click', resetState);
+    playPauseBtn.addEventListener('click', () => { isPaused ? startPlaying() : pausePlaying(); });
+    nextBtn.addEventListener('click', () => { 
+        if (!isPaused) pausePlaying();
+        processNextStep();
+    });
+    speedSlider.addEventListener('input', () => {
+        if (!isPaused) {
+            clearInterval(animationInterval);
+            const interval = 1050 - speedSlider.value;
+            animationInterval = setInterval(processNextStep, Math.max(50, interval));
+        }
+    });
+
+    resetState();
+});
+</script>
+</body>
+</html>

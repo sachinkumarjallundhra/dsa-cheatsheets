@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remove Invalid Parentheses Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🧹 Remove Invalid Parentheses – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Remove Invalid Parentheses</b> problem asks you to remove the minimum number of invalid parentheses to make the input string valid and return all possible results.
+    </p>
+
+    <h2>🧱 Pattern Template (BFS)</h2>
+    <pre><code>class Solution {
+    public List&lt;String&gt; removeInvalidParentheses(String s) {
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        if (s == null) return result;
+        Set&lt;String&gt; visited = new HashSet&lt;&gt;();
+        Queue&lt;String&gt; queue = new LinkedList&lt;&gt;();
+        queue.add(s);
+        visited.add(s);
+        boolean found = false;
+
+        while (!queue.isEmpty()) {
+            String curr = queue.poll();
+            if (isValid(curr)) {
+                result.add(curr);
+                found = true;
+            }
+            if (found) continue;
+            for (int i = 0; i &lt; curr.length(); i++) {
+                if (curr.charAt(i) != '(' &amp;&amp; curr.charAt(i) != ')') continue;
+                String next = curr.substring(0, i) + curr.substring(i + 1);
+                if (!visited.contains(next)) {
+                    queue.add(next);
+                    visited.add(next);
+                }
+            }
+        }
+        return result;
+    }
+
+    private boolean isValid(String s) {
+        int count = 0;
+        for (char c : s.toCharArray()) {
+            if (c == '(') count++;
+            if (c == ')') {
+                if (count == 0) return false;
+                count--;
+            }
+        }
+        return count == 0;
+    }
+}</code></pre>
+<button onclick="window.location.href='../animations/remove_invalid_parentheses_animation.html'">▶️ View Animation</button>
+
+
+    <h2>🧱 Pattern Template (Backtracking)</h2>
+    <pre><code>class Solution {
+    public List&lt;String&gt; removeInvalidParentheses(String s) {
+        Set&lt;String&gt; result = new HashSet&lt;&gt;();
+        int[] rm = getMinRemove(s);
+        backtrack(s, 0, rm[0], rm[1], 0, new StringBuilder(), result);
+        return new ArrayList&lt;&gt;(result);
+    }
+
+    // Calculate the minimum number of left/right parentheses to remove
+    private int[] getMinRemove(String s) {
+        int left = 0, right = 0;
+        for (char c : s.toCharArray()) {
+            if (c == '(') left++;
+            else if (c == ')') {
+                if (left > 0) left--;
+                else right++;
+            }
+        }
+        return new int[]{left, right};
+    }
+
+    private void backtrack(String s, int idx, int leftRem, int rightRem, int open, StringBuilder path, Set&lt;String&gt; result) {
+        if (idx == s.length()) {
+            if (leftRem == 0 &amp;&amp; rightRem == 0 &amp;&amp; open == 0) {
+                result.add(path.toString());
+            }
+            return;
+        }
+        char c = s.charAt(idx);
+        int len = path.length();
+
+        if (c == '(') {
+            if (leftRem > 0)
+                backtrack(s, idx + 1, leftRem - 1, rightRem, open, path, result); // remove '('
+            path.append(c);
+            backtrack(s, idx + 1, leftRem, rightRem, open + 1, path, result); // keep '('
+            path.setLength(len);
+        } else if (c == ')') {
+            if (rightRem > 0)
+                backtrack(s, idx + 1, leftRem, rightRem - 1, open, path, result); // remove ')'
+            if (open > 0) {
+                path.append(c);
+                backtrack(s, idx + 1, leftRem, rightRem, open - 1, path, result); // keep ')'
+                path.setLength(len);
+            }
+        } else {
+            path.append(c);
+            backtrack(s, idx + 1, leftRem, rightRem, open, path, result);
+            path.setLength(len);
+        }
+    }
+}</code></pre>
+<button onclick="window.location.href='../animations/remove_invalid_parentheses_bk_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(2^N)</code>, where <code>N</code> is the length of the string (worst case: try all removals).</li>
+      <li><b>Space Complexity:</b> <code>O(2^N)</code>, for the queue and visited set.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Generating all valid strings by removing invalid parentheses.</li>
+      <li>String manipulation and validation problems.</li>
+      <li>BFS and pruning in combinatorial search.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/remove-invalid-parentheses/" target="_blank" rel="noopener noreferrer">
+          301. Remove Invalid Parentheses
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">BFS</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "()())()"
+Output: ["()()()", "(())()"]
+
+Explanation:
+- Remove one ')' at index 4 or index 1 to get valid parentheses.</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use BFS to guarantee the minimum number of removals.</li>
+      <li>Use a set to avoid duplicate strings in the queue.</li>
+      <li>Edge cases: Empty string, no invalid parentheses.</li>
+    </ul>
+  </div>
+</body>
+</html>

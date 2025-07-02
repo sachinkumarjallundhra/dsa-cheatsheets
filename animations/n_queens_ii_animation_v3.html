@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N-Queens II Animation with Backtracking Tree</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1600px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-nq2-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-nq2-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-nq2-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 80px; font-size: 1.1em; }
+        .controls-nq2-p5 button { padding: 10px 15px; background-color: #8e44ad; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-nq2-p5 button:hover { background-color: #7d3c98; }
+        .controls-nq2-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-nq2-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-nq2-p5, .right-panel-nq2-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-nq2-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-wrapper-p5 {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 20px;
+            min-height: 500px;
+            background-color: #f5f5f5;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            align-items: center;
+        }
+        
+        #board-container-p5 { display: grid; border: 2px solid #333; }
+        .square-p5 { width: 100%; height: 100%; aspect-ratio: 1/1; display: flex; justify-content: center; align-items: center; font-size: 2.5em; transition: all 0.2s; }
+        .square-p5.light { background-color: #f0d9b5; }
+        .square-p5.dark { background-color: #b58863; }
+        .square-p5.is-probe { background-color: #f1c40f !important; }
+        .square-p5.is-conflict { background-color: #e74c3c !important; }
+        .square-p5.is-placed { background-color: #2ecc71 !important; }
+        .square-p5.is-solution-flash { animation: flash-gold 0.8s; }
+
+        @keyframes flash-gold { 0%, 100% { box-shadow: none; } 50% { box-shadow: inset 0 0 0 10px #f1c40f; } }
+        
+        #tree-container-p5 { width: 100%; height: 100%; overflow: visible; }
+        .tree-node circle { stroke: #34495e; stroke-width: 2px; transition: all 0.3s; fill: #fff; }
+        .tree-node text { font-family: 'Segoe UI', sans-serif; font-size: 0.9em; pointer-events: none; }
+        .tree-node.active-node > circle { fill: #f1c40f; stroke: #f39c12; }
+        .tree-node.solution-path > circle { fill: #2ecc71; stroke: #27ae60; }
+        .tree-node.dead-end > circle { fill: #e74c3c; stroke: #c0392b; }
+        .tree-link { stroke: #bdc3c7; stroke-width: 2px; fill: none; transition: stroke 0.3s;}
+        .solution-link { stroke: #f1c40f; stroke-width: 3px; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr; gap: 10px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 1.8em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 2px; }
+        #solutions_display_p5.updated { animation: pulse-purple 0.6s; }
+        @keyframes pulse-purple { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.5); color: #8e44ad; } }
+
+        #current_action_nq2_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4em; font-size:1em; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay.show { opacity: 1; }
+
+        .log-container-nq2-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_nq2_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @media (max-width: 1200px) {
+            .main-content-nq2-p5, .visualization-wrapper-p5 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>N-Queens II with Backtracking Tree</h1>
+
+        <div class="controls-nq2-p5">
+            <label for="n_input_p5">Board Size (N):</label>
+            <input type="number" id="n_input_p5" value="4" min="1" max="6">
+            <button id="start_button_nq2_p5">Start/Reset</button>
+            <button id="next_step_button_nq2_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-nq2-p5">
+            <div class="left-panel-nq2-p5">
+                <div class="state-panel-nq2-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">N</div><div id="n_display_p5" class="value">0</div></div>
+                        <div class="state-item-p5"><div class="label">Solutions Found</div><div id="solutions_display_p5" class="value">0</div></div>
+                    </div>
+                    <div id="current_action_nq2_display_p5"></div>
+                </div>
+                <div class="log-container-nq2-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_nq2_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-nq2-p5">
+                 <div class="visualization-wrapper-p5">
+                    <div id="board-container-p5"></div>
+                    <svg id="tree-container-p5"></svg>
+                    <div id="overlay"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <audio id="sound-place" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAACAgIAAgACAAIAAgIAAgACAAIAAgACAAIAAgIAAgIAAgACAAIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgIAAgIAAgACAAIAAgIAAgIAAgIAAgIAAgACAAIAAgICAAIAAgACAAIAAgACAAIAAgICAgIAAgACAAIAAgICAAIAAgICAgIAAgICAAIAAgICAAIAAgIAAgACAAIAAgICAAIAAgACAAIAAgIAAgICAgIAAgICAAIAAgICAgIAAgIA=="></audio>
+    <audio id="sound-backtrack" src="data:audio/mpeg;base64,UklGRiIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A+P8A6v8Az/8Ao/8Aev8AZf8APv8AHP8A//4A9/4A9f4A9f4A9/4A//4AHP8APv8AZf8Aev8Ao/8Az/8A6v8A+P8A/v8A"></audio>
+    <audio id="sound-win" src="data:audio/mpeg;base64,UklGRkIAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAA//8CAPv/AP3/AP//AAD//wD//wAA//8A/v8A/P8A/P8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA//8A//8A//8A//8A//8A//8A/P8A/P8A/v8A/v8AAP8AAAD/AAD/AAD+AAACAAMABwAKAAwADwASABQAFwAZABwAHgAgACMAJgAnACgAKQAqACoAKgApACgAJgAjACAAGwAWABEA"></audio>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let completeTreeData = {};
+let currentStepIndex = 0;
+let simulationRunning = false;
+let isAudioUnlocked = false;
+
+// --- DOM ELEMENTS ---
+let nInput, startButton, nextStepButton, nDisplay, solutionsDisplay,
+    currentActionDisplay, logOutput, boardContainer, treeContainer, overlay;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    ['sound-place', 'sound-backtrack', 'sound-win'].forEach(id => {
+        const sound = document.getElementById(id);
+        if (sound) { sound.play().catch(()=>{}); sound.pause(); }
+    });
+    isAudioUnlocked = true;
+}
+function playSound(id) { if (isAudioUnlocked) { const sound = document.getElementById(id); if(sound) { sound.currentTime = 0; sound.play(); } } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function isSafe(board, row, col, n) {
+    for (let i = 0; i < row; i++) if (board[i][col] === 1) return false;
+    for (let i = row, j = col; i >= 0 && j >= 0; i--, j--) if (board[i][j] === 1) return false;
+    for (let i = row, j = col; i >= 0 && j < n; i--, j++) if (board[i][j] === 1) return false;
+    return true;
+}
+
+// Builds both the animation steps and the complete tree structure in one pass
+function generateFullTrace(n) {
+    const steps = [];
+    const board = Array(n).fill(0).map(() => Array(n).fill(0));
+    
+    // For building the tree data
+    const treeData = { id: 'root', name: 'Start', children: [] };
+    const nodeMap = { 'root': treeData };
+
+    function recursiveTrace(row, solutionsCount, path) {
+        if (row === n) {
+            solutionsCount++;
+            steps.push({
+                type: 'found_solution', board: board.map(r => [...r]), solutions: solutionsCount,
+                message: `Solution ${solutionsCount} found! Backtracking...`, path: [...path]
+            });
+            return solutionsCount;
+        }
+
+        for (let col = 0; col < n; col++) {
+            const nodeId = `${row}-${col}`;
+            const parentId = path.length > 0 ? path[path.length - 1] : 'root';
+            
+            // Add node to our tree data if it doesn't exist
+            if (!nodeMap[nodeId]) {
+                 const newNode = { id: nodeId, name: `(${row},${col})`, children: [] };
+                 if (!nodeMap[parentId].children) nodeMap[parentId].children = [];
+                 nodeMap[parentId].children.push(newNode);
+                 nodeMap[nodeId] = newNode;
+            }
+
+            steps.push({
+                type: 'probe', board: board.map(r => [...r]), probeRow: row, probeCol: col, solutions: solutionsCount,
+                message: `Probing square (${row}, ${col})...`, path: [...path, nodeId]
+            });
+
+            if (isSafe(board, row, col, n)) {
+                board[row][col] = 1;
+                path.push(nodeId);
+                steps.push({
+                    type: 'place', board: board.map(r => [...r]), row, col, solutions: solutionsCount,
+                    message: `Square (${row}, ${col}) is safe. Placing queen.`, path: [...path]
+                });
+                
+                solutionsCount = recursiveTrace(row + 1, solutionsCount, path);
+                
+                board[row][col] = 0;
+                steps.push({
+                    type: 'backtrack', board: board.map(r => [...r]), row, col, solutions: solutionsCount,
+                    message: `Backtracking from (${row}, ${col}).`, path: [...path]
+                });
+                path.pop();
+            } else {
+                steps.push({
+                    type: 'conflict', board: board.map(r => [...r]), probeRow: row, probeCol: col, solutions: solutionsCount,
+                    message: `Square (${row}, ${col}) is under attack.`, path: [...path, nodeId]
+                });
+            }
+        }
+        return solutionsCount;
+    }
+    
+    steps.push({ type: 'initial', board: board.map(r => [...r]), solutions: 0, message: 'Start solving for N = ' + n, path: [] });
+    const totalSolutions = recursiveTrace(0, 0, []);
+    steps.push({ type: 'finish', board: board.map(r => [...r]), solutions: totalSolutions, message: `Finished! Found ${totalSolutions} total solutions.`, path: [] });
+    
+    return { steps, treeData };
+}
+
+function renderBoard(step) {
+    const { board, probeRow, probeCol, solutions, type } = step;
+    const n = board.length;
+    
+    boardContainer.innerHTML = '';
+    boardContainer.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+    const fontSize = n > 5 ? '1.8em' : (n > 4 ? '2.2em' : '2.5em');
+    
+    board.forEach((row, r) => {
+        row.forEach((cell, c) => {
+            const square = document.createElement('div');
+            square.className = 'square-p5';
+            square.classList.add((r + c) % 2 === 0 ? 'light' : 'dark');
+            square.style.fontSize = fontSize;
+            if (cell === 1) square.textContent = '♛';
+            if (probeRow === r && probeCol === c) {
+                if (type === 'probe') square.classList.add('is-probe');
+                if (type === 'conflict') square.classList.add('is-conflict');
+            }
+            if (type === 'place' && r === step.row && c === step.col) square.classList.add('is-placed');
+            if(type === 'found_solution') square.classList.add('is-solution-flash');
+            boardContainer.appendChild(square);
+        });
+    });
+
+    solutionsDisplay.textContent = solutions;
+    if (type === 'found_solution') {
+        solutionsDisplay.classList.add('updated');
+        setTimeout(() => solutionsDisplay.classList.remove('updated'), 600);
+    }
+}
+
+function renderTree(step) {
+    const root = d3.hierarchy(completeTreeData);
+    const treeLayout = d3.tree();
+    
+    const wrapper = treeContainer;
+    const { width, height } = wrapper.getBoundingClientRect();
+    if(width === 0 || height === 0) return;
+
+    treeLayout.size([height - 40, width - 80]);
+    
+    d3.select(treeContainer).selectAll('*').remove();
+    const g = d3.select(treeContainer).append('g').attr('transform', 'translate(40, 20)');
+
+    const links = g.selectAll('.tree-link').data(root.links()).enter()
+        .append('path')
+        .attr('class', 'tree-link')
+        .attr('d', d3.linkHorizontal().x(d => d.y).y(d => d.x));
+
+    const nodes = g.selectAll('.tree-node').data(root.descendants()).enter()
+        .append('g')
+        .attr('class', 'tree-node')
+        .attr('transform', d => `translate(${d.y},${d.x})`);
+
+    nodes.append('circle').attr('r', 12);
+    nodes.append('text')
+         .attr('dy', '.35em')
+         .attr('x', d => d.children ? -18 : 18)
+         .style('text-anchor', d => d.children ? 'end' : 'start')
+         .text(d => d.data.name);
+    
+    if (step.path && step.path.length > 0) {
+        const activeNodeId = step.path[step.path.length - 1];
+        nodes.filter(d => d.data.id === activeNodeId).classed('active-node', true);
+    }
+
+    if (step.type === 'found_solution') {
+        nodes.filter(d => step.path.includes(d.data.id)).classed('solution-path', true);
+        links.filter(d => step.path.includes(d.source.data.id) && step.path.includes(d.target.data.id))
+           .classed('solution-link', true);
+    }
+}
+
+
+async function initializeAnimation() {
+    simulationRunning = false;
+    let n;
+    try {
+        n = parseInt(nInput.value);
+        if (isNaN(n) || n < 1 || n > 6) throw new Error("Please enter a number between 1 and 6 for best performance.");
+    } catch (e) {
+        alert(e.message);
+        return;
+    }
+    
+    nDisplay.textContent = n;
+    const trace = generateFullTrace(n);
+    animationSteps = trace.steps;
+    completeTreeData = trace.treeData;
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    
+    const firstStep = animationSteps[0];
+    renderBoard(firstStep);
+    renderTree(firstStep);
+    currentActionDisplay.textContent = firstStep.message;
+    log(firstStep.message);
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+    log(`\n--- ${step.message} ---`);
+    currentActionDisplay.textContent = step.message;
+    
+    renderBoard(step);
+    renderTree(step);
+    
+    switch (step.type) {
+        case 'place': playSound('sound-place'); break;
+        case 'backtrack': playSound('sound-backtrack'); break;
+        case 'found_solution': playSound('sound-win'); break;
+        case 'finish':
+            overlay.className = 'show';
+            playSound('sound-win');
+            overlay.innerHTML = `<span style="font-size:3em">👑</span><div style="font-size:1.5em">All Solutions Found!</div><div style="font-size:1.8em">Total: ${step.solutions}</div>`;
+            simulationRunning = false;
+            break;
+    }
+    
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    nInput = document.getElementById('n_input_p5');
+    startButton = document.getElementById('start_button_nq2_p5');
+    nextStepButton = document.getElementById('next_step_button_nq2_p5');
+    nDisplay = document.getElementById('n_display_p5');
+    solutionsDisplay = document.getElementById('solutions_display_p5');
+    currentActionDisplay = document.getElementById('current_action_nq2_display_p5');
+    logOutput = document.getElementById('log_output_nq2_p5');
+    boardContainer = document.getElementById('board-container-p5');
+    treeContainer = document.getElementById('tree-container-p5');
+    overlay = document.getElementById('overlay');
+
+    startButton.addEventListener('click', () => { unlockAudio(); initializeAnimation(); });
+    nextStepButton.addEventListener('click', () => { unlockAudio(); performNextStep(); });
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>
