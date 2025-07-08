@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>N-th Tribonacci Number Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔢 N-th Tribonacci Number – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>N-th Tribonacci Number</b> problem asks you to compute the n-th term of the Tribonacci sequence, where each term is the sum of the previous three terms. The sequence starts with T<sub>0</sub> = 0, T<sub>1</sub> = 1, T<sub>2</sub> = 1.
+    </p>
+
+    <h2>🧱 Pattern Template (DP)</h2>
+    <pre><code>class Solution {
+    public int tribonacci(int n) {
+        if (n == 0) return 0;
+        if (n == 1 || n == 2) return 1;
+        int[] dp = new int[n + 1];
+        dp[0] = 0; dp[1] = 1; dp[2] = 1;
+        for (int i = 3; i &lt;= n; i++) {
+            dp[i] = dp[i-1] + dp[i-2] + dp[i-3];
+        }
+        return dp[n];
+    }
+}</code></pre>
+<button onclick="window.location.href='../animations/tribonacci_animation.html'">▶️ View Animation</button>
+
+    <h2>🧱 Pattern Template (Space Optimized)</h2>
+    <pre><code>class Solution {
+    public int tribonacci(int n) {
+        if (n == 0) return 0;
+        if (n == 1 || n == 2) return 1;
+        int a = 0, b = 1, c = 1;
+        for (int i = 3; i &lt;= n; i++) {
+            int d = a + b + c;
+            a = b;
+            b = c;
+            c = d;
+        }
+        return c;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n)</code></li>
+      <li><b>Space Complexity:</b> <code>O(n)</code> for DP array, <code>O(1)</code> for space optimized</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Generalized Fibonacci-type sequences</li>
+      <li>Dynamic programming with multiple previous states</li>
+      <li>Recurrence relations</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/n-th-tribonacci-number/" target="_blank" rel="noopener noreferrer">
+          1137. N-th Tribonacci Number
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">DP</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: n = 4
+Output: 4
+
+Explanation:
+- T0 = 0, T1 = 1, T2 = 1, T3 = 2, T4 = 4
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Always check for base cases (n = 0, 1, 2).</li>
+      <li>Use space optimization for large n.</li>
+      <li>Similar to Fibonacci, but sum of last three terms.</li>
+    </ul>
+  </div>

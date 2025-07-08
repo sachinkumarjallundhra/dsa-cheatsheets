@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Count Good Subsequences DP Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-subsequence { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-subsequence label { font-weight: bold; margin-right: 5px; }
+        .controls-subsequence input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-subsequence button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-subsequence button:hover { background-color: #0056b3; }
+        .controls-subsequence button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-subsequence { display: grid; grid-template-columns: minmax(320px, 1fr) 2fr; gap: 15px; }
+        .left-panel-subsequence, .right-panel-subsequence { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; text-align: center; }
+        
+        #total-counter-display { font-size: 2.5em; font-weight: bold; color: #28a745; transition: transform 0.2s; }
+        #total-counter-display.updated { transform: scale(1.3); }
+
+        #harmony-level-display { font-size: 1.5em; font-weight: bold; color: #0056b3; }
+
+        .constellations-container { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 10px; min-height: 80px; }
+        .constellation { padding: 10px; border-radius: 8px; border: 2px solid; transition: all 0.3s; }
+        .constellation.active { transform: scale(1.1); box-shadow: 0 0 15px; }
+        .constellation.inactive { opacity: 0.4; filter: grayscale(80%); }
+        .constellation .name { font-size: 1.2em; font-weight: bold; }
+        .constellation .stars { font-size: 1.5em; letter-spacing: 2px; }
+
+        #current-action-display { min-height: 3em; font-weight: bold; font-family: 'Courier New', monospace; }
+        
+        .log-container-subsequence { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Count Good Subsequences: The Cosmic Composer</h1>
+
+        <div class="controls-subsequence">
+            <label for="string_input">Stardust Stream:</label>
+            <input type="text" id="string_input" value="aabbc">
+            <button id="start_button">Compose</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-subsequence">
+            <div class="left-panel-subsequence">
+                <div class="panel">
+                    <h2>Total Melodies Found</h2>
+                    <div id="total-counter-display">0</div>
+                </div>
+                 <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="current-action-display"></div>
+                </div>
+            </div>
+            <div class="right-panel-subsequence">
+                 <div class="panel">
+                    <h2>Harmony Level (k)</h2>
+                    <div id="harmony-level-display"></div>
+                </div>
+                 <div class="panel">
+                    <h2>The Constellations</h2>
+                    <div id="constellations-display" class="constellations-container"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-subsequence">
+            <h2>Composer's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+let S = "";
+const MOD = 1e9 + 7;
+let animationSteps = []; let currentStep = -1;
+let simulationRunning = false;
+let fact = [], invFact = [];
+const GEM_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22'];
+
+
+// --- DOM ELEMENTS ---
+let stringInput, startButton, nextStepButton, counterDisplay, harmonyDisplay, constellationsDisplay, currentActionDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() {
+    document.querySelectorAll('.constellation').forEach(c => c.classList.remove('active'));
+}
+function power(a, b) {
+    let res = 1n;
+    a = BigInt(a);
+    b = BigInt(b);
+    while (b > 0) {
+        if (b % 2n === 1n) res = (res * a) % BigInt(MOD);
+        a = (a * a) % BigInt(MOD);
+        b /= 2n;
+    }
+    return res;
+}
+function inv(n) { return power(n, BigInt(MOD) - 2n); }
+function precomputeFactorials(maxN) {
+    fact = [1n];
+    for (let i = 1; i <= maxN; i++) {
+        fact[i] = (fact[i - 1] * BigInt(i)) % BigInt(MOD);
+    }
+    invFact = Array(maxN + 1);
+    invFact[maxN] = inv(fact[maxN]);
+    for(let i = maxN - 1; i >= 0; i--) {
+        invFact[i] = (invFact[i+1] * BigInt(i+1)) % BigInt(MOD);
+    }
+}
+function combinations(n, k) {
+    if (k < 0 || k > n) return 0n;
+    // C(n,k) = n! / (k! * (n-k)!)
+    let res = fact[n];
+    res = (res * invFact[k]) % BigInt(MOD);
+    res = (res * invFact[n-k]) % BigInt(MOD);
+    return res;
+}
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    if (!S) return;
+    
+    let freqs = {};
+    for (const char of S) {
+        freqs[char] = (freqs[char] || 0) + 1;
+    }
+    const freqValues = Object.entries(freqs);
+    const maxFreq = Object.values(freqs).length > 0 ? Math.max(...Object.values(freqs)) : 0;
+
+    animationSteps.push({ type: 'START', freqs: freqValues });
+
+    let totalCount = 0n;
+    for (let k = 1; k <= maxFreq; k++) {
+        animationSteps.push({ type: 'HARMONY_LEVEL_START', k });
+        
+        let waysForK = 1n;
+        let combinationsSteps = [];
+        for (const [char, freq] of freqValues) {
+             const waysToChoose = combinations(freq, k);
+             combinationsSteps.push({ k, char, freq, ways: waysToChoose });
+             if (waysToChoose > 0) {
+                waysForK = (waysForK * (waysToChoose + 1n)) % BigInt(MOD);
+             }
+        }
+        animationSteps.push({type: 'CALC_ALL_COMBINATIONS', combinations: combinationsSteps });
+
+        waysForK = (waysForK - 1n + BigInt(MOD)) % BigInt(MOD);
+        totalCount = (totalCount + waysForK) % BigInt(MOD);
+        
+        animationSteps.push({ type: 'HARMONY_LEVEL_END', k, waysForK, totalCount });
+    }
+    animationSteps.push({ type: 'END', finalCount: totalCount });
+}
+
+function initializeAnimation() {
+    log("Preparing the cosmos...");
+    simulationRunning = false; currentStep = -1;
+
+    S = stringInput.value;
+    if (!S) return;
+
+    // *** THIS IS THE FIX ***
+    // Precompute factorials *before* generating steps that need them.
+    precomputeFactorials(S.length);
+
+    logOutput.innerHTML = '';
+    counterDisplay.textContent = '0';
+    counterDisplay.classList.remove('updated');
+    harmonyDisplay.textContent = '';
+    currentActionDisplay.textContent = 'Ready to compose.';
+    constellationsDisplay.innerHTML = '';
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Restart';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+    
+    switch(step.type) {
+        case 'START':
+            log("Forging constellations from stardust...");
+            currentActionDisplay.textContent = 'Counting star frequencies...';
+            step.freqs.forEach(([char, freq], i) => {
+                const color = GEM_COLORS[i % GEM_COLORS.length];
+                constellationsDisplay.innerHTML += `
+                    <div class="constellation" id="const-${char}" style="border-color:${color}; color:${color}">
+                        <div class="name">"${char}"</div>
+                        <div class="stars">${'✨'.repeat(freq)}</div>
+                        <div>Count: ${freq}</div>
+                    </div>`;
+            });
+            break;
+
+        case 'HARMONY_LEVEL_START':
+            log(`--- Composing for Harmony Level k = ${step.k} ---`);
+            harmonyDisplay.textContent = step.k;
+            currentActionDisplay.textContent = `Calculating ways for k = ${step.k}...`;
+            animationSteps[0].freqs.forEach(([char, freq]) => {
+                const conDiv = document.getElementById(`const-${char}`);
+                if (freq < step.k) conDiv.classList.add('inactive');
+                else conDiv.classList.remove('inactive');
+            });
+            break;
+            
+        case 'CALC_ALL_COMBINATIONS':
+             for(const comb of step.combinations) {
+                const { k, char, freq, ways } = comb;
+                const conDiv = document.getElementById(`const-${char}`);
+                if (conDiv && !conDiv.classList.contains('inactive')) {
+                    conDiv.classList.add('active');
+                    log(`  For char '${char}' (freq ${freq}): C(${freq}, ${k}) = ${ways}`);
+                    currentActionDisplay.innerHTML = `For constellation "${char}", ways to choose ${k} stars:<br/>C(${freq}, ${k}) = <strong>${ways}</strong>`;
+                    await new Promise(r => setTimeout(r, 800));
+                    conDiv.classList.remove('active');
+                }
+             }
+            break;
+        
+        case 'HARMONY_LEVEL_END':
+            log(`  Total melodies for k=${step.k} is ${step.waysForK}.`);
+            log(`  Overall total is now ${step.totalCount}.`);
+            currentActionDisplay.textContent = `Found ${step.waysForK} new melodies for k=${step.k}.`;
+            counterDisplay.textContent = step.totalCount.toString();
+            counterDisplay.classList.add('updated');
+            await new Promise(r => setTimeout(r, 200));
+            counterDisplay.classList.remove('updated');
+            break;
+
+        case 'END':
+            log(`--- Composition Complete! Total good subsequences: ${step.finalCount} ---`);
+            currentActionDisplay.textContent = `Composition Complete!`;
+            harmonyDisplay.textContent = '✓';
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    counterDisplay = document.getElementById('total-counter-display');
+    harmonyDisplay = document.getElementById('harmony-level-display');
+    constellationsDisplay = document.getElementById('constellations-display');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

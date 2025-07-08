@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combination Sum (Backtracking) Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1600px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-combo { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-combo label { font-weight: bold; margin-right: 5px; }
+        .controls-combo input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
+        .controls-combo button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-combo button:hover { background-color: #0056b3; }
+        .controls-combo button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-combo { display: grid; grid-template-columns: minmax(400px, 1fr) 2fr; gap: 15px; }
+        .left-panel-combo, .right-panel-combo { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .state-display { padding: 8px; border-radius: 4px; border: 1px dashed #ccc; margin-top: 5px; min-height: 2.5em; display: flex; align-items: center; justify-content: center; font-family: 'Courier New', monospace; font-weight: bold; }
+        .path-element { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; color: white; margin: 0 2px; }
+        .path-element.adding { animation: popIn 0.3s ease-out; }
+        .path-element.removing { animation: popOut 0.3s ease-in forwards; }
+        
+        #results-container { max-height: 300px; overflow-y: auto; }
+        .result-item { background: #d4edda; padding: 5px; border-radius: 4px; margin-bottom: 5px; animation: popIn 0.5s ease-out; font-family: 'Courier New', monospace; }
+
+        .recursion-tree-container { min-height: 500px; overflow: auto; position: relative; background-color: #f0f2f5; }
+        #p5_canvas_target_div { width:100%; height:100%; min-height: 480px; display: flex; justify-content: center; align-items: flex-start; }
+
+        .log-container-combo { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+        
+        @keyframes popIn { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
+        @keyframes popOut { from {transform: scale(1); opacity:1;} to {transform: scale(0); opacity:0;} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Combination Sum: The Alchemist's Experiment</h1>
+
+        <div class="controls-combo">
+            <label for="candidates_input">Ingredients:</label>
+            <input type="text" id="candidates_input" value="2,3,6,7">
+            <label for="target_input">Target Cost:</label>
+            <input type="number" id="target_input" value="7">
+            <button id="start_button">Start</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-combo">
+            <div class="left-panel-combo">
+                <div class="panel">
+                    <h2>Current Recipe (Path)</h2>
+                    <div id="path-display" class="state-display"></div>
+                </div>
+                <div class="panel">
+                    <h2>Completed Recipes</h2>
+                    <div id="results-container"></div>
+                </div>
+            </div>
+            <div class="right-panel-combo">
+                 <div class="panel recursion-tree-container">
+                    <h2>Tree of Experiments</h2>
+                    <div id="p5_canvas_target_div"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-combo">
+            <h2>Alchemist's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+let p5Instance; 
+
+// --- STATE & CONFIG ---
+let CANDIDATES = []; let TARGET = 0;
+let simulationRunning = false;
+let globalState = { treeNodes: {}, callStack: [], path: [], uniqueNodeId: 0 };
+const ANIMATION_DELAY = 450;
+const COLORS = ['#c0392b', '#2980b9', '#27ae60', '#8e44ad', '#f39c12', '#16a085'];
+
+// --- DOM ELEMENTS ---
+let candidatesInput, targetInput, startButton, nextStepButton, pathDisplay, resultsContainer, logOutput;
+
+// --- p5.js Sketch ---
+const p5_sketch_definition = (p, getState) => {
+    // p5.js drawing logic is very similar to previous tree examples
+    function postOrderLayout(nodeId, depth, nextX) {
+        const { treeNodes } = getState();
+        const node = treeNodes[nodeId];
+        if (!node) return nextX;
+        node.y = depth * 90;
+        if (!node.children || node.children.length === 0) { node.x = nextX; return nextX + 130; }
+        let currentX = nextX;
+        for (const child of node.children) { currentX = postOrderLayout(child.nodeId, depth + 1, currentX); }
+        const firstChild = treeNodes[node.children[0].nodeId];
+        const lastChild = treeNodes[node.children[node.children.length - 1].nodeId];
+        node.x = (firstChild.x + lastChild.x) / 2;
+        return currentX;
+    }
+    p.setup = () => {
+        const container = document.getElementById('p5_canvas_target_div');
+        p.createCanvas(container.clientWidth || 800, container.clientHeight || 500).parent('p5_canvas_target_div');
+        p.textAlign(p.CENTER, p.CENTER); p.noLoop();
+    };
+    p.draw = () => {
+        p.background(240, 242, 245);
+        const { treeNodes, callStack } = getState();
+        if (Object.keys(treeNodes).length === 0) return;
+        postOrderLayout('node-0', 0, 0);
+
+        const allNodes = Object.values(treeNodes);
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        allNodes.forEach(node => { if(node.x !== undefined) { minX = Math.min(minX, node.x); maxX = Math.max(maxX, node.x); minY = Math.min(minY, node.y); maxY = Math.max(maxY, node.y); } });
+        
+        const padding = 60;
+        const requiredWidth = Math.max(p.width, (maxX - minX) + 2 * padding);
+        const requiredHeight = Math.max(p.height, (maxY - minY) + 2 * padding);
+        if (Math.abs(p.width - requiredWidth) > 10 || Math.abs(p.height - requiredHeight) > 10) p.resizeCanvas(requiredWidth, requiredHeight);
+
+        const offsetX = (p.width / 2) - ((minX + maxX) / 2); const offsetY = padding;
+
+        allNodes.forEach(node => {
+            if (node.parentId && treeNodes[node.parentId]) {
+                const parent = treeNodes[node.parentId];
+                const childInfo = parent.children.find(c => c.nodeId === node.nodeId);
+                p.stroke(180); p.strokeWeight(1.5);
+                p.line(parent.x + offsetX, parent.y + offsetY, node.x + offsetX, node.y + offsetY);
+                if (childInfo) {
+                    p.fill(100); p.noStroke(); p.textSize(10); p.textAlign(p.CENTER, p.BOTTOM);
+                    p.text(`+ ${childInfo.val}`, (parent.x + node.x) / 2 + offsetX, (parent.y + node.y) / 2 + offsetY - 5);
+                }
+            }
+        });
+        allNodes.forEach(node => {
+            if (node.x === undefined) return;
+            p.strokeWeight(1.5); p.stroke(108, 117, 125);
+            const isActive = callStack.length > 0 && node.nodeId === callStack[callStack.length - 1];
+            
+            if (node.isSuccess) { p.fill(212, 237, 218); p.stroke(40, 167, 69); }
+            else if (node.isDeadEnd) { p.fill(248, 215, 218); p.stroke(220, 53, 69); }
+            else if (node.isReturning) p.fill(222, 226, 230, 200);
+            else if (isActive) { p.fill(255, 243, 205); p.stroke(255, 193, 7); p.strokeWeight(2.5); }
+            else p.fill(255);
+
+            p.rectMode(p.CENTER); p.rect(node.x + offsetX, node.y + offsetY, 120, 55, 5);
+            p.fill(30); p.noStroke(); p.textAlign(p.CENTER, p.CENTER);
+            const callText = `solve(${node.target}, ${node.start})`;
+            p.textSize(11); p.text(callText, node.x + offsetX, node.y + offsetY);
+        });
+    };
+    p.customRedraw = () => { if(p && typeof p.redraw === 'function' && p.width) p.redraw(); };
+};
+
+// --- CORE LOGIC & ANIMATION ---
+function log(message, indent = 0) { logOutput.innerHTML += `${'  '.repeat(indent)}> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; }
+function updateButtonState() { nextStepButton.disabled = !simulationRunning; if (!nextStepButton.disabled) startButton.textContent = 'Restart'; }
+function getState() { return globalState; }
+function renderPath() {
+    pathDisplay.innerHTML = globalState.path.map((val, i) => `<div class="path-element" style="background-color:${COLORS[CANDIDATES.indexOf(val) % COLORS.length]}">${val}</div>`).join('');
+}
+
+let animationGenerator;
+
+function* backtrackGenerator(target, start, parentId) {
+    const { treeNodes, callStack, path } = globalState;
+    const nodeId = `node-${globalState.uniqueNodeId++}`;
+    
+    treeNodes[nodeId] = { target, start, nodeId, parentId, children: [], isReturning: false, isSuccess: false, isDeadEnd: false };
+    if(parentId) treeNodes[parentId].children.push({nodeId, val: path[path.length - 1]});
+    
+    callStack.push(nodeId);
+    log(`backtrack(target=${target}, start=${start})`, callStack.length - 1);
+    yield;
+
+    if (target === 0) {
+        log(`-> Success! Found combination: [${path.join(',')}]`, callStack.length - 1);
+        treeNodes[nodeId].isSuccess = true;
+        resultsContainer.innerHTML += `<div class="result-item">[${path.join(', ')}]</div>`;
+        yield;
+        callStack.pop();
+        treeNodes[nodeId].isReturning = true;
+        return;
+    }
+
+    let foundAValidPath = false;
+    for (let i = start; i < CANDIDATES.length; i++) {
+        const num = CANDIDATES[i];
+        if (num > target) {
+            log(`  Candidate ${num} > target ${target}. Pruning branch.`, callStack.length - 1);
+            yield;
+            continue;
+        }
+        
+        // CHOOSE
+        path.push(num);
+        treeNodes[nodeId].isChoosing = true;
+        log(`  Choose ${num}. Path is now [${path.join(',')}]`, callStack.length - 1);
+        yield;
+        treeNodes[nodeId].isChoosing = false;
+        
+        // EXPLORE
+        yield* backtrackGenerator(target - num, i, nodeId);
+        
+        // UN-CHOOSE
+        path.pop();
+        treeNodes[nodeId].isReturning = false; // Reset parent's returning state
+        log(`  Un-choose ${num}. Path is now [${path.join(',')}]`, callStack.length - 1);
+        yield;
+        foundAValidPath = true;
+    }
+    
+    if (target > 0 && !foundAValidPath && start >= CANDIDATES.length) {
+         treeNodes[nodeId].isDeadEnd = true;
+    }
+
+    callStack.pop();
+    treeNodes[nodeId].isReturning = true;
+}
+
+function initializeAnimation() {
+    simulationRunning = false;
+    
+    try {
+        CANDIDATES = candidatesInput.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0).sort((a,b)=>a-b);
+        TARGET = parseInt(targetInput.value, 10);
+        if (CANDIDATES.length === 0 || isNaN(TARGET) || TARGET <= 0) throw new Error("Invalid input.");
+    } catch(e) { alert("Invalid input. Provide positive candidates and a positive target."); return; }
+
+    logOutput.innerHTML = '';
+    resultsContainer.innerHTML = '';
+    pathDisplay.innerHTML = '';
+    globalState = { treeNodes: {}, callStack: [], path: [], uniqueNodeId: 0 };
+    
+    animationGenerator = backtrackGenerator(TARGET, 0, null);
+    
+    simulationRunning = true;
+    updateButtonState();
+    if(p5Instance) p5Instance.customRedraw();
+    log("Alchemist is ready. Click 'Next Step' to begin.");
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    
+    nextStepButton.disabled = true;
+    
+    const result = animationGenerator.next();
+    
+    renderPath();
+    if (p5Instance) p5Instance.customRedraw();
+
+    if (result.done) {
+        log("--- All combinations found! ---");
+        simulationRunning = false;
+    }
+    
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    candidatesInput = document.getElementById('candidates_input');
+    targetInput = document.getElementById('target_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    pathDisplay = document.getElementById('path-display');
+    resultsContainer = document.getElementById('results-container');
+    logOutput = document.getElementById('log_output');
+
+    p5Instance = new p5((p) => p5_sketch_definition(p, getState));
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

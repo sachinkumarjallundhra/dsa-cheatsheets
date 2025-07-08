@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Combination Sum Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>➕ Combination Sum – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Combination Sum</b> problem asks you to find all unique combinations in a list of candidates where the chosen numbers sum to a target. Each number in candidates may be used an unlimited number of times.
+    </p>
+
+    <h2>🧱 Pattern Template (DP Solution)</h2>
+    <pre><code>class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; combinationSum(int[] candidates, int target) {
+        List&lt;List&lt;Integer&gt;&gt;[] dp = new List[target + 1];
+        for (int i = 0; i &lt;= target; i++) dp[i] = new ArrayList&lt;&gt;();
+        dp[0].add(new ArrayList&lt;&gt;());
+        for (int num : candidates) {
+            for (int t = num; t &lt;= target; t++) {
+                for (List&lt;Integer&gt; comb : dp[t - num]) {
+                    List&lt;Integer&gt; newComb = new ArrayList&lt;&gt;(comb);
+                    newComb.add(num);
+                    dp[t].add(newComb);
+                }
+            }
+        }
+        return dp[target];
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/combination_sum_animation.html'">▶️ View Animation</button>
+        <h2>🧱 Pattern Template (Backtracking Solution)</h2>
+    <pre><code>class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; combinationSum(int[] candidates, int target) {
+        List&lt;List&lt;Integer&gt;&gt; result = new ArrayList&lt;&gt;();
+        backtrack(candidates, target, 0, new ArrayList&lt;&gt;(), result);
+        return result;
+    }
+
+    private void backtrack(int[] candidates, int target, int start, List&lt;Integer&gt; path, List&lt;List&lt;Integer&gt;&gt; result) {
+        if (target == 0) {
+            result.add(new ArrayList&lt;&gt;(path));
+            return;
+        }
+        for (int i = start; i &lt; candidates.length; i++) {
+            if (candidates[i] &gt; target) continue;
+            path.add(candidates[i]);
+            backtrack(candidates, target - candidates[i], i, path, result); // not i+1 because we can reuse same element
+            path.remove(path.size() - 1);
+        }
+    }
+}</code>
+</pre>
+    <button onclick="window.location.href='../animations/combination_sum_animation_v2.html'">▶️ View Animation</button>
+
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(2^t * k)</code>, where <code>t</code> is the target and <code>k</code> is the average length of a combination. The number of combinations can be exponential in the target.</li>
+      <li><b>Space Complexity:</b> <code>O(2^t * k)</code> for storing all combinations in the output (and DP array if using DP approach).</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding all combinations that sum to a target.</li>
+      <li>Backtracking with unlimited use of elements.</li>
+      <li>Subset and partitioning problems.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/combination-sum/" target="_blank" rel="noopener noreferrer">
+          39. Combination Sum
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/combination-sum-ii/" target="_blank" rel="noopener noreferrer">
+          40. Combination Sum II
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: candidates = [2,3,6,7], target = 7
+Output: [[2,2,3],[7]]
+
+Explanation:
+- 2+2+3 = 7
+- 7 = 7
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Sort candidates to help with pruning (optional).</li>
+      <li>Use the same index in recursion to allow unlimited use of an element.</li>
+      <li>For each recursive call, subtract the chosen candidate from the target.</li>
+      <li>For unique combinations (no repeats), see Combination Sum II.</li>
+    </ul>
+  </div>
+</body>
+</html>

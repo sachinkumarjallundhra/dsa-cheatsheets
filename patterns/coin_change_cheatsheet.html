@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coin Change Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🪙 Coin Change – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Coin Change</b> problem asks you to find the minimum number of coins needed to make up a given amount using coins of given denominations. If it is not possible, return -1.
+    </p>
+
+    <h2>🧱 Pattern Template (Bottom-Up DP)</h2>
+    <pre><code>class Solution {
+    public int coinChange(int[] coins, int amount) {
+        int[] dp = new int[amount + 1];
+        Arrays.fill(dp, amount + 1);
+        dp[0] = 0;
+        for (int i = 1; i &lt;= amount; i++) {
+            for (int coin : coins) {
+                if (i - coin &gt;= 0) {
+                    dp[i] = Math.min(dp[i], dp[i - coin] + 1);
+                }
+            }
+        }
+        return dp[amount] &gt; amount ? -1 : dp[amount];
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/coin_change_animation.html'">▶️ View Animation</button>
+
+    <h2>🧱 Pattern Template (Top-Down DP with Memoization)</h2>
+    <pre><code>class Solution {
+    public int coinChange(int[] coins, int amount) {
+        Integer[] memo = new Integer[amount + 1];
+        int res = dfs(coins, amount, memo);
+        return res == Integer.MAX_VALUE ? -1 : res;
+    }
+
+    private int dfs(int[] coins, int rem, Integer[] memo) {
+        if (rem == 0) return 0;
+        if (rem &lt; 0) return Integer.MAX_VALUE;
+        if (memo[rem] != null) return memo[rem];
+        int min = Integer.MAX_VALUE;
+        for (int coin : coins) {
+            int res = dfs(coins, rem - coin, memo);
+            if (res != Integer.MAX_VALUE) {
+                min = Math.min(min, res + 1);
+            }
+        }
+        return memo[rem] = min;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/coin_change_animation_v2.html'">▶️ View Animation</button>
+
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(amount * N)</code>, where <code>N</code> is the number of coin denominations.</li>
+      <li><b>Space Complexity:</b> <code>O(amount)</code>, for the DP array or memoization cache.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Making change with minimum coins.</li>
+      <li>Unbounded knapsack variant.</li>
+      <li>Resource allocation with unlimited supply.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/coin-change/" target="_blank" rel="noopener noreferrer">
+          322. Coin Change
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/coin-change-2/" target="_blank" rel="noopener noreferrer">
+          518. Coin Change II
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: coins = [1,2,5], amount = 11
+Output: 3
+
+Explanation:
+- 11 = 5 + 5 + 1 (minimum 3 coins needed)
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use <code>amount + 1</code> as the initial value for impossible states.</li>
+      <li>For the number of combinations (not minimum coins), see Coin Change II.</li>
+      <li>Edge cases: amount = 0, no solution possible.</li>
+    </ul>
+  </div>
+</body>
+</html>

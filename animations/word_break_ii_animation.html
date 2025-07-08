@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Break II (Dynamic Tree Animation)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1600px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-wordbreak2 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-wordbreak2 label { font-weight: bold; margin-right: 5px; }
+        .controls-wordbreak2 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
+        .controls-wordbreak2 button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-wordbreak2 button:hover { background-color: #0056b3; }
+        .controls-wordbreak2 button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-wordbreak2 { display: grid; grid-template-columns: minmax(400px, 1fr) 2fr; gap: 15px; }
+        .left-panel-wordbreak2, .right-panel-wordbreak2 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        /* NEW: Styles for the Current Action display */
+        #current-action-display {
+            text-align: center;
+            font-weight: bold;
+            min-height: 2.5em;
+            padding: 10px;
+            border: 1px dashed #007bff;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+            color: #0056b3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #memo-table-container { max-height: 350px; overflow-y: auto; }
+        .memo-entry { margin-bottom: 5px; padding: 5px; border-left: 3px solid #cfe2ff; transition: all 0.3s; }
+        .memo-entry.hit { border-left-color: #28a745; background: #e9f7ec; }
+        .memo-key { font-weight: bold; font-family: 'Courier New', monospace; }
+        .memo-value { font-size: 0.9em; color: #6c757d; }
+        
+        #results-container { max-height: 200px; overflow-y: auto; }
+        .result-sentence { background: #d4edda; padding: 5px; border-radius: 4px; margin-bottom: 5px; animation: popIn 0.5s ease-out; }
+
+        .recursion-tree-container { min-height: 500px; overflow: auto; position: relative; background-color: #f0f2f5; }
+        #p5_canvas_target_div { width:100%; height:100%; min-height: 480px; display: flex; justify-content: center; align-items: flex-start; }
+        
+        .log-container-wordbreak2 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+        
+        @keyframes popIn { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Word Break II: The Locksmith's Journal (Dynamic Tree)</h1>
+
+        <div class="controls-wordbreak2">
+            <label for="string_input">Word-Lock:</label>
+            <input type="text" id="string_input" value="catsanddog">
+            <label for="dict_input">Key Ring:</label>
+            <input type="text" id="dict_input" value="cat,cats,and,sand,dog">
+            <button id="start_button">Start</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-wordbreak2">
+            <div class="left-panel-wordbreak2">
+                <!-- NEW: Panel for current action -->
+                <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="current-action-display">Ready to Start</div>
+                </div>
+                <div class="panel">
+                    <h2>Tome of Solutions (Memoization)</h2>
+                    <div id="memo-table-container"></div>
+                </div>
+                <div class="panel">
+                    <h2>Final Found Sentences</h2>
+                    <div id="results-container"></div>
+                </div>
+            </div>
+            <div class="right-panel-wordbreak2">
+                 <div class="panel recursion-tree-container">
+                    <h2>Recursion Call Tree</h2>
+                    <div id="p5_canvas_target_div"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-wordbreak2">
+            <h2>Locksmith's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+let p5Instance; 
+
+// --- STATE & CONFIG ---
+let S = ""; let DICT = new Set();
+let simulationRunning = false;
+let globalState = {
+    treeNodes: {}, callStack: [], memo: {}, memoVisual: {}, uniqueNodeId: 0
+};
+const ANIMATION_DELAY = 450;
+
+// --- DOM ELEMENTS ---
+let stringInput, dictInput, startButton, nextStepButton, memoTableContainer, resultsContainer, logOutput, currentActionDisplay;
+
+// --- p5.js Sketch (no changes needed) ---
+const p5_sketch_definition = (p, getState) => {
+    function postOrderLayout(nodeId, depth, nextX) {
+        const { treeNodes } = getState();
+        const node = treeNodes[nodeId];
+        if (!node) return nextX;
+        node.y = depth * 90;
+        if (!node.children || node.children.length === 0) { node.x = nextX; return nextX + 160; }
+        let currentX = nextX;
+        for (const child of node.children) { currentX = postOrderLayout(child.nodeId, depth + 1, currentX); }
+        const firstChild = treeNodes[node.children[0].nodeId];
+        const lastChild = treeNodes[node.children[node.children.length - 1].nodeId];
+        node.x = (firstChild.x + lastChild.x) / 2;
+        return currentX;
+    }
+    p.setup = () => {
+        const container = document.getElementById('p5_canvas_target_div');
+        p.createCanvas(container.clientWidth || 800, container.clientHeight || 500).parent('p5_canvas_target_div');
+        p.textAlign(p.CENTER, p.CENTER); p.noLoop();
+    };
+    p.draw = () => {
+        p.background(240, 242, 245);
+        const { treeNodes, callStack } = getState();
+        if (Object.keys(treeNodes).length === 0) return;
+        postOrderLayout('node-0', 0, 0);
+
+        const allNodes = Object.values(treeNodes);
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        allNodes.forEach(node => { if(node.x !== undefined) { minX = Math.min(minX, node.x); maxX = Math.max(maxX, node.x); minY = Math.min(minY, node.y); maxY = Math.max(maxY, node.y); } });
+        
+        const padding = 60;
+        const requiredWidth = Math.max(p.width, (maxX - minX) + 2 * padding);
+        const requiredHeight = Math.max(p.height, (maxY - minY) + 2 * padding);
+        if (Math.abs(p.width - requiredWidth) > 10 || Math.abs(p.height - requiredHeight) > 10) p.resizeCanvas(requiredWidth, requiredHeight);
+
+        const offsetX = (p.width / 2) - ((minX + maxX) / 2); const offsetY = padding;
+
+        allNodes.forEach(node => {
+            if (node.parentId && treeNodes[node.parentId]) {
+                const parent = treeNodes[node.parentId];
+                const childInfo = parent.children.find(c => c.nodeId === node.nodeId);
+                p.stroke(180); p.strokeWeight(1.5);
+                p.line(parent.x + offsetX, parent.y + offsetY, node.x + offsetX, node.y + offsetY);
+                if (childInfo) {
+                    p.fill(100); p.noStroke(); p.textSize(10); p.textAlign(p.CENTER, p.BOTTOM);
+                    p.text(`+ "${childInfo.word}"`, (parent.x + node.x) / 2 + offsetX, (parent.y + node.y) / 2 + offsetY - 5);
+                }
+            }
+        });
+        allNodes.forEach(node => {
+            if (node.x === undefined) return;
+            p.strokeWeight(1.5); p.stroke(108, 117, 125);
+            const isActive = callStack.length > 0 && node.nodeId === callStack[callStack.length - 1];
+            
+            if (node.isReused) { p.fill(212, 237, 218); p.stroke(40, 167, 69); }
+            else if (node.isReturning) p.fill(222, 226, 230, 200);
+            else if (isActive) { p.fill(255, 243, 205); p.stroke(255, 193, 7); p.strokeWeight(2.5); }
+            else p.fill(255);
+
+            p.rectMode(p.CENTER); p.rect(node.x + offsetX, node.y + offsetY, 140, 55, 5);
+            p.fill(30); p.noStroke(); p.textAlign(p.CENTER, p.CENTER);
+            const callText = `solve("${node.s}")`;
+            let resultText = node.returnValue ? `returns [${node.returnValue.length}] solutions` : '(...)';
+            if (node.s === "") resultText = `returns [""]`;
+            p.textSize(11); p.text(callText, node.x + offsetX, node.y + offsetY - 10);
+            p.textSize(10); p.text(resultText, node.x + offsetX, node.y + offsetY + 12);
+        });
+    };
+    p.customRedraw = () => { if(p && typeof p.redraw === 'function' && p.width) p.redraw(); };
+};
+
+// --- CORE LOGIC & ANIMATION ---
+function log(message, indent = 0) { logOutput.innerHTML += `${'  '.repeat(indent)}> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; }
+function updateButtonState() { nextStepButton.disabled = !simulationRunning; if (!nextStepButton.disabled) startButton.textContent = 'Restart'; }
+function getState() { return globalState; }
+
+// Generator function to drive the animation step-by-step
+function* wordBreakGenerator(s, parentId, wordThatLedHere) {
+    const { treeNodes, callStack, memo, memoVisual } = globalState;
+    const nodeId = `node-${globalState.uniqueNodeId++}`;
+    
+    treeNodes[nodeId] = { s, nodeId, parentId, children: [], returnValue: null, isReturning: false, isReused: false };
+    if (parentId) treeNodes[parentId].children.push({ nodeId, word: wordThatLedHere });
+    callStack.push(nodeId);
+    
+    log(`solve("${s}")`, callStack.length - 1);
+    currentActionDisplay.textContent = `Entering solve("${s}")`;
+    yield;
+
+    if (memo.hasOwnProperty(s)) {
+        log(`-> Cache HIT for "${s}"! Reusing result.`, callStack.length - 1);
+        currentActionDisplay.textContent = `Cache HIT for "${s}"!`;
+        treeNodes[nodeId].isReused = true;
+        treeNodes[nodeId].returnValue = memo[s];
+        document.getElementById(`memo-${s}`)?.classList.add('hit');
+        yield;
+        callStack.pop();
+        return memo[s];
+    }
+    if (s.length === 0) {
+        log(`-> Base case: empty string. Return [""]`, callStack.length - 1);
+        currentActionDisplay.textContent = `Base case reached.`;
+        treeNodes[nodeId].returnValue = [""];
+        yield;
+        callStack.pop();
+        return [""];
+    }
+
+    let res = [];
+    for (let end = 1; end <= s.length; end++) {
+        let word = s.slice(0, end);
+        currentActionDisplay.textContent = `Checking prefix "${word}"...`;
+        log(`  Checking prefix "${word}"...`, callStack.length - 1);
+        yield;
+        if (DICT.has(word)) {
+            currentActionDisplay.textContent = `"${word}" is a key! Recursing...`;
+            log(`  Prefix "${word}" is a key. Recursing...`, callStack.length - 1);
+            yield;
+
+            let sublist = yield* wordBreakGenerator(s.slice(end), nodeId, word);
+
+            currentActionDisplay.textContent = `Combining "${word}" with ${sublist.length} sub-solution(s).`;
+            log(`  Returned from subproblem for "${word}". Combining with ${sublist.length} solution(s).`, callStack.length - 1);
+            yield;
+            for (let sub of sublist) {
+                const newSentence = word + (sub.length === 0 ? "" : " " + sub);
+                res.push(newSentence);
+                 if(s === S) {
+                    resultsContainer.innerHTML += `<div class="result-sentence">${newSentence}</div>`;
+                }
+            }
+        }
+    }
+
+    memo[s] = res;
+    memoVisual[s] = res;
+    renderMemo();
+    treeNodes[nodeId].returnValue = res;
+    currentActionDisplay.textContent = `Finished solve("${s}"). Storing ${res.length} solution(s).`;
+    log(`<- Finished solve("${s}"). Storing and returning ${res.length} solutions.`, callStack.length - 1);
+    yield;
+    callStack.pop();
+    return res;
+}
+
+let animationGenerator;
+
+function initializeAnimation() {
+    simulationRunning = false;
+    
+    try {
+        S = stringInput.value;
+        const dictWords = dictInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        DICT = new Set(dictWords);
+    } catch(e) { alert("Invalid input."); return; }
+
+    logOutput.innerHTML = '';
+    resultsContainer.innerHTML = '';
+    currentActionDisplay.textContent = "Ready to Start";
+    globalState = { treeNodes: {}, callStack: [], memo: {}, memoVisual: {}, uniqueNodeId: 0 };
+    renderMemo();
+    
+    animationGenerator = wordBreakGenerator(S, null, null);
+    
+    simulationRunning = true;
+    updateButtonState();
+    if(p5Instance) p5Instance.customRedraw();
+    log("Locksmith ready. Click 'Next Step' to begin.");
+}
+
+function renderMemo() {
+    memoTableContainer.innerHTML = Object.entries(globalState.memoVisual).map(([key, value]) => `
+        <div class="memo-entry" id="memo-${key}">
+            <div class="memo-key">"${key || ''}":</div>
+            <div class="memo-value">[${value.length > 2 ? `"${value[0]}", "${value[1]}", ...` : value.map(v=>`"${v}"`).join(', ')}] (${value.length} solution${value.length !== 1 ? 's' : ''})</div>
+        </div>
+    `).join('');
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    
+    nextStepButton.disabled = true;
+    
+    const result = animationGenerator.next();
+    
+    const lastNodeId = globalState.callStack.length > 0 ? globalState.callStack[globalState.callStack.length - 1] : null;
+    Object.values(globalState.treeNodes).forEach(node => {
+        node.isReturning = node.returnValue !== null && node.nodeId !== lastNodeId;
+    });
+
+    if (p5Instance) p5Instance.customRedraw();
+
+    if (result.done) {
+        log("--- All combinations found! ---");
+        currentActionDisplay.textContent = "Lock Opened! All combinations found.";
+        simulationRunning = false;
+    }
+    
+    await new Promise(r => setTimeout(r, ANIMATION_DELAY));
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input');
+    dictInput = document.getElementById('dict_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    memoTableContainer = document.getElementById('memo-table-container');
+    resultsContainer = document.getElementById('results-container');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    p5Instance = new p5((p) => p5_sketch_definition(p, getState));
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

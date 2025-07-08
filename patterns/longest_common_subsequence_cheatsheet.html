@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Longest Common Subsequence Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔗 Longest Common Subsequence – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Longest Common Subsequence (LCS)</b> problem asks you to find the length of the longest subsequence present in both given strings. A subsequence is a sequence that appears in the same relative order, but not necessarily contiguous.
+    </p>
+
+    <h2>🧱 Pattern Template (DP Solution)</h2>
+    <pre><code>class Solution {
+    public int longestCommonSubsequence(String text1, String text2) {
+        int m = text1.length(), n = text2.length();
+        int[][] dp = new int[m + 1][n + 1];
+        for (int i = 1; i &lt;= m; i++) {
+            for (int j = 1; j &lt;= n; j++) {
+                if (text1.charAt(i - 1) == text2.charAt(j - 1)) {
+                    dp[i][j] = 1 + dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/longest_common_subsequence_animation.html'">▶️ View Animation</button>
+
+    <h2>🧱 Pattern Template (Space Optimized DP)</h2>
+    <pre><code>class Solution {
+    public int longestCommonSubsequence(String text1, String text2) {
+        int m = text1.length(), n = text2.length();
+        int[] prev = new int[n + 1];
+        int[] curr = new int[n + 1];
+        for (int i = 1; i &lt;= m; i++) {
+            for (int j = 1; j &lt;= n; j++) {
+                if (text1.charAt(i - 1) == text2.charAt(j - 1)) {
+                    curr[j] = 1 + prev[j - 1];
+                } else {
+                    curr[j] = Math.max(prev[j], curr[j - 1]);
+                }
+            }
+            int[] temp = prev;
+            prev = curr;
+            curr = temp;
+        }
+        return prev[n];
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/longest_common_subsequence_animation_v2.html'">▶️ View Animation</button>
+
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(m * n)</code>, where <code>m</code> and <code>n</code> are the lengths of the two strings.</li>
+      <li><b>Space Complexity:</b> <code>O(m * n)</code> for 2D DP, <code>O(n)</code> for space optimized.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Comparing DNA, text, or version control diffs.</li>
+      <li>String similarity and edit distance problems.</li>
+      <li>Dynamic programming with two sequences.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/longest-common-subsequence/" target="_blank" rel="noopener noreferrer">
+          1143. Longest Common Subsequence
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/delete-operation-for-two-strings/" target="_blank" rel="noopener noreferrer">
+          583. Delete Operation for Two Strings
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: text1 = "abcde", text2 = "ace"
+Output: 3
+
+Explanation:
+- The longest common subsequence is "ace", length 3.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use 2D DP for clarity, 1D for space efficiency.</li>
+      <li>LCS is the basis for many string DP problems (edit distance, diff tools, etc).</li>
+      <li>For reconstructing the LCS, backtrack from <code>dp[m][n]</code>.</li>
+    </ul>
+  </div>
+</body>

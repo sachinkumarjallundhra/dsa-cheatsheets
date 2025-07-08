@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCS (Space Optimized DP) Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-lcs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-lcs label { font-weight: bold; margin-right: 5px; }
+        .controls-lcs input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
+        .controls-lcs button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-lcs button:hover { background-color: #0056b3; }
+        .controls-lcs button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-lcs { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-lcs, .right-panel-lcs { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        #final-lcs-display { text-align: center; font-size: 2.5em; font-weight: bold; color: #28a745; min-height: 1.5em; }
+        #current-action-display { text-align: center; min-height: 3em; font-weight: bold; }
+
+        .abacus-container { padding: 10px; }
+        .abacus-row-wrapper { margin-bottom: 15px; transition: all 0.4s ease-in-out; }
+        .abacus-label { font-weight: bold; color: #6c757d; margin-bottom: 5px; }
+        .abacus-row { display: flex; gap: 5px; border: 2px solid #7f8c8d; padding: 5px; border-radius: 5px; background-color: #ecf0f1; }
+        .abacus-cell { flex: 1; min-width: 50px; height: 50px; background-color: #fff; border: 1px solid #bdc3c7; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 1.2em; font-weight: bold; transition: all 0.3s ease; }
+        
+        .abacus-cell.highlight-current { outline: 3px solid #dc3545; transform: scale(1.1); }
+        .abacus-cell.highlight-source { background-color: #cfe2ff !important; }
+        .abacus-cell.final-answer { background-color: #d4edda !important; outline: 3px solid #28a745; }
+
+        #scroll2-display { display: flex; gap: 5px; margin-bottom: 10px; }
+        #scroll2-display .abacus-cell { background-color: #e9ecef; height: 35px; }
+        #scroll1-display { font-size: 1.5em; font-weight: bold; padding: 10px; text-align: center; border-radius: 5px; margin-bottom: 10px;}
+
+        .log-container-lcs { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LCS (Space Optimized): The Scribes' Abacus</h1>
+
+        <div class="controls-lcs">
+            <label for="text1_input">Scroll 1:</label>
+            <input type="text" id="text1_input" value="AGGTAB">
+            <label for="text2_input">Scroll 2:</label>
+            <input type="text" id="text2_input" value="GXTXAYB">
+            <button id="start_button">Compare Scrolls</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-lcs">
+            <div class="left-panel-lcs">
+                <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="current-action-display"></div>
+                </div>
+                 <div class="panel">
+                    <h2>Final LCS Length</h2>
+                    <div id="final-lcs-display"></div>
+                </div>
+            </div>
+            <div class="right-panel-lcs">
+                 <div class="panel">
+                    <h2>The Abacus of Memory</h2>
+                    <div class="abacus-container">
+                        <div id="scroll1-display"></div>
+                        <div id="scroll2-display"></div>
+                        <div class="abacus-row-wrapper">
+                            <div class="abacus-label">Prev Row</div>
+                            <div id="prev-row" class="abacus-row"></div>
+                        </div>
+                        <div class="abacus-row-wrapper">
+                            <div class="abacus-label">Curr Row</div>
+                            <div id="curr-row" class="abacus-row"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-lcs">
+            <h2>Scribe's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+let TEXT1 = "", TEXT2 = "";
+let animationGenerator;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let text1Input, text2Input, startButton, nextStepButton, prevRowDiv, currRowDiv, currentActionDisplay, finalLCSDisplay, logOutput, scroll1Display, scroll2Display;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() {
+    document.querySelectorAll('.abacus-cell').forEach(c => c.classList.remove('highlight-current', 'highlight-source'));
+    scroll1Display.style.backgroundColor = '';
+    document.querySelectorAll('#scroll2-display .abacus-cell').forEach(c => c.style.backgroundColor = '');
+}
+function renderRow(div, arr) {
+    div.innerHTML = arr.map((val, i) => `<div class="abacus-cell" id="${div.id}-cell-${i}">${val}</div>`).join('');
+}
+
+// --- ANIMATION ENGINE using a Generator ---
+function* animationEngine() {
+    const m = TEXT1.length, n = TEXT2.length;
+    let prev = Array(n + 1).fill(0);
+    let curr = Array(n + 1).fill(0);
+    renderRow(prevRowDiv, prev);
+    renderRow(currRowDiv, curr);
+    yield;
+
+    for (let i = 1; i <= m; i++) {
+        const char1 = TEXT1.charAt(i - 1);
+        scroll1Display.textContent = `Comparing for '${char1}'`;
+        scroll1Display.style.backgroundColor = '#fff3cd';
+        log(`--- Processing row for s1[${i-1}] ('${char1}') ---`);
+        yield;
+
+        for (let j = 1; j <= n; j++) {
+            clearHighlights();
+            scroll1Display.style.backgroundColor = '#fff3cd';
+            document.querySelector(`#scroll2-display .abacus-cell:nth-child(${j+1})`).style.backgroundColor = '#fff3cd';
+            
+            const char2 = TEXT2.charAt(j - 1);
+            const currCell = document.getElementById(`curr-row-cell-${j}`);
+            currCell.classList.add('highlight-current');
+
+            if (char1 === char2) {
+                const prevDiagCell = document.getElementById(`prev-row-cell-${j - 1}`);
+                prevDiagCell.classList.add('highlight-source');
+                curr[j] = 1 + prev[j - 1];
+                currentActionDisplay.innerHTML = `Chars match ('${char1}') ✅<br/>curr[${j}] = 1 + prev[${j-1}]`;
+                log(`  At s2[${j-1}] ('${char2}'): Match! val = 1 + ${prev[j - 1]} = ${curr[j]}`);
+            } else {
+                const prevUpCell = document.getElementById(`prev-row-cell-${j}`);
+                const currLeftCell = document.getElementById(`curr-row-cell-${j - 1}`);
+                prevUpCell.classList.add('highlight-source');
+                currLeftCell.classList.add('highlight-source');
+                curr[j] = Math.max(prev[j], curr[j - 1]);
+                currentActionDisplay.innerHTML = `Mismatch ('${char1}' vs '${char2}') ❌<br/>curr[${j}] = max(prev[${j}], curr[${j-1}])`;
+                log(`  At s2[${j-1}] ('${char2}'): Mismatch. val = max(${prev[j]}, ${curr[j-1]}) = ${curr[j]}`);
+            }
+            currCell.textContent = curr[j];
+            yield;
+        }
+
+        // Swap rows logic
+        prev = [...curr];
+        curr = Array(n + 1).fill(0); // Reset curr for next iteration
+        clearHighlights();
+        currentActionDisplay.innerHTML = `Row complete.<br/><strong>Copying 'curr' to 'prev'...</strong>`;
+        log(`  Row complete. Swapping rows for next round.`);
+        renderRow(prevRowDiv, prev);
+        renderRow(currRowDiv, curr);
+        yield;
+    }
+
+    // End
+    clearHighlights();
+    const finalResult = prev[n];
+    log(`--- Comparison complete! LCS length is ${finalResult}. ---`);
+    currentActionDisplay.textContent = 'Comparison Complete!';
+    finalLCSDisplay.textContent = finalResult;
+    const finalCell = document.getElementById(`prev-row-cell-${n}`);
+    finalCell.classList.add('final-answer');
+}
+
+function initializeAnimation() {
+    simulationRunning = false;
+    
+    TEXT1 = text1Input.value.toUpperCase(); text2Input.value = text2Input.value.toUpperCase();
+    TEXT2 = text2Input.value.toUpperCase();
+    
+    if (!TEXT1 || !TEXT2) {
+        alert("Please provide both strings.");
+        return;
+    }
+
+    logOutput.innerHTML = '';
+    currentActionDisplay.innerHTML = 'Ready to compare.';
+    finalLCSDisplay.innerHTML = '';
+    
+    const n = TEXT2.length;
+    scroll2Display.innerHTML = `<div class="abacus-cell">{}</div>` + TEXT2.split('').map(c => `<div class="abacus-cell">${c}</div>`).join('');
+    
+    animationGenerator = animationEngine();
+    simulationRunning = true;
+    updateButtonState();
+    log("Scribes are ready. Click 'Next Step' to begin.");
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!nextStepButton.disabled) startButton.textContent = 'Restart';
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    
+    nextStepButton.disabled = true;
+    
+    const result = animationGenerator.next();
+
+    if (result.done) {
+        simulationRunning = false;
+    }
+    
+    await new Promise(r => setTimeout(r, 600));
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    text1Input = document.getElementById('text1_input');
+    text2Input = document.getElementById('text2_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    prevRowDiv = document.getElementById('prev-row');
+    currRowDiv = document.getElementById('curr-row');
+    currentActionDisplay = document.getElementById('current-action-display');
+    finalLCSDisplay = document.getElementById('final-lcs-display');
+    logOutput = document.getElementById('log_output');
+    scroll1Display = document.getElementById('scroll1-display');
+    scroll2Display = document.getElementById('scroll2-display');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

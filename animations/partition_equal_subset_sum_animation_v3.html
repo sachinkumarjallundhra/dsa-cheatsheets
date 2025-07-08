@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partition Equal Subset Sum (1D DP) Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-partition { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-partition label { font-weight: bold; margin-right: 5px; }
+        .controls-partition input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-partition button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-partition button:hover { background-color: #0056b3; }
+        .controls-partition button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-partition { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-partition, .right-panel-partition { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .gem-list { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .gem { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background-color: #6f42c1; border: 2px solid #5a3d90; color: white; font-weight: bold; font-size: 1.1em; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.3s ease; }
+        .gem.active { background-color: #ffc107; border-color: #e0a800; transform: scale(1.2); }
+        
+        #check-results, #final-verdict { padding: 10px; border: 1px dashed #ccc; font-size: 1.1em; text-align: center; }
+        #final-verdict.true { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        #final-verdict.false { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .dp-scroll-container { min-height: 150px; overflow-x: auto; padding: 10px; }
+        .dp-scroll { display: flex; gap: 5px; }
+        .dp-cell { flex-shrink: 0; width: 60px; height: 80px; border: 1px solid #ccc; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.8em; font-weight: bold; transition: all 0.3s ease; }
+        .dp-cell .index { font-size: 0.5em; color: #6c757d; }
+        
+        .dp-cell.highlight-current { background-color: #fff3cd !important; outline: 2px solid #ffc107; }
+        .dp-cell.highlight-source { background-color: #cfe2ff !important; }
+        .dp-cell.updated { animation: popUpdate 0.4s ease-out; }
+
+        #current-action-display { text-align:center; margin:8px 0; font-weight:bold; min-height:1.1em; font-size:1em; }
+        
+        .log-container-partition { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes popUpdate { from {transform: scale(0.7);} to {transform: scale(1);} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Partition Equal Subset Sum (1D DP Optimization)</h1>
+
+        <div class="controls-partition">
+            <label for="set_input">Set (comma-separated):</label>
+            <input type="text" id="set_input" value="1, 5, 11, 5">
+            <button id="start_button">Start/Reset</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-partition">
+            <div class="left-panel-partition">
+                <div class="panel">
+                    <h2>Weight Gems</h2>
+                    <div id="gem-list-display" class="gem-list"></div>
+                </div>
+                <div class="panel">
+                    <h2>Initial Check</h2>
+                    <div id="check-results"></div>
+                </div>
+            </div>
+            <div class="right-panel-partition">
+                 <div class="panel">
+                    <h2>The Magical Scroll (1D DP Array)</h2>
+                    <div id="current-action-display"></div>
+                    <div class="dp-scroll-container">
+                        <div id="dp_scroll_display" class="dp-scroll"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-partition">
+            <h2>Execution Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE VARIABLES ---
+let NUMS = []; let TARGET_SUM = 0;
+let animationSteps = []; let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let setInput, startButton, nextStepButton, gemListDisplay, checkResultsDisplay, finalVerdictDisplay, dpScrollDisplay, currentActionDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() { document.querySelectorAll('.dp-cell').forEach(c => c.classList.remove('highlight-current', 'highlight-source')); }
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    
+    animationSteps.push({ type: 'START' });
+    animationSteps.push({ type: 'BASE_CASE' });
+    
+    let dp = Array(TARGET_SUM + 1).fill(false);
+    dp[0] = true;
+
+    for (let i = 0; i < NUMS.length; i++) {
+        const num = NUMS[i];
+        animationSteps.push({ type: 'PROCESS_GEM', gemIndex: i, gem: num });
+        for (let j = TARGET_SUM; j >= num; j--) {
+            const sourceVal = dp[j-num];
+            const originalVal = dp[j];
+            const newVal = originalVal || sourceVal;
+            animationSteps.push({ type: 'UPDATE_CELL', gem: num, index: j, sourceIndex: j - num, sourceVal, originalVal, newVal });
+            dp[j] = newVal;
+        }
+    }
+    animationSteps.push({ type: 'FINAL_ANSWER', result: dp[TARGET_SUM] });
+}
+
+function initializeAnimation() {
+    log("Initializing...");
+    simulationRunning = false; currentStep = -1;
+
+    try {
+        NUMS = setInput.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        if (NUMS.length === 0) throw new Error();
+    } catch(e) { alert("Invalid input format."); return; }
+
+    logOutput.innerHTML = '';
+    currentActionDisplay.textContent = 'Ready to begin.';
+    
+    gemListDisplay.innerHTML = '';
+    NUMS.forEach((n, i) => gemListDisplay.innerHTML += `<div class="gem" id="gem-${i}">${n}</div>`);
+
+    const totalSum = NUMS.reduce((a, b) => a + b, 0);
+    checkResultsDisplay.innerHTML = `Total Sum: ${totalSum}<br/>`;
+    
+    if (totalSum % 2 !== 0) {
+        checkResultsDisplay.innerHTML += `<span style="color: red;">Sum is ODD. Partition is impossible.</span>`;
+        log("Initial Check Failed: Total sum is odd.");
+        startButton.textContent = "Start/Reset"; nextStepButton.disabled = true; return;
+    }
+    
+    TARGET_SUM = totalSum / 2;
+    checkResultsDisplay.innerHTML += `Target Sum: ${TARGET_SUM}`;
+    log(`Initial Check Passed. Target Sum: ${TARGET_SUM}`);
+    
+    dpScrollDisplay.innerHTML = '';
+    for (let i = 0; i <= TARGET_SUM; i++) {
+        dpScrollDisplay.innerHTML += `<div class="dp-cell" id="cell-${i}"><div class="index">${i}</div><span class="value" id="value-${i}"></span></div>`;
+    }
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Reset';
+}
+
+function renderDP(dpState) {
+    for (let i = 0; i <= TARGET_SUM; i++) {
+        const valSpan = document.getElementById(`value-${i}`);
+        valSpan.textContent = dpState[i] ? '✔' : '❌';
+        valSpan.style.color = dpState[i] ? '#155724' : '#721c24';
+    }
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+
+    switch(step.type) {
+        case 'START':
+            log("Initializing the 1D DP Scroll...");
+            currentActionDisplay.textContent = 'Ready to process gems.';
+            break;
+
+        case 'BASE_CASE':
+            log("Base Case: dp[0] is TRUE (a sum of 0 is always possible).");
+            let initialDP = Array(TARGET_SUM + 1).fill(false);
+            initialDP[0] = true;
+            renderDP(initialDP);
+            document.getElementById('cell-0').classList.add('updated');
+            break;
+
+        case 'PROCESS_GEM':
+            log(`--- Processing Gem: ${step.gem} ---`);
+            currentActionDisplay.innerHTML = `Processing Gem <div class="gem active" style="display:inline-flex; vertical-align:middle; margin:0 5px;">${step.gem}</div> Scanning scroll backwards.`;
+            document.querySelectorAll('.gem.active').forEach(g => g.classList.remove('active'));
+            document.getElementById(`gem-${step.gemIndex}`).classList.add('active');
+            break;
+            
+        case 'UPDATE_CELL':
+            const cell = document.getElementById(`cell-${step.index}`);
+            const sourceCell = document.getElementById(`cell-${step.sourceIndex}`);
+            cell.classList.add('highlight-current');
+            sourceCell.classList.add('highlight-source');
+
+            log(`  Checking index ${step.index}. Looks at dp[${step.sourceIndex}] (value: ${step.sourceVal}).`);
+            currentActionDisplay.innerHTML = `At index <strong>${step.index}</strong>: Is current value (${step.originalVal}) OR value from index <strong>${step.sourceIndex}</strong> (${step.sourceVal}) true?`;
+            
+            await new Promise(r => setTimeout(r, 800));
+
+            if (step.newVal !== step.originalVal) {
+                log(`    Update! dp[${step.index}] becomes TRUE.`);
+                const valSpan = document.getElementById(`value-${step.index}`);
+                valSpan.textContent = '✔';
+                valSpan.style.color = '#155724';
+                cell.classList.add('updated');
+            } else {
+                 log(`    No change. dp[${step.index}] remains ${step.originalVal}.`);
+            }
+            break;
+
+        case 'FINAL_ANSWER':
+            document.querySelectorAll('.gem.active').forEach(g => g.classList.remove('active'));
+            const finalCell = document.getElementById(`cell-${TARGET_SUM}`);
+            finalCell.style.backgroundColor = step.result ? '#d4edda' : '#f8d7da';
+            finalCell.style.outline = `3px solid ${step.result ? '#155724' : '#721c24'}`;
+            log(`--- All gems processed. Final answer is at dp[${TARGET_SUM}]: ${step.result} ---`);
+            currentActionDisplay.innerHTML = `Final check at index <strong>${TARGET_SUM}</strong> is <strong>${step.result}</strong>. Partition possible: <strong>${step.result}</strong>`;
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if (simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    setInput = document.getElementById('set_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    gemListDisplay = document.getElementById('gem-list-display');
+    checkResultsDisplay = document.getElementById('check-results');
+    dpScrollDisplay = document.getElementById('dp_scroll_display');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Binary Tree Cameras Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📷 Binary Tree Cameras – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Binary Tree Cameras</b> problem asks you to place cameras on a binary tree so that every node is monitored. Each camera at a node can monitor its parent, itself, and its immediate children. Find the minimum number of cameras needed to monitor all nodes.
+    </p>
+
+    <h2>🧱 Pattern Template (Greedy DFS)</h2>
+    <pre><code>class Solution {
+    private int cameras = 0;
+    public int minCameraCover(TreeNode root) {
+        // 0: not covered, 1: has camera, 2: covered
+        return (dfs(root) == 0 ? 1 : 0) + cameras;
+    }
+    private int dfs(TreeNode node) {
+        if (node == null) return 2;
+        int left = dfs(node.left), right = dfs(node.right);
+        if (left == 0 || right == 0) {
+            cameras++;
+            return 1;
+        }
+        if (left == 1 || right == 1) return 2;
+        return 0;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/binary_tree_cameras_animation.html'">▶️ View Animation</button>
+      <h2>🧱 Pattern Template (DP on Tree Solution)</h2>
+    <pre><code>class Solution {
+    public int minCameraCover(TreeNode root) {
+        int[] res = dfs(root);
+        return Math.min(res[1], res[2]);
+    }
+    // dp[0]: node needs camera, dp[1]: node covered, dp[2]: node has camera
+    private int[] dfs(TreeNode node) {
+        if (node == null) return new int[]{0, 0, 1000};
+        int[] left = dfs(node.left);
+        int[] right = dfs(node.right);
+        int minLeft = Math.min(left[1], left[2]);
+        int minRight = Math.min(right[1], right[2]);
+        int dp0 = left[1] + right[1];
+        int dp2 = 1 + Math.min(left[0], Math.min(left[1], left[2])) + Math.min(right[0], Math.min(right[1], right[2]));
+        int dp1 = Math.min(
+            left[2] + minRight,
+            right[2] + minLeft
+        );
+        return new int[]{dp0, dp1, dp2};
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/binary_tree_cameras_animation_v2.html'">▶️ View Animation</button>
+
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N)</code>, where <code>N</code> is the number of nodes in the tree.</li>
+      <li><b>Space Complexity:</b> <code>O(H)</code>, where <code>H</code> is the height of the tree (recursion stack).</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Monitoring or covering nodes in a tree structure.</li>
+      <li>Greedy algorithms with post-order traversal.</li>
+      <li>Resource placement in hierarchical structures.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/binary-tree-cameras/" target="_blank" rel="noopener noreferrer">
+          968. Binary Tree Cameras
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Greedy</span>
+        <span class="badge badge-tag">Tree</span>
+        <span class="badge badge-tag">DFS</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: root = [0,0,null,0,0]
+Output: 1
+
+Explanation:
+- Place one camera at the root of the left subtree to cover all nodes.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use post-order DFS to decide camera placement from leaves up.</li>
+      <li>Three states: not covered (0), has camera (1), covered (2).</li>
+      <li>Place a camera if any child is not covered.</li>
+      <li>Root may need a camera if not covered after traversal.</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counting Bits DP Animation with Binary</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-bits { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-bits label { font-weight: bold; margin-right: 5px; }
+        .controls-bits input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
+        .controls-bits button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-bits button:hover { background-color: #0056b3; }
+        .controls-bits button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-bits { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-bits, .right-panel-bits { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        #offset-display { font-size: 2em; font-weight: bold; color: #0056b3; text-align: center; padding: 15px; background: #e8f0fe; border-radius: 4px; transition: all 0.3s ease-in-out; }
+        #offset-display.updated { transform: scale(1.2); background-color: #ffc107; }
+
+        #current-action-display { text-align:center; margin:8px 0; font-weight:bold; min-height:3em; font-size:1em; }
+
+        .city-container { min-height: 250px; overflow-x: auto; padding: 20px 10px; background-color: #2c3e50; border-radius: 5px; }
+        .city-skyline { display: flex; gap: 5px; align-items: flex-end; padding-bottom: 30px; /* Space for binary labels */ }
+        .building-plot { flex-shrink: 0; width: 55px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; transition: all 0.3s ease; }
+        .building { width: 80%; background: linear-gradient(to top, #007bff, #00bfff); border: 1px solid #0056b3; border-bottom: none; border-radius: 4px 4px 0 0; box-shadow: 0 0 10px #00bfff; transition: height 0.4s ease-out; }
+        .plot-label { color: #e0e0e0; font-weight: bold; margin-top: 5px; }
+        .bit-count { position: absolute; top: -25px; font-weight: bold; color: #ffdd57; font-size: 1.2em; text-shadow: 0 0 5px black; }
+        /* New Style for Binary Label */
+        .binary-label { position: absolute; bottom: -25px; color: #9ab; font-size: 0.8em; font-family: 'Courier New', monospace; }
+        
+        .building-plot.highlight-current { background-color: rgba(255, 193, 7, 0.3); border-radius: 4px; }
+        .building-plot.highlight-source { background-color: rgba(0, 123, 255, 0.4); border-radius: 4px; }
+
+        .log-container-bits { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Counting Bits: Building a Binary City</h1>
+
+        <div class="controls-bits">
+            <label for="number_input">Build up to Number:</label>
+            <input type="number" id="number_input" value="16">
+            <button id="start_button">Start/Reset</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-bits">
+            <div class="left-panel-bits">
+                <div class="panel">
+                    <h2>Master Builder's Offset</h2>
+                    <div id="offset-display">1</div>
+                </div>
+                <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="current-action-display">Ready to build.</div>
+                </div>
+            </div>
+            <div class="right-panel-bits">
+                 <div class="panel">
+                    <h2>The Binary City</h2>
+                    <div class="city-container">
+                        <div id="city_skyline_display" class="city-skyline"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-bits">
+            <h2>Builder's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE VARIABLES ---
+let N = 0;
+let animationSteps = [];
+let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let numberInput, startButton, nextStepButton, offsetDisplay, currentActionDisplay, citySkylineDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() { document.querySelectorAll('.building-plot').forEach(c => c.classList.remove('highlight-current', 'highlight-source')); }
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    
+    let dp = Array(N + 1).fill(0);
+    let offset = 1;
+    
+    animationSteps.push({ type: 'START' });
+    animationSteps.push({ type: 'BASE_CASE' });
+
+    for (let i = 1; i <= N; i++) {
+        let isPowerOfTwo = false;
+        if (offset * 2 === i) {
+            offset = i;
+            isPowerOfTwo = true;
+        }
+        dp[i] = 1 + dp[i - offset];
+        animationSteps.push({
+            type: 'BUILD',
+            index: i,
+            binaryString: i.toString(2), // Add binary string to the step
+            offset: offset,
+            isPowerOfTwo: isPowerOfTwo,
+            sourceIndex: i - offset,
+            sourceValue: dp[i - offset],
+            result: dp[i]
+        });
+    }
+    animationSteps.push({ type: 'END' });
+}
+
+function initializeAnimation() {
+    log("Initializing blueprint...");
+    simulationRunning = false; currentStep = -1;
+
+    try {
+        N = parseInt(numberInput.value, 10);
+        if (isNaN(N) || N < 0) throw new Error();
+    } catch(e) {
+        alert("Please provide a non-negative integer."); return;
+    }
+
+    logOutput.innerHTML = '';
+    currentActionDisplay.textContent = 'Ready to build.';
+    offsetDisplay.textContent = '1';
+    offsetDisplay.classList.remove('updated');
+    
+    citySkylineDisplay.innerHTML = '';
+    for(let i = 0; i <= N; i++) {
+        // Added binary-label div
+        citySkylineDisplay.innerHTML += `
+            <div class="building-plot" id="plot-${i}">
+                <div class="bit-count" id="count-${i}"></div>
+                <div class="building" id="building-${i}" style="height: 0px;"></div>
+                <div class="plot-label">${i}</div>
+                <div class="binary-label" id="binary-${i}"></div>
+            </div>`;
+    }
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Reset';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; 
+    clearHighlights();
+    offsetDisplay.classList.remove('updated');
+
+    switch(step.type) {
+        case 'START':
+            log("Construction starting...");
+            break;
+
+        case 'BASE_CASE':
+            log("Building 0 (Base Case): Height = 0.");
+            currentActionDisplay.textContent = 'Constructing cornerstone Building 0.';
+            document.getElementById('count-0').textContent = '0';
+            document.getElementById('binary-0').textContent = '0'; // Set binary for base case
+            document.getElementById('plot-0').classList.add('highlight-current');
+            break;
+
+        case 'BUILD':
+            log(`--- Building ${step.index} ---`);
+            const plot = document.getElementById(`plot-${step.index}`);
+            plot.classList.add('highlight-current');
+
+            if(step.isPowerOfTwo) {
+                log(`  Power of Two! Offset doubles to ${step.offset}.`);
+                offsetDisplay.textContent = step.offset;
+                offsetDisplay.classList.add('updated');
+                await new Promise(r => setTimeout(r, 400));
+            }
+            
+            const sourcePlot = document.getElementById(`plot-${step.sourceIndex}`);
+            sourcePlot.classList.add('highlight-source');
+
+            currentActionDisplay.innerHTML = `For Building <strong>${step.index}</strong>, look back by offset (${step.offset}) to Building <strong>${step.sourceIndex}</strong>.`;
+            log(`  Refers to Building ${step.sourceIndex} (height ${step.sourceValue}).`);
+            log(`  New height = 1 + ${step.sourceValue} = ${step.result}.`);
+            
+            await new Promise(r => setTimeout(r, 800));
+            
+            const building = document.getElementById(`building-${step.index}`);
+            const count = document.getElementById(`count-${step.index}`);
+            const binaryLabel = document.getElementById(`binary-${step.index}`); // Get binary label element
+            
+            building.style.height = `${step.result * 25}px`;
+            count.textContent = step.result;
+            binaryLabel.textContent = step.binaryString; // Update binary label text
+            break;
+
+        case 'END':
+            log("--- Binary City is complete! ---");
+            currentActionDisplay.textContent = "City construction complete!";
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    numberInput = document.getElementById('number_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    offsetDisplay = document.getElementById('offset-display');
+    currentActionDisplay = document.getElementById('current-action-display');
+    citySkylineDisplay = document.getElementById('city_skyline_display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

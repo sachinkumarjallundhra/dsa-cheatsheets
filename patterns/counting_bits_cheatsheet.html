@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Counting Bits Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🧮 Counting Bits – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Counting Bits</b> problem asks you to return an array <code>ans</code> where <code>ans[i]</code> is the number of 1's (set bits) in the binary representation of <code>i</code> for every <code>i</code> in the range <code>[0, n]</code>.
+    </p>
+
+    <h2>🧱 Pattern Template (Dynamic Programming)</h2>
+    <pre><code>class Solution {
+    public int[] countBits(int n) {
+        int[] ans = new int[n + 1];
+        for (int i = 1; i &lt;= n; i++) {
+            ans[i] = ans[i &gt;&gt; 1] + (i &amp; 1);
+        }
+        return ans;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/counting_bits_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n)</code></li>
+      <li><b>Space Complexity:</b> <code>O(n)</code></li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Bit manipulation and binary representation problems.</li>
+      <li>Dynamic programming with subproblem reuse.</li>
+      <li>Efficiently counting set bits for a range of numbers.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/counting-bits/" target="_blank" rel="noopener noreferrer">
+          338. Counting Bits
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">DP</span>
+        <span class="badge badge-tag">Bit Manipulation</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: n = 5
+Output: [0,1,1,2,1,2]
+
+Explanation:
+- 0: 0b0 → 0
+- 1: 0b1 → 1
+- 2: 0b10 → 1
+- 3: 0b11 → 2
+- 4: 0b100 → 1
+- 5: 0b101 → 2
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use <code>ans[i] = ans[i &gt;&gt; 1] + (i &amp; 1)</code> for efficient computation.</li>
+      <li>Bitwise operations are fast and avoid repeated computation.</li>
+      <li>Great for practicing bit manipulation and DP together.</li>
+    </ul>
+  </div>
+</body>
+</html>

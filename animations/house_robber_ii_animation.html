@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Robber II DP Animation (Improved UI)</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-robber { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-robber label { font-weight: bold; margin-right: 5px; }
+        .controls-robber input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-robber button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-robber button:hover { background-color: #0056b3; }
+        .controls-robber button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-robber { display: flex; flex-direction: column; gap: 20px; align-items: center; }
+        
+        .scenario-container {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background-color: #fdfdfd;
+            /* NEW: Grayscale filter instead of opacity for better readability */
+            filter: grayscale(80%);
+            transform: scale(0.98);
+            transition: all 0.4s ease-in-out;
+        }
+        .scenario-container.active {
+            filter: grayscale(0%);
+            transform: scale(1);
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.4);
+        }
+
+        .house-street { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
+        .house {
+            width: 70px;
+            height: 90px;
+            border: 2px solid #343a40;
+            background-color: #6c757d;
+            border-radius: 5px 5px 0 0;
+            position: relative;
+            display: flex;
+            flex-direction: column; /* Changed to arrange items vertically */
+            justify-content: space-between; /* Pushes content apart */
+            align-items: center;
+            padding: 5px 0;
+        }
+        /* NEW: Value is now inside the house at the top */
+        .house .value {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: white;
+            background-color: rgba(0,0,0,0.4);
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+        .house .window {
+            width: 20px;
+            height: 20px;
+            background-color: #ffc107;
+            box-shadow: 0 0 10px #ffc107;
+        }
+        .house.ignored { background-color: #ccc; border-color: #999; }
+        .house.ignored .value { background-color: #888; }
+        .house.ignored .window { background-color: #aaa; box-shadow: none; }
+        
+        .dp-tracker { display: flex; gap: 10px; justify-content: center; }
+        .dp-cell { width: 70px; height: 40px; border: 1px dashed #ccc; display: flex; justify-content: center; align-items: center; font-size: 1.2em; font-weight: bold; border-radius: 4px; transition: all 0.3s; }
+        .dp-cell.highlight-current { background-color: #ffe8a1; transform: scale(1.1); border-style: solid; border-color: #ffc107; }
+        .dp-cell.highlight-source { background-color: #d1e7ff; }
+
+        #final-result-container { margin-top: 20px; text-align: center; }
+        #final-verdict { font-size: 2em; font-weight: bold; padding: 15px; border-radius: 5px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; display: none; }
+
+        .log-container-robber { width: 100%; max-width: 1400px; background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; }
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>House Robber II: The Circular Heist</h1>
+
+        <div class="controls-robber">
+            <label for="set_input">Mansion Values (comma-separated):</label>
+            <input type="text" id="set_input" value="2, 3, 2, 7, 4">
+            <button id="start_button">Plan Heist</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-robber">
+            <!-- Scenario A -->
+            <div id="scenario-A" class="scenario-container">
+                <h2>Scenario A: Ignore the Last House</h2>
+                <div id="street-A" class="house-street"></div>
+                <div id="tracker-A" class="dp-tracker"></div>
+            </div>
+            <!-- Scenario B -->
+            <div id="scenario-B" class="scenario-container">
+                <h2>Scenario B: Ignore the First House</h2>
+                <div id="street-B" class="house-street"></div>
+                <div id="tracker-B" class="dp-tracker"></div>
+            </div>
+            <!-- Final Result -->
+            <div id="final-result-container">
+                 <div id="final-verdict"></div>
+            </div>
+        </div>
+        
+        <div class="log-container-robber">
+            <h2>Burglar's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+let HOUSES = [];
+let animationSteps = [];
+let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let setInput, startButton, nextStepButton, scenarioA, scenarioB, streetA, streetB, trackerA, trackerB, finalVerdict, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() {
+    document.querySelectorAll('.dp-cell').forEach(c => c.classList.remove('highlight-current', 'highlight-source'));
+    document.querySelectorAll('.scenario-container').forEach(c => c.classList.remove('active'));
+}
+// UPDATED: houseHTML function for new layout
+function houseHTML(value, isIgnored = false) {
+    return `<div class="house ${isIgnored ? 'ignored' : ''}">
+                <span class="value">$${value}</span>
+                <div class="window"></div>
+            </div>`;
+}
+function dpCellHTML(id) { return `<div class="dp-cell" id="${id}">-</div>`; }
+
+// --- CORE DP & ANIMATION LOGIC ---
+function solveRobber1(nums, scenario, offset = 0) {
+    if (nums.length === 0) return 0;
+    if (nums.length === 1) {
+        animationSteps.push({ type: 'CALC', scenario, index: 0 + offset, houseValue: nums[0], robVal: nums[0], skipVal: 0, result: nums[0] });
+        return nums[0];
+    }
+    
+    let dp = new Array(nums.length).fill(0);
+    dp[0] = nums[0];
+    animationSteps.push({ type: 'CALC', scenario, index: 0 + offset, houseValue: nums[0], robVal: nums[0], skipVal: 0, result: dp[0] });
+    
+    dp[1] = Math.max(nums[0], nums[1]);
+    animationSteps.push({ type: 'CALC', scenario, index: 1 + offset, houseValue: nums[1], robVal: nums[1], skipVal: nums[0], result: dp[1] });
+    
+    for (let i = 2; i < nums.length; i++) {
+        const robVal = nums[i] + dp[i-2];
+        const skipVal = dp[i-1];
+        dp[i] = Math.max(robVal, skipVal);
+        animationSteps.push({ type: 'CALC', scenario, index: i + offset, houseValue: nums[i], robVal, skipVal, result: dp[i] });
+    }
+    return dp[nums.length - 1];
+}
+
+function generateAnimationSteps() {
+    animationSteps = [];
+    if (HOUSES.length === 1) {
+        animationSteps.push({type: 'SINGLE_HOUSE'});
+        return;
+    }
+
+    animationSteps.push({ type: 'START' });
+    
+    animationSteps.push({ type: 'SCENARIO_START', scenario: 'A' });
+    const resA = solveRobber1(HOUSES.slice(0, HOUSES.length - 1), 'A', 0);
+    animationSteps.push({ type: 'SCENARIO_END', scenario: 'A', result: resA });
+
+    animationSteps.push({ type: 'SCENARIO_START', scenario: 'B' });
+    const resB = solveRobber1(HOUSES.slice(1), 'B', 1);
+    animationSteps.push({ type: 'SCENARIO_END', scenario: 'B', result: resB });
+    
+    animationSteps.push({ type: 'FINAL_DECISION', resA, resB });
+}
+
+function initializeAnimation() {
+    log("Starting to plan the heist...");
+    simulationRunning = false; currentStep = -1;
+    finalVerdict.style.display = 'none';
+    clearHighlights();
+
+    try {
+        HOUSES = setInput.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0);
+        if (HOUSES.length === 0 && setInput.value.trim() !== '') throw new Error();
+    } catch(e) { alert("Invalid input. Please provide non-negative, comma-separated numbers."); return; }
+
+    logOutput.innerHTML = '';
+    
+    // Render Scenario A
+    let streetA_HTML = '', trackerA_HTML = '';
+    const housesA = (HOUSES.length > 1) ? HOUSES.slice(0, HOUSES.length - 1) : (HOUSES.length === 1 ? [HOUSES[0]] : []);
+    housesA.forEach((h, i) => {
+        streetA_HTML += houseHTML(h);
+        trackerA_HTML += dpCellHTML(`cell-A-${i}`);
+    });
+    if (HOUSES.length > 1) streetA_HTML += houseHTML(HOUSES[HOUSES.length - 1], true);
+    streetA.innerHTML = streetA_HTML;
+    trackerA.innerHTML = trackerA_HTML;
+
+    // Render Scenario B
+    let streetB_HTML = '', trackerB_HTML = '';
+    const housesB = HOUSES.slice(1);
+    if (HOUSES.length > 1) streetB_HTML += houseHTML(HOUSES[0], true);
+    housesB.forEach((h, i) => {
+        streetB_HTML += houseHTML(h);
+        trackerB_HTML += dpCellHTML(`cell-B-${i+1}`);
+    });
+    streetB.innerHTML = streetB_HTML;
+    trackerB.innerHTML = trackerB_HTML;
+
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Reset Plan';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+    
+    switch(step.type) {
+        case 'SINGLE_HOUSE':
+            log("Only one house. The answer is its value.");
+            finalVerdict.textContent = `Max Loot: $${HOUSES[0]}`;
+            finalVerdict.style.display = 'block';
+            simulationRunning = false;
+            break;
+
+        case 'START':
+            log("The circular dependency must be broken. Considering two scenarios.");
+            break;
+
+        case 'SCENARIO_START':
+            log(`--- Starting Scenario ${step.scenario} ---`);
+            (step.scenario === 'A' ? scenarioA : scenarioB).classList.add('active');
+            break;
+            
+        case 'CALC':
+            const cellId = `cell-${step.scenario}-${step.index}`;
+            const cell = document.getElementById(cellId);
+            cell.classList.add('highlight-current');
+            
+            const prev1 = document.getElementById(`cell-${step.scenario}-${step.index-1}`);
+            if (prev1) prev1.classList.add('highlight-source');
+            const prev2 = document.getElementById(`cell-${step.scenario}-${step.index-2}`);
+            if (prev2) prev2.classList.add('highlight-source');
+            
+            log(`At house with value ${step.houseValue}: max(Rob: ${step.robVal}, Skip: ${step.skipVal}) = ${step.result}`);
+            await new Promise(r => setTimeout(r, 800));
+            cell.textContent = `$${step.result}`;
+            break;
+
+        case 'SCENARIO_END':
+             log(`--- Scenario ${step.scenario} Complete. Max loot: $${step.result} ---`);
+            break;
+
+        case 'FINAL_DECISION':
+            log(`Comparing results: max(Scenario A: $${step.resA}, Scenario B: $${step.resB})`);
+            const finalLoot = Math.max(step.resA, step.resB);
+            log(`Final decision: The maximum possible loot is $${finalLoot}.`);
+            finalVerdict.textContent = `Max Loot: $${finalLoot}`;
+            finalVerdict.style.display = 'block';
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    setInput = document.getElementById('set_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    scenarioA = document.getElementById('scenario-A');
+    scenarioB = document.getElementById('scenario-B');
+    streetA = document.getElementById('street-A');
+    streetB = document.getElementById('street-B');
+    trackerA = document.getElementById('tracker-A');
+    trackerB = document.getElementById('tracker-B');
+    finalVerdict = document.getElementById('final-verdict');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

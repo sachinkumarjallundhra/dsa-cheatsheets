@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partition Equal Subset Sum Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🟦 Partition Equal Subset Sum – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Partition Equal Subset Sum</b> problem asks if you can partition a given array of positive integers into two subsets with equal sum.
+    </p>
+
+    <h2>🧱 Pattern Template (Bottom-Up DP)</h2>
+    <pre><code>class Solution {
+    public boolean canPartition(int[] nums) {
+        int sum = 0;
+        for (int num : nums) sum += num;
+        if (sum % 2 != 0) return false;
+        int target = sum / 2;
+        boolean[] dp = new boolean[target + 1];
+        dp[0] = true;
+        for (int num : nums) {
+            for (int i = target; i &gt;= num; i--) {
+                dp[i] = dp[i] || dp[i - num];
+            }
+        }
+        return dp[target];
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/partition_equal_subset_sum_animation_v3.html'">▶️ View Animation</button>
+
+    <h2>🧱 Pattern Template (Top-Down DP with Memoization)</h2>
+    <pre><code>class Solution {
+    public boolean canPartition(int[] nums) {
+        int sum = 0;
+        for (int num : nums) sum += num;
+        if (sum % 2 != 0) return false;
+        int target = sum / 2;
+        Boolean[][] memo = new Boolean[nums.length][target + 1];
+        return dfs(nums, 0, target, memo);
+    }
+
+    private boolean dfs(int[] nums, int i, int target, Boolean[][] memo) {
+        if (target == 0) return true;
+        if (i == nums.length || target &lt; 0) return false;
+        if (memo[i][target] != null) return memo[i][target];
+        boolean res = dfs(nums, i + 1, target, memo) || dfs(nums, i + 1, target - nums[i], memo);
+        return memo[i][target] = res;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/partition_equal_subset_sum_animation_v2.html'">▶️ View Animation</button>
+
+    <h2>🧱 Pattern Template (2D DP Table)</h2>
+    <pre><code>class Solution {
+    public boolean canPartition(int[] nums) {
+        int sum = 0;
+        for (int num : nums) sum += num;
+        if (sum % 2 != 0) return false;
+        int target = sum / 2;
+        int n = nums.length;
+        boolean[][] dp = new boolean[n + 1][target + 1];
+        for (int i = 0; i &lt;= n; i++) dp[i][0] = true;
+        for (int i = 1; i &lt;= n; i++) {
+            for (int j = 1; j &lt;= target; j++) {
+                if (j &gt;= nums[i - 1]) {
+                    dp[i][j] = dp[i - 1][j] || dp[i - 1][j - nums[i - 1]];
+                } else {
+                    dp[i][j] = dp[i - 1][j];
+                }
+            }
+        }
+        return dp[n][target];
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/partition_equal_subset_sum_animation.html'">▶️ View Animation</button>
+
+
+    <h2>🎥 Video Explanation</h2>
+    <ul>
+      <li>
+        <a href="https://www.youtube.com/watch?v=IsvocB5BJhw&ab_channel=NeetCode" target="_blank" rel="noopener noreferrer">
+          NeetCode: Partition Equal Subset Sum (YouTube)
+        </a>
+      </li>
+    </ul>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N * S)</code>, where <code>N</code> is the number of elements and <code>S</code> is the target sum.</li>
+      <li><b>Space Complexity:</b> <code>O(S)</code> for bottom-up, <code>O(N * S)</code> for memoization.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Subset sum and partitioning problems.</li>
+      <li>Resource allocation and balancing.</li>
+      <li>Knapsack variants.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/partition-equal-subset-sum/" target="_blank" rel="noopener noreferrer">
+          416. Partition Equal Subset Sum
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: nums = [1,5,11,5]
+Output: true
+
+Explanation:
+- The array can be partitioned as [1, 5, 5] and [11], both sum to 11.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>If the total sum is odd, partition is impossible.</li>
+      <li>Think of this as a subset sum problem with target = total/2.</li>
+      <li>Use 1D DP for space optimization.</li>
+    </ul>
+  </div>
+</body>

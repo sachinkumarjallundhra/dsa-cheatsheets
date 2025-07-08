@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Cameras (DFS) Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1600px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-camera { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-camera label { font-weight: bold; margin-right: 5px; }
+        .controls-camera input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 300px; }
+        .controls-camera button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-camera button:hover { background-color: #0056b3; }
+        .controls-camera button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-camera { display: grid; grid-template-columns: minmax(350px, 1fr) 2fr; gap: 15px; }
+        .left-panel-camera, .right-panel-camera { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        #camera-counter-display { text-align: center; font-size: 2.5em; font-weight: bold; color: #2c3e50; }
+        #camera-counter-display .icon { font-size: 1em; }
+        
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; }
+        .legend-color { width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; border: 1px solid #ccc; }
+        .color-needs-coverage { background-color: #f8d7da; }
+        .color-has-camera { background-color: #fff3cd; }
+        .color-covered { background-color: #d1ecf1; }
+
+        #current-action-display { text-align: center; min-height: 2.5em; font-weight: bold; color: #0056b3; }
+
+        .tree-container { min-height: 500px; overflow: auto; position: relative; background-color: #f0f2f5; }
+        #p5_canvas_target_div { width:100%; height:100%; min-height: 480px; display: flex; justify-content: center; align-items: flex-start; }
+        
+        .log-container-camera { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Binary Tree Cameras: Forest Ranger Surveillance</h1>
+
+        <div class="controls-camera">
+            <label for="tree_input">Tree (LeetCode format, e.g., [0,0,null,0,0]):</label>
+            <input type="text" id="tree_input" value="[0,0,null,0,null,0,null,null,0]">
+            <button id="start_button">Deploy Ranger</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-camera">
+            <div class="left-panel-camera">
+                <div class="panel">
+                    <h2>Total Cameras Deployed</h2>
+                    <div id="camera-counter-display"><span class="icon">📸</span> 0</div>
+                </div>
+                 <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="current-action-display">Ready to deploy.</div>
+                </div>
+                <div class="panel">
+                    <h2>Legend</h2>
+                    <div class="legend-item"><div class="legend-color color-needs-coverage"></div> Needs Coverage (🚨)</div>
+                    <div class="legend-item"><div class="legend-color color-has-camera"></div> Has Camera (📸)</div>
+                    <div class="legend-item"><div class="legend-color color-covered"></div> Is Covered (✅)</div>
+                </div>
+            </div>
+            <div class="right-panel-camera">
+                 <div class="panel tree-container">
+                    <h2>Forest Map</h2>
+                    <div id="p5_canvas_target_div"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-camera">
+            <h2>Ranger's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+let p5Instance; 
+
+// --- STATE & CONFIG ---
+let animationSteps = []; let currentStep = -1;
+let simulationRunning = false;
+let globalState = {
+    treeNodes: {}, // Nodes for p5 to draw
+    cameraCount: 0,
+};
+const STATE = { NEEDS_COVERAGE: 0, HAS_CAMERA: 1, IS_COVERED: 2 };
+
+// --- DOM ELEMENTS ---
+let treeInput, startButton, nextStepButton, counterDisplay, currentActionDisplay, logOutput;
+
+// --- p5.js Sketch ---
+const p5_sketch_definition = (p, getState) => {
+    const nodeSize = 40;
+    function postOrderLayout(nodeId, depth, nextX) {
+        const { treeNodes } = getState();
+        const node = treeNodes[nodeId];
+        if (!node) return nextX;
+        node.y = depth * 80;
+
+        let leftX = nextX;
+        if(node.left) leftX = postOrderLayout(node.left, depth + 1, nextX);
+        let rightX = leftX;
+        if(node.right) rightX = postOrderLayout(node.right, depth + 1, leftX);
+        
+        if (!node.left && !node.right) {
+            node.x = nextX;
+            return nextX + nodeSize + 15;
+        }
+        if (node.left && node.right) {
+            node.x = (treeNodes[node.left].x + treeNodes[node.right].x) / 2;
+        } else if (node.left) {
+            node.x = treeNodes[node.left].x;
+        } else {
+            node.x = treeNodes[node.right].x;
+        }
+        return rightX;
+    }
+    p.setup = () => {
+        const container = document.getElementById('p5_canvas_target_div');
+        p.createCanvas(container.clientWidth || 800, container.clientHeight || 500).parent('p5_canvas_target_div');
+        p.textAlign(p.CENTER, p.CENTER); p.noLoop();
+    };
+    p.draw = () => {
+        p.background(240, 242, 245);
+        const { treeNodes } = getState();
+        if (Object.keys(treeNodes).length === 0) return;
+        postOrderLayout('node-0', 0, 0);
+
+        const allNodes = Object.values(treeNodes);
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        allNodes.forEach(node => { if(node.x !== undefined) { minX = Math.min(minX, node.x); maxX = Math.max(maxX, node.x); minY = Math.min(minY, node.y); maxY = Math.max(maxY, node.y); } });
+        
+        const padding = 60;
+        const requiredWidth = Math.max(p.width, (maxX - minX) + 2 * padding + nodeSize);
+        const requiredHeight = Math.max(p.height, (maxY - minY) + 2 * padding + nodeSize);
+        if (Math.abs(p.width - requiredWidth) > 10 || Math.abs(p.height - requiredHeight) > 10) p.resizeCanvas(requiredWidth, requiredHeight);
+        const offsetX = (p.width / 2) - ((minX + maxX) / 2); const offsetY = padding;
+
+        allNodes.forEach(node => {
+            if (node.left && treeNodes[node.left]) p.line(node.x + offsetX, node.y + offsetY, treeNodes[node.left].x + offsetX, treeNodes[node.left].y + offsetY);
+            if (node.right && treeNodes[node.right]) p.line(node.x + offsetX, node.y + offsetY, treeNodes[node.right].x + offsetX, treeNodes[node.right].y + offsetY);
+        });
+        allNodes.forEach(node => {
+            if (node.x === undefined) return;
+            p.strokeWeight(2); p.stroke(108, 117, 125);
+            
+            if (node.state === STATE.NEEDS_COVERAGE) p.fill(248, 215, 218);
+            else if (node.state === STATE.HAS_CAMERA) p.fill(255, 243, 205);
+            else if (node.state === STATE.IS_COVERED) p.fill(209, 236, 241);
+            else p.fill(255);
+            
+            if(node.isActive) { p.strokeWeight(4); p.stroke(0, 123, 255); }
+
+            p.circle(node.x + offsetX, node.y + offsetY, nodeSize);
+            
+            p.fill(30); p.noStroke(); p.textSize(nodeSize * 0.6);
+            if (node.state === STATE.NEEDS_COVERAGE) p.text('🚨', node.x + offsetX, node.y + offsetY);
+            else if (node.state === STATE.HAS_CAMERA) p.text('📸', node.x + offsetX, node.y + offsetY);
+            else if (node.state === STATE.IS_COVERED) p.text('✅', node.x + offsetX, node.y + offsetY);
+            else p.text('?', node.x + offsetX, node.y + offsetY);
+        });
+    };
+    p.customRedraw = () => { if(p && typeof p.redraw === 'function' && p.width) p.redraw(); };
+};
+
+// --- CORE LOGIC & ANIMATION ---
+function log(message) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; }
+function updateButtonState() { nextStepButton.disabled = !simulationRunning; if (!nextStepButton.disabled) startButton.textContent = 'Restart'; }
+function getState() { return globalState; }
+
+function buildTreeFromLeetCode(arr) {
+    if (!arr || arr.length === 0 || arr[0] === null) return null;
+    let nodes = arr.map((val, i) => val === null ? null : { id: `node-${i}`, val: val, left: null, right: null, state: null, isActive: false });
+    let queue = [nodes[0]];
+    let i = 1;
+    while (queue.length > 0 && i < arr.length) {
+        let curr = queue.shift();
+        if (i < arr.length && nodes[i]) {
+            curr.left = nodes[i].id;
+            queue.push(nodes[i]);
+        }
+        i++;
+        if (i < arr.length && nodes[i]) {
+            curr.right = nodes[i].id;
+            queue.push(nodes[i]);
+        }
+        i++;
+    }
+    return nodes.reduce((acc, node) => node ? { ...acc, [node.id]: node } : acc, {});
+}
+
+// Generates steps by simulating the post-order traversal
+function generateAnimationSteps() {
+    animationSteps = [];
+    if (Object.keys(globalState.treeNodes).length === 0) return;
+    
+    let cameraCount = 0;
+    
+    function dfs(nodeId) {
+        if (!nodeId) return STATE.IS_COVERED;
+        
+        animationSteps.push({type: 'TRAVERSE', nodeId});
+        
+        const leftState = dfs(globalState.treeNodes[nodeId].left);
+        const rightState = dfs(globalState.treeNodes[nodeId].right);
+        
+        animationSteps.push({type: 'EVALUATE', nodeId, leftState, rightState});
+        
+        if (leftState === STATE.NEEDS_COVERAGE || rightState === STATE.NEEDS_COVERAGE) {
+            cameraCount++;
+            animationSteps.push({type: 'PLACE_CAMERA', nodeId, cameraCount});
+            return STATE.HAS_CAMERA;
+        }
+        if (leftState === STATE.HAS_CAMERA || rightState === STATE.HAS_CAMERA) {
+            animationSteps.push({type: 'SET_COVERED', nodeId});
+            return STATE.IS_COVERED;
+        }
+        animationSteps.push({type: 'NEEDS_COVERAGE', nodeId});
+        return STATE.NEEDS_COVERAGE;
+    }
+    
+    const rootState = dfs('node-0');
+    if (rootState === STATE.NEEDS_COVERAGE) {
+        cameraCount++;
+        animationSteps.push({type: 'FINAL_ROOT_CHECK', cameraCount});
+    }
+
+    animationSteps.push({type: 'END'});
+}
+
+function initializeAnimation() {
+    simulationRunning = false;
+    
+    let arr;
+    try {
+        arr = JSON.parse(treeInput.value.replace(/null/g, 'null'));
+        if(!Array.isArray(arr)) throw new Error();
+    } catch(e) { alert("Invalid tree format. Use LeetCode array format, e.g., [0,0,null,0,0]"); return; }
+
+    logOutput.innerHTML = '';
+    currentActionDisplay.textContent = "Ready to deploy.";
+    counterDisplay.innerHTML = '<span class="icon">📸</span> 0';
+    
+    globalState = { treeNodes: buildTreeFromLeetCode(arr), cameraCount: 0 };
+    
+    generateAnimationSteps();
+    
+    simulationRunning = true;
+    currentStep = -1;
+    updateButtonState();
+    if(p5Instance) p5Instance.customRedraw();
+    log("Ranger is ready. Click 'Next Step' to begin traversal.");
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true;
+
+    Object.values(globalState.treeNodes).forEach(n => n.isActive = false);
+
+    switch(step.type) {
+        case 'TRAVERSE':
+            globalState.treeNodes[step.nodeId].isActive = true;
+            log(`Ranger travels to node ${step.nodeId.split('-')[1]}...`);
+            currentActionDisplay.textContent = `Traversing deeper into the forest...`;
+            break;
+        case 'EVALUATE':
+            globalState.treeNodes[step.nodeId].isActive = true;
+            log(`Evaluating node ${step.nodeId.split('-')[1]} based on its children.`);
+            currentActionDisplay.textContent = `Evaluating node based on children's status.`
+            break;
+        case 'PLACE_CAMERA':
+            log(`-> Child needs coverage! Placing camera at node ${step.nodeId.split('-')[1]}.`);
+            currentActionDisplay.textContent = `Child needs coverage! Placing camera here.`;
+            globalState.treeNodes[step.nodeId].state = STATE.HAS_CAMERA;
+            globalState.cameraCount = step.cameraCount;
+            counterDisplay.innerHTML = `<span class="icon">📸</span> ${step.cameraCount}`;
+            break;
+        case 'SET_COVERED':
+            log(`-> Child has a camera. This node is covered.`);
+            currentActionDisplay.textContent = `This clearing is covered by a child's camera.`;
+            globalState.treeNodes[step.nodeId].state = STATE.IS_COVERED;
+            break;
+        case 'NEEDS_COVERAGE':
+            log(`-> This node is a leaf or its children are covered. It needs coverage from parent.`);
+            currentActionDisplay.textContent = `This clearing needs coverage from above.`;
+            globalState.treeNodes[step.nodeId].state = STATE.NEEDS_COVERAGE;
+            break;
+        case 'FINAL_ROOT_CHECK':
+            log(`Final check: Root was not covered. Placing one last camera.`);
+            currentActionDisplay.textContent = `The entrance needs a camera!`;
+            globalState.treeNodes['node-0'].state = STATE.HAS_CAMERA;
+            globalState.cameraCount = step.cameraCount;
+            counterDisplay.innerHTML = `<span class="icon">📸</span> ${step.cameraCount}`;
+            break;
+        case 'END':
+            log("--- Surveillance network complete! ---");
+            currentActionDisplay.textContent = "Deployment Complete!";
+            simulationRunning = false;
+            break;
+    }
+
+    if (p5Instance) p5Instance.customRedraw();
+    await new Promise(r => setTimeout(r, 600));
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    counterDisplay = document.getElementById('camera-counter-display');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    p5Instance = new p5((p) => p5_sketch_definition(p, getState));
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

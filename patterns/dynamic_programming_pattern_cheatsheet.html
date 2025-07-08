@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Programming Pattern Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🧮 Dynamic Programming – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      <b>Dynamic Programming (DP)</b> is a technique for solving problems by breaking them down into overlapping subproblems, solving each subproblem just once, and storing their solutions. DP is used to optimize recursive algorithms by avoiding redundant computations.
+    </p>
+
+    <h2>🧱 Pattern Template (Top-Down with Memoization)</h2>
+    <pre><code>Map&lt;Key, Value&gt; memo = new HashMap&lt;&gt;();
+
+Value dp(Key key) {
+    if (memo.containsKey(key)) return memo.get(key);
+    // Base case
+    if (isBaseCase(key)) return baseValue;
+    // Recurrence
+    Value result = ...; // compute using dp(subproblems)
+    memo.put(key, result);
+    return result;
+}
+</code></pre>
+
+    <h2>🧱 Pattern Template (Bottom-Up Tabulation)</h2>
+    <pre><code>Value[][] dp = new Value[N][M]; // or int[]/int[][]/boolean[]/boolean[][] etc.
+
+for (int i = 0; i &lt; N; i++) {
+    for (int j = 0; j &lt; M; j++) {
+        if (isBaseCase(i, j)) {
+            dp[i][j] = baseValue;
+        } else {
+            dp[i][j] = ...; // compute using dp[...]
+        }
+    }
+}
+</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Problems with optimal substructure and overlapping subproblems</li>
+      <li>Fibonacci sequence, coin change, knapsack, LIS, LCS, edit distance, etc.</li>
+      <li>Grid-based pathfinding, string matching, partitioning, and more</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/0-1-knapsack-problem/" target="_blank" rel="noopener noreferrer">0/1 Knapsack</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="knapsack_01_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/coin-change/" target="_blank" rel="noopener noreferrer">322. Coin Change</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="coin_change_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/n-th-tribonacci-number/" target="_blank" rel="noopener noreferrer">1137. N-th Tribonacci Number</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="tribonacci_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/partition-equal-subset-sum/" target="_blank" rel="noopener noreferrer">416. Partition Equal Subset Sum</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="partition_equal_subset_sum_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/counting-bits/" target="_blank" rel="noopener noreferrer">338. Counting Bits</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="counting_bits_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/01-matrix/" target="_blank" rel="noopener noreferrer">542. 01 Matrix</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="01_matrix_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/house-robber-ii/" target="_blank" rel="noopener noreferrer">213. House Robber II</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="house_robber_II_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/maximum-product-subarray/" target="_blank" rel="noopener noreferrer">152. Maximum Product Subarray</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="maximum_product_subarray_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/combination-sum/" target="_blank" rel="noopener noreferrer">39. Combination Sum</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="combination_sum_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/word-break/" target="_blank" rel="noopener noreferrer">139. Word Break</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="word_break_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/palindromic-substrings/" target="_blank" rel="noopener noreferrer">647. Palindromic Substrings</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="palindromic_substrings_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/longest-common-subsequence/" target="_blank" rel="noopener noreferrer">1143. Longest Common Subsequence</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="longest_common_subsequence_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/word-break-ii/" target="_blank" rel="noopener noreferrer">140. Word Break II</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="word_break_ii_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/decode-ways/" target="_blank" rel="noopener noreferrer">91. Decode Ways</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="decode_ways_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/count-the-number-of-good-subsequences/" target="_blank" rel="noopener noreferrer">2539. Count the Number of Good Subsequences</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Combinatorics</span>
+        📄 <a href="count_good_subsequences_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/binary-tree-cameras/" target="_blank" rel="noopener noreferrer">968. Binary Tree Cameras</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Tree</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="binary_tree_cameras_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/number-of-ways-to-form-a-target-string-given-a-dictionary/" target="_blank" rel="noopener noreferrer">1639. Number of Ways to Form a Target String Given a Dictionary</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="num_ways_form_target_string_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/climbing-stairs/" target="_blank" rel="noopener noreferrer">70. Climbing Stairs</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">DP</span>
+        📄 <a href="climbing_stairs_cheatsheet.html">Cheat Sheet</a>
+      </li>
+    </ul>
+
+    <h2>🧪 Example: Climbing Stairs</h2>
+    <pre><code>Input: n = 5
+Output: 8
+
+Explanation:
+- dp[i] = dp[i-1] + dp[i-2]
+- Base cases: dp[0] = 1, dp[1] = 1
+- dp[2] = 2, dp[3] = 3, dp[4] = 5, dp[5] = 8</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Identify overlapping subproblems and optimal substructure.</li>
+      <li>Use memoization (top-down) or tabulation (bottom-up) to avoid recomputation.</li>
+      <li>Optimize space by using 1D arrays when possible.</li>
+      <li>Edge cases: empty input, single-element input.</li>
+    </ul>
+  </div>
+</body>

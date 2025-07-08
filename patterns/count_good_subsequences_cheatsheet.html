@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Count the Number of Good Subsequences Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>✅ Count the Number of Good Subsequences – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Count the Number of Good Subsequences</b> problem (LeetCode 2539) asks you to count the number of non-empty subsequences of a string where the frequency of each character in the subsequence is the same.
+    </p>
+
+    <h2>🧱 Pattern Template (Combinatorics Solution)</h2>
+    <pre><code>class Solution {
+    static final int MOD = 1_000_000_007;
+    public int countGoodSubsequences(String s) {
+        int[] freq = new int[26];
+        for (char c : s.toCharArray()) freq[c - 'a']++;
+        int n = s.length();
+        long res = 0;
+        // For each possible frequency k (from 1 to max freq)
+        for (int k = 1; k &lt;= n; k++) {
+            long ways = 1;
+            boolean valid = false;
+            for (int f : freq) {
+                if (f &gt;= k) {
+                    valid = true;
+                    // For each letter, choose to include it k times or not at all
+                    ways = (ways * (comb(f, k) + 1)) % MOD;
+                }
+            }
+            if (valid) {
+                // Remove the case where no letter is chosen
+                ways = (ways - 1 + MOD) % MOD;
+                res = (res + ways) % MOD;
+            }
+        }
+        return (int) res;
+    }
+
+    // nCk % MOD
+    private long comb(int n, int k) {
+        if (k &gt; n) return 0;
+        long res = 1;
+        for (int i = 1; i &lt;= k; i++) {
+            res = res * (n - i + 1) % MOD;
+            res = res * pow(i, MOD - 2) % MOD;
+        }
+        return res;
+    }
+
+    // Fast exponentiation
+    private long pow(long a, int b) {
+        long res = 1;
+        while (b &gt; 0) {
+            if ((b &amp; 1) == 1) res = res * a % MOD;
+            a = a * a % MOD;
+            b &gt;&gt;= 1;
+        }
+        return res;
+    }
+}
+</code></pre>
+    <button onclick="window.location.href='../animations/count_good_subsequences_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n^2)</code> (can be optimized with precomputed factorials).</li>
+      <li><b>Space Complexity:</b> <code>O(n)</code> for frequency and combinatorial calculations.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Counting special subsequences with equal character frequencies.</li>
+      <li>Combinatorics and inclusion-exclusion in strings.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/count-the-number-of-good-subsequences/" target="_blank" rel="noopener noreferrer">
+          2539. Count the Number of Good Subsequences
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Combinatorics</span>
+        <span class="badge badge-tag">Math</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "aabb"
+Output: 11
+
+Input: s = "leet"
+Output: 12
+
+Input: s = "abcd"
+Output: 15
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>For each possible frequency k, use combinations to count ways to pick k of each letter.</li>
+      <li>Subtract 1 to exclude the empty subsequence.</li>
+      <li>Use Fermat's Little Theorem for modular inverse in combinations.</li>
+      <li>Precompute factorials for faster nCk if needed.</li>
+    </ul>
+  </div>
+</body>
+</html>

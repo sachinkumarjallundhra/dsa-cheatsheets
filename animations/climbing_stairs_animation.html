@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climbing Stairs DP Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-stairs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-stairs label { font-weight: bold; margin-right: 5px; }
+        .controls-stairs input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
+        .controls-stairs button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-stairs button:hover { background-color: #0056b3; }
+        .controls-stairs button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-stairs { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-stairs, .right-panel-stairs { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        #current-action-display { text-align: center; min-height: 4em; font-weight: bold; color: #0056b3;}
+        
+        .staircase-container {
+            min-height: 400px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: auto; 
+        }
+        #staircase {
+            position: relative; 
+        }
+        .step {
+            width: 100px;
+            height: 40px;
+            background: linear-gradient(to right, #6c757d, #adb5bd);
+            border: 1px solid #495057;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute; 
+            transition: all 0.3s ease;
+        }
+        .step .label { position: absolute; left: 5px; top: 5px; font-size: 0.8em; color: #f8f9fa; }
+        .step .way-counter { font-size: 1.5em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
+        
+        .step.highlight-current { background: linear-gradient(to right, #ffc107, #ffda6a); border-color: #e0a800; transform: scale(1.05); }
+        .step.highlight-source { background: linear-gradient(to right, #007bff, #56aaff); }
+        .step.final-step { background: linear-gradient(to right, #28a745, #55d47b); animation: glowFinal 1.5s infinite alternate; }
+
+        #robot {
+            font-size: 3em;
+            position: absolute;
+            transition: all 0.5s ease-in-out;
+            z-index: 10;
+            transform: translateX(-50%); /* Center the robot horizontally */
+            width: 50px; /* Give robot a width for positioning */
+            text-align: center;
+        }
+
+        .log-container-stairs { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes glowFinal { from { box-shadow: 0 0 5px #28a745; } to { box-shadow: 0 0 20px #28a745; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Climbing Stairs: The Robot's Ascent</h1>
+
+        <div class="controls-stairs">
+            <label for="steps_input">Number of Steps (n):</label>
+            <input type="number" id="steps_input" value="5" min="1" max="15">
+            <button id="start_button">Start Climbing</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-stairs">
+            <div class="left-panel-stairs">
+                <div class="panel">
+                    <h2>Current Calculation</h2>
+                    <div id="current-action-display"></div>
+                </div>
+            </div>
+            <div class="right-panel-stairs">
+                 <div class="panel">
+                    <h2>The Staircase</h2>
+                    <div class="staircase-container">
+                       <div id="staircase"></div>
+                       <div id="robot">🤖</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-stairs">
+            <h2>Robot's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+let N = 0;
+let animationSteps = []; let currentStep = -1;
+let simulationRunning = false;
+const STEP_WIDTH = 100;
+const STEP_HEIGHT = 40;
+const STEP_X_OFFSET = 50; // How much each step moves to the right
+
+// --- DOM ELEMENTS ---
+let stepsInput, startButton, nextStepButton, staircaseDiv, robotDiv, currentActionDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() {
+    document.querySelectorAll('.step').forEach(c => c.classList.remove('highlight-current', 'highlight-source'));
+}
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    if (N < 1) return;
+
+    animationSteps.push({ type: 'START' });
+    if (N >= 1) animationSteps.push({ type: 'CALC', index: 1, prev1: 1, prev2: 0, result: 1 });
+    if (N >= 2) animationSteps.push({ type: 'CALC', index: 2, prev1: 1, prev2: 1, result: 2 });
+    
+    let dp1 = 1, dp2 = 2;
+    for (let i = 3; i <= N; i++) {
+        const current = dp1 + dp2;
+        animationSteps.push({ type: 'CALC', index: i, prev1: dp2, prev2: dp1, result: current });
+        dp1 = dp2;
+        dp2 = current;
+    }
+    animationSteps.push({ type: 'END' });
+}
+
+function initializeAnimation() {
+    log("Setting up the staircase...");
+    simulationRunning = false; currentStep = -1;
+
+    try {
+        N = parseInt(stepsInput.value, 10);
+        if (isNaN(N) || N < 1 || N > 20) throw new Error("Please enter a number between 1 and 20.");
+    } catch(e) { alert(e.message); return; }
+
+    logOutput.innerHTML = '';
+    currentActionDisplay.innerHTML = 'Ready to climb.';
+    
+    staircaseDiv.innerHTML = '';
+    staircaseDiv.style.width = `${(N + 1) * STEP_X_OFFSET + STEP_WIDTH}px`;
+    staircaseDiv.style.height = `${(N + 1) * STEP_HEIGHT + 50}px`;
+    
+    // Render Ground
+    const ground = document.createElement('div');
+    ground.className = 'step';
+    ground.id = 'step-0';
+    ground.style.left = `0px`;
+    ground.style.bottom = `0px`;
+    ground.innerHTML = `<span class="label">Ground</span><span class="way-counter" id="ways-0">1</span>`;
+    staircaseDiv.appendChild(ground);
+
+    // Render Steps
+    for(let i = 1; i <= N; i++) {
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'step';
+        stepDiv.id = `step-${i}`;
+        stepDiv.style.left = `${i * STEP_X_OFFSET}px`;
+        stepDiv.style.bottom = `${i * STEP_HEIGHT}px`;
+        stepDiv.innerHTML = `<span class="label">Step ${i}</span><span class="way-counter" id="ways-${i}"></span>`;
+        staircaseDiv.appendChild(stepDiv);
+    }
+    
+    // ** THE FIX IS HERE **
+    // Reset robot position to be perfectly on top of the ground step
+    robotDiv.style.left = `${parseInt(ground.style.left) + STEP_WIDTH / 2}px`;
+    robotDiv.style.bottom = `${parseInt(ground.style.bottom) + STEP_HEIGHT}px`;
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Restart';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+    
+    switch(step.type) {
+        case 'START':
+            log("The robot begins its ascent!");
+            // Initially move to step 0
+             robotDiv.style.left = `${document.getElementById('step-0').offsetLeft + STEP_WIDTH / 2}px`;
+             robotDiv.style.bottom = `${document.getElementById('step-0').offsetTop + STEP_HEIGHT}px`;
+            break;
+            
+        case 'CALC':
+            const { index, prev1, prev2, result } = step;
+            log(`--- Calculating ways for Step ${index} ---`);
+            const currentStepDiv = document.getElementById(`step-${index}`);
+            currentStepDiv.classList.add('highlight-current');
+
+            // ** THE FIX IS HERE **
+            // Move Robot to be perfectly on top of the current step
+            robotDiv.style.left = `${parseInt(currentStepDiv.style.left) + STEP_WIDTH / 2}px`;
+            robotDiv.style.bottom = `${parseInt(currentStepDiv.style.bottom) + STEP_HEIGHT}px`;
+
+            const prev1Step = document.getElementById(`step-${index-1}`);
+            if (prev1Step) prev1Step.classList.add('highlight-source');
+
+            const prev2Step = document.getElementById(`step-${index-2}`);
+            if (prev2Step) prev2Step.classList.add('highlight-source');
+            
+            log(`  Ways(${index}) = Ways(${index-1}) + Ways(${index-2})`);
+            log(`  Ways(${index}) = ${prev1} + ${prev2} = ${result}`);
+
+            currentActionDisplay.innerHTML = `To reach <strong>Step ${index}</strong>, I can come from:<br/>
+                Step ${index-1} (${prev1} ways) OR<br/>
+                Step ${index-2} (${prev2} ways)<br/>
+                Total: ${prev1} + ${prev2} = <strong>${result}</strong>`;
+            
+            await new Promise(r => setTimeout(r, 800));
+            document.getElementById(`ways-${index}`).textContent = result;
+            break;
+
+        case 'END':
+            log(`--- Summit reached! ---`);
+            currentActionDisplay.innerHTML = `<strong>Reached the top!</strong>`;
+            const finalStepDiv = document.getElementById(`step-${N}`);
+            if(finalStepDiv) finalStepDiv.classList.add('final-step');
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    stepsInput = document.getElementById('steps_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    staircaseDiv = document.getElementById('staircase');
+    robotDiv = document.getElementById('robot');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

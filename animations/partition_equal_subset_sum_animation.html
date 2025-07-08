@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partition Equal Subset Sum DP Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-partition { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-partition label { font-weight: bold; margin-right: 5px; }
+        .controls-partition input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-partition button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-partition button:hover { background-color: #0056b3; }
+        .controls-partition button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-partition { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-partition, .right-panel-partition { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .gem-list { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .gem { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; background-color: #6f42c1; border: 2px solid #5a3d90; color: white; font-weight: bold; font-size: 1.1em; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        
+        #check-results { padding: 10px; border: 1px dashed #ccc; font-size: 1.1em; text-align: center; }
+        #final-verdict { font-size: 1.5em; font-weight: bold; text-align: center; padding: 15px; border-radius: 5px; display: none; }
+        #final-verdict.true { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        #final-verdict.false { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .dp-table-container { min-height: 450px; overflow: auto; position: relative; background-color: #f0f2f5; padding: 10px; }
+        #dp_table { border-collapse: collapse; margin: 10px auto; font-size: 1.2em; }
+        #dp_table th, #dp_table td { border: 1px solid #ccc; padding: 8px; text-align: center; min-width: 45px; height: 40px; background-color: #fff; transition: background-color 0.3s ease; }
+        #dp_table th { background-color: #e9ecef; color: #495057; }
+        #dp_table .item-header { width: 50px; background-color: #e3d9f3; }
+
+        td.highlight-current { background-color: #fff3cd !important; outline: 2px solid #ffc107; }
+        td.highlight-source-dont { background-color: #f8d7da !important; }
+        td.highlight-source-use { background-color: #cfe2ff !important; }
+        td.highlight-final { animation: glowFinal 1.5s infinite alternate; }
+
+        #current-action-display { text-align:center; margin:8px 0; font-weight:bold; min-height:1.1em; font-size:0.9em; transition: color 0.3s; }
+        #current-action-display.info { color: #0d6efd; }
+        #current-action-display.decision { color: #198754; }
+
+        .log-container-partition { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes glowFinal { from { box-shadow: 0 0 2px #28a745; } to { box-shadow: 0 0 12px #28a745; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Partition Equal Subset Sum</h1>
+
+        <div class="controls-partition">
+            <label for="set_input">Set (comma-separated):</label>
+            <input type="text" id="set_input" value="1, 5, 11, 5">
+            <button id="start_button">Start/Reset</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-partition">
+            <div class="left-panel-partition">
+                <div class="panel">
+                    <h2>Weight Gems</h2>
+                    <div id="gem-list-display" class="gem-list"></div>
+                </div>
+                <div class="panel">
+                    <h2>Initial Check</h2>
+                    <div id="check-results"></div>
+                </div>
+                <div class="panel">
+                    <h2>Final Verdict</h2>
+                    <div id="final-verdict"></div>
+                </div>
+            </div>
+            <div class="right-panel-partition">
+                 <div class="panel dp-table-container">
+                    <h2>Table of Possibilities (DP Table)</h2>
+                    <div id="current-action-display" class="info"></div>
+                    <div id="dp_table_container"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-partition">
+            <h2>Execution Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE VARIABLES ---
+let NUMS = [];
+let TARGET_SUM = 0;
+let dpTableValues = [];
+let animationSteps = [];
+let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let setInput, startButton, nextStepButton, gemListDisplay, checkResultsDisplay, finalVerdictDisplay, dpTableContainer, currentActionDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() { document.querySelectorAll('#dp_table td').forEach(c => c.classList.remove('highlight-current', 'highlight-source-dont', 'highlight-source-use')); }
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    const n = NUMS.length;
+    // Pre-calculate the entire DP table
+    dpTableValues = Array(n + 1).fill(false).map(() => Array(TARGET_SUM + 1).fill(false));
+    dpTableValues[0][0] = true;
+
+    for (let i = 1; i <= n; i++) {
+        const num = NUMS[i-1];
+        for (let j = 0; j <= TARGET_SUM; j++) {
+            const dontUse = dpTableValues[i-1][j];
+            let use = false;
+            if (j >= num) {
+                use = dpTableValues[i-1][j-num];
+            }
+            dpTableValues[i][j] = dontUse || use;
+        }
+    }
+
+    // Create animation steps
+    animationSteps.push({ type: 'START' });
+    animationSteps.push({ type: 'BASE_CASES' });
+
+    for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= TARGET_SUM; j++) {
+            const num = NUMS[i-1];
+            const dontUseVal = dpTableValues[i-1][j];
+            let useVal = false;
+            if (j >= num) useVal = dpTableValues[i-1][j-num];
+
+            animationSteps.push({
+                type: 'FILL_CELL',
+                rowIndex: i, colIndex: j, num,
+                dontUseVal, useVal, result: dpTableValues[i][j]
+            });
+        }
+    }
+    animationSteps.push({ type: 'FINAL_ANSWER' });
+}
+
+function initializeAnimation() {
+    log("Initializing...");
+    simulationRunning = false; currentStep = -1;
+
+    try {
+        NUMS = setInput.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        if (NUMS.length === 0) throw new Error();
+    } catch(e) {
+        alert("Invalid input. Please provide comma-separated numbers."); return;
+    }
+
+    logOutput.innerHTML = ''; finalVerdictDisplay.style.display = 'none';
+    currentActionDisplay.textContent = 'Ready to begin.'; currentActionDisplay.className = 'info';
+    gemListDisplay.innerHTML = '';
+    NUMS.forEach(n => gemListDisplay.innerHTML += `<div class="gem">${n}</div>`);
+
+    const totalSum = NUMS.reduce((a, b) => a + b, 0);
+    checkResultsDisplay.innerHTML = `Total Sum: ${totalSum}<br/>`;
+    
+    if (totalSum % 2 !== 0) {
+        checkResultsDisplay.innerHTML += `<span style="color: red;">Sum is ODD. Partition is impossible.</span>`;
+        log("Initial Check Failed: Total sum is odd.");
+        finalVerdictDisplay.textContent = "FALSE";
+        finalVerdictDisplay.className = 'false';
+        finalVerdictDisplay.style.display = 'block';
+        startButton.textContent = "Start/Reset";
+        nextStepButton.disabled = true;
+        return;
+    }
+    
+    TARGET_SUM = totalSum / 2;
+    checkResultsDisplay.innerHTML += `Target Sum (per pan): ${TARGET_SUM}`;
+    log(`Initial Check Passed. Target Sum: ${TARGET_SUM}`);
+    
+    dpTableContainer.innerHTML = '';
+    let tableHTML = '<table id="dp_table"><thead><tr><th>💎</th><th>0</th>';
+    for(let j = 1; j <= TARGET_SUM; j++) tableHTML += `<th>${j}</th>`;
+    tableHTML += '</tr></thead><tbody>';
+    tableHTML += `<tr><td class="item-header">{}</td>`;
+    for(let j = 0; j <= TARGET_SUM; j++) tableHTML += `<td id="cell-0-${j}"></td>`;
+    tableHTML += '</tr>';
+    NUMS.forEach((n, i) => {
+        tableHTML += `<tr><td class="item-header">${n}</td>`;
+        for(let j = 0; j <= TARGET_SUM; j++) tableHTML += `<td id="cell-${i+1}-${j}"></td>`;
+        tableHTML += '</tr>';
+    });
+    tableHTML += '</tbody></table>';
+    dpTableContainer.innerHTML = tableHTML;
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Reset';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+
+    switch(step.type) {
+        case 'START':
+            log("Building the DP Table of Possibilities...");
+            currentActionDisplay.textContent = 'Starting DP table construction.';
+            break;
+
+        case 'BASE_CASES':
+            log("Base Cases: Sum 0 is always possible (TRUE). With no items, no other sum is possible (FALSE).");
+            currentActionDisplay.textContent = 'Initializing base cases.';
+            for(let i=0; i <= NUMS.length; i++) document.getElementById(`cell-${i}-0`).innerHTML = '✔';
+            for(let j=1; j <= TARGET_SUM; j++) document.getElementById(`cell-0-${j}`).innerHTML = '❌';
+            break;
+
+        case 'FILL_CELL':
+            const cell = document.getElementById(`cell-${step.rowIndex}-${step.colIndex}`);
+            cell.classList.add('highlight-current');
+            
+            document.getElementById(`cell-${step.rowIndex-1}-${step.colIndex}`).classList.add('highlight-source-dont');
+            
+            log(`--- Cell [${step.rowIndex}, ${step.colIndex}] for Gem ${step.num}, Sum ${step.colIndex} ---`);
+            log(`1. Option 'Don't Use ${step.num}': Look above -> dp[${step.rowIndex-1}][${step.colIndex}] is ${step.dontUseVal}`);
+            
+            let useText = `2. Option 'Use ${step.num}': Not possible (sum ${step.colIndex} < gem ${step.num}).`;
+            if (step.colIndex >= step.num) {
+                document.getElementById(`cell-${step.rowIndex-1}-${step.colIndex - step.num}`).classList.add('highlight-source-use');
+                useText = `2. Option 'Use ${step.num}': Look at dp[${step.rowIndex-1}][${step.colIndex - step.num}] -> is ${step.useVal}`;
+            }
+            log(useText);
+            
+            currentActionDisplay.innerHTML = `For Gem ${step.num}, Sum ${step.colIndex}:<br/>(Don't Use: ${step.dontUseVal}) OR (Use: ${step.useVal})`;
+            
+            await new Promise(r => setTimeout(r, 900));
+            clearHighlights();
+            cell.classList.add('highlight-current');
+
+            log(`  Decision: ${step.dontUseVal} || ${step.useVal} = ${step.result}`);
+            currentActionDisplay.className = 'decision';
+            currentActionDisplay.innerHTML = `Result for [${step.rowIndex}, ${step.colIndex}] is <strong>${step.result ? 'TRUE' : 'FALSE'}</strong>`;
+            cell.innerHTML = step.result ? '✔' : '❌';
+            break;
+
+        case 'FINAL_ANSWER':
+            const finalCell = document.getElementById(`cell-${NUMS.length}-${TARGET_SUM}`);
+            finalCell.classList.add('highlight-final');
+            const finalValue = dpTableValues[NUMS.length][TARGET_SUM];
+            log(`Table filled! The answer is in the bottom-right cell: ${finalValue}.`);
+            currentActionDisplay.textContent = `Partition Possible? ${finalValue}`;
+            finalVerdictDisplay.textContent = finalValue ? "TRUE" : "FALSE";
+            finalVerdictDisplay.className = finalValue ? 'true' : 'false';
+            finalVerdictDisplay.style.display = 'block';
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    setInput = document.getElementById('set_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    gemListDisplay = document.getElementById('gem-list-display');
+    checkResultsDisplay = document.getElementById('check-results');
+    finalVerdictDisplay = document.getElementById('final-verdict');
+    dpTableContainer = document.getElementById('dp_table_container');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number of Ways to Form Target String Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📝 Number of Ways to Form Target String – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Number of Ways to Form Target String Given a Dictionary</b> problem asks you to count the number of ways to form a target string by choosing one character from each column of a list of equal-length words (dictionary). Each character in the target must be formed in order, and you can skip columns.
+    </p>
+
+    <h2>🧱 Pattern Template (DP Solution)</h2>
+    <pre><code>class Solution {
+    static final int MOD = 1_000_000_007;
+    public int numWays(String[] words, String target) {
+        int m = words[0].length(), n = target.length();
+        int[][] count = new int[m][26];
+        for (String word : words) {
+            for (int i = 0; i &lt; m; i++) {
+                count[i][word.charAt(i) - 'a']++;
+            }
+        }
+        long[][] dp = new long[n + 1][m + 1];
+        for (int j = 0; j &lt;= m; j++) dp[0][j] = 1;
+        for (int i = 1; i &lt;= n; i++) {
+            for (int j = 1; j &lt;= m; j++) {
+                dp[i][j] = dp[i][j - 1];
+                char c = target.charAt(i - 1);
+                if (count[j - 1][c - 'a'] &gt; 0) {
+                    dp[i][j] = (dp[i][j] + dp[i - 1][j - 1] * count[j - 1][c - 'a']) % MOD;
+                }
+            }
+        }
+        return (int) dp[n][m];
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/num_ways_form_target_string_animation.html'">▶️ View Animation</button>
+        <h2>🎥 Video Explanation</h2>
+    <ul>
+      <li>
+        <a href="https://www.youtube.com/watch?v=_GF-0T-YjW8&ab_channel=NeetCodeIO" target="_blank" rel="noopener noreferrer">
+          NeetCodeIO: Number of Ways to Form Target String (YouTube)
+        </a>
+      </li>
+    </ul>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(m * n + m * k)</code>, where <code>m</code> is the word length, <code>n</code> is the target length, and <code>k</code> is the number of words.</li>
+      <li><b>Space Complexity:</b> <code>O(m * n)</code> for the DP table.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Counting ways to form a string from a set of words/columns.</li>
+      <li>Dynamic programming with combinatorial constraints.</li>
+      <li>Problems involving column-wise character selection.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/number-of-ways-to-form-a-target-string-given-a-dictionary/" target="_blank" rel="noopener noreferrer">
+          1639. Number of Ways to Form a Target String Given a Dictionary
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">DP</span>
+        <span class="badge badge-tag">Combinatorics</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: words = ["acca","bbbb","caca"], target = "aba"
+Output: 6
+
+Explanation:
+- There are 6 ways to form "aba" by picking characters from columns in order.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Precompute character frequencies for each column.</li>
+      <li>Use DP: <code>dp[i][j]</code> = ways to form first <code>i</code> chars of target from first <code>j</code> columns.</li>
+      <li>Always use modulo <code>10^9 + 7</code> for large results.</li>
+      <li>Can optimize space to <code>O(m)</code> if needed.</li>
+    </ul>
+  </div>
+</body>

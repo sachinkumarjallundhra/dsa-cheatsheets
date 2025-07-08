@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>0/1 Knapsack DP Animation (Classic Theme)</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-knapsack { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: flex-start; justify-content: center;}
+        .controls-knapsack .control-group { display: flex; flex-direction: column; }
+        .controls-knapsack label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+        .controls-knapsack textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; height: 80px; font-family: 'Courier New', monospace; resize: vertical; }
+        .controls-knapsack input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
+        .controls-knapsack .buttons { display: flex; align-items: flex-end; gap: 10px; height: 100%; }
+        .controls-knapsack button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-knapsack button:hover { background-color: #0056b3; }
+        .controls-knapsack button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-knapsack { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-knapsack, .right-panel-knapsack { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        #item-list-knapsack .item { display: flex; align-items: center; padding: 5px; border-radius: 4px; margin-bottom: 5px; border: 1px solid #ddd; transition: all 0.3s ease; }
+        #item-list-knapsack .item .emoji { font-size: 1.5rem; margin-right: 10px; }
+        #item-list-knapsack .item.chosen { background-color: #d4edda; border-color: #c3e6cb; }
+        #item-list-knapsack .item.not-chosen { background-color: #f8d7da; border-color: #f5c6cb; opacity: 0.7; }
+        #knapsack-capacity-display { font-weight: bold; color: #0056b3; text-align: center; padding: 8px; background: #e8f0fe; border-radius: 4px; }
+        #final-result-display { text-align: center; font-size: 1.1em; font-weight: bold; padding: 10px; display: none; }
+
+        .dp-table-container { min-height: 450px; overflow: auto; position: relative; background-color: #f0f2f5; }
+        #dp_table_knapsack { border-collapse: collapse; margin: 20px auto; font-size: 0.9em; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        #dp_table_knapsack th, #dp_table_knapsack td { border: 1px solid #ccc; padding: 8px 12px; text-align: center; min-width: 50px; height: 40px; background-color: #fff; transition: background-color 0.3s ease; }
+        #dp_table_knapsack th { background-color: #e9ecef; color: #495057; }
+        #dp_table_knapsack .item-header { width: 70px; font-size: 1.2rem; }
+
+        td.highlight-current { background-color: #fff3cd !important; outline: 2px solid #ffc107; }
+        td.highlight-source-dont { background-color: #cfe2ff !important; }
+        td.highlight-source-take { background-color: #d1ecdf !important; }
+        td.highlight-final { animation: glowFinal 1.5s infinite alternate; }
+        td.highlight-backtrack { background-color: rgba(40, 167, 69, 0.25) !important; outline: 2px solid #28a745; }
+
+        #current-action-display { text-align:center; margin:8px 0; font-weight:bold; min-height:1.1em; font-size:0.9em; transition: color 0.3s; }
+        #current-action-display.info { color: #0d6efd; }
+        #current-action-display.decision { color: #198754; }
+
+        .log-container-knapsack { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log-output-knapsack { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes glowFinal { from { box-shadow: 0 0 2px #28a745; } to { box-shadow: 0 0 12px #28a745; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>0/1 Knapsack Problem (Dynamic Programming)</h1>
+
+        <div class="controls-knapsack">
+            <div class="control-group">
+                <label for="items_input_knapsack">Items (JSON Array)</label>
+                <textarea id="items_input_knapsack">[
+{ "name": "Ruby", "emoji": "💎", "w": 1, "v": 15 },
+{ "name": "Scroll", "emoji": "📜", "w": 3, "v": 30 },
+{ "name": "Chalice", "emoji": "🏆", "w": 4, "v": 40 }
+]</textarea>
+            </div>
+            <div class="control-group">
+                <label for="capacity_input_knapsack">Max Capacity</label>
+                <input type="number" id="capacity_input_knapsack" value="5">
+            </div>
+            <div class="buttons">
+                <button id="start_button_knapsack">Start/Reset</button>
+                <button id="next_step_button_knapsack" disabled>Next Step</button>
+            </div>
+        </div>
+
+        <div class="main-content-knapsack">
+            <div class="left-panel-knapsack">
+                <div class="panel">
+                    <h2>Problem Setup</h2>
+                    <div id="knapsack-capacity-display"></div>
+                    <div id="item-list-knapsack"></div>
+                </div>
+                <div class="panel">
+                    <h2>Final Result</h2>
+                    <div id="final-result-display"></div>
+                </div>
+            </div>
+            <div class="right-panel-knapsack">
+                 <div class="panel dp-table-container">
+                    <h2>DP Table of Optimal Choices</h2>
+                    <div id="current-action-display" class="info"></div>
+                    <div id="dp_table_container_knapsack"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-knapsack">
+            <h2>Log (Detailed Steps)</h2>
+            <pre id="log-output-knapsack"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE VARIABLES ---
+let ITEMS = [];
+let MAX_CAPACITY = 0;
+let dpTableValues = [];
+let animationSteps = [];
+let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let itemsInput, capacityInput, startButton, nextStepButton, 
+    itemListDisplay, capacityDisplay, finalResultDisplay,
+    dpTableContainer, currentActionDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) {
+    if (logOutput) {
+        logOutput.innerHTML += `> ${message}\n`;
+        logOutput.scrollTop = logOutput.scrollHeight;
+    }
+}
+
+function clearHighlights() {
+    document.querySelectorAll('#dp_table_knapsack td').forEach(cell => {
+        cell.classList.remove('highlight-current', 'highlight-source-dont', 'highlight-source-take', 'highlight-backtrack');
+    });
+}
+
+function renderItems() {
+    itemListDisplay.innerHTML = '';
+    ITEMS.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'item';
+        itemDiv.id = `item-display-${index}`;
+        itemDiv.innerHTML = `<span class="emoji">${item.emoji}</span> <span>${item.name} (W: ${item.w}, V: ${item.v})</span>`;
+        itemListDisplay.appendChild(itemDiv);
+    });
+}
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    const n = ITEMS.length;
+    // Pre-calculate the entire DP table
+    dpTableValues = Array(n + 1).fill(0).map(() => Array(MAX_CAPACITY + 1).fill(0));
+    for (let i = 1; i <= n; i++) {
+        for (let w = 1; w <= MAX_CAPACITY; w++) {
+            const item = ITEMS[i-1];
+            const valueWithout = dpTableValues[i-1][w];
+            let valueWith = 0;
+            if (item.w <= w) {
+                valueWith = item.v + dpTableValues[i-1][w - item.w];
+            }
+            dpTableValues[i][w] = Math.max(valueWith, valueWithout);
+        }
+    }
+
+    // Now, create animation steps based on the pre-calculated table
+    animationSteps.push({ type: 'START' });
+    animationSteps.push({ type: 'BASE_CASES' });
+
+    for (let i = 1; i <= n; i++) {
+        for (let w = 1; w <= MAX_CAPACITY; w++) {
+            const item = ITEMS[i-1];
+            const valueWithout = dpTableValues[i-1][w];
+            let valueWith = -1; // Sentinel for not possible
+            let remainingCapacity = -1;
+
+            if (item.w <= w) {
+                remainingCapacity = w - item.w;
+                valueWith = item.v + dpTableValues[i-1][remainingCapacity];
+            }
+
+            animationSteps.push({
+                type: 'FILL_CELL',
+                row: i, col: w, itemIndex: i - 1,
+                valueWithout, valueWith,
+                remainingCapacity, result: dpTableValues[i][w]
+            });
+        }
+    }
+    
+    animationSteps.push({ type: 'FINAL_ANSWER' });
+
+    // Backtracking steps
+    let w = MAX_CAPACITY;
+    for (let i = n; i > 0; i--) {
+        const tookItem = dpTableValues[i][w] !== dpTableValues[i-1][w];
+        animationSteps.push({
+            type: 'BACKTRACK',
+            row: i, col: w,
+            itemIndex: i - 1,
+            tookItem
+        });
+        if (tookItem) {
+            w -= ITEMS[i-1].w;
+        }
+    }
+    
+    animationSteps.push({ type: 'CONCLUSION' });
+}
+
+function initializeAnimation() {
+    log("Initializing simulation...");
+    simulationRunning = false;
+    currentStep = -1;
+
+    try {
+        ITEMS = JSON.parse(itemsInput.value);
+        MAX_CAPACITY = parseInt(capacityInput.value, 10);
+        if (!Array.isArray(ITEMS) || isNaN(MAX_CAPACITY) || MAX_CAPACITY < 0) throw new Error();
+    } catch(e) {
+        alert("Invalid input. Please provide a valid JSON array for items and a positive integer for capacity.");
+        return;
+    }
+
+    // Reset UI
+    logOutput.innerHTML = '';
+    finalResultDisplay.style.display = 'none';
+    currentActionDisplay.textContent = 'Ready. Click "Next Step" to begin.';
+    currentActionDisplay.className = 'info';
+    capacityDisplay.textContent = `Knapsack Max Capacity: ${MAX_CAPACITY} kg`;
+    renderItems();
+    
+    // Create Table Structure
+    let tableHTML = '<table id="dp_table_knapsack"><thead><tr><th>Items</th>';
+    for(let w = 0; w <= MAX_CAPACITY; w++) tableHTML += `<th>${w}kg</th>`;
+    tableHTML += '</tr></thead><tbody>';
+    tableHTML += `<tr><td class="item-header">🚫</td>`;
+    for(let w = 0; w <= MAX_CAPACITY; w++) tableHTML += `<td id="cell-0-${w}"></td>`;
+    tableHTML += '</tr>';
+    ITEMS.forEach((item, i) => {
+        tableHTML += `<tr><td class="item-header">${item.emoji}</td>`;
+        for(let w = 0; w <= MAX_CAPACITY; w++) tableHTML += `<td id="cell-${i+1}-${w}"></td>`;
+        tableHTML += '</tr>';
+    });
+    tableHTML += '</tbody></table>';
+    dpTableContainer.innerHTML = tableHTML;
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+    log(`Initialization complete. Items: ${ITEMS.length}, Capacity: ${MAX_CAPACITY}.`);
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Reset';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false;
+        updateButtonState();
+        return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true;
+    clearHighlights();
+
+    switch(step.type) {
+        case 'START':
+            log("Building the DP Table. Each cell [i, w] stores the max value for items up to 'i' with capacity 'w'.");
+            currentActionDisplay.textContent = 'Starting DP table construction.';
+            break;
+
+        case 'BASE_CASES':
+            log("Filling base cases: Row 0 (no items) and Column 0 (no capacity) will have a value of 0.");
+            currentActionDisplay.textContent = 'Initializing base cases.';
+            for(let w = 0; w <= MAX_CAPACITY; w++) document.getElementById(`cell-0-${w}`).textContent = '0';
+            for(let i = 0; i <= ITEMS.length; i++) document.getElementById(`cell-${i}-0`).textContent = '0';
+            break;
+
+        case 'FILL_CELL':
+            const cell = document.getElementById(`cell-${step.row}-${step.col}`);
+            const item = ITEMS[step.itemIndex];
+            cell.classList.add('highlight-current');
+            
+            const cellAbove = document.getElementById(`cell-${step.row - 1}-${step.col}`);
+            cellAbove.classList.add('highlight-source-dont');
+            
+            currentActionDisplay.textContent = `Evaluating Cell [${step.row}, ${step.col}] for ${item.emoji}`;
+            log(`--- Cell [${step.row}, ${step.col}] ---`);
+            log(`Considering item ${item.name} (W: ${item.w}, V: ${item.v}) for capacity ${step.col}.`);
+            log(`1. Option 'Don't Take': Value is from cell above -> ${step.valueWithout}`);
+
+            if (step.valueWith !== -1) {
+                const sourceTakeCell = document.getElementById(`cell-${step.row - 1}-${step.remainingCapacity}`);
+                sourceTakeCell.classList.add('highlight-source-take');
+                log(`2. Option 'Take': Item value (${item.v}) + value from cell [${step.row - 1}, ${step.remainingCapacity}] (${dpTableValues[step.row-1][step.remainingCapacity]}) -> ${step.valueWith}`);
+                currentActionDisplay.textContent = `Don't Take: ${step.valueWithout} vs. Take: ${step.valueWith}`;
+            } else {
+                log(`2. Option 'Take': Not possible (item weight ${item.w} > capacity ${step.col}).`);
+            }
+            
+            log(`Decision: Max(${step.valueWithout}, ${step.valueWith > -1 ? step.valueWith : 0}) = ${step.result}`);
+            currentActionDisplay.className = 'decision';
+            currentActionDisplay.textContent = `Decision for [${step.row}, ${step.col}]: Choose ${step.result}`;
+            
+            await new Promise(r => setTimeout(r, 1000));
+            cell.textContent = step.result;
+            break;
+
+        case 'FINAL_ANSWER':
+            const finalCell = document.getElementById(`cell-${ITEMS.length}-${MAX_CAPACITY}`);
+            finalCell.classList.add('highlight-final');
+            log(`Table filled! The maximum value is in the bottom-right cell: ${dpTableValues[ITEMS.length][MAX_CAPACITY]}.`);
+            currentActionDisplay.textContent = `Maximum value found: ${dpTableValues[ITEMS.length][MAX_CAPACITY]}`;
+            break;
+        
+        case 'BACKTRACK':
+            if(currentStep === animationSteps.findIndex(s => s.type === 'BACKTRACK')) {
+                log("--- Backtracking to find chosen items ---");
+                currentActionDisplay.textContent = "Backtracking from final cell...";
+            }
+            const backtrackCell = document.getElementById(`cell-${step.row}-${step.col}`);
+            const itemDisplay = document.getElementById(`item-display-${step.itemIndex}`);
+            backtrackCell.classList.add('highlight-backtrack');
+            
+            if (step.tookItem) {
+                itemDisplay.classList.add('chosen');
+                log(`Cell [${step.row}, ${step.col}]: Value changed. Item ${ITEMS[step.itemIndex].name} was taken.`);
+            } else {
+                itemDisplay.classList.add('not-chosen');
+                 log(`Cell [${step.row}, ${step.col}]: Value is same as above. Item ${ITEMS[step.itemIndex].name} was NOT taken.`);
+            }
+            break;
+
+        case 'CONCLUSION':
+            const totalValue = dpTableValues[ITEMS.length][MAX_CAPACITY];
+            log("Backtracking complete. The optimal set of items has been found.");
+            currentActionDisplay.textContent = 'Optimal set found!';
+            finalResultDisplay.textContent = `Max Value: ${totalValue}`;
+            finalResultDisplay.style.display = 'block';
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Assign DOM elements
+    itemsInput = document.getElementById('items_input_knapsack');
+    capacityInput = document.getElementById('capacity_input_knapsack');
+    startButton = document.getElementById('start_button_knapsack');
+    nextStepButton = document.getElementById('next_step_button_knapsack');
+    itemListDisplay = document.getElementById('item-list-knapsack');
+    capacityDisplay = document.getElementById('knapsack-capacity-display');
+    finalResultDisplay = document.getElementById('final-result-display');
+    dpTableContainer = document.getElementById('dp_table_container_knapsack');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log-output-knapsack');
+
+    // Add event listeners
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    // Initial setup
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

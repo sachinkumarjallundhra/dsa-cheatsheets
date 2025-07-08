@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>01 Matrix (Distance to Nearest Zero) DP Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-matrix { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-matrix button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-matrix button:hover { background-color: #0056b3; }
+        .controls-matrix button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-matrix { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-matrix, .right-panel-matrix { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        #current-action-display { text-align:center; margin:8px 0; font-weight:bold; min-height:3em; font-size:1em; }
+        #current-action-display .pass-1 { color: #0056b3; }
+        #current-action-display .pass-2 { color: #e0a800; }
+
+        .grid-container { display: flex; justify-content: center; align-items: center; padding: 10px; }
+        #matrix-grid { display: grid; border: 2px solid #343a40; }
+        .grid-cell { width: 50px; height: 50px; border: 1px solid #ccc; display: flex; justify-content: center; align-items: center; font-size: 1.5em; font-weight: bold; position: relative; transition: all 0.3s ease-in-out; }
+        .grid-cell.zero { background-color: #ffc107; color: #333; }
+        .grid-cell.one { background-color: #28a745; }
+        .grid-cell .value { z-index: 2; color: white; text-shadow: 1px 1px 2px black; }
+
+        .grid-cell.highlight-current { outline: 3px solid #dc3545; z-index: 10; transform: scale(1.1); }
+        .grid-cell.highlight-source-pass1 { background-color: rgba(0, 123, 255, 0.5) !important; }
+        .grid-cell.highlight-source-pass2 { background-color: rgba(255, 193, 7, 0.5) !important; }
+        
+        .log-container-matrix { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>01 Matrix: Distance to Nearest Zero</h1>
+
+        <div class="controls-matrix">
+            <button id="start_button">Start/Reset</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-matrix">
+            <div class="left-panel-matrix">
+                <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="current-action-display">Ready to inspect the forest.</div>
+                </div>
+            </div>
+            <div class="right-panel-matrix">
+                 <div class="panel">
+                    <h2>The Forest Grid</h2>
+                    <div class="grid-container">
+                       <div id="matrix-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-matrix">
+            <h2>Inspector's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+const INITIAL_MATRIX = [
+    [0, 1, 1, 1],
+    [1, 1, 1, 1],
+    [1, 1, 1, 0]
+];
+let animationSteps = [];
+let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let startButton, nextStepButton, matrixGrid, currentActionDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() { document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('highlight-current', 'highlight-source-pass1', 'highlight-source-pass2')); }
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    const rows = INITIAL_MATRIX.length;
+    const cols = INITIAL_MATRIX[0].length;
+    const dist = Array(rows).fill(0).map(() => Array(cols).fill(Infinity));
+    
+    animationSteps.push({ type: 'START' });
+
+    // Pass 1: Top-Left to Bottom-Right
+    animationSteps.push({ type: 'PASS_1_START' });
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (INITIAL_MATRIX[r][c] === 0) {
+                dist[r][c] = 0;
+                animationSteps.push({ type: 'SET_ZERO', r, c });
+            } else {
+                let up = (r > 0) ? dist[r-1][c] : Infinity;
+                let left = (c > 0) ? dist[r][c-1] : Infinity;
+                dist[r][c] = 1 + Math.min(up, left);
+                animationSteps.push({ type: 'PASS_1_UPDATE', r, c, up, left, result: dist[r][c] });
+            }
+        }
+    }
+
+    // Pass 2: Bottom-Right to Top-Left
+    animationSteps.push({ type: 'PASS_2_START' });
+    for (let r = rows - 1; r >= 0; r--) {
+        for (let c = cols - 1; c >= 0; c--) {
+             if (INITIAL_MATRIX[r][c] !== 0) {
+                let down = (r < rows - 1) ? dist[r+1][c] : Infinity;
+                let right = (c < cols - 1) ? dist[r][c+1] : Infinity;
+                let oldVal = dist[r][c];
+                dist[r][c] = Math.min(oldVal, 1 + Math.min(down, right));
+                animationSteps.push({ type: 'PASS_2_UPDATE', r, c, down, right, oldVal, result: dist[r][c] });
+            }
+        }
+    }
+    animationSteps.push({ type: 'END' });
+}
+
+function initializeAnimation() {
+    log("Resetting the forest grid...");
+    simulationRunning = false; currentStep = -1;
+
+    logOutput.innerHTML = '';
+    currentActionDisplay.innerHTML = 'Ready to inspect the forest.';
+    
+    const rows = INITIAL_MATRIX.length;
+    const cols = INITIAL_MATRIX[0].length;
+    matrixGrid.innerHTML = '';
+    matrixGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const cell = document.createElement('div');
+            cell.id = `cell-${r}-${c}`;
+            cell.classList.add('grid-cell');
+            const val = document.createElement('span');
+            val.classList.add('value');
+            val.id = `value-${r}-${c}`;
+            
+            if (INITIAL_MATRIX[r][c] === 0) {
+                cell.classList.add('zero');
+                val.textContent = '🔥';
+            } else {
+                cell.classList.add('one');
+                val.textContent = '🌳';
+            }
+            cell.appendChild(val);
+            matrixGrid.appendChild(cell);
+        }
+    }
+
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Reset';
+}
+
+function valToStr(val) { return val === Infinity ? '∞' : val; }
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+    
+    let cell, valSpan, r, c;
+    if (step.r !== undefined) {
+        r = step.r; c = step.c;
+        cell = document.getElementById(`cell-${r}-${c}`);
+        valSpan = document.getElementById(`value-${r}-${c}`);
+        cell.classList.add('highlight-current');
+    }
+
+    switch(step.type) {
+        case 'START':
+            log("Starting inspection...");
+            break;
+
+        case 'PASS_1_START':
+            log("--- Pass 1: Top-Left to Bottom-Right ---");
+            currentActionDisplay.innerHTML = `<span class="pass-1"><strong>Pass 1:</strong> Spreading from top-left.</span>`;
+            break;
+
+        case 'SET_ZERO':
+            valSpan.textContent = '0';
+            cell.classList.remove('one');
+            log(`Cell [${r},${c}] is a fire (0). Distance is 0.`);
+            break;
+            
+        case 'PASS_1_UPDATE':
+            if (r > 0) document.getElementById(`cell-${r-1}-${c}`).classList.add('highlight-source-pass1');
+            if (c > 0) document.getElementById(`cell-${r}-${c-1}`).classList.add('highlight-source-pass1');
+            
+            currentActionDisplay.innerHTML = `<span class="pass-1">At [${r},${c}], dist = 1 + min(up: ${valToStr(step.up)}, left: ${valToStr(step.left)}) = ${valToStr(step.result)}</span>`;
+            log(`Pass 1 at [${r},${c}]: 1 + min(${valToStr(step.up)}, ${valToStr(step.left)}) = ${valToStr(step.result)}.`);
+            await new Promise(r => setTimeout(r, 600));
+            valSpan.textContent = valToStr(step.result);
+            break;
+
+        case 'PASS_2_START':
+            log("--- Pass 2: Bottom-Right to Top-Left ---");
+            currentActionDisplay.innerHTML = `<span class="pass-2"><strong>Pass 2:</strong> Final check from bottom-right.</span>`;
+            break;
+            
+        case 'PASS_2_UPDATE':
+            if (r < INITIAL_MATRIX.length - 1) document.getElementById(`cell-${r+1}-${c}`).classList.add('highlight-source-pass2');
+            if (c < INITIAL_MATRIX[0].length - 1) document.getElementById(`cell-${r}-${c+1}`).classList.add('highlight-source-pass2');
+            
+            currentActionDisplay.innerHTML = `<span class="pass-2">At [${r},${c}], dist = min(current: ${valToStr(step.oldVal)}, 1 + min(down: ${valToStr(step.down)}, right: ${valToStr(step.right)})) = ${valToStr(step.result)}</span>`;
+            log(`Pass 2 at [${r},${c}]: min(${valToStr(step.oldVal)}, 1 + min(${valToStr(step.down)}, ${valToStr(step.right)})) = ${valToStr(step.result)}.`);
+            if(step.result !== step.oldVal) log(`  Value updated!`);
+            
+            await new Promise(r => setTimeout(r, 600));
+            valSpan.textContent = valToStr(step.result);
+            break;
+
+        case 'END':
+            log("--- Inspection Complete! ---");
+            currentActionDisplay.innerHTML = "<strong>Rescue Map Complete!</strong>";
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    matrixGrid = document.getElementById('matrix-grid');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

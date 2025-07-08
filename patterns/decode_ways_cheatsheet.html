@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decode Ways Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔢 Decode Ways – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Decode Ways</b> problem asks you to count the number of ways to decode a string of digits, where 'A' = 1, 'B' = 2, ..., 'Z' = 26.
+    </p>
+
+    <h2>🧱 Pattern Template (DP Solution)</h2>
+    <pre><code>class Solution {
+    public int numDecodings(String s) {
+        if (s == null || s.length() == 0) return 0;
+        int n = s.length();
+        int[] dp = new int[n + 1];
+        dp[0] = 1;
+        dp[1] = s.charAt(0) != '0' ? 1 : 0;
+        for (int i = 2; i &lt;= n; i++) {
+            if (s.charAt(i - 1) != '0')
+                dp[i] += dp[i - 1];
+            int two = Integer.parseInt(s.substring(i - 2, i));
+            if (two &gt;= 10 &amp;&amp; two &lt;= 26)
+                dp[i] += dp[i - 2];
+        }
+        return dp[n];
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/decode_ways_animation.html'">▶️ View Animation</button>
+     <h2>🎥 Video Explanation</h2>
+    <ul>
+      <li>
+        <a href="https://www.youtube.com/watch?v=6aEyTjOwlJU&ab_channel=NeetCode" target="_blank" rel="noopener noreferrer">
+          NeetCode: Decode Ways (YouTube)
+        </a>
+      </li>
+    </ul>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n)</code>, where <code>n</code> is the length of the string.</li>
+      <li><b>Space Complexity:</b> <code>O(n)</code> for the DP array (can be optimized to <code>O(1)</code>).</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>String decoding and encoding problems.</li>
+      <li>Dynamic programming with substring checks.</li>
+      <li>Combinatorial counting with constraints.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/decode-ways/" target="_blank" rel="noopener noreferrer">
+          91. Decode Ways
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">DP</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "226"
+Output: 3
+
+Explanation:
+- "2 2 6" -> "BBF"
+- "22 6"  -> "VF"
+- "2 26"  -> "BZ"
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Handle '0' carefully: it cannot be decoded alone.</li>
+      <li>Use <code>dp[i]</code> to represent the number of ways to decode the first <code>i</code> characters.</li>
+      <li>Space can be optimized to <code>O(1)</code> using two variables.</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number of Ways to Form Target String DP Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-form-target { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-form-target label { font-weight: bold; margin-right: 5px; }
+        .controls-form-target input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
+        .controls-form-target button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-form-target button:hover { background-color: #0056b3; }
+        .controls-form-target button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-form-target { display: grid; grid-template-columns: minmax(350px, 1fr) 2fr; gap: 15px; }
+        .left-panel-form-target, .right-panel-form-target { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        #final-verdict-display { text-align: center; font-size: 2.5em; font-weight: bold; color: #28a745; }
+        #current-action-display { text-align: center; min-height: 4em; font-weight: bold; color: #0056b3;}
+        
+        .grid-container { overflow: auto; }
+        #loom-grid { border-collapse: collapse; margin: 10px auto; }
+        #loom-grid th, #loom-grid td { border: 1px solid #ccc; width: 60px; height: 50px; text-align: center; font-size: 1.2em; font-weight: bold; background-color: #f8f9fa; transition: background-color 0.3s ease, transform 0.2s ease; }
+        #loom-grid th { background-color: #e9ecef; }
+        .header-char { width: 30px !important; }
+
+        #loom-grid td.highlight-current { outline: 3px solid #dc3545; z-index: 5; }
+        #loom-grid td.highlight-skip { background-color: #e2e3e5 !important; }
+        #loom-grid td.highlight-use { background-color: #cfe2ff !important; }
+        #loom-grid td.updated { transform: scale(1.1); }
+        #loom-grid td.final-answer { background-color: #d4edda !important; outline: 3px solid #28a745; animation: glowFinal 1.5s infinite alternate; }
+        
+        .log-container-form-target { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+        
+        @keyframes glowFinal { from { box-shadow: 0 0 2px #28a745; } to { box-shadow: 0 0 12px #28a745; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Number of Ways to Form Target String: The Quantum Weaver</h1>
+
+        <div class="controls-form-target">
+            <label for="words_input">Timelines (words):</label>
+            <input type="text" id="words_input" value="acca,bbab,caca">
+            <label for="target_input">Destiny Pattern (target):</label>
+            <input type="text" id="target_input" value="aba">
+            <button id="start_button">Weave</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-form-target">
+            <div class="left-panel-form-target">
+                <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="current-action-display"></div>
+                </div>
+                 <div class="panel">
+                    <h2>Final Ways Found</h2>
+                    <div id="final-verdict-display">0</div>
+                </div>
+            </div>
+            <div class="right-panel-form-target">
+                 <div class="panel">
+                    <h2>Loom of Possibilities</h2>
+                    <div class="grid-container">
+                       <div id="loom-grid-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-form-target">
+            <h2>Weaver's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+let WORDS = []; let TARGET = "";
+const MOD = 1_000_000_007n;
+let animationSteps = []; let currentStep = -1;
+let simulationRunning = false;
+let animationGenerator;
+
+// --- DOM ELEMENTS ---
+let wordsInput, targetInput, startButton, nextStepButton, gridContainer, currentActionDisplay, finalVerdictDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() {
+    document.querySelectorAll('#loom-grid td').forEach(c => c.classList.remove('highlight-current', 'highlight-skip', 'highlight-use', 'updated'));
+    document.querySelectorAll('#loom-grid th').forEach(h => h.style.backgroundColor = '');
+}
+
+// --- ANIMATION ENGINE using a Generator ---
+function* animationEngine() {
+    const k = WORDS[0].length;
+    const n = TARGET.length;
+
+    // Precompute character frequencies
+    let charCounts = Array(k).fill(0).map(() => Array(26).fill(0));
+    for (const word of WORDS) {
+        for (let j = 0; j < k; j++) {
+            charCounts[j][word.charCodeAt(j) - 'a'.charCodeAt(0)]++;
+        }
+    }
+
+    // This DP table is now internal to the generator, a true simulation state.
+    let dp = Array(n + 1).fill(0).map(() => Array(k + 1).fill(0n));
+
+    // Base Case
+    log("Base case: 1 way to form an empty target string.");
+    currentActionDisplay.textContent = "Initializing base case for empty pattern.";
+    for (let j = 0; j <= k; j++) {
+        dp[0][j] = 1n;
+        document.getElementById(`cell-0-${j}`).textContent = 1;
+    }
+    yield;
+
+    // Main DP Loop
+    for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= k; j++) {
+            clearHighlights();
+            const targetChar = TARGET.charAt(i - 1);
+            const charIndex = targetChar.charCodeAt(0) - 'a'.charCodeAt(0);
+            
+            // Highlight current cell and headers
+            const cell = document.getElementById(`cell-${i}-${j}`);
+            cell.classList.add('highlight-current');
+            document.querySelector(`#loom-grid tbody tr:nth-child(${i+2}) th`).style.backgroundColor = '#fff3cd';
+            document.querySelector(`#loom-grid thead th:nth-child(${j+2})`).style.backgroundColor = '#fff3cd';
+
+            // --- Step 1: The "Skip" calculation ---
+            const skipCell = document.getElementById(`cell-${i}-${j-1}`);
+            skipCell.classList.add('highlight-skip');
+            const skipWays = dp[i][j - 1];
+            dp[i][j] = skipWays;
+
+            log(`--- Processing cell [${i},${j}] ---`);
+            log(`  1. (Skip): dp[${i}][${j}] = dp[${i}][${j-1}] = ${skipWays}`);
+            currentActionDisplay.innerHTML = `<strong>1. Skip Option:</strong><br/>Carry over ways from left: <strong>${skipWays}</strong>`;
+            cell.textContent = dp[i][j].toString();
+            cell.classList.add('updated');
+            yield; 
+
+            // --- Step 2: The "Use" calculation ---
+            cell.classList.add('highlight-current');
+            const useCell = document.getElementById(`cell-${i-1}-${j-1}`);
+            useCell.classList.add('highlight-use');
+            
+            const count = BigInt(charCounts[j - 1][charIndex]);
+
+            if (count > 0) {
+                const useWaysBase = dp[i-1][j-1];
+                const useWays = (useWaysBase * count);
+                const prevVal = dp[i][j];
+                dp[i][j] = (dp[i][j] + useWays) % MOD;
+                
+                log(`  2. (Use): Add dp[${i-1}][${j-1}] * count('${targetChar}')`);
+                log(`     dp[${i}][${j}] = ${prevVal} + (${useWaysBase} * ${count}) = ${dp[i][j]}`);
+                currentActionDisplay.innerHTML = `<strong>2. Use Option:</strong><br/>Add ways from diagonal: ${prevVal} + (${useWaysBase} × ${count}) = <strong>${dp[i][j]}</strong>`;
+                cell.textContent = dp[i][j].toString();
+                cell.classList.add('updated');
+            } else {
+                 log(`  2. (Use): No '${targetChar}' in col ${j-1}. No change.`);
+                 currentActionDisplay.innerHTML = `<strong>2. Use Option:</strong><br/>No '${targetChar}' in column ${j-1} to use.`;
+            }
+            yield; 
+        }
+    }
+
+    // --- End ---
+    clearHighlights();
+    const finalResult = dp[n][k];
+    log(`--- Weaving complete! Total ways: ${finalResult} ---`);
+    currentActionDisplay.textContent = 'Weaving Complete!';
+    finalVerdictDisplay.textContent = finalResult.toString();
+    const finalCell = document.getElementById(`cell-${n}-${k}`);
+    finalCell.classList.add('final-answer');
+}
+
+function initializeAnimation() {
+    simulationRunning = false;
+    
+    try {
+        WORDS = wordsInput.value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        TARGET = targetInput.value.toLowerCase();
+        if (WORDS.length > 0) {
+            const len = WORDS[0].length;
+            if (WORDS.some(w => w.length !== len)) throw new Error("All words must have the same length.");
+        } else if (TARGET.length > 0) {
+             throw new Error("Cannot form a target with no words.");
+        }
+    } catch(e) { alert(e.message || "Invalid input."); return; }
+    
+    logOutput.innerHTML = '';
+    currentActionDisplay.innerHTML = 'Ready to weave.';
+    finalVerdictDisplay.innerHTML = '0';
+    
+    if (WORDS.length === 0 || TARGET.length === 0) {
+        gridContainer.innerHTML = 'Not enough data to weave.';
+        return;
+    }
+    
+    const n = TARGET.length, k = WORDS[0].length;
+    let tableHTML = '<table id="loom-grid"><thead><tr><th class="header-char">t\\k</th><th class="header-char">{}</th>';
+    for(let j=0; j<k; j++) tableHTML += `<th>${j}</th>`;
+    tableHTML += '</tr></thead><tbody>';
+    tableHTML += `<tr><th class="header-char">{}</th>`;
+    for(let j=0; j<=k; j++) tableHTML += `<td id="cell-0-${j}"></td>`;
+    tableHTML += '</tr>';
+    for(let i=0; i<n; i++) {
+        tableHTML += `<tr><th class="header-char">${TARGET[i]}</th>`;
+        for(let j=0; j<=k; j++) tableHTML += `<td id="cell-${i+1}-${j}"></td>`;
+        tableHTML += '</tr>';
+    }
+    tableHTML += '</tbody></table>';
+    gridContainer.innerHTML = tableHTML;
+    
+    animationGenerator = animationEngine();
+    simulationRunning = true;
+    updateButtonState();
+    log("Weaver is ready. Click 'Next Step' to begin.");
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning;
+    if (!nextStepButton.disabled) {
+        startButton.textContent = 'Restart';
+    }
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    
+    nextStepButton.disabled = true;
+    
+    const result = animationGenerator.next();
+
+    if (result.done) {
+        simulationRunning = false;
+    }
+    
+    await new Promise(r => setTimeout(r, 600));
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    wordsInput = document.getElementById('words_input');
+    targetInput = document.getElementById('target_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    gridContainer = document.getElementById('loom-grid-container');
+    currentActionDisplay = document.getElementById('current-action-display');
+    finalVerdictDisplay = document.getElementById('final-verdict-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

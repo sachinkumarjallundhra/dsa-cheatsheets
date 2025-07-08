@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Cameras (DP) Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1600px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-camera { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-camera label { font-weight: bold; margin-right: 5px; }
+        .controls-camera input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 300px; }
+        .controls-camera button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-camera button:hover { background-color: #0056b3; }
+        .controls-camera button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-camera { display: grid; grid-template-columns: minmax(350px, 1fr) 2fr; gap: 15px; }
+        .left-panel-camera, .right-panel-camera { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        #final-cost-display { text-align: center; font-size: 2.5em; font-weight: bold; color: #28a745; }
+        .cost-ledgers { display: flex; justify-content: space-around; margin-top: 10px; }
+        .ledger { text-align: center; }
+        .ledger .title { font-weight: bold; font-size: 0.9em; }
+        .ledger .value { font-size: 1.2em; font-family: monospace; }
+        #dp0-val { color: #dc3545; }
+        #dp1-val { color: #007bff; }
+        #dp2-val { color: #ffc107; }
+
+        .tree-container { min-height: 500px; overflow: auto; position: relative; background-color: #f0f2f5; }
+        #p5_canvas_target_div { width:100%; height:100%; min-height: 480px; display: flex; justify-content: center; align-items: flex-start; }
+        
+        .log-container-camera { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Binary Tree Cameras: The Auditor's Report (DP)</h1>
+
+        <div class="controls-camera">
+            <label for="tree_input">Tree (LeetCode format):</label>
+            <input type="text" id="tree_input" value="[0,0,null,0,null,0,null,null,0]">
+            <button id="start_button">Begin Audit</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-camera">
+            <div class="left-panel-camera">
+                <div class="panel">
+                    <h2>Final Minimum Cost</h2>
+                    <div id="final-cost-display">?</div>
+                </div>
+                 <div class="panel">
+                    <h2>Current Node's Audit</h2>
+                    <div class="cost-ledgers">
+                        <div class="ledger">
+                            <div class="title">Uncovered (🚨)</div>
+                            <div id="dp0-val" class="value">-</div>
+                        </div>
+                         <div class="ledger">
+                            <div class="title">Covered (✅)</div>
+                            <div id="dp1-val" class="value">-</div>
+                        </div>
+                         <div class="ledger">
+                            <div class="title">Has Camera (📸)</div>
+                            <div id="dp2-val" class="value">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="right-panel-camera">
+                 <div class="panel tree-container">
+                    <h2>Forest Map</h2>
+                    <div id="p5_canvas_target_div"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-camera">
+            <h2>Auditor's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+let p5Instance; 
+
+// --- STATE & CONFIG ---
+let animationSteps = []; let currentStep = -1;
+let simulationRunning = false;
+let globalState = { treeNodes: {} };
+
+// --- DOM ELEMENTS ---
+let treeInput, startButton, nextStepButton, finalCostDisplay, dp0Val, dp1Val, dp2Val, logOutput;
+
+// --- p5.js Sketch ---
+const p5_sketch_definition = (p, getState) => {
+    // p5.js drawing code is nearly identical to the previous version,
+    // but it will draw the dp array values on the nodes.
+    const nodeSize = 50;
+    function postOrderLayout(nodeId, depth, nextX) {
+        const { treeNodes } = getState();
+        const node = treeNodes[nodeId];
+        if (!node) return nextX;
+        node.y = depth * 100;
+
+        let leftX = nextX;
+        if(node.left) leftX = postOrderLayout(node.left, depth + 1, nextX);
+        let rightX = leftX;
+        if(node.right) rightX = postOrderLayout(node.right, depth + 1, leftX);
+        
+        if (!node.left && !node.right) { node.x = nextX; return nextX + nodeSize + 20; }
+        if (node.left && node.right) { node.x = (treeNodes[node.left].x + treeNodes[node.right].x) / 2; }
+        else if (node.left) { node.x = treeNodes[node.left].x; }
+        else { node.x = treeNodes[node.right].x; }
+        return rightX;
+    }
+    p.setup = () => {
+        const container = document.getElementById('p5_canvas_target_div');
+        p.createCanvas(container.clientWidth || 800, container.clientHeight || 500).parent('p5_canvas_target_div');
+        p.textAlign(p.CENTER, p.CENTER); p.noLoop();
+    };
+    p.draw = () => {
+        p.background(240, 242, 245);
+        const { treeNodes } = getState();
+        if (Object.keys(treeNodes).length === 0) return;
+        postOrderLayout('node-0', 0, 0);
+
+        const allNodes = Object.values(treeNodes);
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        allNodes.forEach(node => { if(node.x !== undefined) { minX = Math.min(minX, node.x); maxX = Math.max(maxX, node.x); minY = Math.min(minY, node.y); maxY = Math.max(maxY, node.y); } });
+        
+        const padding = 60;
+        const requiredWidth = Math.max(p.width, (maxX - minX) + 2 * padding + nodeSize);
+        const requiredHeight = Math.max(p.height, (maxY - minY) + 2 * padding + nodeSize);
+        if (Math.abs(p.width - requiredWidth) > 10 || Math.abs(p.height - requiredHeight) > 10) p.resizeCanvas(requiredWidth, requiredHeight);
+        const offsetX = (p.width / 2) - ((minX + maxX) / 2); const offsetY = padding;
+
+        allNodes.forEach(node => {
+            if (node.left && treeNodes[node.left]) p.line(node.x + offsetX, node.y + offsetY, treeNodes[node.left].x + offsetX, treeNodes[node.left].y + offsetY);
+            if (node.right && treeNodes[node.right]) p.line(node.x + offsetX, node.y + offsetY, treeNodes[node.right].x + offsetX, treeNodes[node.right].y + offsetY);
+        });
+        allNodes.forEach(node => {
+            if (node.x === undefined) return;
+            p.strokeWeight(2); p.stroke(108, 117, 125); p.fill(255);
+            if(node.isActive) { p.strokeWeight(4); p.stroke(0, 123, 255); }
+            p.circle(node.x + offsetX, node.y + offsetY, nodeSize);
+            
+            p.noStroke(); p.fill(0); p.textSize(10);
+            if(node.dp) {
+                p.fill('#dc3545'); p.text(node.dp[0], node.x + offsetX - 15, node.y + offsetY + 10);
+                p.fill('#007bff'); p.text(node.dp[1], node.x + offsetX, node.y + offsetY + 10);
+                p.fill('#ffc107'); p.text(node.dp[2], node.x + offsetX + 15, node.y + offsetY + 10);
+            }
+        });
+    };
+    p.customRedraw = () => { if(p && typeof p.redraw === 'function' && p.width) p.redraw(); };
+};
+
+// --- CORE LOGIC & ANIMATION ---
+function log(message) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; }
+function updateButtonState() { nextStepButton.disabled = !simulationRunning; if (!nextStepButton.disabled) startButton.textContent = 'Restart'; }
+function getState() { return globalState; }
+
+function buildTreeForAnim(arr) {
+    if (!arr || arr.length === 0 || arr[0] === null) return null;
+    let nodes = arr.map((val, i) => val === null ? null : { id: `node-${i}`, val: val, left: null, right: null, dp: null, isActive: false });
+    let queue = [nodes[0]];
+    let i = 1;
+    while (queue.length > 0 && i < arr.length) {
+        let curr = queue.shift();
+        if (i < arr.length && nodes[i]) { curr.left = nodes[i].id; queue.push(nodes[i]); }
+        i++;
+        if (i < arr.length && nodes[i]) { curr.right = nodes[i].id; queue.push(nodes[i]); }
+        i++;
+    }
+    return nodes.reduce((acc, node) => node ? { ...acc, [node.id]: node } : acc, {});
+}
+
+// Generates steps by simulating the post-order traversal
+function generateAnimationSteps() {
+    animationSteps = [];
+    if (Object.keys(globalState.treeNodes).length === 0) return;
+    
+    function dfs(nodeId) {
+        if (!nodeId) return [0, 0, 1000]; // Base case for null nodes
+        
+        animationSteps.push({type: 'TRAVERSE', nodeId});
+        
+        const left = dfs(globalState.treeNodes[nodeId].left);
+        const right = dfs(globalState.treeNodes[nodeId].right);
+        
+        const minLeft = Math.min(left[1], left[2]);
+        const minRight = Math.min(right[1], right[2]);
+        
+        const dp0 = left[1] + right[1];
+        const dp2 = 1 + Math.min(left[0], minLeft) + Math.min(right[0], minRight);
+        const dp1 = Math.min(left[2] + minRight, right[2] + minLeft);
+        
+        const res = [dp0, dp1, dp2];
+        animationSteps.push({type: 'EVALUATE', nodeId, left, right, res});
+        return res;
+    }
+    
+    const finalRes = dfs('node-0');
+    animationSteps.push({type: 'END', finalRes});
+}
+
+function initializeAnimation() {
+    simulationRunning = false;
+    let arr;
+    try {
+        arr = JSON.parse(treeInput.value.replace(/null/g, 'null'));
+        if(!Array.isArray(arr)) throw new Error();
+    } catch(e) { alert("Invalid tree format."); return; }
+
+    logOutput.innerHTML = '';
+    dp0Val.textContent = '-'; dp1Val.textContent = '-'; dp2Val.textContent = '-';
+    finalCostDisplay.textContent = '?';
+    
+    globalState = { treeNodes: buildTreeForAnim(arr) };
+    
+    generateAnimationSteps();
+    
+    simulationRunning = true;
+    currentStep = -1;
+    updateButtonState();
+    if(p5Instance) p5Instance.customRedraw();
+    log("Auditor is ready. Click 'Next Step' to begin.");
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true;
+
+    Object.values(globalState.treeNodes).forEach(n => n.isActive = false);
+
+    switch(step.type) {
+        case 'TRAVERSE':
+            globalState.treeNodes[step.nodeId].isActive = true;
+            log(`Auditor travels to node ${step.nodeId.split('-')[1]}...`);
+            break;
+        case 'EVALUATE':
+            const {nodeId, left, right, res} = step;
+            globalState.treeNodes[nodeId].isActive = true;
+            globalState.treeNodes[nodeId].dp = res;
+            
+            dp0Val.textContent = res[0]; dp1Val.textContent = res[1]; dp2Val.textContent = res[2] >= 1000 ? '∞' : res[2];
+            
+            log(`--- Auditing node ${nodeId.split('-')[1]} ---`);
+            log(`  Received from left: [${left.join(',')}]`);
+            log(`  Received from right: [${right.join(',')}]`);
+            log(`  Calculated for self: [${res.join(',')}]`);
+            log(`  Passing costs up to parent...`);
+            break;
+        case 'END':
+            log("--- Audit Complete! ---");
+            const finalCost = Math.min(step.finalRes[1], step.finalRes[2]);
+            finalCostDisplay.textContent = finalCost;
+            log(`Final decision at root: min(covered: ${step.finalRes[1]}, has_camera: ${step.finalRes[2]}) = ${finalCost}`);
+            simulationRunning = false;
+            break;
+    }
+
+    if (p5Instance) p5Instance.customRedraw();
+    await new Promise(r => setTimeout(r, 800));
+    updateButtonState();
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    finalCostDisplay = document.getElementById('final-cost-display');
+    dp0Val = document.getElementById('dp0-val');
+    dp1Val = document.getElementById('dp1-val');
+    dp2Val = document.getElementById('dp2-val');
+    logOutput = document.getElementById('log_output');
+
+    p5Instance = new p5((p) => p5_sketch_definition(p, getState));
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Break II Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>✂️ Word Break II – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Word Break II</b> problem asks you to return all possible sentences where a given string can be segmented into a space-separated sequence of one or more dictionary words.
+    </p>
+
+    <h2>🧱 Pattern Template (DFS + Memoization)</h2>
+    <pre><code>class Solution {
+    public List&lt;String&gt; wordBreak(String s, List&lt;String&gt; wordDict) {
+        Set&lt;String&gt; dict = new HashSet&lt;&gt;(wordDict);
+        Map&lt;String, List&lt;String&gt;&gt; memo = new HashMap&lt;&gt;();
+        return dfs(s, dict, memo);
+    }
+
+    private List&lt;String&gt; dfs(String s, Set&lt;String&gt; dict, Map&lt;String, List&lt;String&gt;&gt; memo) {
+        if (memo.containsKey(s)) return memo.get(s);
+        List&lt;String&gt; res = new ArrayList&lt;&gt;();
+        if (s.isEmpty()) {
+            res.add("");
+            return res;
+        }
+        for (int end = 1; end &lt;= s.length(); end++) {
+            String word = s.substring(0, end);
+            if (dict.contains(word)) {
+                List&lt;String&gt; sublist = dfs(s.substring(end), dict, memo);
+                for (String sub : sublist) {
+                    res.add(word + (sub.isEmpty() ? "" : " " + sub));
+                }
+            }
+        }
+        memo.put(s, res);
+        return res;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/word_break_ii_animation.html'">▶️ View Animation</button>
+        <h2>🎥 Video Explanation</h2>
+    <ul>
+      <li>
+        <a href="https://www.youtube.com/watch?v=QgLKdluDo08&ab_channel=NeetCodeIO" target="_blank" rel="noopener noreferrer">
+          NeetCodeIO: Word Break II (YouTube)
+        </a>
+      </li>
+    </ul>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> Exponential in the worst case, as every substring can be broken in multiple ways.</li>
+      <li><b>Space Complexity:</b> <code>O(n^2 + k)</code>, where <code>n</code> is the string length and <code>k</code> is the total number of characters in all sentences.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>All possible segmentations of a string using a dictionary.</li>
+      <li>Backtracking with memoization for repeated subproblems.</li>
+      <li>Natural language processing and sentence generation.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/word-break-ii/" target="_blank" rel="noopener noreferrer">
+          140. Word Break II
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">DP</span>
+        <span class="badge badge-tag">Backtracking</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "catsanddog", wordDict = ["cat","cats","and","sand","dog"]
+Output: ["cats and dog","cat sand dog"]
+
+Explanation:
+- All possible sentences using the dictionary words.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use memoization to avoid recomputation for the same substring.</li>
+      <li>Try all possible prefixes and recurse on the suffix.</li>
+      <li>For just a yes/no answer, see Word Break I.</li>
+    </ul>
+  </div>
+</body>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combination Sum (List of Combinations) DP Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-combo { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-combo label { font-weight: bold; margin-right: 5px; }
+        .controls-combo input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
+        .controls-combo button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-combo button:hover { background-color: #0056b3; }
+        .controls-combo button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-combo { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-combo, .right-panel-combo { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .ingredient-list { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .ingredient { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 8px; border: 2px solid #5a3d90; color: white; font-weight: bold; transition: all 0.3s ease; }
+        .ingredient .emoji { font-size: 1.8em; }
+        .ingredient.active { background-color: #ffc107; border-color: #e0a800; transform: scale(1.2); }
+        .ingredient[data-value="2"] { background-color: #c0392b; border-color: #a03024; }
+        .ingredient[data-value="3"] { background-color: #2980b9; border-color: #206694; }
+        .ingredient[data-value="6"] { background-color: #27ae60; border-color: #1f8a4c; }
+
+        .dp-scroll-container { min-height: 250px; overflow-x: auto; padding: 10px; }
+        .dp-scroll { display: flex; gap: 5px; align-items: flex-start; }
+        .dp-cell { flex-shrink: 0; width: 150px; min-height: 200px; border: 1px solid #ccc; border-radius: 4px; display: flex; flex-direction: column; align-items: center; transition: all 0.3s ease; background-color: #fff; padding: 5px; }
+        .dp-cell .index { font-size: 0.8em; color: #6c757d; font-weight: bold; background: #f8f9fa; width: 100%; text-align: center; padding: 2px 0; }
+        .dp-cell .recipes-list { width: 100%; margin-top: 5px; }
+        
+        .recipe { background: #e9ecef; border: 1px solid #dee2e6; padding: 4px; border-radius: 4px; margin-bottom: 4px; font-family: 'Courier New', monospace; font-size: 0.9em; animation: popIn 0.4s ease-out; }
+
+        .dp-cell.highlight-current { background-color: #fff3cd !important; }
+        .dp-cell.highlight-source { background-color: #cfe2ff !important; }
+
+        #current-action-display { text-align:center; margin:8px 0; font-weight:bold; min-height:1.1em; font-size:1em; }
+        
+        .log-container-combo { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes popIn { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Combination Sum: The Alchemist's Cookbook</h1>
+
+        <div class="controls-combo">
+            <label for="candidates_input">Ingredients (comma-separated):</label>
+            <input type="text" id="candidates_input" value="2, 3, 6">
+            <label for="target_input">Potion Cost:</label>
+            <input type="number" id="target_input" value="7">
+            <button id="start_button">Start Brewing</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-combo">
+            <div class="left-panel-combo">
+                <div class="panel">
+                    <h2>Available Ingredients</h2>
+                    <div id="ingredient-list-display" class="ingredient-list"></div>
+                </div>
+            </div>
+            <div class="right-panel-combo">
+                 <div class="panel">
+                    <h2>The Cookbook (DP Scroll)</h2>
+                    <div id="current-action-display"></div>
+                    <div class="dp-scroll-container">
+                        <div id="dp_scroll_display" class="dp-scroll"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-combo">
+            <h2>Alchemist's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+let CANDIDATES = []; let TARGET = 0;
+const EMOJIS = ['💎', '👻', '🐉', '🪶', '🍄', '🌿', '🧪'];
+let animationSteps = []; let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let candidatesInput, targetInput, startButton, nextStepButton, ingredientListDisplay, dpScrollDisplay, currentActionDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() {
+    document.querySelectorAll('.dp-cell').forEach(c => c.classList.remove('highlight-current', 'highlight-source'));
+    document.querySelectorAll('.ingredient').forEach(i => i.classList.remove('active'));
+}
+function renderRecipes(targetElement, recipes) {
+    targetElement.innerHTML = recipes.map(r => `<div class="recipe">[${r.join(', ')}]</div>`).join('');
+}
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    
+    let dp = Array(TARGET + 1).fill(0).map(() => []);
+    dp[0].push([]); // Base case: one empty list
+    animationSteps.push({ type: 'START' });
+    animationSteps.push({ type: 'BASE_CASE' });
+
+    for (let i = 0; i < CANDIDATES.length; i++) {
+        const candidate = CANDIDATES[i];
+        animationSteps.push({ type: 'PROCESS_INGREDIENT', index: i, candidate });
+        for (let j = candidate; j <= TARGET; j++) {
+            const sourceCombs = dp[j - candidate];
+            if (sourceCombs.length > 0) {
+                let newCombs = [];
+                for(const comb of sourceCombs) {
+                    const newComb = [...comb, candidate];
+                    dp[j].push(newComb);
+                    newCombs.push(newComb);
+                }
+                animationSteps.push({ type: 'UPDATE_CELL', candidate, index: j, sourceIndex: j - candidate, newCombs });
+            }
+        }
+    }
+    animationSteps.push({ type: 'END', result: dp[TARGET] });
+}
+
+function initializeAnimation() {
+    log("Preparing the cookbook...");
+    simulationRunning = false; currentStep = -1;
+
+    try {
+        CANDIDATES = candidatesInput.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0).sort((a,b)=>a-b);
+        TARGET = parseInt(targetInput.value, 10);
+        if (CANDIDATES.length === 0 || isNaN(TARGET) || TARGET < 0) throw new Error();
+    } catch(e) { alert("Invalid input. Provide positive ingredients and a non-negative target."); return; }
+
+    logOutput.innerHTML = '';
+    currentActionDisplay.textContent = 'Ready to brew.';
+    
+    ingredientListDisplay.innerHTML = '';
+    CANDIDATES.forEach((c, i) => {
+        ingredientListDisplay.innerHTML += `<div class="ingredient" id="ing-${i}" data-value="${c}"><span class="emoji">${EMOJIS[i % EMOJIS.length]}</span><span>${c}</span></div>`;
+    });
+    
+    dpScrollDisplay.innerHTML = '';
+    for (let i = 0; i <= TARGET; i++) {
+        dpScrollDisplay.innerHTML += `<div class="dp-cell" id="cell-${i}"><div class="index">Cost: ${i}</div><div class="recipes-list" id="recipes-${i}"></div></div>`;
+    }
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Restart';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+
+    switch(step.type) {
+        case 'START':
+            log("Opening the cookbook...");
+            break;
+
+        case 'BASE_CASE':
+            log("Base Case: Cost 0 has one recipe: the empty set [].");
+            renderRecipes(document.getElementById('recipes-0'), [[]]);
+            break;
+
+        case 'PROCESS_INGREDIENT':
+            log(`--- Considering Ingredient: ${step.candidate} ---`);
+            const ingDiv = document.getElementById(`ing-${step.index}`);
+            ingDiv.classList.add('active');
+            currentActionDisplay.innerHTML = `Considering Ingredient <div class="ingredient active" style="display:inline-flex; vertical-align:middle; margin:0 5px;" data-value="${step.candidate}"><span class="emoji">${ingDiv.querySelector('.emoji').textContent}</span><span>${step.candidate}</span></div> Scanning the scroll.`;
+            break;
+            
+        case 'UPDATE_CELL':
+            const cell = document.getElementById(`cell-${step.index}`);
+            const sourceCell = document.getElementById(`cell-${step.sourceIndex}`);
+            cell.classList.add('highlight-current');
+            sourceCell.classList.add('highlight-source');
+
+            log(`  At cost ${step.index}: Reading recipes from cost ${step.sourceIndex}.`);
+            currentActionDisplay.innerHTML = `At cost <strong>${step.index}</strong>: Building new recipes from cost <strong>${step.sourceIndex}</strong>.`;
+            
+            await new Promise(r => setTimeout(r, 900));
+            
+            const recipesDiv = document.getElementById(`recipes-${step.index}`);
+            step.newCombs.forEach(r => {
+                log(`    Adding new recipe [${r.join(', ')}] to dp[${step.index}]`);
+                recipesDiv.innerHTML += `<div class="recipe">[${r.join(', ')}]</div>`;
+            });
+            break;
+
+        case 'END':
+            log(`--- Brewing complete! Found ${step.result.length} combinations for cost ${TARGET}. ---`);
+            currentActionDisplay.innerHTML = `<strong>Brewing Complete! Found ${step.result.length} recipes.</strong>`;
+            const finalCell = document.getElementById(`cell-${TARGET}`);
+            finalCell.classList.add('highlight-current');
+            finalCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if (simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    candidatesInput = document.getElementById('candidates_input');
+    targetInput = document.getElementById('target_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    ingredientListDisplay = document.getElementById('ingredient-list-display');
+    dpScrollDisplay = document.getElementById('dp_scroll_display');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

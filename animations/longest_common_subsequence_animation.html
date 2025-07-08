@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Common Subsequence DP Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-lcs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-lcs label { font-weight: bold; margin-right: 5px; }
+        .controls-lcs input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
+        .controls-lcs button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-lcs button:hover { background-color: #0056b3; }
+        .controls-lcs button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-lcs { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-lcs, .right-panel-lcs { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        #final-lcs-display { text-align: center; font-size: 1.5em; font-family: 'Courier New', monospace; font-weight: bold; color: #28a745; min-height: 1.5em; }
+        #current-action-display { text-align: center; min-height: 3em; font-weight: bold; }
+
+        .grid-container { overflow: auto; }
+        #lcs-grid { border-collapse: collapse; margin: 10px auto; }
+        #lcs-grid th, #lcs-grid td { border: 1px solid #ccc; width: 50px; height: 50px; text-align: center; font-size: 1.2em; font-weight: bold; background-color: #f8f9fa; transition: background-color 0.3s ease; }
+        #lcs-grid th { background-color: #e9ecef; }
+        
+        #lcs-grid td.highlight-current { outline: 3px solid #dc3545; z-index: 5; transform: scale(1.05); }
+        #lcs-grid td.highlight-diagonal { background-color: #d4edda !important; }
+        #lcs-grid td.highlight-prev { background-color: #cfe2ff !important; }
+        #lcs-grid td.highlight-backtrack { background-color: rgba(255, 193, 7, 0.4) !important; }
+        
+        .log-container-lcs { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Longest Common Subsequence: The Scribes' Scrolls</h1>
+
+        <div class="controls-lcs">
+            <label for="text1_input">Scroll 1:</label>
+            <input type="text" id="text1_input" value="AGGTAB">
+            <label for="text2_input">Scroll 2:</label>
+            <input type="text" id="text2_input" value="GXTXAYB">
+            <button id="start_button">Compare Scrolls</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-lcs">
+            <div class="left-panel-lcs">
+                <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="current-action-display"></div>
+                </div>
+                 <div class="panel">
+                    <h2>Found Sacred Text (LCS)</h2>
+                    <div id="final-lcs-display"></div>
+                </div>
+            </div>
+            <div class="right-panel-lcs">
+                 <div class="panel">
+                    <h2>Comparison Grid</h2>
+                    <div class="grid-container">
+                       <div id="lcs-grid-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-lcs">
+            <h2>Scribe's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+let TEXT1 = "", TEXT2 = "";
+let animationSteps = [];
+let currentStep = -1;
+let simulationRunning = false;
+let dpGrid = []; // To store final values for backtracking
+
+// --- DOM ELEMENTS ---
+let text1Input, text2Input, startButton, nextStepButton, gridContainer, currentActionDisplay, finalLCSDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() {
+    document.querySelectorAll('#lcs-grid td').forEach(c => c.classList.remove('highlight-current', 'highlight-diagonal', 'highlight-prev'));
+    document.querySelectorAll('#lcs-grid th').forEach(h => h.style.backgroundColor = '');
+}
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    if (!TEXT1 || !TEXT2) return;
+    const m = TEXT1.length, n = TEXT2.length;
+    dpGrid = Array(m + 1).fill(0).map(() => Array(n + 1).fill(0));
+    
+    animationSteps.push({ type: 'START' });
+
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            const char1 = TEXT1.charAt(i - 1);
+            const char2 = TEXT2.charAt(j - 1);
+            const step = { type: 'PROCESS_CELL', i, j, char1, char2 };
+            if (char1 === char2) {
+                dpGrid[i][j] = 1 + dpGrid[i - 1][j - 1];
+                step.match = true;
+            } else {
+                dpGrid[i][j] = Math.max(dpGrid[i - 1][j], dpGrid[i][j - 1]);
+                step.match = false;
+            }
+            step.result = dpGrid[i][j];
+            animationSteps.push(step);
+        }
+    }
+    animationSteps.push({ type: 'END', finalLength: dpGrid[m][n] });
+
+    // Backtracking steps
+    let i = m, j = n;
+    while(i > 0 && j > 0) {
+        animationSteps.push({ type: 'BACKTRACK', i, j });
+        if (TEXT1[i-1] === TEXT2[j-1]) {
+            i--; j--;
+        } else if (dpGrid[i-1][j] > dpGrid[i][j-1]) {
+            i--;
+        } else {
+            j--;
+        }
+    }
+}
+
+function initializeAnimation() {
+    log("Preparing the scrolls and grid...");
+    simulationRunning = false; currentStep = -1;
+
+    TEXT1 = text1Input.value; TEXT2 = text2Input.value;
+    if (!TEXT1 || !TEXT2) return;
+    
+    logOutput.innerHTML = '';
+    currentActionDisplay.innerHTML = '';
+    finalLCSDisplay.innerHTML = '';
+    
+    const m = TEXT1.length, n = TEXT2.length;
+    let tableHTML = '<table id="lcs-grid"><thead><tr><th></th><th>{}</th>';
+    for(let j=0; j<n; j++) tableHTML += `<th id="hcol-${j}">${TEXT2[j]}</th>`;
+    tableHTML += '</tr></thead><tbody>';
+    tableHTML += `<tr><th>{}</th>`;
+    for(let j=0; j<=n; j++) tableHTML += `<td id="cell-0-${j}">0</td>`;
+    tableHTML += '</tr>';
+    for(let i=0; i<m; i++) {
+        tableHTML += `<tr><th id="hrow-${i}">${TEXT1[i]}</th>`;
+        tableHTML += `<td id="cell-${i+1}-0">0</td>`;
+        for(let j=0; j<n; j++) {
+            tableHTML += `<td id="cell-${i+1}-${j+1}"></td>`;
+        }
+        tableHTML += '</tr>';
+    }
+    tableHTML += '</tbody></table>';
+    gridContainer.innerHTML = tableHTML;
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Restart';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+    
+    switch(step.type) {
+        case 'START':
+            log("Scribes begin comparing the scrolls...");
+            break;
+            
+        case 'PROCESS_CELL':
+            const { i, j, char1, char2, match, result } = step;
+            log(`--- Comparing s1[${i-1}] ('${char1}') and s2[${j-1}] ('${char2}') ---`);
+            const cell = document.getElementById(`cell-${i}-${j}`);
+            const hrow = document.getElementById(`hrow-${i-1}`);
+            const hcol = document.getElementById(`hcol-${j-1}`);
+            cell.classList.add('highlight-current');
+            hrow.style.backgroundColor = '#fff3cd';
+            hcol.style.backgroundColor = '#fff3cd';
+            
+            if(match) {
+                currentActionDisplay.innerHTML = `Characters '${char1}' match! ✅<br/>New length = 1 + (diagonal value)`;
+                const diagCell = document.getElementById(`cell-${i-1}-${j-1}`);
+                diagCell.classList.add('highlight-diagonal');
+                log(`  Match! Result = 1 + dp[${i-1}][${j-1}] = ${result}.`);
+            } else {
+                currentActionDisplay.innerHTML = `Characters '${char1}' and '${char2}' do not match. ❌<br/>New length = max(above, left)`;
+                const upCell = document.getElementById(`cell-${i-1}-${j}`);
+                const leftCell = document.getElementById(`cell-${i}-${j-1}`);
+                upCell.classList.add('highlight-prev');
+                leftCell.classList.add('highlight-prev');
+                log(`  Mismatch. Result = max(dp[${i-1}][${j}], dp[${i}][${j-1}]) = ${result}.`);
+            }
+            await new Promise(r => setTimeout(r, 800));
+            cell.textContent = result;
+            break;
+
+        case 'END':
+            log(`--- Grid complete! LCS length is ${step.finalLength}. ---`);
+            currentActionDisplay.textContent = 'Comparison complete. Now finding the sacred text...';
+            const finalCell = document.getElementById(`cell-${TEXT1.length}-${TEXT2.length}`);
+            finalCell.style.outline = '3px solid #28a745';
+            break;
+        
+        case 'BACKTRACK':
+            document.getElementById(`cell-${step.i}-${step.j}`).classList.add('highlight-backtrack');
+            if(TEXT1[step.i-1] === TEXT2[step.j-1]){
+                log(`Backtracking: Found matching char '${TEXT1[step.i-1]}' at [${step.i},${step.j}]. Adding to LCS.`);
+                finalLCSDisplay.textContent = TEXT1[step.i-1] + finalLCSDisplay.textContent;
+                document.getElementById(`hrow-${step.i-1}`).style.backgroundColor = '#d4edda';
+                document.getElementById(`hcol-${step.j-1}`).style.backgroundColor = '#d4edda';
+            } else {
+                log(`Backtracking: No match at [${step.i},${step.j}]. Following larger value.`);
+            }
+            await new Promise(r => setTimeout(r, 400));
+            if (currentStep === animationSteps.length - 2) {
+                 log("--- Sacred text reconstruction complete! ---");
+                 currentActionDisplay.textContent = 'Sacred Text Found!';
+                 simulationRunning = false;
+            }
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    text1Input = document.getElementById('text1_input');
+    text2Input = document.getElementById('text2_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    gridContainer = document.getElementById('lcs-grid-container');
+    currentActionDisplay = document.getElementById('current-action-display');
+    finalLCSDisplay = document.getElementById('final-lcs-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

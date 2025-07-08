@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Change DP Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-coin-change { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-coin-change label { font-weight: bold; margin-right: 5px; }
+        .controls-coin-change input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 150px; }
+        .controls-coin-change button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-coin-change button:hover { background-color: #0056b3; }
+        .controls-coin-change button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-coin-change { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-coin-change, .right-panel-coin-change { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .coin-list { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .coin { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background-color: #ffc107; border: 2px solid #e0a800; color: #333; font-weight: bold; font-size: 1.1em; }
+        
+        #chosen-coins-display { min-height: 50px; padding: 10px; border: 1px dashed #ccc; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .chosen-coin { animation: popIn 0.3s ease-out; }
+
+        .dp-table-container { min-height: 200px; overflow-x: auto; padding: 10px; }
+        .dp-table { display: flex; gap: 5px; }
+        .dp-cell { flex-shrink: 0; width: 60px; height: 80px; border: 1px solid #ccc; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .dp-cell .index { font-size: 0.8em; color: #6c757d; font-weight: bold; }
+        .dp-cell .value { font-size: 1.5em; font-weight: bold; color: #212529; }
+        
+        .dp-cell.highlight-current { background-color: #fff3cd !important; outline: 2px solid #ffc107; }
+        .dp-cell.highlight-source { background-color: #cfe2ff !important; }
+        .dp-cell.highlight-final { animation: glowFinal 1.5s infinite alternate; }
+        .dp-cell.highlight-backtrack { background-color: rgba(40, 167, 69, 0.25) !important; outline: 2px solid #28a745; }
+
+        #current-action-display { text-align:center; margin:8px 0; font-weight:bold; min-height:3em; font-size:0.9em; transition: color 0.3s; }
+        #current-action-display.info { color: #0d6efd; }
+        #current-action-display.decision { color: #198754; }
+
+        .log-container-coin-change { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log-output { white-space: pre-wrap; word-wrap: break-word; max-height: 120px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes popIn { from {transform: scale(0.5); opacity:0;} to {transform: scale(1); opacity:1;} }
+        @keyframes glowFinal { from { box-shadow: 0 0 2px #007bff; } to { box-shadow: 0 0 12px #007bff; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Coin Change Problem (Minimum Coins)</h1>
+
+        <div class="controls-coin-change">
+            <label for="coins_input">Available Coins (comma-separated):</label>
+            <input type="text" id="coins_input" value="1,2,5">
+            <label for="amount_input">Target Amount:</label>
+            <input type="number" id="amount_input" value="11">
+            <button id="start_button">Start/Reset</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-coin-change">
+            <div class="left-panel-coin-change">
+                <div class="panel">
+                    <h2>Available Coins</h2>
+                    <div id="coin-list-display" class="coin-list"></div>
+                </div>
+                <div class="panel">
+                    <h2>Result: Chosen Coins</h2>
+                    <div id="chosen-coins-display"></div>
+                </div>
+            </div>
+            <div class="right-panel-coin-change">
+                 <div class="panel">
+                    <h2>Minimum Coins Table (DP Array)</h2>
+                    <div id="current-action-display" class="info"></div>
+                    <div class="dp-table-container">
+                        <div id="dp_table_display" class="dp-table"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-coin-change">
+            <h2>Execution Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE VARIABLES ---
+let COINS = [];
+let AMOUNT = 0;
+let dpTableValues = [];
+let animationSteps = [];
+let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let coinsInput, amountInput, startButton, nextStepButton, 
+    coinListDisplay, chosenCoinsDisplay, dpTableDisplay,
+    currentActionDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) {
+    if (logOutput) {
+        logOutput.innerHTML += `> ${message}\n`;
+        logOutput.scrollTop = logOutput.scrollHeight;
+    }
+}
+
+function clearHighlights() {
+    document.querySelectorAll('.dp-cell').forEach(cell => {
+        cell.classList.remove('highlight-current', 'highlight-source', 'highlight-backtrack');
+    });
+}
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    // Pre-calculate the entire DP table
+    dpTableValues = Array(AMOUNT + 1).fill(Infinity);
+    dpTableValues[0] = 0;
+
+    for (let i = 1; i <= AMOUNT; i++) {
+        for (const coin of COINS) {
+            if (i >= coin) {
+                dpTableValues[i] = Math.min(dpTableValues[i], 1 + dpTableValues[i - coin]);
+            }
+        }
+    }
+
+    // Create animation steps
+    animationSteps.push({ type: 'START' });
+    animationSteps.push({ type: 'BASE_CASE' });
+
+    for (let i = 1; i <= AMOUNT; i++) {
+        let calculations = [];
+        for (const coin of COINS) {
+            if (i >= coin) {
+                calculations.push({
+                    coin: coin,
+                    sourceIndex: i - coin,
+                    value: 1 + dpTableValues[i - coin]
+                });
+            }
+        }
+        animationSteps.push({
+            type: 'FILL_CELL',
+            targetIndex: i,
+            calculations: calculations,
+            result: dpTableValues[i]
+        });
+    }
+    
+    animationSteps.push({ type: 'FINAL_ANSWER' });
+
+    // Backtracking steps
+    let currentAmount = AMOUNT;
+    while (currentAmount > 0) {
+        let foundCoin = false;
+        for (const coin of COINS) {
+            if (currentAmount >= coin && dpTableValues[currentAmount] === 1 + dpTableValues[currentAmount - coin]) {
+                animationSteps.push({
+                    type: 'BACKTRACK',
+                    fromIndex: currentAmount,
+                    toIndex: currentAmount - coin,
+                    coinUsed: coin
+                });
+                currentAmount -= coin;
+                foundCoin = true;
+                break; // Take the first coin that satisfies the condition
+            }
+        }
+        if (!foundCoin) break; // Should not happen in a valid solution
+    }
+    
+    animationSteps.push({ type: 'CONCLUSION' });
+}
+
+function initializeAnimation() {
+    log("Initializing simulation...");
+    simulationRunning = false;
+    currentStep = -1;
+
+    try {
+        COINS = coinsInput.value.split(',').map(c => parseInt(c.trim(), 10)).filter(c => !isNaN(c) && c > 0);
+        COINS.sort((a,b) => b-a); // Sort descending for backtracking logic
+        AMOUNT = parseInt(amountInput.value, 10);
+        if (COINS.length === 0 || isNaN(AMOUNT) || AMOUNT < 0) throw new Error();
+    } catch(e) {
+        alert("Invalid input. Please provide positive, comma-separated coins and a non-negative amount.");
+        return;
+    }
+
+    // Reset UI
+    logOutput.innerHTML = '';
+    chosenCoinsDisplay.innerHTML = '';
+    currentActionDisplay.textContent = 'Ready. Click "Next Step" to begin.';
+    currentActionDisplay.className = 'info';
+    
+    coinListDisplay.innerHTML = '';
+    COINS.forEach(c => coinListDisplay.innerHTML += `<div class="coin">${c}</div>`);
+    
+    // Create DP Table Structure
+    dpTableDisplay.innerHTML = '';
+    for(let i = 0; i <= AMOUNT; i++) {
+        dpTableDisplay.innerHTML += `
+            <div class="dp-cell" id="cell-${i}">
+                <div class="index">${i}</div>
+                <div class="value" id="value-${i}">-</div>
+            </div>`;
+    }
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+    log(`Initialization complete. Coins: [${COINS.join(', ')}], Amount: ${AMOUNT}.`);
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Reset';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false;
+        updateButtonState();
+        return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true;
+    clearHighlights();
+
+    switch(step.type) {
+        case 'START':
+            log("Building the DP table. Each cell 'i' will store the minimum coins to make amount 'i'.");
+            currentActionDisplay.textContent = 'Starting DP table construction.';
+            break;
+
+        case 'BASE_CASE':
+            log("Base Case: 0 coins are needed to make an amount of 0.");
+            currentActionDisplay.textContent = 'Initializing base case for amount 0.';
+            document.getElementById(`cell-0`).classList.add('highlight-current');
+            document.getElementById(`value-0`).textContent = '0';
+            break;
+
+        case 'FILL_CELL':
+            const cell = document.getElementById(`cell-${step.targetIndex}`);
+            cell.classList.add('highlight-current');
+            
+            log(`--- Calculating for Amount ${step.targetIndex} ---`);
+            let actionHTML = `<strong>For Amount ${step.targetIndex}:</strong><br/>`;
+            
+            for (const calc of step.calculations) {
+                document.getElementById(`cell-${calc.sourceIndex}`).classList.add('highlight-source');
+                actionHTML += `Try coin ${calc.coin}: 1 + dp[${calc.sourceIndex}] = 1 + ${dpTableValues[calc.sourceIndex]} = ${calc.value}<br/>`;
+                log(`  Try coin ${calc.coin}: 1 + dp[${calc.sourceIndex}] (value ${dpTableValues[calc.sourceIndex]}) = ${calc.value}`);
+            }
+            currentActionDisplay.innerHTML = actionHTML;
+            
+            await new Promise(r => setTimeout(r, 1200));
+            clearHighlights();
+            cell.classList.add('highlight-current');
+
+            const resultText = step.result === Infinity ? '∞' : step.result;
+            log(`  Minimum is ${resultText}. Storing in dp[${step.targetIndex}].`);
+            currentActionDisplay.className = 'decision';
+            currentActionDisplay.innerHTML = `Minimum coins for amount <strong>${step.targetIndex}</strong> is <strong>${resultText}</strong>`;
+            document.getElementById(`value-${step.targetIndex}`).textContent = resultText;
+            break;
+
+        case 'FINAL_ANSWER':
+            const finalCell = document.getElementById(`cell-${AMOUNT}`);
+            finalCell.classList.add('highlight-final');
+            const finalValue = dpTableValues[AMOUNT] === Infinity ? 'not possible' : dpTableValues[AMOUNT];
+            log(`Table filled! The minimum coins needed is ${finalValue}.`);
+            currentActionDisplay.textContent = `Minimum coins for amount ${AMOUNT} is: ${finalValue}`;
+            break;
+        
+        case 'BACKTRACK':
+            if(animationSteps[currentStep - 1].type !== 'BACKTRACK') {
+                log("--- Backtracking to find which coins were used ---");
+            }
+            const fromCell = document.getElementById(`cell-${step.fromIndex}`);
+            const toCell = document.getElementById(`cell-${step.toIndex}`);
+            fromCell.classList.add('highlight-backtrack');
+            toCell.classList.add('highlight-source');
+
+            log(`From dp[${step.fromIndex}], use coin ${step.coinUsed} to get to dp[${step.toIndex}].`);
+            currentActionDisplay.textContent = `Found coin: ${step.coinUsed}`;
+            chosenCoinsDisplay.innerHTML += `<div class="coin chosen-coin">${step.coinUsed}</div>`;
+            break;
+
+        case 'CONCLUSION':
+            if (dpTableValues[AMOUNT] === Infinity) {
+                log("Conclusion: It's not possible to make the target amount with the given coins.");
+                currentActionDisplay.textContent = "Change is not possible!";
+            } else {
+                log("Backtracking complete. The optimal set of coins has been found.");
+                currentActionDisplay.textContent = 'Optimal set of coins found!';
+            }
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    coinsInput = document.getElementById('coins_input');
+    amountInput = document.getElementById('amount_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    coinListDisplay = document.getElementById('coin-list-display');
+    chosenCoinsDisplay = document.getElementById('chosen-coins-display');
+    dpTableDisplay = document.getElementById('dp_table_display');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

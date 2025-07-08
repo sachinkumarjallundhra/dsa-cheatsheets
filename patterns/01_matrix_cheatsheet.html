@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>01 Matrix Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🟩 01 Matrix – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>01 Matrix</b> problem asks you to find the distance of the nearest 0 for each cell in a binary matrix. The distance between two adjacent cells is 1.
+    </p>
+    <h2>🧱 Pattern Template (DP Two-Pass Solution)</h2>
+    <pre><code>class Solution {
+    public int[][] updateMatrix(int[][] mat) {
+        int m = mat.length, n = mat[0].length;
+        int[][] dist = new int[m][n];
+        int MAX = m + n; // Maximum possible distance
+
+        // First pass: top-left to bottom-right
+        for (int i = 0; i &lt; m; i++) {
+            for (int j = 0; j &lt; n; j++) {
+                if (mat[i][j] == 0) {
+                    dist[i][j] = 0;
+                } else {
+                    dist[i][j] = MAX;
+                    if (i &gt; 0) dist[i][j] = Math.min(dist[i][j], dist[i-1][j] + 1);
+                    if (j &gt; 0) dist[i][j] = Math.min(dist[i][j], dist[i][j-1] + 1);
+                }
+            }
+        }
+
+        // Second pass: bottom-right to top-left
+        for (int i = m - 1; i &gt;= 0; i--) {
+            for (int j = n - 1; j &gt;= 0; j--) {
+                if (i &lt; m - 1) dist[i][j] = Math.min(dist[i][j], dist[i+1][j] + 1);
+                if (j &lt; n - 1) dist[i][j] = Math.min(dist[i][j], dist[i][j+1] + 1);
+            }
+        }
+        return dist;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/01_matrix_animation.html'">▶️ View Animation</button>
+
+
+    <h2>🧱 Pattern Template (BFS Solution)</h2>
+    <pre><code>class Solution {
+    public int[][] updateMatrix(int[][] mat) {
+        int m = mat.length, n = mat[0].length;
+        int[][] dist = new int[m][n];
+        Queue&lt;int[]&gt; q = new LinkedList&lt;&gt;();
+        for (int i = 0; i &lt; m; i++) {
+            for (int j = 0; j &lt; n; j++) {
+                if (mat[i][j] == 0) {
+                    dist[i][j] = 0;
+                    q.offer(new int[]{i, j});
+                } else {
+                    dist[i][j] = Integer.MAX_VALUE;
+                }
+            }
+        }
+        int[][] dirs = {{1,0},{-1,0},{0,1},{0,-1}};
+        while (!q.isEmpty()) {
+            int[] cell = q.poll();
+            for (int[] d : dirs) {
+                int ni = cell[0] + d[0], nj = cell[1] + d[1];
+                if (ni &gt;= 0 &amp;&amp; ni &lt; m &amp;&amp; nj &gt;= 0 &amp;&amp; nj &lt; n) {
+                    if (dist[ni][nj] &gt; dist[cell[0]][cell[1]] + 1) {
+                        dist[ni][nj] = dist[cell[0]][cell[1]] + 1;
+                        q.offer(new int[]{ni, nj});
+                    }
+                }
+            }
+        }
+        return dist;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/01_matrix_animation_v2.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(m * n)</code></li>
+      <li><b>Space Complexity:</b> <code>O(m * n)</code></li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Shortest path in unweighted grid/graph.</li>
+      <li>Multi-source BFS.</li>
+      <li>Matrix transformation problems.</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/01-matrix/" target="_blank" rel="noopener noreferrer">
+          542. 01 Matrix
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">BFS</span>
+        <span class="badge badge-tag">DP</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: mat = [[0,0,0],[0,1,0],[1,1,1]]
+Output: [[0,0,0],[0,1,0],[1,2,1]]
+
+Explanation:
+- Each cell contains the distance to the nearest 0.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Start BFS from all 0s simultaneously (multi-source BFS).</li>
+      <li>Use <code>Integer.MAX_VALUE</code> for initial distances of 1s.</li>
+      <li>Can also be solved with DP in two passes (top-left to bottom-right, then reverse).</li>
+    </ul>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maximum Product Subarray Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-product { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-product label { font-weight: bold; margin-right: 5px; }
+        .controls-product input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-product button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-product button:hover { background-color: #0056b3; }
+        .controls-product button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-product { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-product, .right-panel-product { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; text-align: center; }
+        
+        .car-display { padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+        .car-display h3 { margin-top: 0; }
+        .car-display .value { font-size: 2em; font-weight: bold; }
+        #max-car { background-color: #fff3cd; color: #856404; }
+        #min-car { background-color: #d4d4d4; color: #383d41; }
+        #high-score { background-color: #d4edda; color: #155724; }
+
+        .track-container { min-height: 150px; overflow-x: auto; padding: 20px 10px; background-color: #34495e; border-radius: 5px; }
+        #rollercoaster-track { display: flex; gap: 20px; align-items: center; position: relative; }
+        .track-segment { flex-shrink: 0; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5em; font-weight: bold; color: white; transition: all 0.3s ease; }
+        .track-segment.positive { background-color: #2ecc71; }
+        .track-segment.negative { background-color: #3498db; }
+        .track-segment.active { transform: scale(1.3); box-shadow: 0 0 20px white; }
+
+        #current-action-display { margin-top: 10px; font-weight:bold; min-height:3em; font-size:1em; }
+        .swap-animation { animation: swap 0.5s ease-in-out; }
+        
+        .log-container-product { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes swap { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(20px); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Maximum Product Subarray Rollercoaster</h1>
+
+        <div class="controls-product">
+            <label for="set_input">Track Numbers (comma-separated):</label>
+            <input type="text" id="set_input" value="2, 3, -2, 4, -1">
+            <button id="start_button">Start Ride</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-product">
+            <div class="left-panel-product">
+                <div id="max-car" class="panel car-display">
+                    <h3>Max Car 🥇</h3>
+                    <div id="max-val" class="value">1</div>
+                </div>
+                <div id="min-car" class="panel car-display">
+                    <h3>Min Car 🥈</h3>
+                    <div id="min-val" class="value">1</div>
+                </div>
+                 <div id="high-score" class="panel car-display">
+                    <h3>High Score 🏆</h3>
+                    <div id="score-val" class="value">-</div>
+                </div>
+            </div>
+            <div class="right-panel-product">
+                 <div class="panel">
+                    <h2>The Ride</h2>
+                     <div id="current-action-display">Ready for the ride!</div>
+                    <div class="track-container">
+                       <div id="rollercoaster-track"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-product">
+            <h2>Ride Operator's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+let NUMS = [];
+let animationSteps = [];
+let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let setInput, startButton, nextStepButton, maxVal, minVal, scoreVal, trackDisplay, currentActionDisplay, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() { document.querySelectorAll('.track-segment').forEach(c => c.classList.remove('active')); }
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    if (NUMS.length === 0) return;
+    
+    let maxSoFar = 1, minSoFar = 1, maxResult = NUMS[0];
+    
+    animationSteps.push({ type: 'START', initialResult: maxResult });
+
+    for (let i = 0; i < NUMS.length; i++) {
+        const num = NUMS[i];
+        const step = { type: 'PROCESS', index: i, num, oldMax: maxSoFar, oldMin: minSoFar };
+        
+        const tempMax = maxSoFar * num;
+        const tempMin = minSoFar * num;
+        step.tempMax = tempMax;
+        step.tempMin = tempMin;
+        
+        if (num < 0) step.swap = true;
+        
+        maxSoFar = Math.max(num, tempMax, tempMin);
+        minSoFar = Math.min(num, tempMin, tempMax);
+        
+        step.newMax = maxSoFar;
+        step.newMin = minSoFar;
+        
+        maxResult = Math.max(maxResult, maxSoFar);
+        step.maxResult = maxResult;
+        
+        animationSteps.push(step);
+    }
+    animationSteps.push({ type: 'END', finalResult: maxResult });
+}
+
+function initializeAnimation() {
+    log("Setting up the rollercoaster...");
+    simulationRunning = false; currentStep = -1;
+
+    try {
+        NUMS = setInput.value.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        if (NUMS.length === 0) {
+            if (setInput.value.trim() !== '') throw new Error();
+            else { log("Empty track, nothing to do."); return; }
+        }
+    } catch(e) { alert("Invalid input. Please provide comma-separated numbers."); return; }
+
+    logOutput.innerHTML = '';
+    currentActionDisplay.innerHTML = 'Ready for the ride!';
+    maxVal.textContent = '1'; minVal.textContent = '1';
+    scoreVal.textContent = '-';
+    
+    trackDisplay.innerHTML = '';
+    NUMS.forEach((n, i) => {
+        const seg = document.createElement('div');
+        seg.id = `seg-${i}`;
+        seg.className = `track-segment ${n >= 0 ? 'positive' : 'negative'}`;
+        seg.textContent = n;
+        trackDisplay.appendChild(seg);
+    });
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Restart Ride';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+    
+    switch(step.type) {
+        case 'START':
+            log("Ride starting! Initializing cars and high score.");
+            scoreVal.textContent = step.initialResult;
+            break;
+
+        case 'PROCESS':
+            const seg = document.getElementById(`seg-${step.index}`);
+            seg.classList.add('active');
+            
+            log(`--- Approaching segment ${step.index} (Value: ${step.num}) ---`);
+            currentActionDisplay.innerHTML = `Approaching value <strong>${step.num}</strong>...`;
+            
+            await new Promise(r => setTimeout(r, 600));
+
+            if(step.swap) {
+                log("  Negative number! SWAP cars!");
+                currentActionDisplay.innerHTML = `<strong style="color: #e74c3c;">Negative number! The min car can become the max!</strong>`;
+                document.getElementById('max-car').classList.add('swap-animation');
+                document.getElementById('min-car').classList.add('swap-animation');
+                await new Promise(r => setTimeout(r, 500));
+                document.getElementById('max-car').classList.remove('swap-animation');
+                document.getElementById('min-car').classList.remove('swap-animation');
+            }
+
+            log(`  New Max = max(${step.num}, ${step.oldMax}*${step.num}, ${step.oldMin}*${step.num}) = ${step.newMax}`);
+            log(`  New Min = min(${step.num}, ${step.oldMax}*${step.num}, ${step.oldMin}*${step.num}) = ${step.newMin}`);
+            currentActionDisplay.innerHTML = `Updating car values...<br/>Max = ${step.newMax}, Min = ${step.newMin}`;
+            
+            maxVal.textContent = step.newMax;
+            minVal.textContent = step.newMin;
+
+            await new Promise(r => setTimeout(r, 600));
+            
+            log(`  Updating High Score: max(${scoreVal.textContent}, ${step.newMax}) = ${step.maxResult}`);
+            if (parseInt(scoreVal.textContent) !== step.maxResult) {
+                currentActionDisplay.innerHTML += `<br/><strong style="color: #27ae60;">New High Score!</strong>`;
+            }
+            scoreVal.textContent = step.maxResult;
+            break;
+
+        case 'END':
+            log(`--- Ride Finished! Final High Score: ${step.finalResult} ---`);
+            currentActionDisplay.innerHTML = `<strong>Ride Finished! The maximum product is ${step.finalResult}.</strong>`;
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if(simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    setInput = document.getElementById('set_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    maxVal = document.getElementById('max-val');
+
+    minVal = document.getElementById('min-val');
+    scoreVal = document.getElementById('score-val');
+    trackDisplay = document.getElementById('rollercoaster-track');
+    currentActionDisplay = document.getElementById('current-action-display');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

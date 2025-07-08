@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decode Ways DP Animation</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-decode { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-decode label { font-weight: bold; margin-right: 5px; }
+        .controls-decode input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 250px; }
+        .controls-decode button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-decode button:hover { background-color: #0056b3; }
+        .controls-decode button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-decode { display: grid; grid-template-columns: minmax(320px, 0.8fr) 2fr; gap: 15px; }
+        .left-panel-decode, .right-panel-decode { display: flex; flex-direction: column; gap: 10px; }
+        
+        .panel { padding: 10px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        #final-verdict { text-align: center; font-size: 2.5em; font-weight: bold; color: #28a745; min-height: 1.5em; }
+        #current-action-display { text-align: center; min-height: 4em; font-weight: bold; }
+
+        .ticker-tape-container { padding: 20px 10px; background-color: #34495e; border-radius: 5px; text-align: center; }
+        .ticker-tape { display: inline-flex; border: 3px solid #7f8c8d; border-radius: 5px; background-color: #ecf0f1; padding: 10px; position: relative; }
+        .digit { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-size: 1.5em; font-weight: bold; color: #2c3e50; font-family: 'Courier New', monospace; }
+        .digit.highlight-one { background-color: rgba(46, 204, 113, 0.5); border-radius: 3px; }
+        .digit.highlight-two { background-color: rgba(52, 152, 219, 0.5); border-radius: 3px; }
+
+        .ledger-container { margin-top: 10px; }
+        .ledger-row { display: flex; gap: 5px; }
+        .ledger-cell { flex: 1; min-width: 50px; height: 70px; background-color: #fff; border: 1px solid #bdc3c7; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: all 0.3s ease; }
+        .ledger-cell .index { font-size: 0.8em; color: #6c757d; }
+        .ledger-cell .value { font-size: 1.5em; font-weight: bold; }
+
+        .ledger-cell.highlight-current { outline: 3px solid #e74c3c; transform: scale(1.1); }
+        .ledger-cell.highlight-source-1 { background-color: #d4edda; }
+        .ledger-cell.highlight-source-2 { background-color: #cfe2ff; }
+        .ledger-cell.updated { animation: popUpdate 0.4s ease-out; }
+
+        .log-container-decode { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @keyframes popUpdate { from {transform: scale(0.7);} to {transform: scale(1);} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Decode Ways: The Telegraph Operator's Riddle</h1>
+
+        <div class="controls-decode">
+            <label for="string_input">Message:</label>
+            <input type="text" id="string_input" value="226">
+            <button id="start_button">Decode</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-decode">
+            <div class="left-panel-decode">
+                <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="current-action-display"></div>
+                </div>
+                 <div class="panel">
+                    <h2>Total Ways to Decode</h2>
+                    <div id="final-verdict">0</div>
+                </div>
+            </div>
+            <div class="right-panel-decode">
+                 <div class="panel">
+                    <h2>The Ticker Tape & Ledger</h2>
+                    <div class="ticker-tape-container">
+                       <div id="ticker-tape-display" class="ticker-tape"></div>
+                    </div>
+                    <div class="ledger-container">
+                       <div id="ledger-display" class="ledger-row"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container-decode">
+            <h2>Operator's Log</h2>
+            <pre id="log_output"></pre>
+        </div>
+    </div>
+
+<script>
+// --- STATE & CONFIG ---
+let S = "";
+let animationSteps = []; let currentStep = -1;
+let simulationRunning = false;
+
+// --- DOM ELEMENTS ---
+let stringInput, startButton, nextStepButton, tickerTapeDisplay, ledgerDisplay, currentActionDisplay, finalVerdict, logOutput;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if (logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function clearHighlights() {
+    document.querySelectorAll('.ledger-cell').forEach(c => c.classList.remove('highlight-current', 'highlight-source-1', 'highlight-source-2'));
+    document.querySelectorAll('.digit').forEach(c => c.classList.remove('highlight-one', 'highlight-two'));
+}
+
+// --- CORE DP & ANIMATION LOGIC ---
+function generateAnimationSteps() {
+    animationSteps = [];
+    if (!S || S.length === 0) return;
+    const n = S.length;
+    
+    let dp = Array(n + 1).fill(0);
+    animationSteps.push({ type: 'START' });
+
+    // Base Case dp[0]
+    dp[0] = 1;
+    animationSteps.push({ type: 'BASE_CASE_0' });
+
+    // Base Case dp[1]
+    dp[1] = S.charAt(0) !== '0' ? 1 : 0;
+    animationSteps.push({ type: 'BASE_CASE_1', index: 1, val: dp[1], digit: S.charAt(0) });
+    
+    // Main DP loop
+    for (let i = 2; i <= n; i++) {
+        let from1 = 0, from2 = 0;
+        const oneDigit = parseInt(S.substring(i - 1, i), 10);
+        const twoDigits = parseInt(S.substring(i - 2, i), 10);
+        let step = { type: 'PROCESS_CELL', i, oneDigit, twoDigits, from1: 0, from2: 0, result: 0 };
+        
+        if (oneDigit !== 0) {
+            from1 = dp[i-1];
+            step.from1 = from1;
+        }
+        if (twoDigits >= 10 && twoDigits <= 26) {
+            from2 = dp[i-2];
+            step.from2 = from2;
+        }
+        dp[i] = from1 + from2;
+        step.result = dp[i];
+        animationSteps.push(step);
+    }
+    animationSteps.push({ type: 'END', result: dp[n] });
+}
+
+function initializeAnimation() {
+    log("Preparing the telegraph office...");
+    simulationRunning = false; currentStep = -1;
+
+    S = stringInput.value.replace(/[^0-9]/g, ''); // Sanitize input
+    stringInput.value = S;
+    if (!S) return;
+    
+    logOutput.innerHTML = '';
+    currentActionDisplay.innerHTML = 'Ready to decode.';
+    finalVerdict.textContent = '0';
+    
+    tickerTapeDisplay.innerHTML = S.split('').map((char, i) => `<div class="digit" id="digit-${i}">${char}</div>`).join('');
+    
+    ledgerDisplay.innerHTML = `<div class="ledger-cell" id="cell-0"><div class="index">_</div><span class="value" id="value-0"></span></div>`;
+    for(let i = 1; i <= S.length; i++) {
+        ledgerDisplay.innerHTML += `<div class="ledger-cell" id="cell-${i}"><div class="index">${i}</div><span class="value" id="value-${i}">-</span></div>`;
+    }
+    
+    generateAnimationSteps();
+    simulationRunning = true;
+    updateButtonState();
+}
+
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStep >= animationSteps.length - 1;
+    if (!nextStepButton.disabled) startButton.textContent = 'Restart';
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStep >= animationSteps.length - 1) {
+        simulationRunning = false; updateButtonState(); return;
+    }
+    
+    currentStep++;
+    const step = animationSteps[currentStep];
+    nextStepButton.disabled = true; clearHighlights();
+    
+    switch(step.type) {
+        case 'START':
+            log("A new message arrives...");
+            break;
+
+        case 'BASE_CASE_0':
+            log("Base Case: 1 way to decode an empty message.");
+            currentActionDisplay.textContent = `Establishing base case: 1 way for an empty message.`;
+            document.getElementById('value-0').textContent = 1;
+            document.getElementById('cell-0').classList.add('updated');
+            break;
+        
+        case 'BASE_CASE_1':
+            log(`Decoding first digit '${step.digit}'...`);
+            document.getElementById(`digit-0`).classList.add('highlight-one');
+            document.getElementById(`cell-1`).classList.add('highlight-current');
+            document.getElementById(`cell-0`).classList.add('highlight-source-1');
+            const isValid = step.val === 1;
+            currentActionDisplay.innerHTML = `Decoding first digit ('${step.digit}'). Valid? ${isValid ? '✅' : '❌'}`;
+            log(` -> ${isValid ? 'Valid (1-9).' : 'Invalid (is 0).'} Ways = ${step.val}`);
+            await new Promise(r => setTimeout(r, 800));
+            document.getElementById('value-1').textContent = step.val;
+            document.getElementById('cell-1').classList.add('updated');
+            break;
+            
+        case 'PROCESS_CELL':
+            const { i, oneDigit, twoDigits, from1, from2, result } = step;
+            log(`--- Decoding up to index ${i} ---`);
+            currentActionDisplay.innerHTML = `Calculating ways for index <strong>${i}</strong>...`;
+            const cell = document.getElementById(`cell-${i}`);
+            cell.classList.add('highlight-current');
+            await new Promise(r => setTimeout(r, 600));
+
+            // One-digit check
+            document.getElementById(`digit-${i-1}`).classList.add('highlight-one');
+            document.getElementById(`cell-${i-1}`).classList.add('highlight-source-1');
+            const oneDigitValid = oneDigit > 0;
+            log(`  Check 1-digit code ('${oneDigit}'): Valid? ${oneDigitValid}. Add ${from1} ways from dp[${i-1}].`);
+            currentActionDisplay.innerHTML = `Check 1-digit code ('${oneDigit}'). Valid? ${oneDigitValid ? '✅' : '❌'}.<br/>Adding <strong>${from1}</strong> from previous.`;
+            await new Promise(r => setTimeout(r, 1200));
+
+             // Two-digit check
+            document.getElementById(`digit-${i-2}`).classList.add('highlight-two');
+            document.getElementById(`digit-${i-1}`).classList.add('highlight-two');
+            document.getElementById(`cell-${i-2}`).classList.add('highlight-source-2');
+            const twoDigitsValid = twoDigits >= 10 && twoDigits <= 26;
+            log(`  Check 2-digit code ('${twoDigits}'): Valid? ${twoDigitsValid}. Add ${from2} ways from dp[${i-2}].`);
+            currentActionDisplay.innerHTML += `<br/>Check 2-digit code ('${twoDigits}'). Valid? ${twoDigitsValid ? '✅' : '❌'}.<br/>Adding <strong>${from2}</strong> from two steps back.`;
+            await new Promise(r => setTimeout(r, 1200));
+            
+            log(`  Total for dp[${i}] = ${from1} + ${from2} = ${result}`);
+            currentActionDisplay.innerHTML = `Total ways for index ${i} = ${from1} + ${from2} = <strong>${result}</strong>`;
+            document.getElementById(`value-${i}`).textContent = result;
+            cell.classList.add('updated');
+            break;
+
+        case 'END':
+            log(`--- Decoding Complete! Total ways: ${step.result} ---`);
+            currentActionDisplay.innerHTML = `<strong>Message decoded!</strong>`;
+            finalVerdict.textContent = step.result;
+            document.getElementById(`cell-${S.length}`).style.outline = '3px solid #28a745';
+            simulationRunning = false;
+            break;
+    }
+
+    updateButtonState();
+    if (simulationRunning) nextStepButton.disabled = false;
+}
+
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    tickerTapeDisplay = document.getElementById('ticker-tape-display');
+    ledgerDisplay = document.getElementById('ledger-display');
+    currentActionDisplay = document.getElementById('current-action-display');
+    finalVerdict = document.getElementById('final-verdict');
+    logOutput = document.getElementById('log_output');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+
+    initializeAnimation();
+});
+</script>
+</body>
+</html>
