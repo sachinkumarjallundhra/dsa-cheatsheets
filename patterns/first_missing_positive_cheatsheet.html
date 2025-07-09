@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>First Missing Positive Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>➕ First Missing Positive – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>First Missing Positive</b> problem asks you to find the smallest missing positive integer from an unsorted integer array. The solution must run in <code>O(n)</code> time and use constant extra space.
+    </p>
+
+    <h2>🧱 Pattern Template (Cyclic Sort Solution)</h2>
+    <pre><code>class Solution {
+    public int firstMissingPositive(int[] nums) {
+        int n = nums.length;
+        for (int i = 0; i < n; i++) {
+            while (nums[i] > 0 && nums[i] <= n && nums[nums[i] - 1] != nums[i]) {
+                int temp = nums[i];
+                nums[i] = nums[temp - 1];
+                nums[temp - 1] = temp;
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            if (nums[i] != i + 1) return i + 1;
+        }
+        return n + 1;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/first_missing_positive_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n)</code></li>
+      <li><b>Space Complexity:</b> <code>O(1)</code></li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the smallest missing positive in an unsorted array</li>
+      <li>Data validation and integrity checks</li>
+      <li>Problems requiring in-place rearrangement</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/first-missing-positive/" target="_blank" rel="noopener noreferrer">
+          41. First Missing Positive
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Array</span>
+        <span class="badge badge-tag">Cyclic Sort</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: nums = [1,2,0]
+Output: 3
+
+Input: nums = [3,4,-1,1]
+Output: 2
+
+Input: nums = [7,8,9,11,12]
+Output: 1
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Only numbers in the range <code>1..n</code> matter for the answer.</li>
+      <li>Use cyclic sort to place each number at its correct index.</li>
+      <li>After sorting, the first index <code>i</code> where <code>nums[i] != i+1</code> gives the answer.</li>
+      <li>If all positions are correct, return <code>n+1</code>.</li>
+    </ul>
+  </div>
+</body>
+</html>

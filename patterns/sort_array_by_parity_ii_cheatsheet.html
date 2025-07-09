@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sort Array By Parity II Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔢 Sort Array By Parity II – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Sort Array By Parity II</b> problem (LeetCode 922) asks you to rearrange an array so that even-indexed positions have even numbers and odd-indexed positions have odd numbers. The input array has equal numbers of even and odd integers.
+    </p>
+
+    <h2>🧱 Pattern Template (Two Pointers Solution)</h2>
+    <pre><code>class Solution {
+    public int[] sortArrayByParityII(int[] nums) {
+        int n = nums.length;
+        int even = 0, odd = 1;
+        while (even < n && odd < n) {
+            if (nums[even] % 2 == 0) {
+                even += 2;
+            } else if (nums[odd] % 2 == 1) {
+                odd += 2;
+            } else {
+                // Swap misplaced even and odd
+                int temp = nums[even];
+                nums[even] = nums[odd];
+                nums[odd] = temp;
+                even += 2;
+                odd += 2;
+            }
+        }
+        return nums;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/sort_array_by_parity_ii_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n)</code></li>
+      <li><b>Space Complexity:</b> <code>O(1)</code> (in-place)</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Rearranging arrays by parity or other index-based constraints</li>
+      <li>In-place array manipulation with two pointers</li>
+      <li>Problems with alternating patterns</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/sort-array-by-parity-ii/" target="_blank" rel="noopener noreferrer">
+          922. Sort Array By Parity II
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Array</span>
+        <span class="badge badge-tag">Two Pointers</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: nums = [4,2,5,7]
+Output: [4,5,2,7]
+Explanation: [4,5,2,7], [2,5,4,7], [4,7,2,5], etc. are also valid answers.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Always increment pointers by 2 to stay on even/odd indices.</li>
+      <li>Swap only when both even and odd pointers are misplaced.</li>
+      <li>Input always has equal even and odd counts, so a solution is always possible.</li>
+    </ul>
+  </div>

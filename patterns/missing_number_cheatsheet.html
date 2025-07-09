@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Missing Number Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>❓ Missing Number – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Missing Number</b> problem asks you to find the single missing number from an array containing <code>n</code> distinct numbers taken from <code>0, 1, 2, ..., n</code>.
+    </p>
+
+    <h2>🧱 Pattern Template (Cyclic Sort Solution)</h2>
+    <pre><code>class Solution {
+    public int missingNumber(int[] nums) {
+        int i = 0;
+        while (i &lt; nums.length) {
+            if (nums[i] &lt; nums.length &amp;&amp; nums[i] != nums[nums[i]]) {
+                int temp = nums[i];
+                nums[i] = nums[temp];
+                nums[temp] = temp;
+            } else {
+                i++;
+            }
+        }
+        for (i = 0; i &lt; nums.length; i++) {
+            if (nums[i] != i) return i;
+        }
+        return nums.length;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/missing_number_animation.html'">▶️ View Animation</button>
+
+    <h2>🧱 Pattern Template (Sum Formula Solution)</h2>
+    <pre><code>class Solution {
+    public int missingNumber(int[] nums) {
+        int n = nums.length;
+        int sum = n * (n + 1) / 2;
+        for (int num : nums) sum -= num;
+        return sum;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n)</code></li>
+      <li><b>Space Complexity:</b> <code>O(1)</code></li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding a missing element in a sequence</li>
+      <li>Data validation and integrity checks</li>
+      <li>Problems with a known range and one missing value</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/missing-number/" target="_blank" rel="noopener noreferrer">
+          268. Missing Number
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Array</span>
+        <span class="badge badge-tag">Cyclic Sort</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: nums = [3,0,1]
+Output: 2
+
+Input: nums = [0,1]
+Output: 2
+
+Input: nums = [9,6,4,2,3,5,7,0,1]
+Output: 8
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Sum formula is fastest and simplest for this problem.</li>
+      <li>Cyclic sort is useful for in-place rearrangement and related problems.</li>
+      <li>Can also solve with XOR for O(1) space and O(n) time.</li>
+    </ul>
+  </div>
+</body>
+</html>

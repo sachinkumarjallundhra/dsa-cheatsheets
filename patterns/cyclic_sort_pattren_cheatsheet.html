@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyclic Sort Pattern Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔄 Cyclic Sort Pattern – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Cyclic Sort</b> pattern is used to efficiently place numbers in their correct indices in an array containing numbers in a known range (often 1 to n or 0 to n-1). It is especially useful for problems involving finding missing or duplicate numbers.
+    </p>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>class Solution {
+    public void cyclicSort(int[] nums) {
+        int i = 0;
+        while (i &lt; nums.length) {
+            int correct = nums[i] - 1; // for 1 to n, use nums[i] - 1; for 0 to n-1, use nums[i]
+            if (nums[i] &gt;= 1 &amp;&amp; nums[i] &lt;= nums.length &amp;&amp; nums[i] != nums[correct]) {
+                int temp = nums[i];
+                nums[i] = nums[correct];
+                nums[correct] = temp;
+            } else {
+                i++;
+            }
+        }
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/cyclic_sort_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n)</code></li>
+      <li><b>Space Complexity:</b> <code>O(1)</code></li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding missing or duplicate numbers in an array</li>
+      <li>Sorting numbers in a known range in-place</li>
+      <li>Problems where each value should be at a specific index</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/missing-number/" target="_blank" rel="noopener noreferrer">
+          268. Missing Number
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Array</span>
+        <span class="badge badge-tag">Cyclic Sort</span>
+        📄 <a href="missing_number_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/first-missing-positive/" target="_blank" rel="noopener noreferrer">
+          41. First Missing Positive
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Array</span>
+        <span class="badge badge-tag">Cyclic Sort</span>
+        📄 <a href="first_missing_positive_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/set-mismatch/" target="_blank" rel="noopener noreferrer">
+          645. Set Mismatch
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Array</span>
+        <span class="badge badge-tag">Cyclic Sort</span>
+        📄 <a href="set_mismatch_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/sort-array-by-parity-ii/" target="_blank" rel="noopener noreferrer">
+          922. Sort Array By Parity II
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Array</span>
+        📄 <a href="sort_array_by_parity_ii_cheatsheet.html">Cheat Sheet</a>
+      </li>
+      <li>
+        <a href="https://www.geeksforgeeks.org/find-the-first-k-missing-positive-numbers/" target="_blank" rel="noopener noreferrer">
+          Find the First K Missing Positive Numbers (GFG)
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Array</span>
+        <span class="badge badge-tag">Cyclic Sort</span>
+        📄 <a href="find_first_k_missing_positive_cheatsheet.html">Cheat Sheet</a>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: nums = [3, 1, 5, 4, 2]
+Output: [1, 2, 3, 4, 5]
+
+Input: nums = [4, 3, 2, 7, 8, 2, 3, 1]
+Output: [1, 2, 3, 4, 7, 8, 2, 3] (sorted in-place for 1 to n)
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use when numbers are in a known range and you want O(n) time and O(1) space.</li>
+      <li>Great for finding missing/duplicate numbers without extra space.</li>
+      <li>Be careful with index calculation for 0-based vs 1-based arrays.</li>
+    </ul>
+
+    <h2>🤖 Does your problem match this pattern?</h2>
+    <p>
+      <b>Yes</b>, if either of these conditions are fulfilled:
+      <ul>
+        <li><b>Limited range integer arrays:</b> The problem involves an input array of integers in a small range, usually <code>[1−n]</code>.</li>
+        <li><b>Finding missing or duplicate elements:</b> The problem requires us to identify missing or duplicate elements in an array.</li>
+      </ul>
+      <b>No</b>, if any of these conditions is fulfilled:
+      <ul>
+        <li><b>Non-integer values:</b> The input array contains non-integer values.</li>
+        <li><b>Non-array format:</b> The input data is not originally in an array, nor can it be mapped to an array.</li>
+        <li><b>Stability requirement:</b> The problem requires stable sorting.</li>
+      </ul>
+    </p>
+
+    <h2>🌍 Real-World Applications</h2>
+    <ul>
+      <li>
+        <b>Computational biology:</b> Finding the kth missing gene in a DNA sequence where genes are numbered <code>1...n</code>.
+      </li>
+      <li>
+        <b>Playing card sorting:</b> Sorting a shuffled deck of cards (represented as integers <code>[1-52]</code>) efficiently.
+      </li>
+      <li>
+        <b>Data validation:</b> Quickly identifying missing or duplicate values in datasets expected to have distinct values within a certain range.
+      </li>
+      <li>
+        <b>Package delivery routing:</b> Mapping delivery addresses to integers and using cyclic sort to optimize delivery routes.
+      </li>
+    </ul>
+
+    <h2>🔗 References</h2>
+    <ul>
+      <li>
+        <a href="https://en.wikipedia.org/wiki/Sorting_algorithm#Cyclic_sort" target="_blank" rel="noopener noreferrer">
+          Cyclic Sort - Wikipedia
+        </a>
+      </li>
+      <li>
+        <a href="https://www.geeksforgeeks.org/cyclic-sort/" target="_blank" rel="noopener noreferrer">
+          Cyclic Sort - GeeksforGeeks
+        </a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/explore/featured/card/array-and-string/201-sort-and-search/1140-cyclic-sort/" target="_blank" rel="noopener noreferrer">
+          Cyclic Sort - LeetCode Explore
+        </a>
+      </li>
+    </ul>
+
+    <footer>
+      <p>
+        <small>
+          &copy; 2023 Cyclic Sort Pattern Cheat Sheet. All rights reserved.
+        </small>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

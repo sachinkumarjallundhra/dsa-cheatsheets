@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find the First K Missing Positive Numbers Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔍 Find the First K Missing Positive Numbers – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Find the First K Missing Positive Numbers</b> problem asks you to find the first <code>k</code> smallest missing positive integers from an unsorted array. The array may contain duplicates and negative numbers.
+    </p>
+
+    <h2>🧱 Pattern Template (Cyclic Sort Solution)</h2>
+    <pre><code>class Solution {
+    public List&lt;Integer&gt; findKMissingPositive(int[] nums, int k) {
+        int n = nums.length;
+        int i = 0;
+        while (i &lt; n) {
+            if (nums[i] &gt; 0 &amp;&amp; nums[i] &lt;= n &amp;&amp; nums[nums[i] - 1] != nums[i]) {
+                int temp = nums[i];
+                nums[i] = nums[temp - 1];
+                nums[temp - 1] = temp;
+            } else {
+                i++;
+            }
+        }
+        List&lt;Integer&gt; result = new ArrayList&lt;&gt;();
+        Set&lt;Integer&gt; extra = new HashSet&lt;&gt;();
+        for (i = 0; i &lt; n &amp;&amp; result.size() &lt; k; i++) {
+            if (nums[i] != i + 1) {
+                result.add(i + 1);
+                extra.add(nums[i]);
+            }
+        }
+        int next = n + 1;
+        while (result.size() &lt; k) {
+            if (!extra.contains(next)) result.add(next);
+            next++;
+        }
+        return result;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/find_first_k_missing_positive_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n + k)</code></li>
+      <li><b>Space Complexity:</b> <code>O(k)</code> for the result and set.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Finding the first k missing positive numbers in an unsorted array</li>
+      <li>Data validation and integrity checks</li>
+      <li>Problems requiring in-place rearrangement and missing value detection</li>
+    </ul>
+
+    <h2>📘 Related LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://www.geeksforgeeks.org/find-the-first-k-missing-positive-numbers/" target="_blank" rel="noopener noreferrer">
+          Find the First K Missing Positive Numbers (GFG)
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Array</span>
+        <span class="badge badge-tag">Cyclic Sort</span>
+      </li>
+      <li>
+        <a href="https://leetcode.com/problems/first-missing-positive/" target="_blank" rel="noopener noreferrer">
+          41. First Missing Positive
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Array</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: nums = [3, -1, 4, 5, 5], k = 3
+Output: [1, 2, 6]
+
+Input: nums = [2, 3, 4], k = 3
+Output: [1, 5, 6]
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use cyclic sort to place numbers in their correct positions.</li>
+      <li>After sorting, scan for missing numbers and collect extras if needed.</li>
+      <li>Use a set to avoid duplicates in the result.</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find K Missing Positives Animation</title>
+    <style>
+        :root {
+            --color-current: #3498db; /* Blue */
+            --color-target: #f1c40f;  /* Yellow */
+            --color-correct: #2ecc71; /* Green */
+            --color-swap: #e74c3c;   /* Red */
+            --color-junk: #95a5a6;   /* Grey for ignored numbers */
+            --color-found: #e67e22;  /* Orange */
+            --color-bg-light: #f4f7f6;
+            --color-bg-panel: #ffffff;
+            --color-text-dark: #2c3e50;
+            --color-text-light: #6c757d;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-fmp-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-fmp-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-fmp-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; }
+        #nums_input_fmp_p5 { width: 250px; }
+        #k_input_fmp_p5 { width: 50px; }
+
+        .controls-fmp-p5 button { padding: 10px 15px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-fmp-p5 button:hover { background-color: #229954; }
+        .controls-fmp-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-fmp-p5 { display: grid; grid-template-columns: minmax(350px, 1fr) 3fr; gap: 15px; }
+        .left-panel-fmp-p5, .right-panel-fmp-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-fmp-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .visualization-wrapper-p5 { min-height: 200px; background-color: #ecf0f1; overflow-x: auto; position: relative; display: flex; align-items: center; padding: 60px 20px 40px 20px; }
+        .array-container-p5 { display: flex; flex-direction: row; align-items: center; gap: 10px; position: relative; z-index: 2; }
+        
+        .cell-p5 { width: 70px; height: 70px; background: #bdc3c7; border: 3px solid #7f8c8d; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold; color: #2c3e50; position: relative; flex-shrink: 0; transition: all 0.3s ease-in-out; }
+        .cell-p5 .value { font-size: 1.8em; }
+        .cell-p5 .index { font-size: 0.8em; color: #34495e; position: absolute; top: 2px; }
+        
+        .cell-p5.current { border-color: var(--color-current); box-shadow: 0 0 15px var(--color-current); }
+        .cell-p5.target { border-color: var(--color-target); box-shadow: 0 0 15px var(--color-target); }
+        .cell-p5.correct { background-color: #d4efdf; border-color: var(--color-correct); }
+        .cell-p5.junk { background-color: #ecf0f1; border-color: var(--color-junk); color: var(--color-junk); }
+        .cell-p5.found { background-color: #fdebd0; border-color: var(--color-found); box-shadow: 0 0 20px var(--color-found); }
+
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.2); box-shadow: 0 0 20px var(--color-swap); } 100% { transform: scale(1); } }
+        .cell-p5.swapping { animation: pop 0.4s ease-in-out; }
+
+        .arrow-container-p5 { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .arrow-container-p5.visible { opacity: 1; }
+
+        .state-grid-p5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: var(--color-text-light); }
+        .state-item-p5 .value { font-size: 1.6em; font-weight: bold; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px; word-break: break-all; }
+        
+        #current_action_fmp_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4.5em; font-size:1em; }
+
+        #overlay-fmp { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay-fmp.show { opacity: 1; }
+
+        .log-container-fmp-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_fmp_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @media (max-width: 1000px) { .main-content-fmp-p5 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Find the First K Missing Positive Numbers</h1>
+
+        <div class="controls-fmp-p5">
+            <label for="nums_input_fmp_p5">Input Array:</label>
+            <input type="text" id="nums_input_fmp_p5" value="3, -1, 4, 5, 5">
+            <label for="k_input_fmp_p5">k:</label>
+            <input type="number" id="k_input_fmp_p5" value="3" min="1">
+            <button id="start_button_fmp_p5">Start/Reset</button>
+            <button id="next_step_button_fmp_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-fmp-p5">
+            <div class="left-panel-fmp-p5">
+                <div class="state-panel-fmp-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Index (i)</div><div id="i_display_p5" class="value">N/A</div></div>
+                        <div class="state-item-p5"><div class="label">Next Candidate</div><div id="next_display_p5" class="value">N/A</div></div>
+                    </div>
+                    <div class="state-grid-p5" style="margin-top: 15px;">
+                         <div class="state-item-p5"><div class="label">Result List</div><div id="result_display_p5" class="value">[]</div></div>
+                         <div class="state-item-p5"><div class="label">Extras Set</div><div id="extra_display_p5" class="value">{}</div></div>
+                    </div>
+                    <div id="current_action_fmp_display_p5">Enter an array and k, then click 'Start'.</div>
+                </div>
+                <div class="log-container-fmp-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_fmp_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-fmp-p5">
+                 <div class="visualization-wrapper-p5" id="visualization_wrapper_p5">
+                    <div class="arrow-container-p5" id="arrow_container_p5"></div>
+                    <div class="array-container-p5" id="array_container_p5"></div>
+                    <div id="overlay-fmp"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let currentArrayState = [];
+let kValue = 0;
+
+// --- DOM ELEMENTS ---
+let numsInput, kInput, startButton, nextStepButton, iDisplay, nextDisplay, resultDisplay, extraDisplay,
+    currentActionDisplay, logOutput, vizWrapper, arrayContainer, arrowContainer, overlay;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(nums, k) {
+    const steps = [];
+    const n = nums.length;
+    let localNums = [...nums];
+
+    // Phase 1: Cyclic Sort
+    steps.push({ type: 'initial', i: -1, arrayState: [...localNums], result: [], extra: new Set(), message: 'Phase 1: Sort array to place valid numbers (1 to n) in correct spots.' });
+    for (let i = 0; i < n; i++) {
+        while (localNums[i] > 0 && localNums[i] <= n && localNums[localNums[i] - 1] !== localNums[i]) {
+            const targetIndex = localNums[i] - 1;
+            steps.push({ type: 'prepare_swap', i, targetIndex, arrayState: [...localNums], result: [], extra: new Set(), message: `Value ${localNums[i]} is valid and misplaced. Swapping...` });
+            [localNums[i], localNums[targetIndex]] = [localNums[targetIndex], localNums[i]];
+            steps.push({ type: 'execute_swap', i, targetIndex, arrayState: [...localNums], result: [], extra: new Set(), message: `Swap complete. Re-checking new value at index ${i}.` });
+        }
+    }
+
+    // Phase 2: Scan for in-bounds missing numbers
+    let result = [];
+    let extra = new Set();
+    steps.push({ type: 'start_scan1', i: -1, arrayState: [...localNums], result: [...result], extra: new Set(extra), message: `Phase 2: Scan for missing numbers from 1 to ${n}.` });
+    for (let i = 0; i < n && result.length < k; i++) {
+        steps.push({ type: 'scan1_check', i, arrayState: [...localNums], result: [...result], extra: new Set(extra), message: `At index ${i}, is value ${localNums[i]} equal to ${i + 1}?` });
+        if (localNums[i] !== i + 1) {
+            result.push(i + 1);
+            extra.add(localNums[i]);
+            steps.push({ type: 'found_in_bounds', i, arrayState: [...localNums], result: [...result], extra: new Set(extra), message: `Mismatch! Missing: ${i + 1}. Added incorrect value ${localNums[i]} to Extras set.` });
+        }
+    }
+
+    // Phase 3: Scan for out-of-bounds missing numbers
+    if (result.length < k) {
+        let next = n + 1;
+        steps.push({ type: 'start_scan2', i: -1, next, arrayState: [...localNums], result: [...result], extra: new Set(extra), message: `Phase 3: Not enough found. Scanning numbers > ${n}.` });
+        while (result.length < k) {
+            steps.push({ type: 'scan2_check', i: -1, next, arrayState: [...localNums], result: [...result], extra: new Set(extra), message: `Is candidate ${next} in the Extras set?` });
+            if (!extra.has(next)) {
+                result.push(next);
+                steps.push({ type: 'found_out_of_bounds', i: -1, next, arrayState: [...localNums], result: [...result], extra: new Set(extra), message: `No. ${next} is a missing number. Added to result.` });
+            } else {
+                steps.push({ type: 'scan2_skip', i: -1, next, arrayState: [...localNums], result: [...result], extra: new Set(extra), message: `Yes. Skipping ${next} as it was present in the array.` });
+            }
+            next++;
+        }
+    }
+
+    steps.push({ type: 'finish', i: -1, arrayState: [...localNums], result: [...result], extra: new Set(extra), message: `Found ${k} missing positive numbers.` });
+    return steps;
+}
+
+function renderArray(state) {
+    arrayContainer.innerHTML = '';
+    const n = state.length;
+    state.forEach((val, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell-p5';
+        cell.id = `cell-p5-${i}`;
+        cell.innerHTML = `<span class="index">${i}</span><span class="value">${val}</span>`;
+        if(val <= 0 || val > n) {
+            cell.classList.add('junk');
+        }
+        arrayContainer.appendChild(cell);
+    });
+}
+
+function drawArrow(fromIndex, toIndex) { /* ... (Same as previous implementations) ... */
+    arrowContainer.innerHTML = ''; 
+    const fromCell = document.getElementById(`cell-p5-${fromIndex}`);
+    const toCell = document.getElementById(`cell-p5-${toIndex}`);
+    if (!fromCell || !toCell) return;
+    const containerRect = vizWrapper.getBoundingClientRect();
+    const fromRect = fromCell.getBoundingClientRect();
+    const toRect = toCell.getBoundingClientRect();
+    const x1 = fromRect.left - containerRect.left + fromRect.width / 2;
+    const y1 = fromRect.top - containerRect.top;
+    const x2 = toRect.left - containerRect.left + toRect.width / 2;
+    const y2 = toRect.top - containerRect.top;
+    const arcHeight = Math.max(30, Math.abs(x1 - x2) * 0.25);
+    const pathData = `M ${x1} ${y1} C ${x1} ${y1 - arcHeight}, ${x2} ${y2 - arcHeight}, ${x2} ${y2}`;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.style.overflow = 'visible';
+    const defs = document.createElementNS(svgNS, 'defs');
+    const marker = document.createElementNS(svgNS, 'marker');
+    marker.setAttribute('id', 'arrowhead');
+    marker.setAttribute('viewBox', '0 -5 10 10'); marker.setAttribute('refX', '8'); marker.setAttribute('refY', '0'); marker.setAttribute('markerWidth', '6'); marker.setAttribute('markerHeight', '6'); marker.setAttribute('orient', 'auto-start-reverse');
+    marker.innerHTML = `<path d="M0,-5L10,0L0,5" fill="${getComputedStyle(document.documentElement).getPropertyValue('--color-swap')}"></path>`;
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute('d', pathData); path.setAttribute('stroke', getComputedStyle(document.documentElement).getPropertyValue('--color-swap')); path.setAttribute('stroke-width', '3'); path.setAttribute('fill', 'none'); path.setAttribute('marker-start', 'url(#arrowhead)'); path.setAttribute('marker-end', 'url(#arrowhead)');
+    svg.appendChild(path);
+    arrowContainer.appendChild(svg);
+    arrowContainer.classList.add('visible');
+}
+
+function renderState(step) {
+    if (JSON.stringify(currentArrayState) !== JSON.stringify(step.arrayState)) {
+        renderArray(step.arrayState);
+        currentArrayState = [...step.arrayState];
+    }
+    
+    iDisplay.textContent = step.i >= 0 ? step.i : 'N/A';
+    nextDisplay.textContent = step.next ? step.next : 'N/A';
+    resultDisplay.textContent = `[${step.result.join(', ')}]`;
+    extraDisplay.textContent = `{${[...step.extra].join(', ')}}`;
+
+    document.querySelectorAll('.cell-p5:not(.junk)').forEach(cell => cell.classList.remove('current', 'target', 'swapping', 'found', 'correct'));
+
+    if (step.type.startsWith('scan')) {
+        document.querySelectorAll('.cell-p5').forEach((cell, index) => {
+            if(currentArrayState[index] === index + 1) cell.classList.add('correct');
+        });
+    }
+
+    arrowContainer.classList.remove('visible');
+
+    if (step.i >= 0) {
+        const currentCell = document.getElementById(`cell-p5-${step.i}`);
+        if(currentCell) currentCell.classList.add('current');
+    }
+
+    if (step.targetIndex !== undefined) {
+         const targetCell = document.getElementById(`cell-p5-${step.targetIndex}`);
+         if(targetCell) targetCell.classList.add('target');
+    }
+    
+    if (step.type === 'prepare_swap') drawArrow(step.i, step.targetIndex);
+    if (step.type === 'execute_swap') {
+        const fromCell = document.getElementById(`cell-p5-${step.i}`);
+        const toCell = document.getElementById(`cell-p5-${step.targetIndex}`);
+        if(fromCell) fromCell.classList.add('swapping');
+        if(toCell) toCell.classList.add('swapping');
+    }
+    if (step.type === 'found_in_bounds') {
+        const foundCell = document.getElementById(`cell-p5-${step.i}`);
+        if(foundCell) foundCell.classList.add('found');
+    }
+    
+    if (step.type === 'finish') {
+        overlay.className = 'show';
+        overlay.innerHTML = `<span style="font-size:2em">COMPLETE!</span><div style="font-size:1.5em; margin-top: 15px;">Found ${kValue} missing numbers:</div><div style="font-size:3em; color: #f1c40f;">[${step.result.join(', ')}]</div>`;
+        simulationRunning = false;
+    }
+}
+
+function initializeAnimation() {
+    let nums;
+    try {
+        nums = numsInput.value.split(',').map(s => parseInt(s.trim()));
+        if (nums.some(isNaN)) throw new Error("Invalid array input.");
+        kValue = parseInt(kInput.value);
+        if (isNaN(kValue) || kValue < 1) throw new Error("k must be a positive number.");
+    } catch (e) {
+        alert(e.message);
+        return;
+    }
+    
+    simulationRunning = false;
+    animationSteps = generateAnimationSteps(nums, kValue);
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    arrowContainer.innerHTML = '';
+    arrowContainer.classList.remove('visible');
+    
+    const firstStep = animationSteps[0];
+    currentArrayState = []; 
+    renderState(firstStep);
+    currentActionDisplay.textContent = firstStep.message;
+    log(firstStep.message);
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+
+    log(`\n--- Step ${currentStepIndex + 1}: ${step.type} ---`);
+    log(step.message);
+    currentActionDisplay.textContent = step.message;
+    
+    renderState(step);
+    
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    numsInput = document.getElementById('nums_input_fmp_p5');
+    kInput = document.getElementById('k_input_fmp_p5');
+    startButton = document.getElementById('start_button_fmp_p5');
+    nextStepButton = document.getElementById('next_step_button_fmp_p5');
+    iDisplay = document.getElementById('i_display_p5');
+    nextDisplay = document.getElementById('next_display_p5');
+    resultDisplay = document.getElementById('result_display_p5');
+    extraDisplay = document.getElementById('extra_display_p5');
+    currentActionDisplay = document.getElementById('current_action_fmp_display_p5');
+    logOutput = document.getElementById('log_output_fmp_p5');
+    vizWrapper = document.getElementById('visualization_wrapper_p5');
+    arrayContainer = document.getElementById('array_container_p5');
+    arrowContainer = document.getElementById('arrow_container_p5');
+    overlay = document.getElementById('overlay-fmp');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>
