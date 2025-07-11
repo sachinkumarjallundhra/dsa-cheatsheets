@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Build a Matrix with Conditions Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🏗️ Build a Matrix with Conditions – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Build a Matrix with Conditions</b> problem (LeetCode 2699) asks you to construct a matrix that satisfies given row and column conditions. The row conditions specify the relative order of elements in each row, and the column conditions specify the relative order of elements in each column.
+    </p>
+
+    <h2>🧱 Pattern Template (Topological Sort)</h2>
+    <pre><code>import java.util.*;
+
+class Solution {
+    public int[][] buildMatrix(int k, int[][] rowConditions, int[][] colConditions) {
+        List&lt;Integer&gt; rowOrder = topologicalSort(k, rowConditions);
+        List&lt;Integer&gt; colOrder = topologicalSort(k, colConditions);
+
+        if (rowOrder.isEmpty() || colOrder.isEmpty()) return new int[0][0];
+
+        int[][] matrix = new int[k][k];
+        HashMap&lt;Integer, Integer&gt; colMap = new HashMap&lt;&gt;();
+        for (int i = 0; i &lt; k; i++) {
+            colMap.put(colOrder.get(i), i);
+        }
+
+        for (int i = 0; i &lt; k; i++) {
+            int rowVal = rowOrder.get(i);
+            int col = colMap.get(rowVal);
+            matrix[i][col] = rowVal;
+        }
+
+        return matrix;
+    }
+
+    private List&lt;Integer&gt; topologicalSort(int k, int[][] conditions) {
+        HashMap&lt;Integer, Integer&gt; inDegree = new HashMap&lt;&gt;();
+        HashMap&lt;Integer, List&lt;Integer&gt;&gt; graph = new HashMap&lt;&gt;();
+
+        for (int i = 1; i &lt;= k; i++) {
+            inDegree.put(i, 0);
+            graph.put(i, new ArrayList&lt;&gt;());
+        }
+
+        for (int[] condition : conditions) {
+            int prev = condition[0], next = condition[1];
+            graph.get(prev).add(next);
+            inDegree.put(next, inDegree.get(next) + 1);
+        }
+
+        Queue&lt;Integer&gt; sources = new LinkedList&lt;&gt;();
+        for (Map.Entry&lt;Integer, Integer&gt; entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) sources.add(entry.getKey());
+        }
+
+        List&lt;Integer&gt; sortedOrder = new ArrayList&lt;&gt;();
+        while (!sources.isEmpty()) {
+            int vertex = sources.poll();
+            sortedOrder.add(vertex);
+            for (int next : graph.get(vertex)) {
+                inDegree.put(next, inDegree.get(next) - 1);
+                if (inDegree.get(next) == 0) sources.add(next);
+            }
+        }
+
+        return sortedOrder.size() == k ? sortedOrder : new ArrayList&lt;&gt;();
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/build_matrix_with_conditions_animation.html'">▶️ View Animation</button>
+    <a href="https://www.youtube.com/watch?v=8g78yfzMlao&ab_channel=NeetCode" target="_blank" rel="noopener noreferrer">▶️ Watch NeetCode Explanation</a>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(K + C)</code>, where K is the size of the matrix and C is the number of conditions.</li>
+      <li><b>Space Complexity:</b> <code>O(K^2)</code>, to store the matrix and graph.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Matrix construction with constraints</li>
+      <li>Topological sorting for ordering elements</li>
+      <li>Problems involving relative ordering</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/build-a-matrix-with-conditions/" target="_blank" rel="noopener noreferrer">
+          2699. Build a Matrix With Conditions
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Graph</span>
+        <span class="badge badge-tag">Topological Sort</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: k = 3, rowConditions = [[1,2],[3,2]], colConditions = [[2,1],[3,2]]
+Output: [[3,0,0],[0,0,1],[0,2,0]]
+
+Input: k = 3, rowConditions = [[1,2],[1,3],[2,3]], colConditions = [[1,2]]
+Output: []
+Explanation: The given conditions are not satisfied when k = 3.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use topological sort to determine the order of rows and columns based on the given conditions.</li>
+      <li>Handle edge cases where the conditions might not be satisfiable.</li>
+      <li>Optimize space usage by reusing data structures where possible.</li>
+    </ul>
+
+    <h2>🔗 Related Topics</h2>
+    <ul>
+      <li>Graph Theory</li>
+      <li>Matrix Manipulation</li>
+      <li>Sorting Algorithms</li>
+    </ul>
+
+    <h2>📚 References</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/build-a-matrix-with-conditions/solution/" target="_blank" rel="noopener noreferrer">
+          LeetCode Discuss Solutions
+        </a>
+      </li>
+      <li>
+        <a href="https://www.youtube.com/watch?v=8g78yfzMlao&ab_channel=NeetCode" target="_blank" rel="noopener noreferrer">
+          NeetCode Video Explanation
+        </a>
+      </li>
+    </ul>
+  </div>
+</body>
+</html>

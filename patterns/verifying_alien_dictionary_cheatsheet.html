@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifying an Alien Dictionary Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>✅ Verifying an Alien Dictionary – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Verifying an Alien Dictionary</b> problem (LeetCode 953) asks you to determine if a list of words is sorted lexicographically according to a given alien alphabet.
+    </p>
+
+    <h2>🧱 Pattern Template (Lexicographical Comparison)</h2>
+    <pre><code>class Solution {
+    public boolean isAlienSorted(String[] words, String order) {
+        int[] orderMap = new int[26];
+        for (int i = 0; i &lt; order.length(); i++) {
+            orderMap[order.charAt(i) - 'a'] = i;
+        }
+
+        for (int i = 0; i &lt; words.length - 1; i++) {
+            String word1 = words[i], word2 = words[i + 1];
+            int len = Math.min(word1.length(), word2.length());
+            boolean found = false;
+
+            for (int j = 0; j &lt; len; j++) {
+                char ch1 = word1.charAt(j), ch2 = word2.charAt(j);
+                if (orderMap[ch1 - 'a'] &lt; orderMap[ch2 - 'a']) {
+                    found = true;
+                    break;
+                } else if (orderMap[ch1 - 'a'] &gt; orderMap[ch2 - 'a']) {
+                    return false;
+                }
+            }
+
+            if (!found &amp;&amp; word1.length() &gt; word2.length()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/verifying_alien_dictionary_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N * M)</code>, where N is the number of words and M is the average length of the words.</li>
+      <li><b>Space Complexity:</b> <code>O(1)</code>, constant space for the order map.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Lexicographical order verification</li>
+      <li>String comparison with custom alphabets</li>
+      <li>Problems involving sorted sequences</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/verifying-an-alien-dictionary/" target="_blank" rel="noopener noreferrer">
+          953. Verifying an Alien Dictionary
+        </a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">String</span>
+        <span class="badge badge-tag">Array</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: words = ["hello","leetcode"], order = "hlabcdefgijkmnopqrstuvwxyz"
+Output: true
+
+Input: words = ["word","world","row"], order = "worldabcefghijkmnpqstuvxyz"
+Output: false
+
+Input: words = ["apple","app"], order = "abcdefghijklmnopqrstuvwxyz"
+Output: false
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Create an order map to quickly compare characters.</li>
+      <li>Compare words character by character until a difference is found.</li>
+      <li>Handle cases where one word is a prefix of another.</li>
+    </ul>
+  </div>
+</body>
+</html>

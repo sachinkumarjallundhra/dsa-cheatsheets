@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build a Matrix with Conditions Animation</title>
+    <style>
+        :root {
+            --color-node: #bdc3c7; --color-node-border: #7f8c8d; --color-source: #3498db; --color-current: #f1c40f;
+            --color-child: #e67e22; --color-processed: #2ecc71; --color-edge: #95a5a6; --color-edge-active: #c0392b;
+            --color-cycle: #e74c3c; --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-bm-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-bm-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-bm-p5 input, .controls-bm-p5 textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.0em; font-family: 'Courier New', monospace; }
+        #k_input_p5 { width: 40px; }
+        .condition-input { width: 250px; height: 60px; }
+        .controls-bm-p5 button { padding: 10px 15px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-bm-p5 button:hover { background-color: #229954; }
+        .controls-bm-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-bm-p5 { display: grid; grid-template-columns: minmax(320px, 1fr) 3fr; gap: 15px; }
+        .left-panel-bm-p5, .right-panel-bm-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-bm-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .visualization-wrapper-p5 { min-height: 450px; background-color: #ecf0f1; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 5px; padding:10px; }
+        #graph_container_p5, #matrix_container_p5 { position: relative; width: 100%; height: 100%; }
+        #edge_container_p5 { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .hidden { display: none !important; }
+
+        .node-p5 { width: 50px; height: 50px; background: var(--color-node); border: 3px solid var(--color-node-border); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold; position: absolute; z-index: 2; transition: all 0.3s; font-size: 1.2em; }
+        .node-p5 .in-degree { position: absolute; top: -8px; right: -8px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 0.6em; display: flex; justify-content: center; align-items: center; }
+        .node-p5.source { border-color: var(--color-source); } .node-p5.current { border-color: var(--color-current); transform: scale(1.1); }
+        .node-p5.child { border-color: var(--color-child); } .node-p5.processed { background-color: var(--color-processed); }
+        .node-p5.cycle { background-color: var(--color-cycle); color: white; }
+
+        #matrix_grid_p5 { display: grid; gap: 5px; }
+        .matrix-cell { width: 50px; height: 50px; background-color: #fff; border: 1px solid #ccc; display: flex; justify-content: center; align-items: center; font-size: 1.5em; font-weight: bold; border-radius: 4px; transition: all 0.3s; }
+        .matrix-cell.placing { background-color: var(--color-current); transform: scale(1.2); }
+        
+        .data-structure-container { margin-top: 10px; }
+        .data-structure-container .label { font-weight: bold; margin-bottom: 5px; }
+        .data-structure-box { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; min-height: 30px; transition: background-color 0.2s; }
+        .data-structure-box.highlight { background-color: #fffbe6; }
+        .item-pill { padding: 3px 8px; border-radius: 15px; font-family: 'Courier New', monospace; font-weight: bold; transition: background-color 0.2s, transform 0.2s; }
+        .item-pill.source { background-color: var(--color-source); color: white; }
+        .item-pill.processed { background-color: var(--color-processed); color: white; }
+        .item-pill.highlight { background-color: var(--color-current); transform: scale(1.1); }
+
+        #current_action_bm_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4.5em; font-size:1em; }
+        #overlay-bm { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay-bm.show { opacity: 1; }
+
+        @media (max-width: 1000px) { .main-content-bm-p5 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Build a Matrix with Conditions</h1>
+        <div class="controls-bm-p5">
+            <label>k:</label><input type="number" id="k_input_p5" value="3" min="1">
+            <label>rowConditions:</label><textarea class="condition-input" id="row_conds_p5">[[1,2],[3,2]]</textarea>
+            <label>colConditions:</label><textarea class="condition-input" id="col_conds_p5">[[2,1],[3,2]]</textarea>
+            <button id="start_button_bm_p5">Start/Reset</button>
+            <button id="next_step_button_bm_p5" disabled>Next Step</button>
+        </div>
+        <div class="main-content-bm-p5">
+            <div class="left-panel-bm-p5">
+                <div class="state-panel-bm-p5">
+                    <h2>State</h2>
+                    <div id="phase_display_p5" style="text-align:center; font-weight:bold; font-size:1.2em; margin-bottom:15px;">-</div>
+                    <div id="ts_state_p5">
+                        <div class="data-structure-container">
+                            <div class="label">Sources Queue</div>
+                            <div id="sources_queue_p5" class="data-structure-box"></div>
+                        </div>
+                    </div>
+                    <div class="data-structure-container">
+                        <div class="label">Row Order</div>
+                        <div id="row_order_p5" class="data-structure-box"></div>
+                    </div>
+                    <div class="data-structure-container">
+                        <div class="label">Column Order</div>
+                        <div id="col_order_p5" class="data-structure-box"></div>
+                    </div>
+                    <div id="current_action_bm_display_p5">Enter parameters and click 'Start'.</div>
+                </div>
+            </div>
+            <div class="right-panel-bm-p5">
+                 <div class="visualization-wrapper-p5">
+                    <div id="graph_container_p5" class="hidden"><svg id="edge_container_p5"></svg></div>
+                    <div id="matrix_container_p5" class="hidden"><div id="matrix_grid_p5"></div></div>
+                    <div id="overlay-bm"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+<script>
+let animationSteps = []; let currentStepIndex = 0; let simulationRunning = false; let nodePositions = {};
+let kInput, rowCondsInput, colCondsInput, startButton, nextStepButton, phaseDisplay,
+    sourcesQueueDiv, rowOrderDiv, colOrderDiv, currentActionDisplay,
+    graphContainer, edgeContainer, matrixContainer, matrixGrid, overlay;
+
+function updateButtonState() {
+    const isFinished = !simulationRunning || currentStepIndex >= animationSteps.length;
+    nextStepButton.disabled = isFinished;
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+}
+
+function topologicalSortSteps(k, conditions, typePrefix) {
+    const steps = []; let inDegree = {}; let graph = {};
+    for (let i = 1; i <= k; i++) { inDegree[i] = 0; graph[i] = []; }
+
+    for (const cond of conditions) {
+        let parent = cond[0], child = cond[1];
+        if (graph[parent] && !graph[parent].includes(child)) {
+             graph[parent].push(child);
+             inDegree[child]++;
+             steps.push({ type: `${typePrefix}_build_edge`, parent, child, inDegree: {...inDegree}, graph: graph, message: `From [${parent}, ${child}], add edge ${parent} -> ${child}.` });
+        }
+    }
+
+    let sources = [];
+    for (let i = 1; i <= k; i++) { if (inDegree[i] === 0) sources.push(i); }
+    steps.push({ type: `${typePrefix}_find_sources`, sources: [...sources], inDegree: {...inDegree}, graph: graph, order: [], message: `Found initial sources (in-degree 0).` });
+    
+    let order = []; let queue = [...sources];
+    while (queue.length > 0) {
+        const node = queue.shift(); order.push(node);
+        steps.push({ type: `${typePrefix}_poll_source`, node, sources: [...queue], inDegree: {...inDegree}, graph: graph, order: [...order], message: `Processing ${node}. Added to order.` });
+        if (graph[node]) {
+            for (const child of graph[node]) {
+                inDegree[child]--;
+                steps.push({ type: `${typePrefix}_update_child`, node, child, sources: [...queue], inDegree: {...inDegree}, graph: graph, order: [...order], message: `Updating child ${child}. In-degree is now ${inDegree[child]}.` });
+                if (inDegree[child] === 0) {
+                    queue.push(child);
+                    steps.push({ type: `${typePrefix}_new_source`, node, child, sources: [...queue], inDegree: {...inDegree}, graph: graph, order: [...order], message: `Child ${child} is a new source.` });
+                }
+            }
+        }
+    }
+    
+    if (order.length !== k) {
+        steps.push({ type: `${typePrefix}_finish_cycle`, order, inDegree: inDegree, graph: graph, message: `Cycle detected in ${typePrefix} conditions! Cannot build matrix.` });
+        return { success: false, steps, order: [] };
+    }
+    steps.push({ type: `${typePrefix}_finish_ok`, order, message: `${typePrefix} order found: [${order.join(', ')}].` });
+    return { success: true, steps, order };
+}
+
+function generateAnimationSteps(k, rowConditions, colConditions) {
+    let steps = [];
+    steps.push({ type: 'start_row_phase', k, message: 'Phase 1: Determine row ordering.' });
+    const rowResult = topologicalSortSteps(k, rowConditions, 'row');
+    steps = steps.concat(rowResult.steps);
+    if (!rowResult.success) return steps;
+
+    steps.push({ type: 'start_col_phase', k, rowOrder: rowResult.order, message: 'Phase 2: Determine column ordering.' });
+    let colResult = topologicalSortSteps(k, colConditions, 'col');
+    // **FIX**: Add the final rowOrder to all column steps for rendering state preservation
+    colResult.steps.forEach(step => step.rowOrder = rowResult.order);
+    steps = steps.concat(colResult.steps);
+    if (!colResult.success) return steps;
+    
+    steps.push({ type: 'start_matrix_build', k, rowOrder: rowResult.order, colOrder: colResult.order, message: 'Both orders found. Building matrix.' });
+    const rowPos = {}, colPos = {};
+    rowResult.order.forEach((num, i) => rowPos[num] = i);
+    colResult.order.forEach((num, i) => colPos[num] = i);
+
+    for (let i = 1; i <= k; i++) {
+        const r = rowPos[i], c = colPos[i];
+        steps.push({ type: 'place_number', num: i, r, c, rowOrder: rowResult.order, colOrder: colResult.order, message: `Place ${i}: row ${r}, col ${c}.` });
+    }
+    steps.push({ type: 'finish_success', rowOrder: rowResult.order, colOrder: colResult.order, message: 'Matrix built successfully!' });
+    return steps;
+}
+
+function drawGraph(k) {
+    graphContainer.innerHTML = '<svg id="edge_container_p5"></svg>';
+    edgeContainer = document.getElementById('edge_container_p5');
+    nodePositions = {};
+    const center_x = graphContainer.offsetWidth / 2, center_y = graphContainer.offsetHeight / 2;
+    const radius = Math.min(center_x, center_y) * 0.8;
+    for (let i = 1; i <= k; i++) {
+        const angle = ((i - 1) / k) * 2 * Math.PI - (Math.PI / 2);
+        const x = center_x + radius * Math.cos(angle), y = center_y + radius * Math.sin(angle);
+        nodePositions[i] = { x, y };
+        const node = document.createElement('div');
+        node.className = 'node-p5'; node.id = `node-p5-${i}`;
+        node.style.left = `${x - 25}px`; node.style.top = `${y - 25}px`;
+        node.innerHTML = `${i}<div class="in-degree" id="in-degree-p5-${i}">0</div>`;
+        graphContainer.appendChild(node);
+    }
+    const svgNS = "http://www.w3.org/2000/svg";
+    const defs = document.createElementNS(svgNS, 'defs');
+    ['arrowhead', 'arrowhead-active'].forEach(id => {
+        const marker = document.createElementNS(svgNS, 'marker');
+        marker.setAttribute('id', id); marker.setAttribute('viewBox', '0 -5 10 10'); marker.setAttribute('refX', '10');
+        marker.setAttribute('markerWidth', '6'); marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS(svgNS, 'path'); path.setAttribute('d', 'M0,-5L10,0L0,5');
+        path.style.fill = id === 'arrowhead' ? 'var(--color-edge)' : 'var(--color-edge-active)';
+        marker.appendChild(path); defs.appendChild(marker);
+    });
+    edgeContainer.appendChild(defs);
+}
+
+function drawMatrix(k) {
+    matrixGrid.innerHTML = '';
+    matrixGrid.style.gridTemplateColumns = `repeat(${k}, 1fr)`;
+    for(let r = 0; r < k; r++) {
+        for(let c = 0; c < k; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'matrix-cell';
+            cell.id = `cell-${r}-${c}`;
+            matrixGrid.appendChild(cell);
+        }
+    }
+}
+
+function renderState(step) {
+    currentActionDisplay.textContent = step.message;
+    document.querySelectorAll('.item-pill, .matrix-cell, .data-structure-box').forEach(el => el.classList.remove('highlight', 'placing'));
+
+    // Phase handling
+    if (step.type.startsWith('start')) {
+        const k = step.k;
+        if(step.type === 'start_row_phase' || step.type === 'start_col_phase') {
+            graphContainer.classList.remove('hidden'); matrixContainer.classList.add('hidden');
+            drawGraph(k);
+        }
+        if(step.type === 'start_matrix_build') {
+            graphContainer.classList.add('hidden'); matrixContainer.classList.remove('hidden');
+            drawMatrix(k);
+        }
+    }
+    
+    if (step.type.startsWith('row')) {
+        phaseDisplay.textContent = 'Phase 1: Row Conditions';
+        rowOrderDiv.innerHTML = (step.order || []).map(v => `<div class="item-pill processed">${v}</div>`).join('');
+        colOrderDiv.innerHTML = '';
+        sourcesQueueDiv.innerHTML = (step.sources || []).map(v => `<div class="item-pill source">${v}</div>`).join('');
+    } else if (step.type.startsWith('col')) {
+        phaseDisplay.textContent = 'Phase 2: Column Conditions';
+        rowOrderDiv.innerHTML = (step.rowOrder || []).map(v => `<div class="item-pill processed">${v}</div>`).join('');
+        colOrderDiv.innerHTML = (step.order || []).map(v => `<div class="item-pill processed">${v}</div>`).join('');
+        sourcesQueueDiv.innerHTML = (step.sources || []).map(v => `<div class="item-pill source">${v}</div>`).join('');
+    } else {
+        phaseDisplay.textContent = 'Phase 3: Build Matrix';
+        rowOrderDiv.innerHTML = (step.rowOrder || []).map(v => `<div class="item-pill processed">${v}</div>`).join('');
+        colOrderDiv.innerHTML = (step.colOrder || []).map(v => `<div class="item-pill processed">${v}</div>`).join('');
+        sourcesQueueDiv.innerHTML = '';
+    }
+
+    if (step.inDegree && step.graph) {
+        document.querySelectorAll('.node-p5').forEach(n => n.classList.remove('current', 'source', 'child', 'processed', 'cycle'));
+        edgeContainer.innerHTML = document.querySelector('defs').outerHTML; // Keep defs, remove lines
+        Object.keys(step.graph).forEach(parent => {
+            step.graph[parent].forEach(child => {
+                 const p1 = nodePositions[parent], p2 = nodePositions[child];
+                 const dx = p2.x - p1.x, dy = p2.y - p1.y, dist = Math.sqrt(dx*dx + dy*dy);
+                 const newX2 = p2.x - (dx / dist) * 30, newY2 = p2.y - (dy / dist) * 30;
+                 const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                 line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y); line.setAttribute('x2', newX2); line.setAttribute('y2', newY2);
+                 line.setAttribute('stroke', 'var(--color-edge)'); line.setAttribute('stroke-width', '3'); line.setAttribute('marker-end', 'url(#arrowhead)');
+                 line.id = `edge-p5-${parent}-${child}`; edgeContainer.appendChild(line);
+            });
+        });
+
+        Object.keys(step.inDegree).forEach(id => {
+            document.getElementById(`in-degree-p5-${id}`).textContent = step.inDegree[id];
+            const nodeEl = document.getElementById(`node-p5-${id}`);
+            if ((step.order || []).includes(parseInt(id))) nodeEl.classList.add('processed');
+            if ((step.sources || []).includes(parseInt(id))) nodeEl.classList.add('source');
+        });
+        if (step.node) document.getElementById(`node-p5-${step.node}`).classList.add('current');
+        if (step.child) {
+            document.getElementById(`node-p5-${step.child}`).classList.add('child');
+            const edge = document.getElementById(`edge-p5-${step.node}-${step.child}`);
+            if(edge) { edge.setAttribute('stroke', 'var(--color-edge-active)'); edge.setAttribute('marker-end', 'url(#arrowhead-active)'); }
+        }
+    }
+
+    if(step.type === 'place_number') {
+        document.getElementById(`cell-${step.r}-${step.c}`).textContent = step.num;
+        document.getElementById(`cell-${step.r}-${step.c}`).classList.add('placing');
+        rowOrderDiv.parentElement.classList.add('highlight'); colOrderDiv.parentElement.classList.add('highlight');
+        rowOrderDiv.children[step.r]?.classList.add('highlight'); colOrderDiv.children[step.c]?.classList.add('highlight');
+    }
+    
+    if (step.type.includes('finish')) {
+        overlay.className = 'show'; simulationRunning = false;
+        if (step.type.includes('cycle')) {
+            overlay.style.background = 'rgba(231, 76, 60, 0.7)';
+            overlay.innerHTML = `<span style="font-size:3em">❌</span><div style="font-size:1.5em">${step.message}</div>`;
+            Object.keys(step.inDegree).forEach(id => { if (step.inDegree[id] > 0) document.getElementById(`node-p5-${id}`).classList.add('cycle'); });
+        } else if (step.type === 'finish_success') {
+            overlay.innerHTML = `<span style="font-size:3em">🎉</span><div style="font-size:1.5em">${step.message}</div>`;
+        } else {
+             overlay.className = '';
+             simulationRunning = true; // It's just an intermediate finish
+        }
+    }
+}
+
+function initializeAnimation() {
+    let k, rowConds, colConds;
+    try {
+        k = parseInt(kInput.value);
+        rowConds = JSON.parse(rowCondsInput.value.trim().replace(/;/g, ',') || '[]');
+        colConds = JSON.parse(colCondsInput.value.trim().replace(/;/g, ',') || '[]');
+        if (isNaN(k) || k < 1) throw new Error("k must be a positive integer.");
+    } catch (e) { alert(e.message || "Invalid input format. Use valid JSON arrays."); return; }
+    
+    simulationRunning = false;
+    animationSteps = generateAnimationSteps(k, rowConds, colConds);
+    currentStepIndex = 0;
+    
+    overlay.className = ''; overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+    rowOrderDiv.innerHTML = ''; colOrderDiv.innerHTML = ''; phaseDisplay.textContent = '-';
+    
+    const firstStep = animationSteps[0];
+    if(!firstStep) { updateButtonState(); return; }
+    
+    renderState(firstStep);
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    const step = animationSteps[currentStepIndex];
+    renderState(step);
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    kInput = document.getElementById('k_input_p5'); rowCondsInput = document.getElementById('row_conds_p5');
+    colCondsInput = document.getElementById('col_conds_p5'); startButton = document.getElementById('start_button_bm_p5');
+    nextStepButton = document.getElementById('next_step_button_bm_p5'); phaseDisplay = document.getElementById('phase_display_p5');
+    sourcesQueueDiv = document.getElementById('sources_queue_p5'); rowOrderDiv = document.getElementById('row_order_p5');
+    colOrderDiv = document.getElementById('col_order_p5'); currentActionDisplay = document.getElementById('current_action_bm_display_p5');
+    graphContainer = document.getElementById('graph_container_p5'); matrixContainer = document.getElementById('matrix_container_p5');
+    matrixGrid = document.getElementById('matrix_grid_p5'); overlay = document.getElementById('overlay-bm');
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

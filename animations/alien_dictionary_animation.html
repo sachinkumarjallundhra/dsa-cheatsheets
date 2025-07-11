@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alien Dictionary Animation</title>
+    <style>
+        :root {
+            --color-node: #bdc3c7;
+            --color-node-border: #7f8c8d;
+            --color-source: #3498db;  /* Blue */
+            --color-current: #f1c40f; /* Yellow */
+            --color-child: #e67e22;   /* Orange */
+            --color-processed: #2ecc71; /* Green */
+            --color-edge: #95a5a6;
+            --color-edge-active: #c0392b;
+            --color-cycle: #e74c3c;
+            --color-bg-light: #f4f7f6;
+            --color-bg-panel: #ffffff;
+            --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-ad-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-ad-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-ad-p5 textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; width: 300px; height: 80px; font-family: 'Courier New', monospace; }
+        .controls-ad-p5 button { padding: 10px 15px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-ad-p5 button:hover { background-color: #229954; }
+        .controls-ad-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-ad-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-ad-p5, .right-panel-ad-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-ad-p5, .words-panel-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .visualization-wrapper-p5 { min-height: 400px; background-color: #ecf0f1; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 5px; }
+        #graph_container_p5 { position: relative; width: 100%; height: 100%; }
+        #edge_container_p5 { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        
+        .node-p5 { width: 50px; height: 50px; background: var(--color-node); border: 3px solid var(--color-node-border); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: var(--color-text-dark); position: absolute; z-index: 2; transition: all 0.3s ease-in-out; font-size: 1.5em; }
+        .node-p5 .in-degree { position: absolute; top: -8px; right: -8px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 0.6em; display: flex; justify-content: center; align-items: center; }
+        .node-p5.source { border-color: var(--color-source); box-shadow: 0 0 15px var(--color-source); }
+        .node-p5.current { border-color: var(--color-current); box-shadow: 0 0 15px var(--color-current); transform: scale(1.1); }
+        .node-p5.child { border-color: var(--color-child); box-shadow: 0 0 15px var(--color-child); }
+        .node-p5.processed { background-color: var(--color-processed); border-color: #27ae60; }
+        .node-p5.cycle { background-color: var(--color-cycle); border-color: #c0392b; color: white; }
+
+        #words_list_p5 { font-family: 'Courier New', monospace; font-size: 1.2em; }
+        #words_list_p5 div { padding: 3px 8px; border-radius: 4px; transition: background-color 0.3s; }
+        #words_list_p5 div.compared { background-color: #e8f0fe; }
+        .char-highlight { background-color: var(--color-current); color: white; padding: 0 2px; border-radius: 3px; }
+
+        .data-structure-container { margin-top: 10px; }
+        .data-structure-container .label { font-weight: bold; margin-bottom: 5px; color: var(--color-text-dark); }
+        .data-structure-box { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; min-height: 36px; }
+        .item-pill { padding: 5px 10px; border-radius: 15px; font-family: 'Courier New', monospace; font-weight: bold; }
+        .item-pill.source { background-color: var(--color-source); color: white; }
+        .item-pill.processed { background-color: var(--color-processed); color: white; }
+
+        #current_action_ad_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4.5em; font-size:1em; }
+
+        #overlay-ad { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay-ad.show { opacity: 1; }
+
+        @media (max-width: 1000px) { .main-content-ad-p5 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Alien Dictionary</h1>
+        <div class="controls-ad-p5">
+            <label for="words_input_p5">Words (one per line):</label>
+            <textarea id="words_input_p5">wrt
+wrf
+er
+ett
+rftt</textarea>
+            <button id="start_button_ad_p5">Start/Reset</button>
+            <button id="next_step_button_ad_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-ad-p5">
+            <div class="left-panel-ad-p5">
+                 <div class="words-panel-p5">
+                    <h2>Input Words</h2>
+                    <div id="words_list_p5"></div>
+                </div>
+                <div class="state-panel-ad-p5">
+                    <h2>State</h2>
+                    <div class="data-structure-container">
+                        <div class="label">Sources Queue</div>
+                        <div id="sources_queue_p5" class="data-structure-box"></div>
+                    </div>
+                     <div class="data-structure-container">
+                        <div class="label">Alien Alphabet</div>
+                        <div id="sorted_order_p5" class="data-structure-box"></div>
+                    </div>
+                    <div id="current_action_ad_display_p5">Enter sorted alien words and click 'Start'.</div>
+                </div>
+            </div>
+            <div class="right-panel-ad-p5">
+                 <div class="visualization-wrapper-p5" id="visualization_wrapper_p5">
+                    <svg id="edge_container_p5"></svg>
+                    <div id="graph_container_p5"></div>
+                    <div id="overlay-ad"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let nodePositions = {};
+let uniqueChars = [];
+
+// --- DOM ELEMENTS ---
+let wordsInput, startButton, nextStepButton, sourcesQueueDiv, sortedOrderDiv,
+    currentActionDisplay, vizWrapper, graphContainer, edgeContainer, overlay, wordsListDiv;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { /* For brevity, we'll omit the log panel in this complex animation */ }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(words) {
+    const steps = [];
+    if (words.length === 0) return steps;
+    
+    // 1. Initialize graph structure
+    let inDegree = {};
+    let graph = {};
+    words.forEach(word => {
+        for (const char of word) {
+            inDegree[char] = 0;
+            graph[char] = [];
+        }
+    });
+    uniqueChars = Object.keys(inDegree);
+    steps.push({ type: 'init_nodes', inDegree: {...inDegree}, graph, sources: [], sortedOrder: '', message: 'Found all unique characters. These are the graph nodes.' });
+
+    // 2. Build graph from word comparisons
+    for (let i = 0; i < words.length - 1; i++) {
+        const w1 = words[i], w2 = words[i+1];
+        steps.push({ type: 'compare_words', inDegree: {...inDegree}, graph, sources: [], sortedOrder: '', comparedWords: [i, i+1], message: `Comparing "${w1}" and "${w2}".` });
+
+        // Check for invalid prefix case: "abc" vs "ab"
+        if (w1.length > w2.length && w1.startsWith(w2)) {
+             steps.push({ type: 'invalid_prefix', message: `Invalid order: "${w1}" cannot come after its prefix "${w2}".` });
+             return steps;
+        }
+
+        for (let j = 0; j < Math.min(w1.length, w2.length); j++) {
+            const parent = w1[j], child = w2[j];
+            if (parent !== child) {
+                if (!graph[parent].includes(child)) {
+                    graph[parent].push(child);
+                    inDegree[child]++;
+                    steps.push({ type: 'add_edge', inDegree: {...inDegree}, graph, sources: [], sortedOrder: '', comparedWords: [i, i+1], comparedChars: [j, parent, child], message: `First difference: '${parent}' -> '${child}'. Added dependency.` });
+                }
+                break; 
+            }
+        }
+    }
+
+    // 3. Find initial sources
+    let sources = [];
+    for (const char in inDegree) {
+        if (inDegree[char] === 0) sources.push(char);
+    }
+    steps.push({ type: 'find_sources', inDegree: {...inDegree}, graph, sources: [...sources], sortedOrder: '', message: `Graph built. Found initial sources (in-degree 0).` });
+    
+    // 4. Main topological sort loop
+    let sortedOrder = '';
+    let processingQueue = [...sources];
+    while (processingQueue.length > 0) {
+        const vertex = processingQueue.shift();
+        sortedOrder += vertex;
+        steps.push({ type: 'poll_source', currentVertex: vertex, inDegree: {...inDegree}, graph, sources: [...processingQueue], sortedOrder, message: `Processing '${vertex}'. Added to alphabet.` });
+
+        for (const child of graph[vertex]) {
+            inDegree[child]--;
+            steps.push({ type: 'update_child', currentVertex: vertex, child, inDegree: {...inDegree}, graph, sources: [...processingQueue], sortedOrder, message: `Updating child '${child}'. In-degree is now ${inDegree[child]}.` });
+            if (inDegree[child] === 0) {
+                processingQueue.push(child);
+                steps.push({ type: 'new_source', currentVertex: vertex, child, inDegree: {...inDegree}, graph, sources: [...processingQueue], sortedOrder, message: `Child '${child}' became a source. Added to queue.` });
+            }
+        }
+    }
+    
+    // 5. Finish
+    if (sortedOrder.length !== uniqueChars.length) {
+        steps.push({ type: 'finish_cycle', inDegree, graph, sources: [], sortedOrder, message: 'Error: A cycle was detected in dependencies!' });
+    } else {
+        steps.push({ type: 'finish_ok', inDegree, graph, sources: [], sortedOrder, message: 'Success! The alien alphabet is found.' });
+    }
+
+    return steps;
+}
+
+
+function drawGraph(characters, edges) {
+    graphContainer.innerHTML = '';
+    edgeContainer.innerHTML = '';
+    nodePositions = {};
+    const center_x = vizWrapper.offsetWidth / 2;
+    const center_y = vizWrapper.offsetHeight / 2;
+    const radius = Math.min(center_x, center_y) * 0.8;
+
+    characters.forEach((char, i) => {
+        const angle = (i / characters.length) * 2 * Math.PI - (Math.PI/2);
+        const x = center_x + radius * Math.cos(angle);
+        const y = center_y + radius * Math.sin(angle);
+        nodePositions[char] = { x, y };
+
+        const node = document.createElement('div');
+        node.className = 'node-p5';
+        node.id = `node-p5-${char}`;
+        node.style.left = `${x - 25}px`;
+        node.style.top = `${y - 25}px`;
+        node.innerHTML = `${char}<div class="in-degree" id="in-degree-p5-${char}">0</div>`;
+        graphContainer.appendChild(node);
+    });
+    
+    const svgNS = "http://www.w3.org/2000/svg";
+    const defs = document.createElementNS(svgNS, 'defs');
+    ['arrowhead', 'arrowhead-active'].forEach(id => {
+        const marker = document.createElementNS(svgNS, 'marker');
+        marker.setAttribute('id', id);
+        marker.setAttribute('viewBox', '0 -5 10 10'); marker.setAttribute('refX', '10'); marker.setAttribute('refY', '0');
+        marker.setAttribute('markerWidth', '6'); marker.setAttribute('markerHeight', '6'); marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS(svgNS, 'path');
+        path.setAttribute('d', 'M0,-5L10,0L0,5');
+        path.style.fill = id === 'arrowhead' ? getComputedStyle(document.documentElement).getPropertyValue('--color-edge') : getComputedStyle(document.documentElement).getPropertyValue('--color-edge-active');
+        marker.appendChild(path);
+        defs.appendChild(marker);
+    });
+    edgeContainer.appendChild(defs);
+}
+
+function drawEdge(parent, child) {
+    const p1 = nodePositions[parent];
+    const p2 = nodePositions[child];
+    if(!p1 || !p2) return;
+    const existingEdge = document.getElementById(`edge-p5-${parent}-${child}`);
+    if (existingEdge) return;
+
+    const dx = p2.x - p1.x, dy = p2.y - p1.y, dist = Math.sqrt(dx*dx + dy*dy);
+    const unitX = dx / dist, unitY = dy / dist;
+    const nodeRadius = 25;
+    const newX2 = p2.x - unitX * (nodeRadius + 5);
+    const newY2 = p2.y - unitY * (nodeRadius + 5);
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+    line.setAttribute('x2', newX2); line.setAttribute('y2', newY2);
+    line.setAttribute('stroke', getComputedStyle(document.documentElement).getPropertyValue('--color-edge'));
+    line.setAttribute('stroke-width', '3');
+    line.setAttribute('marker-end', 'url(#arrowhead)');
+    line.id = `edge-p5-${parent}-${child}`;
+    edgeContainer.appendChild(line);
+}
+
+
+function renderState(step) {
+    // Word list highlighting
+    const words = wordsInput.value.split('\n').filter(w => w.length > 0);
+    wordsListDiv.innerHTML = words.map((word, i) => {
+        let wordHtml = word;
+        if(step.comparedWords && step.comparedWords.includes(i) && step.comparedChars) {
+            const charIdx = step.comparedChars[0];
+            wordHtml = word.substring(0, charIdx) + 
+                       `<span class="char-highlight">${word[charIdx]}</span>` + 
+                       word.substring(charIdx + 1);
+        }
+        return `<div class="${(step.comparedWords && step.comparedWords.includes(i)) ? 'compared' : ''}">${wordHtml}</div>`;
+    }).join('');
+
+    // Graph node/edge state
+    document.querySelectorAll('.node-p5').forEach(n => n.classList.remove('current', 'source', 'child', 'processed', 'cycle'));
+    document.querySelectorAll('#edge_container_p5 line').forEach(l => {
+        l.style.stroke = getComputedStyle(document.documentElement).getPropertyValue('--color-edge');
+        l.setAttribute('marker-end', 'url(#arrowhead)');
+    });
+    
+    if (step.type === 'add_edge') {
+        drawEdge(step.comparedChars[1], step.comparedChars[2]);
+    }
+
+    if (step.inDegree) {
+        Object.keys(step.inDegree).forEach(char => {
+            document.getElementById(`in-degree-p5-${char}`).textContent = step.inDegree[char];
+            const node = document.getElementById(`node-p5-${char}`);
+            if(step.sortedOrder.includes(char)) node.classList.add('processed');
+            else if (step.sources.includes(char)) node.classList.add('source');
+        });
+    }
+
+    if (step.currentVertex) document.getElementById(`node-p5-${step.currentVertex}`).classList.add('current');
+    if (step.child) {
+        document.getElementById(`node-p5-${step.child}`).classList.add('child');
+        const activeEdge = document.getElementById(`edge-p5-${step.currentVertex}-${step.child}`);
+        if(activeEdge) {
+            activeEdge.style.stroke = getComputedStyle(document.documentElement).getPropertyValue('--color-edge-active');
+            activeEdge.setAttribute('marker-end', 'url(#arrowhead-active)');
+        }
+    }
+    
+    // Data structures
+    sourcesQueueDiv.innerHTML = step.sources.map(v => `<div class="item-pill source">${v}</div>`).join('');
+    sortedOrderDiv.innerHTML = step.sortedOrder.split('').map(v => `<div class="item-pill processed">${v}</div>`).join('');
+    
+    // Final Overlays
+    let isFinished = false;
+    if(step.type.startsWith('finish') || step.type === 'invalid_prefix') {
+        overlay.className = 'show';
+        isFinished = true;
+    }
+    if(step.type === 'finish_ok') {
+        overlay.innerHTML = `<span style="font-size:2em">SUCCESS!</span><div style="font-size:1.5em; margin-top:15px">Alien Alphabet:</div><div style="font-size:3em; color: #f1c40f">${step.sortedOrder}</div>`;
+    } else if (step.type === 'finish_cycle' || step.type === 'invalid_prefix') {
+        overlay.style.background = 'rgba(231, 76, 60, 0.7)';
+        overlay.innerHTML = `<span style="font-size:3em">❌</span><div style="font-size:1.5em">${step.message}</div>`;
+        if(step.type === 'finish_cycle') {
+            Object.keys(step.inDegree).forEach(char => {
+                if(!step.sortedOrder.includes(char)) document.getElementById(`node-p5-${char}`).classList.add('cycle');
+            });
+        }
+    }
+    simulationRunning = !isFinished;
+}
+
+function initializeAnimation() {
+    const words = wordsInput.value.split('\n').filter(w => w.length > 0);
+    
+    simulationRunning = false;
+    animationSteps = generateAnimationSteps(words);
+    currentStepIndex = 0;
+    
+    overlay.className = '';
+    overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+    
+    const firstStep = animationSteps[0];
+    if(!firstStep) { updateButtonState(); return; }
+    
+    drawGraph(uniqueChars, []);
+    
+    renderState(firstStep);
+    currentActionDisplay.textContent = firstStep.message;
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+
+    currentActionDisplay.textContent = step.message;
+    renderState(step);
+    
+    currentStepIndex++;
+    if(currentStepIndex >= animationSteps.length) simulationRunning = false;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    wordsInput = document.getElementById('words_input_p5');
+    startButton = document.getElementById('start_button_ad_p5');
+    nextStepButton = document.getElementById('next_step_button_ad_p5');
+    sourcesQueueDiv = document.getElementById('sources_queue_p5');
+    sortedOrderDiv = document.getElementById('sorted_order_p5');
+    currentActionDisplay = document.getElementById('current_action_ad_display_p5');
+    vizWrapper = document.getElementById('visualization_wrapper_p5');
+    graphContainer = document.getElementById('graph_container_p5');
+    edgeContainer = document.getElementById('edge_container_p5');
+    overlay = document.getElementById('overlay-ad');
+    wordsListDiv = document.getElementById('words_list_p5');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find All Possible Recipes from Given Supplies Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🍳 Find All Possible Recipes from Given Supplies – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Find All Possible Recipes from Given Supplies</b> problem (LeetCode 2115) asks you to determine which recipes can be made given a list of supplies and recipes, where each recipe may depend on other recipes or supplies.
+    </p>
+
+    <h2>🧱 Pattern Template (Topological Sort / BFS)</h2>
+    <pre><code>import java.util.*;
+
+class Solution {
+    public List&lt;String&gt; findAllRecipes(String[] recipes, List&lt;List&lt;String&gt;&gt; ingredients, String[] supplies) {
+        Map&lt;String, List&lt;String&gt;&gt; graph = new HashMap&lt;&gt;();
+        Map&lt;String, Integer&gt; inDegree = new HashMap&lt;&gt;();
+        Set&lt;String&gt; supplySet = new HashSet&lt;&gt;(Arrays.asList(supplies));
+        for (String recipe : recipes) {
+            inDegree.put(recipe, 0);
+        }
+        for (int i = 0; i &lt; recipes.length; i++) {
+            String recipe = recipes[i];
+            for (String ing : ingredients.get(i)) {
+                if (!supplySet.contains(ing)) {
+                    graph.computeIfAbsent(ing, k -&gt; new ArrayList&lt;&gt;()).add(recipe);
+                    inDegree.put(recipe, inDegree.getOrDefault(recipe, 0) + 1);
+                }
+            }
+        }
+        Queue&lt;String&gt; queue = new LinkedList&lt;&gt;(supplySet);
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        while (!queue.isEmpty()) {
+            String item = queue.poll();
+            if (inDegree.containsKey(item) &amp;&amp; inDegree.get(item) == 0) {
+                result.add(item);
+            }
+            for (String next : graph.getOrDefault(item, new ArrayList&lt;&gt;())) {
+                inDegree.put(next, inDegree.get(next) - 1);
+                if (inDegree.get(next) == 0) queue.add(next);
+            }
+        }
+        return result;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/find_all_possible_recipes_animation.html'">▶️ View Animation</button>
+    <a href="https://www.youtube.com/watch?v=AQrsAc3EcyQ&ab_channel=NeetCodeIO" target="_blank" rel="noopener noreferrer">▶️ Watch NeetCodeIO Explanation</a>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(N + E)</code>, where N is the number of recipes and E is the total number of ingredient dependencies.</li>
+      <li><b>Space Complexity:</b> <code>O(N + E)</code>, for the graph and in-degree map.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Dependency resolution with prerequisites</li>
+      <li>Recipe or task scheduling with ingredient constraints</li>
+      <li>Problems involving supplies and buildable items</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/find-all-possible-recipes-from-given-supplies/" target="_blank" rel="noopener noreferrer">
+          2115. Find All Possible Recipes from Given Supplies
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Graph</span>
+        <span class="badge badge-tag">Topological Sort</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: recipes = ["bread"], ingredients = [["yeast","flour"]], supplies = ["yeast","flour","corn"]
+Output: ["bread"]
+
+Input: recipes = ["bread","sandwich"], ingredients = [["yeast","flour"],["bread","meat"]], supplies = ["yeast","flour","meat"]
+Output: ["bread","sandwich"]
+
+Input: recipes = ["bread"], ingredients = [["yeast","flour"]], supplies = ["yeast"]
+Output: []
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use topological sort to resolve dependencies between recipes and supplies.</li>
+      <li>Start with all supplies in the queue and process recipes as their ingredients become available.</li>
+      <li>Handle cycles by checking in-degree and only adding recipes when all dependencies are met.</li>
+    </ul>
+
+    <h2>🔗 Related Topics</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/tag/topological-sort/" target="_blank" rel="noopener noreferrer">
+          Topological Sort
+        </a>
+      </li>
+      <li>
+        <a href="https://leetcode.com/tag/graph/" target="_blank" rel="noopener noreferrer">
+          Graph
+        </a>
+      </li>
+    </ul>
+
+    <h2>📚 Further Reading</h2>
+    <ul>
+      <li>
+        <a href="https://en.wikipedia.org/wiki/Topological_sorting" target="_blank" rel="noopener noreferrer">
+          Topological Sorting - Wikipedia
+        </a>
+      </li>
+      <li>
+        <a href="https://www.geeksforgeeks.org/topological-sorting-degree-concept/" target="_blank" rel="noopener noreferrer">
+          Topological Sorting and Its Applications - GeeksforGeeks
+        </a>
+      </li>
+    </ul>
+
+    <h2>🛠️ Tools & References</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/explore/learn/card/graph/620topological-sort/" target="_blank" rel="noopener noreferrer">
+          LeetCode Topological Sort Tutorial
+        </a>
+      </li>
+      <li>
+        <a href="https://visualgo.net/en/dfsbfs" target="_blank" rel="noopener noreferrer">
+          Visualgo - DFS/BFS Visualization
+        </a>
+      </li>
+    </ul>
+
+    <h2>❓ FAQs</h2>
+    <ul>
+      <li>
+        <details>
+          <summary><b>Q:</b> Can this problem be solved using DFS?</summary>
+          <p>
+            A: Yes, this problem can also be approached using Depth First Search (DFS) to explore all possible recipes and their dependencies.
+          </p>
+        </details>
+      </li>
+      <li>
+        <details>
+          <summary><b>Q:</b> What if there are cycles in the recipe dependencies?</summary>
+          <p>
+            A: The in-degree check helps to identify cycles. If a recipe's in-degree never reaches zero, it indicates a cycle, and that recipe cannot be made.
+          </p>
+        </details>
+      </li>
+    </ul>
+
+    <footer>
+      <p>
+        🍴 Find All Possible Recipes from Given Supplies Cheat Sheet - Created by NeetCodeIO
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

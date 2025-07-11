@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find All Possible Recipes Animation</title>
+    <style>
+        :root {
+            --color-recipe: #3498db; /* Blue */
+            --color-supply: #2ecc71; /* Green */
+            --color-ingredient: #bdc3c7; /* Gray */
+            --color-current: #f1c40f; /* Yellow */
+            --color-child: #e67e22;   /* Orange */
+            --color-processed: #27ae60;
+            --color-edge: #95a5a6;
+            --color-edge-active: #c0392b;
+            --color-bg-light: #f4f7f6;
+            --color-bg-panel: #ffffff;
+            --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-fr-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: start;}
+        .controls-fr-p5 .input-group { display: flex; flex-direction: column; }
+        .controls-fr-p5 label { font-weight: bold; margin-bottom: 4px; }
+        .controls-fr-p5 input, .controls-fr-p5 textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.0em; font-family: 'Courier New', monospace; width: 95%; }
+        .controls-fr-p5 textarea { height: 60px; }
+        .controls-fr-p5 .button-group { grid-column: 1 / -1; display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+        .controls-fr-p5 button { padding: 10px 15px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-fr-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-fr-p5 { display: grid; grid-template-columns: minmax(320px, 1fr) 3fr; gap: 15px; }
+        .left-panel-fr-p5, .right-panel-fr-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-fr-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .visualization-wrapper-p5 { min-height: 450px; background-color: #ecf0f1; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 5px; padding:10px; }
+        #graph_container_p5 { position: relative; width: 100%; height: 100%; }
+        #edge_container_p5 { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .hidden { display: none !important; }
+
+        .node-p5 { min-width: 80px; height: 50px; padding: 0 10px; border-radius: 25px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold; position: absolute; z-index: 2; transition: all 0.3s; }
+        .node-p5.recipe-node { background: var(--color-recipe); border: 3px solid #2980b9; color: white; }
+        .node-p5.supply-node { background: var(--color-supply); border: 3px solid #27ae60; color: white; }
+        .node-p5.ingredient-node { background: var(--color-ingredient); border: 3px solid #7f8c8d; }
+        .node-p5 .name { font-size: 0.9em; }
+        .node-p5 .in-degree { position: absolute; top: -8px; right: -8px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 0.7em; display: flex; justify-content: center; align-items: center; }
+        .node-p5.current { box-shadow: 0 0 15px var(--color-current); transform: scale(1.1); }
+        .node-p5.child { box-shadow: 0 0 15px var(--color-child); }
+        .node-p5.processed { opacity: 0.4; }
+        
+        .data-structure-container { margin-top: 10px; }
+        .data-structure-container .label { font-weight: bold; margin-bottom: 5px; }
+        .data-structure-box { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; min-height: 30px; }
+        .item-pill { padding: 3px 8px; border-radius: 15px; font-family: 'Courier New', monospace; font-weight: bold; color: white; }
+        .item-pill.source { background-color: var(--color-supply); }
+        .item-pill.recipe { background-color: var(--color-recipe); }
+        
+        #current_action_fr_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:3em; font-size:1em; }
+        #overlay-fr { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay-fr.show { opacity: 1; }
+
+        @media (max-width: 1000px) { .main-content-fr-p5 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Find All Possible Recipes from Given Supplies</h1>
+        <div class="controls-fr-p5">
+            <div class="input-group">
+                <label>Recipes:</label><textarea id="recipes_input_p5">["bread","sandwich"]</textarea>
+            </div>
+            <div class="input-group">
+                <label>Supplies:</label><textarea id="supplies_input_p5">["yeast","flour","meat"]</textarea>
+            </div>
+            <div class="input-group" style="grid-column: 1 / -1;">
+                <label>Ingredients (for each recipe):</label>
+                <textarea id="ingredients_input_p5">[["yeast","flour"],["bread","meat"]]</textarea>
+            </div>
+            <div class="button-group">
+                <button id="start_button_fr_p5">Start/Reset</button>
+                <button id="next_step_button_fr_p5" disabled>Next Step</button>
+            </div>
+        </div>
+        <div class="main-content-fr-p5">
+            <div class="left-panel-fr-p5">
+                <div class="state-panel-fr-p5">
+                    <h2>State</h2>
+                    <div class="data-structure-container">
+                        <div class="label">Ready to Use / Pantry</div>
+                        <div id="sources_queue_p5" class="data-structure-box"></div>
+                    </div>
+                    <div class="data-structure-container">
+                        <div class="label">Creatable Recipes</div>
+                        <div id="created_recipes_p5" class="data-structure-box"></div>
+                    </div>
+                    <div id="current_action_fr_display_p5">Enter parameters and click 'Start'.</div>
+                </div>
+            </div>
+            <div class="right-panel-fr-p5">
+                 <div class="visualization-wrapper-p5">
+                    <svg id="edge_container_p5"></svg>
+                    <div id="graph_container_p5"></div>
+                    <div id="overlay-fr"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, nodePositions = {};
+let recipesInput, ingredientsInput, suppliesInput, startButton, nextStepButton, 
+    sourcesQueueDiv, createdRecipesDiv, currentActionDisplay, graphContainer, edgeContainer, overlay;
+
+function updateButtonState() {
+    const isFinished = !simulationRunning || currentStepIndex >= animationSteps.length;
+    nextStepButton.disabled = isFinished;
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+}
+
+function generateAnimationSteps(recipes, ingredients, supplies) {
+    const steps = [];
+    const recipeSet = new Set(recipes);
+    const supplySet = new Set(supplies);
+
+    let allItems = new Set([...recipes, ...supplies]);
+    ingredients.flat().forEach(ing => allItems.add(ing));
+
+    let inDegree = {}, graph = {};
+    allItems.forEach(item => { inDegree[item] = 0; graph[item] = []; });
+    
+    steps.push({ type: 'init_nodes', items: [...allItems], message: 'Identified all unique recipes and ingredients as nodes.' });
+
+    for (let i = 0; i < recipes.length; i++) {
+        for (const ingredient of ingredients[i]) {
+            graph[ingredient].push(recipes[i]);
+            inDegree[recipes[i]]++;
+        }
+    }
+    steps.push({ type: 'build_graph', inDegree: {...inDegree}, graph: graph, message: 'Built dependency graph. In-degree = needed ingredients.' });
+
+    let sources = [];
+    allItems.forEach(item => { if (inDegree[item] === 0) sources.push(item); });
+    steps.push({ type: 'find_sources', inDegree: {...inDegree}, graph: graph, sources: [...sources], created: [], message: `Initial supplies are ready to use.` });
+    
+    let createdRecipes = [];
+    let queue = [...sources];
+    while (queue.length > 0) {
+        const item = queue.shift();
+        steps.push({ type: 'poll_source', item, inDegree: {...inDegree}, graph: graph, sources: [...queue], created: [...createdRecipes], message: `Using '${item}'...` });
+
+        if (graph[item]) {
+            for (const dependentRecipe of graph[item]) {
+                inDegree[dependentRecipe]--;
+                steps.push({ type: 'update_child', item, child: dependentRecipe, inDegree: {...inDegree}, graph: graph, sources: [...queue], created: [...createdRecipes], message: `Satisfied one requirement for '${dependentRecipe}'.` });
+                if (inDegree[dependentRecipe] === 0) {
+                    queue.push(dependentRecipe);
+                    if (recipeSet.has(dependentRecipe)) {
+                        createdRecipes.push(dependentRecipe);
+                    }
+                    steps.push({ type: 'new_source', item, child: dependentRecipe, inDegree: {...inDegree}, graph: graph, sources: [...queue], created: [...createdRecipes], message: `'${dependentRecipe}' can now be made!` });
+                }
+            }
+        }
+    }
+    
+    steps.push({ type: 'finish', created: [...createdRecipes], message: 'Process complete. All possible recipes have been found.' });
+    return steps;
+}
+
+function drawGraph(items, recipeSet, supplySet) {
+    graphContainer.innerHTML = '<svg id="edge_container_p5"></svg>';
+    edgeContainer = document.getElementById('edge_container_p5');
+    nodePositions = {};
+    const center_x = graphContainer.offsetWidth / 2, center_y = graphContainer.offsetHeight / 2;
+    const radius = Math.min(center_x, center_y) * 0.8;
+    
+    items.forEach((item, i) => {
+        const angle = (i / items.length) * 2 * Math.PI - (Math.PI / 2);
+        const x = center_x + radius * Math.cos(angle), y = center_y + radius * Math.sin(angle);
+        nodePositions[item] = { x, y };
+        const node = document.createElement('div');
+        node.className = 'node-p5'; node.id = `node-p5-${item}`;
+        if(recipeSet.has(item)) node.classList.add('recipe-node');
+        else if(supplySet.has(item)) node.classList.add('supply-node');
+        else node.classList.add('ingredient-node');
+
+        const textWidth = item.length * 8 + 20;
+        node.style.width = `${textWidth}px`;
+        node.style.left = `${x - textWidth/2}px`; node.style.top = `${y - 25}px`;
+        node.innerHTML = `<span class="name">${item}</span><div class="in-degree" id="in-degree-p5-${item}">0</div>`;
+        graphContainer.appendChild(node);
+    });
+    
+    const svgNS = "http://www.w3.org/2000/svg", defs = document.createElementNS(svgNS, 'defs');
+    ['arrowhead', 'arrowhead-active'].forEach(id => {
+        const marker = document.createElementNS(svgNS, 'marker');
+        marker.setAttribute('id', id); marker.setAttribute('viewBox', '0 -5 10 10'); marker.setAttribute('refX', '10');
+        marker.setAttribute('markerWidth', '6'); marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS(svgNS, 'path'); path.setAttribute('d', 'M0,-5L10,0L0,5');
+        path.style.fill = id === 'arrowhead' ? 'var(--color-edge)' : 'var(--color-edge-active)';
+        marker.appendChild(path); defs.appendChild(marker);
+    });
+    edgeContainer.appendChild(defs);
+}
+
+function renderState(step) {
+    currentActionDisplay.textContent = step.message;
+    const recipeSet = new Set(JSON.parse(recipesInput.value));
+
+    // Update data displays
+    sourcesQueueDiv.innerHTML = (step.sources || []).map(v => `<div class="item-pill ${recipeSet.has(v) ? 'recipe' : 'source'}">${v}</div>`).join('');
+    createdRecipesDiv.innerHTML = (step.created || []).map(v => `<div class="item-pill recipe">${v}</div>`).join('');
+
+    // Update graph nodes
+    document.querySelectorAll('.node-p5').forEach(n => n.classList.remove('current', 'child', 'processed'));
+    if(step.inDegree){
+      Object.keys(step.inDegree).forEach(item => {
+        const nodeEl = document.getElementById(`node-p5-${item}`);
+        if(nodeEl) document.getElementById(`in-degree-p5-${item}`).textContent = step.inDegree[item];
+      });
+    }
+
+    // Update edges
+    if(step.graph){
+      edgeContainer.innerHTML = document.querySelector('defs').outerHTML;
+      Object.keys(step.graph).forEach(parent => {
+          step.graph[parent].forEach(child => {
+               const p1 = nodePositions[parent], p2 = nodePositions[child];
+               if(!p1 || !p2) return;
+               const dx = p2.x - p1.x, dy = p2.y - p1.y, dist = Math.sqrt(dx*dx + dy*dy);
+               const toNodeEl = document.getElementById(`node-p5-${child}`);
+               const nodeWidth = toNodeEl.offsetWidth;
+               const newX2 = p2.x - (dx / dist) * (nodeWidth/2 + 5), newY2 = p2.y - (dy / dist) * 28;
+               const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+               line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+               line.setAttribute('x2', newX2); line.setAttribute('y2', newY2);
+               line.setAttribute('stroke', 'var(--color-edge)'); line.setAttribute('stroke-width', '2');
+               line.setAttribute('marker-end', 'url(#arrowhead)');
+               line.id = `edge-p5-${parent}-${child}`; edgeContainer.appendChild(line);
+          });
+      });
+    }
+
+    // Highlighting
+    if (step.item) document.getElementById(`node-p5-${step.item}`)?.classList.add('current');
+    if (step.child) {
+        document.getElementById(`node-p5-${step.child}`)?.classList.add('child');
+        const edge = document.getElementById(`edge-p5-${step.item}-${step.child}`);
+        if(edge) { edge.setAttribute('stroke', 'var(--color-edge-active)'); edge.setAttribute('marker-end', 'url(#arrowhead-active)'); }
+    }
+    
+    // Final state
+    if (step.type === 'finish') {
+        overlay.className = 'show';
+        overlay.innerHTML = `<div style="color:white;text-align:center;"><span style="font-size:3em">🎉</span><div style="font-size:1.5em">Done!</div><div style="font-size:1.2em">You can make these recipes:</div><div style="font-size:1.5em;color:var(--color-current);margin-top:10px;">${step.created.join(', ') || 'None'}</div></div>`;
+        simulationRunning = false;
+    }
+}
+
+
+function initializeAnimation() {
+    let recipes, ingredients, supplies;
+    try {
+        recipes = JSON.parse(recipesInput.value.trim() || '[]');
+        ingredients = JSON.parse(ingredientsInput.value.trim() || '[]');
+        supplies = JSON.parse(suppliesInput.value.trim() || '[]');
+        if (recipes.length !== ingredients.length) throw new Error("Recipes and ingredients lists must have the same length.");
+    } catch (e) { alert(e.message || "Invalid input. Please use valid JSON array format."); return; }
+    
+    simulationRunning = false;
+    animationSteps = generateAnimationSteps(recipes, ingredients, supplies);
+    currentStepIndex = 0;
+    
+    overlay.className = '';
+    
+    const firstStep = animationSteps[0];
+    if(!firstStep) { updateButtonState(); return; }
+    
+    const recipeSet = new Set(recipes);
+    const supplySet = new Set(supplies);
+    drawGraph(firstStep.items, recipeSet, supplySet);
+    
+    renderState(firstStep);
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    const step = animationSteps[currentStepIndex];
+    renderState(step);
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    recipesInput = document.getElementById('recipes_input_p5'); ingredientsInput = document.getElementById('ingredients_input_p5');
+    suppliesInput = document.getElementById('supplies_input_p5'); startButton = document.getElementById('start_button_fr_p5');
+    nextStepButton = document.getElementById('next_step_button_fr_p5'); sourcesQueueDiv = document.getElementById('sources_queue_p5');
+    createdRecipesDiv = document.getElementById('created_recipes_p5'); currentActionDisplay = document.getElementById('current_action_fr_display_p5');
+    graphContainer = document.getElementById('graph_container_p5'); edgeContainer = document.getElementById('edge_container_p5');
+    overlay = document.getElementById('overlay-fr');
+    
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    initializeAnimation();
+});
+</script>
+</body>
+</html>

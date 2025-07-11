@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Longest Path With Different Adjacent Characters Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🌲 Longest Path With Different Adjacent Characters – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Longest Path With Different Adjacent Characters</b> problem (LeetCode 2246) asks you to find the length of the longest path in a tree such that no two adjacent nodes on the path have the same character.
+    </p>
+
+    <h2>🧱 Pattern Template (DFS on Tree)</h2>
+    <pre><code>class Solution {
+    int max = 1;
+    public int longestPath(int[] parent, String s) {
+        int n = parent.length;
+        List&lt;List&lt;Integer&gt;&gt; tree = new ArrayList&lt;&gt;();
+        for (int i = 0; i &lt; n; i++) tree.add(new ArrayList&lt;&gt;());
+        for (int i = 1; i &lt; n; i++) tree.get(parent[i]).add(i);
+        dfs(0, tree, s);
+        return max;
+    }
+    private int dfs(int node, List&lt;List&lt;Integer&gt;&gt; tree, String s) {
+        int longest = 0, second = 0;
+        for (int child : tree.get(node)) {
+            int len = dfs(child, tree, s);
+            if (s.charAt(child) != s.charAt(node)) {
+                if (len &gt; longest) {
+                    second = longest;
+                    longest = len;
+                } else if (len &gt; second) {
+                    second = len;
+                }
+            }
+        }
+        max = Math.max(max, longest + second + 1);
+        return longest + 1;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/longest_path_with_different_adjacent_characters_animation.html'">▶️ View Animation</button>
+    <a href="https://www.youtube.com/watch?v=EA8dP63iVPk&ab_channel=codestorywithMIK" target="_blank" rel="noopener noreferrer">▶️ Watch CodeStoryWithMIK Explanation</a>
+        <h2>🧱 Pattern Template (Topological Sort Solution)</h2>
+    <pre><code>class Solution {
+    public int longestPath(int[] parent, String s) {
+        int n = parent.length;
+        List&lt;List&lt;Integer&gt;&gt; graph = new ArrayList&lt;&gt;();
+        int[] inDegree = new int[n];
+        for (int i = 0; i &lt; n; i++) graph.add(new ArrayList&lt;&gt;());
+        for (int i = 1; i &lt; n; i++) {
+            graph.get(parent[i]).add(i);
+            inDegree[i]++;
+        }
+
+        int[] dp = new int[n];
+        Arrays.fill(dp, 1);
+        Queue&lt;Integer&gt; queue = new LinkedList&lt;&gt;();
+        for (int i = 0; i &lt; n; i++) if (inDegree[i] == 0) queue.add(i);
+
+        int max = 1;
+        while (!queue.isEmpty()) {
+            int node = queue.poll();
+            for (int child : graph.get(node)) {
+                if (s.charAt(child) != s.charAt(node)) {
+                    dp[child] = Math.max(dp[child], dp[node] + 1);
+                    max = Math.max(max, dp[child]);
+                }
+                inDegree[child]--;
+                if (inDegree[child] == 0) queue.add(child);
+            }
+        }
+        return max;
+    }
+}</code></pre>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(n)</code>, where n is the number of nodes.</li>
+      <li><b>Space Complexity:</b> <code>O(n)</code>, for the tree structure and recursion stack.</li>
+    </ul>
+    
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Tree DP problems</li>
+      <li>Longest path or diameter in trees with constraints</li>
+      <li>Problems involving parent-child relationships and character constraints</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/longest-path-with-different-adjacent-characters/" target="_blank" rel="noopener noreferrer">
+          2246. Longest Path With Different Adjacent Characters
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Tree</span>
+        <span class="badge badge-tag">DFS</span>
+        <span class="badge badge-tag">DP</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: parent = [-1,0,0,1,1,2], s = "abacbe"
+Output: 3
+Explanation: The longest path is [0,1,3] or [0,2,5] with characters "aba" or "abe".
+
+Input: parent = [-1,0,0,0], s = "aabc"
+Output: 3
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use DFS to compute the two longest valid child paths for each node.</li>
+      <li>Update the global maximum at each node using the sum of the two longest child paths plus one (the node itself).</li>
+      <li>Carefully handle character comparison between parent and child.</li>
+    </ul>
+  </div>
+</body>
+</html>

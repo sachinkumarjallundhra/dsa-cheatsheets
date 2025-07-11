@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alien Dictionary Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>👽 Alien Dictionary – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Alien Dictionary</b> problem (LeetCode 269) asks you to determine the order of characters in an alien language, given a list of words in that language. The order is based on the relative order of characters in adjacent words.
+    </p>
+
+    <h2>🧱 Pattern Template (Topological Sort)</h2>
+    <pre><code>import java.util.*;
+
+class Solution {
+    public String alienOrder(String[] words) {
+        if (words == null || words.length == 0) return "";
+
+        // 1. Build the graph and in-degree map
+        HashMap&lt;Character, Integer&gt; inDegree = new HashMap&lt;&gt;();
+        HashMap&lt;Character, List&lt;Character&gt;&gt; graph = new HashMap&lt;&gt;();
+        for (String word : words) {
+            for (char c : word.toCharArray()) {
+                inDegree.put(c, 0);
+                graph.put(c, new ArrayList&lt;&gt;());
+            }
+        }
+
+        // 2. Populate the graph and in-degree map from adjacent words
+        for (int i = 0; i &lt; words.length - 1; i++) {
+            String word1 = words[i], word2 = words[i + 1];
+            for (int j = 0; j &lt; Math.min(word1.length(), word2.length()); j++) {
+                char parent = word1.charAt(j), child = word2.charAt(j);
+                if (parent != child) {
+                    graph.get(parent).add(child);
+                    inDegree.put(child, inDegree.get(child) + 1);
+                    break; // Only the first diff matters
+                }
+                if (j == Math.min(word1.length(), word2.length()) - 1 &amp;&amp; word1.length() &gt; word2.length()) {
+                    return ""; // Invalid order
+                }
+            }
+        }
+
+        // 3. Find all sources (nodes with in-degree 0)
+        Queue&lt;Character&gt; sources = new LinkedList&lt;&gt;();
+        for (Map.Entry&lt;Character, Integer&gt; entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) sources.add(entry.getKey());
+        }
+
+        // 4. For each source, add it to the sortedOrder and subtract one from all of its children's in-degrees
+        // If a child's in-degree becomes zero, add it to the sources queue
+        StringBuilder sortedOrder = new StringBuilder();
+        while (!sources.isEmpty()) {
+            char vertex = sources.poll();
+            sortedOrder.append(vertex);
+            for (char child : graph.get(vertex)) {
+                inDegree.put(child, inDegree.get(child) - 1);
+                if (inDegree.get(child) == 0) sources.add(child);
+            }
+        }
+
+        // Topological sort is not possible as the graph has a cycle
+        if (sortedOrder.length() != inDegree.size()) return "";
+
+        return sortedOrder.toString();
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/alien_dictionary_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(V + E)</code>, where V is the number of unique characters and E is the number of dependencies.</li>
+      <li><b>Space Complexity:</b> <code>O(V + E)</code>, to store the graph and in-degree map.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Determining character order from a list of words</li>
+      <li>Dependency resolution with character constraints</li>
+      <li>Problems involving lexicographical order</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/alien-dictionary/" target="_blank" rel="noopener noreferrer">
+          269. Alien Dictionary
+        </a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Graph</span>
+        <span class="badge badge-tag">Topological Sort</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: words = ["wrt","wrf","er","ett","rftt"]
+Output: "wertf"
+
+Input: words = ["z","x"]
+Output: "zx"
+
+Input: words = ["z","x","z"]
+Output: "" // Cycle detected
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Build the graph by comparing adjacent words.</li>
+      <li>Use topological sort to find the character order.</li>
+      <li>Detect cycles to handle invalid input.</li>
+    </ul>
+  </div>
+</body>
+</html>

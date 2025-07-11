@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topological Sort Animation</title>
+    <style>
+        :root {
+            --color-node: #bdc3c7;
+            --color-node-border: #7f8c8d;
+            --color-source: #3498db;  /* Blue */
+            --color-current: #f1c40f; /* Yellow */
+            --color-child: #e67e22;   /* Orange */
+            --color-processed: #2ecc71; /* Green */
+            --color-edge: #95a5a6;
+            --color-edge-active: #c0392b;
+            --color-cycle: #e74c3c;
+            --color-bg-light: #f4f7f6;
+            --color-bg-panel: #ffffff;
+            --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-ts-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-ts-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-ts-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; }
+        #vertices_input_p5 { width: 60px; }
+        #edges_input_p5 { width: 300px; }
+        .controls-ts-p5 button { padding: 10px 15px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-ts-p5 button:hover { background-color: #229954; }
+        .controls-ts-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-ts-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 3fr; gap: 15px; }
+        .left-panel-ts-p5, .right-panel-ts-p5 { display: flex; flex-direction: column; gap: 10px; }
+        
+        .state-panel-ts-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .visualization-wrapper-p5 { min-height: 400px; background-color: #ecf0f1; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 5px; }
+        #graph_container_p5 { position: relative; width: 100%; height: 100%; }
+        #edge_container_p5 { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        
+        .node-p5 { width: 60px; height: 60px; background: var(--color-node); border: 3px solid var(--color-node-border); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: var(--color-text-dark); position: absolute; z-index: 2; transition: all 0.3s ease-in-out; font-size: 1.5em; }
+        .node-p5 .in-degree { position: absolute; top: -10px; right: -10px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 24px; height: 24px; font-size: 0.6em; display: flex; justify-content: center; align-items: center; }
+
+        .node-p5.source { border-color: var(--color-source); box-shadow: 0 0 15px var(--color-source); }
+        .node-p5.current { border-color: var(--color-current); box-shadow: 0 0 15px var(--color-current); transform: scale(1.1); }
+        .node-p5.child { border-color: var(--color-child); box-shadow: 0 0 15px var(--color-child); }
+        .node-p5.processed { background-color: var(--color-processed); border-color: #27ae60; }
+        .node-p5.cycle { background-color: var(--color-cycle); border-color: #c0392b; color: white; }
+
+        .data-structure-container { margin-top: 10px; }
+        .data-structure-container .label { font-weight: bold; margin-bottom: 5px; color: var(--color-text-dark); }
+        .data-structure-box { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; min-height: 40px; }
+        .item-pill { padding: 5px 10px; border-radius: 15px; font-family: 'Courier New', monospace; font-weight: bold; }
+        .item-pill.source { background-color: var(--color-source); color: white; }
+        .item-pill.processed { background-color: var(--color-processed); color: white; }
+
+        #current_action_ts_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:4.5em; font-size:1em; }
+
+        #overlay-ts { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-weight: bold; color: white; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; border-radius: 5px; }
+        #overlay-ts.show { opacity: 1; }
+
+        .log-container-ts-p5 { background-color: #343a40; color: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px; grid-column: 1 / -1;}
+        #log_output_ts_p5 { white-space: pre-wrap; word-wrap: break-word; max-height: 150px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.8em; }
+
+        @media (max-width: 1000px) { .main-content-ts-p5 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Topological Sort (Kahn's Algorithm)</h1>
+
+        <div class="controls-ts-p5">
+            <label for="vertices_input_p5">Vertices:</label>
+            <input type="number" id="vertices_input_p5" value="6" min="1">
+            <label for="edges_input_p5">Edges (e.g., 0,2; 1,2; 2,3):</label>
+            <input type="text" id="edges_input_p5" value="0,2; 1,2; 2,3; 2,4; 3,5; 4,5">
+            <button id="start_button_ts_p5">Start/Reset</button>
+            <button id="next_step_button_ts_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-ts-p5">
+            <div class="left-panel-ts-p5">
+                <div class="state-panel-ts-p5">
+                    <h2>State</h2>
+                    <div class="data-structure-container">
+                        <div class="label">Sources Queue</div>
+                        <div id="sources_queue_p5" class="data-structure-box"></div>
+                    </div>
+                     <div class="data-structure-container">
+                        <div class="label">Sorted Order</div>
+                        <div id="sorted_order_p5" class="data-structure-box"></div>
+                    </div>
+                    <div id="current_action_ts_display_p5">Enter vertices and edges, then click 'Start'.</div>
+                </div>
+                <div class="log-container-ts-p5">
+                    <h2>Log</h2>
+                    <pre id="log_output_ts_p5"></pre>
+                </div>
+            </div>
+            <div class="right-panel-ts-p5">
+                 <div class="visualization-wrapper-p5" id="visualization_wrapper_p5">
+                    <svg id="edge_container_p5"></svg>
+                    <div id="graph_container_p5"></div>
+                    <div id="overlay-ts"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let nodePositions = {};
+
+// --- DOM ELEMENTS ---
+let verticesInput, edgesInput, startButton, nextStepButton, sourcesQueueDiv, sortedOrderDiv,
+    currentActionDisplay, logOutput, vizWrapper, graphContainer, edgeContainer, overlay;
+
+// --- HELPER FUNCTIONS ---
+function log(message) { if(logOutput) { logOutput.innerHTML += `> ${message}\n`; logOutput.scrollTop = logOutput.scrollHeight; } }
+function updateButtonState() {
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length;
+    startButton.textContent = simulationRunning ? "Reset" : "Start/Reset";
+}
+
+function generateAnimationSteps(vertices, edges) {
+    // ... (This function is unchanged from the previous version) ...
+    const steps = [];
+    if (vertices <= 0) return steps;
+
+    // 1. Build graph structure
+    let inDegree = {};
+    let graph = {};
+    for (let i = 0; i < vertices; i++) {
+        inDegree[i] = 0;
+        graph[i] = [];
+    }
+    for (const edge of edges) {
+        let parent = edge[0], child = edge[1];
+        graph[parent].push(child);
+        inDegree[child]++;
+    }
+    steps.push({ type: 'initial', inDegree: {...inDegree}, graph: {...graph}, sources: [], sortedOrder: [], message: 'Graph built. Initial in-degrees calculated.' });
+
+    // 2. Find initial sources
+    let sources = [];
+    for (let i = 0; i < vertices; i++) {
+        if (inDegree[i] === 0) {
+            sources.push(i);
+        }
+    }
+    steps.push({ type: 'find_sources', inDegree: {...inDegree}, graph: {...graph}, sources: [...sources], sortedOrder: [], message: `Found initial sources (nodes with in-degree 0).` });
+    
+    // 3. Main loop
+    let sortedOrder = [];
+    let processingQueue = [...sources];
+    while (processingQueue.length > 0) {
+        const vertex = processingQueue.shift();
+        sortedOrder.push(vertex);
+        steps.push({ type: 'poll_source', currentVertex: vertex, inDegree: {...inDegree}, graph: {...graph}, sources: [...processingQueue], sortedOrder: [...sortedOrder], message: `Processing ${vertex} from queue. Added to sorted order.` });
+
+        for (const child of graph[vertex]) {
+            inDegree[child]--;
+            steps.push({ type: 'update_child', currentVertex: vertex, child, inDegree: {...inDegree}, graph: {...graph}, sources: [...processingQueue], sortedOrder: [...sortedOrder], message: `Updating child ${child}. Decrementing in-degree to ${inDegree[child]}.` });
+            if (inDegree[child] === 0) {
+                processingQueue.push(child);
+                steps.push({ type: 'new_source', currentVertex: vertex, child, inDegree: {...inDegree}, graph: {...graph}, sources: [...processingQueue], sortedOrder: [...sortedOrder], message: `Child ${child} is now a source. Adding to queue.` });
+            }
+        }
+    }
+    
+    // 4. Finish
+    if (sortedOrder.length !== vertices) {
+        steps.push({ type: 'finish_cycle', inDegree: {...inDegree}, graph: {...graph}, sources: [], sortedOrder: [...sortedOrder], message: 'Error: Graph has a cycle! Sort is not possible.' });
+    } else {
+        steps.push({ type: 'finish_ok', inDegree: {...inDegree}, graph: {...graph}, sources: [], sortedOrder: [...sortedOrder], message: 'Success! All vertices have been sorted.' });
+    }
+
+    return steps;
+}
+
+function drawGraph(vertices, edges) {
+    graphContainer.innerHTML = '';
+    edgeContainer.innerHTML = '';
+    nodePositions = {};
+    const center_x = vizWrapper.offsetWidth / 2;
+    const center_y = vizWrapper.offsetHeight / 2;
+    const radius = Math.min(center_x, center_y) * 0.8;
+
+    // Draw nodes
+    for (let i = 0; i < vertices; i++) {
+        const angle = (i / vertices) * 2 * Math.PI - (Math.PI/2);
+        const x = center_x + radius * Math.cos(angle);
+        const y = center_y + radius * Math.sin(angle);
+        nodePositions[i] = { x, y };
+
+        const node = document.createElement('div');
+        node.className = 'node-p5';
+        node.id = `node-p5-${i}`;
+        node.style.left = `${x - 30}px`;
+        node.style.top = `${y - 30}px`;
+        node.innerHTML = `${i}<div class="in-degree" id="in-degree-p5-${i}">?</div>`;
+        graphContainer.appendChild(node);
+    }
+    
+    // Draw edges with arrowheads
+    const svgNS = "http://www.w3.org/2000/svg";
+    const defs = document.createElementNS(svgNS, 'defs');
+    
+    // Default arrowhead
+    const marker = document.createElementNS(svgNS, 'marker');
+    marker.setAttribute('id', 'arrowhead');
+    marker.setAttribute('viewBox', '0 -5 10 10'); 
+    marker.setAttribute('refX', '10'); // Tip of the arrow
+    marker.setAttribute('refY', '0');
+    marker.setAttribute('markerWidth', '6');
+    marker.setAttribute('markerHeight', '6');
+    marker.setAttribute('orient', 'auto');
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', 'M0,-5L10,0L0,5');
+    path.style.fill = getComputedStyle(document.documentElement).getPropertyValue('--color-edge');
+    marker.appendChild(path);
+    defs.appendChild(marker);
+
+    // Active arrowhead
+    const markerActive = document.createElementNS(svgNS, 'marker');
+    markerActive.setAttribute('id', 'arrowhead-active');
+    markerActive.setAttribute('viewBox', '0 -5 10 10'); 
+    markerActive.setAttribute('refX', '10');
+    markerActive.setAttribute('refY', '0');
+    markerActive.setAttribute('markerWidth', '6');
+    markerActive.setAttribute('markerHeight', '6');
+    markerActive.setAttribute('orient', 'auto');
+    const pathActive = document.createElementNS(svgNS, 'path');
+    pathActive.setAttribute('d', 'M0,-5L10,0L0,5');
+    pathActive.style.fill = getComputedStyle(document.documentElement).getPropertyValue('--color-edge-active');
+    markerActive.appendChild(pathActive);
+    defs.appendChild(markerActive);
+
+    edgeContainer.appendChild(defs);
+
+    for (const edge of edges) {
+        const p1 = nodePositions[edge[0]];
+        const p2 = nodePositions[edge[1]];
+
+        // Shorten the line so it points to the edge of the circle, not the center
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const unitX = dx / dist;
+        const unitY = dy / dist;
+        const nodeRadius = 30;
+        const newX2 = p2.x - unitX * (nodeRadius + 5); // +5 for a small gap
+        const newY2 = p2.y - unitY * (nodeRadius + 5);
+
+        const line = document.createElementNS(svgNS, "line");
+        line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+        line.setAttribute('x2', newX2); line.setAttribute('y2', newY2);
+        line.setAttribute('stroke', getComputedStyle(document.documentElement).getPropertyValue('--color-edge'));
+        line.setAttribute('stroke-width', '3');
+        line.setAttribute('marker-end', 'url(#arrowhead)');
+        line.id = `edge-p5-${edge[0]}-${edge[1]}`;
+        edgeContainer.appendChild(line);
+    }
+}
+
+
+function renderState(step) {
+    sourcesQueueDiv.innerHTML = step.sources.map(v => `<div class="item-pill source">${v}</div>`).join('');
+    sortedOrderDiv.innerHTML = step.sortedOrder.map(v => `<div class="item-pill processed">${v}</div>`).join('');
+
+    document.querySelectorAll('.node-p5').forEach(n => n.classList.remove('current', 'source', 'child', 'processed', 'cycle'));
+    document.querySelectorAll('#edge_container_p5 line').forEach(l => {
+        l.style.stroke = getComputedStyle(document.documentElement).getPropertyValue('--color-edge');
+        l.setAttribute('marker-end', 'url(#arrowhead)');
+    });
+    
+    Object.keys(step.inDegree).forEach(vertexId => {
+        document.getElementById(`in-degree-p5-${vertexId}`).textContent = step.inDegree[vertexId];
+        const node = document.getElementById(`node-p5-${vertexId}`);
+        if(step.sortedOrder.includes(parseInt(vertexId))) {
+            node.classList.add('processed');
+        } else if (step.sources.includes(parseInt(vertexId))) {
+            node.classList.add('source');
+        }
+    });
+
+    if (step.currentVertex !== undefined) {
+        document.getElementById(`node-p5-${step.currentVertex}`).classList.add('current');
+    }
+    if(step.child !== undefined) {
+        document.getElementById(`node-p5-${step.child}`).classList.add('child');
+        const activeEdge = document.getElementById(`edge-p5-${step.currentVertex}-${step.child}`);
+        if(activeEdge) {
+            activeEdge.style.stroke = getComputedStyle(document.documentElement).getPropertyValue('--color-edge-active');
+            activeEdge.setAttribute('marker-end', 'url(#arrowhead-active)');
+        }
+    }
+
+    if(step.type === 'finish_ok') {
+        overlay.className = 'show';
+        overlay.innerHTML = `<span style="font-size:3em">🎉</span><div style="font-size:1.5em">Sort Complete!</div>`;
+        simulationRunning = false;
+    }
+    if(step.type === 'finish_cycle') {
+        overlay.className = 'show';
+        overlay.style.background = 'rgba(231, 76, 60, 0.7)';
+        overlay.innerHTML = `<span style="font-size:3em">❌</span><div style="font-size:1.5em">Cycle Detected!</div>`;
+        Object.keys(step.inDegree).forEach(vertexId => {
+           if(!step.sortedOrder.includes(parseInt(vertexId))) {
+               document.getElementById(`node-p5-${vertexId}`).classList.add('cycle');
+           }
+        });
+        simulationRunning = false;
+    }
+}
+
+function initializeAnimation() {
+    let vertices;
+    let edges;
+    try {
+        vertices = parseInt(verticesInput.value);
+        const edgeString = edgesInput.value.replace(/\s/g, '');
+        if (edgeString === "") {
+            edges = [];
+        } else {
+            edges = edgeString.split(';').map(pair => {
+                const nums = pair.split(',').map(Number);
+                if (nums.length !== 2 || nums.some(isNaN) || nums.some(n => n >= vertices || n < 0)) throw new Error(`Invalid edge pair: "${pair}"`);
+                return nums;
+            });
+        }
+        if (isNaN(vertices) || vertices < 1) throw new Error("Vertices must be a positive number.");
+
+    } catch (e) {
+        alert(e.message);
+        return;
+    }
+    
+    drawGraph(vertices, edges);
+    
+    simulationRunning = false;
+    animationSteps = generateAnimationSteps(vertices, edges);
+    currentStepIndex = 0;
+    
+    logOutput.innerHTML = "";
+    log("Algorithm Initialized.");
+    overlay.className = '';
+    overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+    
+    const firstStep = animationSteps[0];
+    if(!firstStep) {
+        updateButtonState();
+        return;
+    }
+    renderState(firstStep);
+    currentActionDisplay.textContent = firstStep.message;
+    log(firstStep.message);
+
+    simulationRunning = true; 
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length) return;
+    
+    nextStepButton.disabled = true;
+    const step = animationSteps[currentStepIndex];
+
+    log(`\n--- Step ${currentStepIndex + 1}: ${step.type} ---`);
+    log(step.message);
+    currentActionDisplay.textContent = step.message;
+    
+    renderState(step);
+    
+    currentStepIndex++;
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    verticesInput = document.getElementById('vertices_input_p5');
+    edgesInput = document.getElementById('edges_input_p5');
+    startButton = document.getElementById('start_button_ts_p5');
+    nextStepButton = document.getElementById('next_step_button_ts_p5');
+    sourcesQueueDiv = document.getElementById('sources_queue_p5');
+    sortedOrderDiv = document.getElementById('sorted_order_p5');
+    currentActionDisplay = document.getElementById('current_action_ts_display_p5');
+    logOutput = document.getElementById('log_output_ts_p5');
+    vizWrapper = document.getElementById('visualization_wrapper_p5');
+    graphContainer = document.getElementById('graph_container_p5');
+    edgeContainer = document.getElementById('edge_container_p5');
+    overlay = document.getElementById('overlay-ts');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+    
+    initializeAnimation(); 
+});
+</script>
+</body>
+</html>

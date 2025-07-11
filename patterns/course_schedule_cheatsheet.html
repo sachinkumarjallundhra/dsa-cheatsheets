@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Schedule Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Course Schedule – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Course Schedule</b> problem (LeetCode 207) asks you to determine if it is possible to finish all courses given a set of prerequisites.
+    </p>
+
+    <h2>🧱 Pattern Template (Topological Sort - Kahn's Algorithm)</h2>
+    <pre><code>import java.util.*;
+
+class Solution {
+    public boolean canFinish(int numCourses, int[][] prerequisites) {
+        if (numCourses &lt;= 0) return true;
+
+        // 1. Build the graph and in-degree map
+        HashMap&lt;Integer, Integer&gt; inDegree = new HashMap&lt;&gt;();
+        HashMap&lt;Integer, List&lt;Integer&gt;&gt; graph = new HashMap&lt;&gt;();
+        for (int i = 0; i &lt; numCourses; i++) {
+            inDegree.put(i, 0);
+            graph.put(i, new ArrayList&lt;&gt;());
+        }
+
+        // 2. Populate the graph and in-degree map from prerequisites
+        for (int[] prerequisite : prerequisites) {
+            int child = prerequisite[0], parent = prerequisite[1];
+            graph.get(parent).add(child);
+            inDegree.put(child, inDegree.get(child) + 1);
+        }
+
+        // 3. Find all sources (nodes with in-degree 0)
+        Queue&lt;Integer&gt; sources = new LinkedList&lt;&gt;();
+        for (Map.Entry&lt;Integer, Integer&gt; entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) sources.add(entry.getKey());
+        }
+
+        // 4. For each source, add it to the sortedOrder and subtract one from all of its children's in-degrees
+        // If a child's in-degree becomes zero, add it to the sources queue
+        int count = 0;
+        while (!sources.isEmpty()) {
+            int vertex = sources.poll();
+            count++;
+            for (int child : graph.get(vertex)) {
+                inDegree.put(child, inDegree.get(child) - 1);
+                if (inDegree.get(child) == 0) sources.add(child);
+            }
+        }
+
+        // If count is not equal to number of courses, there is a cycle
+        return count == numCourses;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/course_schedule_animation.html'">▶️ View Animation</button>
+
+    <h2>📊 Time Complexity</h2>
+    <ul>
+      <li><b>Time Complexity:</b> <code>O(V + E)</code>, where V is the number of courses and E is the number of prerequisites.</li>
+      <li><b>Space Complexity:</b> <code>O(V + E)</code>, to store the graph and in-degree map.</li>
+    </ul>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Course scheduling with dependencies</li>
+      <li>Task scheduling with prerequisites</li>
+      <li>Cycle detection in directed graphs</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/course-schedule/" target="_blank" rel="noopener noreferrer">
+          207. Course Schedule
+        </a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Graph</span>
+        <span class="badge badge-tag">Topological Sort</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: numCourses = 2, prerequisites = [[1,0]]
+Output: true
+Explanation: There are a total of 2 courses to take. 
+To take course 1 you should have finished course 0. So it is possible.
+
+Input: numCourses = 2, prerequisites = [[1,0],[0,1]]
+Output: false
+Explanation: There are a total of 2 courses to take. 
+To take course 1 you should have finished

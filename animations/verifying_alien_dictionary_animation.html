@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifying an Alien Dictionary Animation</title>
+    <style>
+        :root {
+            --color-compare1: #3498db; /* Blue */
+            --color-compare2: #9b59b6;  /* Purple */
+            --color-success: #2ecc71; /* Green */
+            --color-violation: #e74c3c;   /* Red */
+            --color-highlight: #f1c40f; /* Yellow */
+            --color-bg-light: #f4f7f6;
+            --color-bg-panel: #ffffff;
+            --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-vad-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-vad-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-vad-p5 input, .controls-vad-p5 textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; font-family: 'Courier New', monospace; }
+        #words_input_p5 { width: 250px; height: 80px; }
+        #order_input_p5 { width: 300px; }
+        .controls-vad-p5 button { padding: 10px 15px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-vad-p5 button:hover { background-color: #229954; }
+        .controls-vad-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-vad-p5 { display: grid; grid-template-columns: minmax(300px, 1fr) 2fr; gap: 15px; }
+        .left-panel-vad-p5, .right-panel-vad-p5 { display: flex; flex-direction: column; gap: 15px; }
+        
+        .panel-vad-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        #order_ruler_p5 { display: flex; flex-wrap: wrap; gap: 5px; }
+        .order-char { width: 40px; height: 55px; border: 2px solid #bdc3c7; border-radius: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: all 0.2s; }
+        .order-char .char { font-size: 1.5em; font-weight: bold; }
+        .order-char .rank { font-size: 0.7em; color: #7f8c8d; }
+        .order-char.highlight1 { border-color: var(--color-compare1); box-shadow: 0 0 10px var(--color-compare1); transform: scale(1.1); }
+        .order-char.highlight2 { border-color: var(--color-compare2); box-shadow: 0 0 10px var(--color-compare2); transform: scale(1.1); }
+
+        #words_list_p5 { font-family: 'Courier New', monospace; font-size: 1.4em; }
+        .word-item { padding: 4px 8px; border-radius: 4px; transition: all 0.3s; position: relative; }
+        .word-item.comparing1 { background-color: rgba(52, 152, 219, 0.15); }
+        .word-item.comparing2 { background-color: rgba(155, 89, 182, 0.15); }
+        .char-pointer { position: absolute; top: -15px; width: 2px; height: 1.3em; background: var(--color-highlight); transition: left 0.3s ease-in-out; }
+        .char-pointer::after { content: '▼'; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 1em; color: var(--color-highlight); }
+
+        #result_panel_p5 { text-align: center; font-size: 1.8em; font-weight: bold; }
+        #result_panel_p5.yes { color: var(--color-success); }
+        #result_panel_p5.no { color: var(--color-violation); }
+
+        #current_action_vad_display_p5 { text-align:center; font-weight:bold; min-height:3em; font-size:1.1em; }
+
+        @media (max-width: 1000px) { .main-content-vad-p5 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Verifying an Alien Dictionary</h1>
+
+        <div class="controls-vad-p5">
+            <label for="words_input_p5">Words:</label>
+            <textarea id="words_input_p5">word
+world
+row</textarea>
+            <label for="order_input_p5">Order:</label>
+            <input type="text" id="order_input_p5" value="worldabcefghijkmnpqstuvxyz">
+            <button id="start_button_vad_p5">Verify</button>
+            <button id="next_step_button_vad_p5" disabled>Next Step</button>
+        </div>
+
+        <div class="main-content-vad-p5">
+            <div class="left-panel-vad-p5">
+                 <div class="panel-vad-p5">
+                    <h2>Word List</h2>
+                    <div id="words_list_p5"></div>
+                </div>
+            </div>
+            <div class="right-panel-vad-p5">
+                 <div class="panel-vad-p5">
+                    <h2>Alien Alphabet (Order)</h2>
+                    <div id="order_ruler_p5"></div>
+                </div>
+                 <div class="panel-vad-p5">
+                    <h2>Verification</h2>
+                    <div id="current_action_vad_display_p5">Click 'Verify' to start.</div>
+                    <div id="result_panel_p5">Sorted: ?</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- STATE VARIABLES ---
+let animationSteps = [];
+let currentStepIndex = 0;
+let simulationRunning = false;
+let orderMap = new Map();
+let charWidth = 0;
+
+// --- DOM ELEMENTS ---
+let wordsInput, orderInput, startButton, nextStepButton, 
+    wordsListDiv, orderRulerDiv, currentActionDisplay, resultPanel;
+
+// --- HELPER FUNCTIONS ---
+function updateButtonState() {
+    const isFinished = !simulationRunning || currentStepIndex >= animationSteps.length -1;
+    nextStepButton.disabled = isFinished;
+    startButton.textContent = simulationRunning ? "Reset" : "Verify";
+}
+
+function generateAnimationSteps(words, order) {
+    const steps = [];
+    orderMap.clear();
+    for (let i = 0; i < order.length; i++) {
+        orderMap.set(order[i], i);
+    }
+
+    steps.push({ type: 'initial', message: "Start verification. Compare adjacent words." });
+
+    for (let i = 0; i < words.length - 1; i++) {
+        const w1 = words[i], w2 = words[i+1];
+        steps.push({ type: 'start_compare_pair', word_indices: [i, i+1], message: `Comparing "${w1}" and "${w2}".` });
+
+        let foundDifference = false;
+        for (let j = 0; j < Math.min(w1.length, w2.length); j++) {
+            const c1 = w1[j], c2 = w2[j];
+            
+            steps.push({ type: 'scan_char', word_indices: [i, i+1], char_index: j, chars: [c1, c2], message: `Index ${j}: Comparing '${c1}' vs '${c2}'.` });
+
+            if (c1 !== c2) {
+                const rank1 = orderMap.get(c1), rank2 = orderMap.get(c2);
+                steps.push({ type: 'check_order', word_indices: [i, i+1], char_index: j, chars: [c1, c2], ranks: [rank1, rank2], message: `First difference! Is rank('${c1}') <= rank('${c2}')? (${rank1} <= ${rank2})` });
+
+                if (rank1 > rank2) {
+                    steps.push({ type: 'violation', word_indices: [i, i+1], char_index: j, chars: [c1, c2], ranks: [rank1, rank2], message: `VIOLATION! Dictionary is not sorted.` });
+                    return steps;
+                }
+                
+                steps.push({ type: 'order_ok', word_indices: [i, i+1], message: `Yes, order is correct. Moving to next pair.` });
+                foundDifference = true;
+                break; 
+            }
+        }
+        
+        if (!foundDifference) {
+            if (w1.length > w2.length) {
+                steps.push({ type: 'prefix_violation', word_indices: [i, i+1], message: `VIOLATION! "${w2}" is a prefix of "${w1}" but is shorter.` });
+                return steps;
+            } else {
+                 steps.push({ type: 'order_ok', word_indices: [i, i+1], message: `One word is a prefix of the other. Order is correct.` });
+            }
+        }
+    }
+
+    steps.push({ type: 'finish_ok', message: 'All word pairs are valid. Dictionary is sorted!' });
+    return steps;
+}
+
+function createRuler(order) {
+    orderRulerDiv.innerHTML = '';
+    for (let i = 0; i < order.length; i++) {
+        const char = order[i];
+        const div = document.createElement('div');
+        div.className = 'order-char';
+        div.id = `order-char-${char}`;
+        div.innerHTML = `<span class="char">${char}</span><span class="rank">${i}</span>`;
+        orderRulerDiv.appendChild(div);
+    }
+}
+
+function createWordList(words) {
+    wordsListDiv.innerHTML = '';
+    words.forEach((word, index) => {
+        const div = document.createElement('div');
+        div.className = 'word-item';
+        div.id = `word-item-${index}`;
+        div.textContent = word;
+        wordsListDiv.appendChild(div);
+    });
+    if(words.length > 0) {
+        const tempSpan = document.createElement('span');
+        tempSpan.textContent = 'M';
+        tempSpan.style.visibility = 'hidden';
+        if (wordsListDiv.children[0]) {
+            wordsListDiv.children[0].appendChild(tempSpan);
+            charWidth = tempSpan.offsetWidth;
+            wordsListDiv.children[0].removeChild(tempSpan);
+        }
+    }
+}
+
+function renderState(step) {
+    document.querySelectorAll('.word-item').forEach(w => w.classList.remove('comparing1', 'comparing2'));
+    document.querySelectorAll('.order-char').forEach(c => c.classList.remove('highlight1', 'highlight2'));
+    document.querySelectorAll('.char-pointer').forEach(p => p.remove());
+
+    currentActionDisplay.textContent = step.message;
+
+    if (step.word_indices) {
+        const [idx1, idx2] = step.word_indices;
+        const w1Div = document.getElementById(`word-item-${idx1}`);
+        const w2Div = document.getElementById(`word-item-${idx2}`);
+        if(w1Div) w1Div.classList.add('comparing1');
+        if(w2Div) w2Div.classList.add('comparing2');
+    }
+
+    if (step.char_index !== undefined) {
+        const leftPos = (step.char_index * charWidth) + 8;
+        step.word_indices.forEach(wordIdx => {
+             const pointer = document.createElement('div');
+             pointer.className = 'char-pointer';
+             pointer.style.left = `${leftPos}px`;
+             document.getElementById(`word-item-${wordIdx}`).appendChild(pointer);
+        });
+    }
+    
+    if(step.type === 'check_order' || step.type === 'violation') {
+        const [c1, c2] = step.chars;
+        document.getElementById(`order-char-${c1}`)?.classList.add('highlight1');
+        document.getElementById(`order-char-${c2}`)?.classList.add('highlight2');
+    }
+    
+    if(step.type.includes('violation')) {
+        resultPanel.textContent = 'Sorted: No ❌';
+        resultPanel.className = 'no';
+        simulationRunning = false;
+    } else if (step.type === 'finish_ok') {
+        resultPanel.textContent = 'Sorted: Yes ✅';
+        resultPanel.className = 'yes';
+        simulationRunning = false;
+    }
+}
+
+function initializeAnimation() {
+    if (simulationRunning) { // Reset logic
+        simulationRunning = false;
+        currentStepIndex = 0;
+        animationSteps = [];
+        updateButtonState();
+        currentActionDisplay.textContent = "Click 'Verify' to start.";
+        resultPanel.textContent = 'Sorted: ?';
+        resultPanel.className = '';
+        orderRulerDiv.innerHTML = '';
+        wordsListDiv.innerHTML = '';
+        return;
+    }
+
+    const words = wordsInput.value.split('\n').filter(w => w.trim().length > 0);
+    const order = orderInput.value;
+    if (words.length < 2) {
+        resultPanel.textContent = 'Sorted: Yes ✅';
+        resultPanel.className = 'yes';
+        currentActionDisplay.textContent = 'Trivially sorted (0 or 1 words).';
+        return;
+    }
+    if (order.length === 0) { alert("Please provide an order string."); return; }
+
+    createRuler(order);
+    createWordList(words);
+    
+    animationSteps = generateAnimationSteps(words, order);
+    currentStepIndex = 0;
+
+    const firstStep = animationSteps[0];
+    if(!firstStep) { updateButtonState(); return; }
+    
+    simulationRunning = true; 
+    renderState(firstStep);
+    updateButtonState();
+}
+
+async function performNextStep() {
+    if (!simulationRunning) return;
+    
+    currentStepIndex++;
+    if(currentStepIndex >= animationSteps.length) {
+        simulationRunning = false;
+        updateButtonState();
+        return;
+    }
+
+    const step = animationSteps[currentStepIndex];
+    renderState(step);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    wordsInput = document.getElementById('words_input_p5');
+    orderInput = document.getElementById('order_input_p5');
+    startButton = document.getElementById('start_button_vad_p5');
+    nextStepButton = document.getElementById('next_step_button_vad_p5');
+    wordsListDiv = document.getElementById('words_list_p5');
+    orderRulerDiv = document.getElementById('order_ruler_p5');
+    currentActionDisplay = document.getElementById('current_action_vad_display_p5');
+    resultPanel = document.getElementById('result_panel_p5');
+
+    startButton.addEventListener('click', initializeAnimation);
+    nextStepButton.addEventListener('click', performNextStep);
+});
+</script>
+</body>
+</html>
