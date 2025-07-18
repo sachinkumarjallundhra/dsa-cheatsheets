@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valid Parentheses Animation</title>
+    <style>
+        :root {
+            --color-round: #3498db;      --color-round-border: #2980b9;
+            --color-curly: #9b59b6;      --color-curly-border: #8e44ad;
+            --color-square: #27ae60;     --color-square-border: #229954;
+            --color-success: #2ecc71;    --color-fail: #e74c3c;
+            --color-highlight: #f1c40f;  --color-match-bg: #ecf0f1;
+            --color-bg-light: #f4f7f6;   --color-bg-panel: #ffffff;   --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-vp { width: 98%; max-width: 1200px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } 
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        h3 { font-size: 1em; margin-bottom: 5px; color: #34495e;}
+
+        .controls-vp { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-vp label { font-weight: bold; margin-right: 5px; }
+        .controls-vp input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.3em; font-family: 'Courier New', monospace; width: 400px; }
+        .controls-vp button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-vp button:hover { background-color: #2980b9; }
+        .controls-vp button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-vp { display: grid; grid-template-columns: 350px 1fr; gap: 15px; }
+        .panel-vp { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .stack-vp { min-height: 400px; background-color: #f9f9f9; border-radius: 4px; border: 1px solid #ddd; padding: 5px; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 5px; }
+        .stack-item-vp { padding: 10px; border-radius: 4px; font-size: 1.5em; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; border: 3px solid; color: white; transition: all 0.3s ease; animation: push-anim-vp 0.3s ease; }
+        .bracket-round { background-color: var(--color-round); border-color: var(--color-round-border); }
+        .bracket-curly { background-color: var(--color-curly); border-color: var(--color-curly-border); }
+        .bracket-square { background-color: var(--color-square); border-color: var(--color-square-border); }
+        @keyframes push-anim-vp { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .expression-display-vp { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 1.8em; font-family: 'Courier New', monospace; }
+        .char-box-vp { padding: 2px 8px; border-radius: 3px; transition: background-color 0.3s, color 0.3s; }
+        .char-box-vp.highlight { background-color: var(--color-highlight); color: black; box-shadow: 0 0 10px var(--color-highlight); }
+        
+        #matching_zone_vp { background-color: var(--color-match-bg); margin-top: 15px; border: 2px dashed #bdc3c7; border-radius: 5px; padding: 15px; transition: opacity 0.3s ease, transform 0.3s ease; }
+        .match-grid-vp { display: grid; grid-template-columns: auto auto auto; align-items: center; justify-content: center; gap: 20px; font-size: 1.2em; text-align: center;}
+        .match-item-vp { display: flex; flex-direction: column; gap: 5px; }
+        .match-item-vp .label { font-size: 0.8em; color: #6c757d; font-weight: bold; }
+        .match-item-vp .value { font-family: 'Courier New', monospace; font-size: 2.5em; font-weight: bold; }
+        #match_status_vp { font-weight: bold; font-size: 1.5em; }
+        #match_status_vp.success { color: var(--color-success); }
+        #match_status_vp.fail { color: var(--color-fail); }
+
+        #current_action_display_vp { text-align:center; margin-top:15px; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        
+        #overlay-vp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-vp.show { opacity: 1; pointer-events: auto;}
+        .result-box-vp { background: white; padding: 30px 50px; border-radius: 10px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .result-box-vp h2 { font-size: 2em; margin: 0 0 10px 0;}
+        .result-box-vp p { margin: 0; font-size: 1.1em; color: #555; }
+        #final_result_text_vp.valid { color: var(--color-success); }
+        #final_result_text_vp.invalid { color: var(--color-fail); }
+        
+        @media (max-width: 1000px) { .main-content-vp { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-vp">
+        <h1>Valid Parentheses</h1>
+        <div class="controls-vp">
+            <label>Input String:</label><input id="string_input_vp" value="([{}])">
+            <button id="start_button_vp">Start</button>
+            <button id="next_step_button_vp" disabled>Next Step</button>
+        </div>
+        <div class="main-content-vp">
+            <div class="left-panel-vp">
+                 <div class="panel-vp">
+                    <h3>Stack</h3>
+                    <div id="stack_container_vp" class="stack-vp"></div>
+                </div>
+            </div>
+            <div class="right-panel-vp">
+                <div class="panel-vp">
+                     <h2>Input String</h2>
+                     <div id="expression_display_container_vp" class="expression-display-vp"></div>
+                </div>
+                <div class="panel-vp" id="matching_zone_vp" style="display:none;">
+                    <h3>Matching</h3>
+                    <div class="match-grid-vp">
+                        <div class="match-item-vp">
+                            <span class="label">Closing Bracket</span>
+                            <span id="match_closing_vp" class="value">?</span>
+                        </div>
+                         <div id="match_status_vp"></div>
+                        <div class="match-item-vp">
+                            <span class="label">Popped from Stack</span>
+                            <span id="match_popped_vp" class="value">?</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-vp">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_vp">Enter a string of brackets and click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-vp">
+        <div class="result-box-vp">
+            <h2 id="final_result_text_vp"></h2>
+            <p id="final_result_reason_vp"></p>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, inputString = '';
+let stringInput, startButton, nextStepButton, stackContainer, expressionDisplayContainer, 
+    currentActionDisplay, overlay, matchingZone, matchClosing, matchPopped, matchStatus, 
+    finalResultText, finalResultReason;
+
+const saveState = (steps, stack, charIndex, message, phase, extraData = {}) => {
+    steps.push({ 
+        charIndex, 
+        message, 
+        stack: [...stack], 
+        phase, 
+        ...extraData 
+    });
+};
+
+function generateAnimationSteps(s) {
+    const steps = [];
+    const stack = [];
+
+    saveState(steps, stack, -1, "Click 'Next Step' to begin validation.", 'initial');
+
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (c === '(' || c === '{' || c === '[') {
+            saveState(steps, stack, i, `Character '${c}' is an opening bracket.`, 'scan_open');
+            stack.push(c);
+            saveState(steps, stack, i, `Pushed '${c}' onto the stack.`, 'push');
+        } else if (c === ')' || c === '}' || c === ']') {
+            saveState(steps, stack, i, `Character '${c}' is a closing bracket. Checking the stack.`, 'scan_close');
+
+            if (stack.length === 0) {
+                saveState(steps, stack, i, "Stack is empty. Cannot match a closing bracket.", 'check_empty_fail', { comparison: { closing: c, popped: ' ' } });
+                saveState(steps, stack, -1, "Invalid", 'finish_invalid', { reason: "Found a closing bracket with no matching open bracket."});
+                return steps;
+            }
+
+            const open = stack.pop();
+            saveState(steps, stack, i, `Popped '${open}' from the stack to match with '${c}'.`, 'pop_for_match', { comparison: { closing: c, popped: open } });
+
+            const isMatch = (c === ')' && open === '(') || (c === '}' && open === '{') || (c === ']' && open === '[');
+
+            if (isMatch) {
+                saveState(steps, stack, i, `'${open}' and '${c}' are a valid pair. Continuing.`, 'match_success', { comparison: { closing: c, popped: open, match: true } });
+            } else {
+                saveState(steps, stack, i, `Mismatch! Popped '${open}' does not match closing bracket '${c}'.`, 'match_fail', { comparison: { closing: c, popped: open, match: false } });
+                saveState(steps, stack, -1, "Invalid", 'finish_invalid', { reason: "Mismatched brackets."});
+                return steps;
+            }
+        }
+    }
+
+    saveState(steps, stack, -1, "Reached end of string. Checking if stack is empty.", 'final_check');
+    if (stack.length === 0) {
+        saveState(steps, stack, -1, "Valid", 'finish_valid', { reason: "All brackets were correctly matched and closed."});
+    } else {
+        saveState(steps, stack, -1, "Invalid", 'finish_invalid', { reason: `Unclosed opening brackets remain on the stack: ${stack.join(', ')}`});
+    }
+
+    return steps;
+}
+
+function drawInitialState() {
+    expressionDisplayContainer.innerHTML = '';
+    inputString.split('').forEach(char => {
+        const charBox = document.createElement('div');
+        charBox.className = 'char-box-vp';
+        charBox.textContent = char;
+        expressionDisplayContainer.appendChild(charBox);
+    });
+}
+
+function getBracketClass(char) {
+    if (char === '(' || char === ')') return 'bracket-round';
+    if (char === '{' || char === '}') return 'bracket-curly';
+    if (char === '[' || char === ']') return 'bracket-square';
+    return '';
+}
+
+function renderState(step) {
+    // Highlight current character
+    document.querySelectorAll('.char-box-vp').forEach((box, i) => {
+        box.classList.toggle('highlight', i === step.charIndex);
+    });
+    
+    // Render stack
+    stackContainer.innerHTML = '';
+    step.stack.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `stack-item-vp ${getBracketClass(item)}`;
+        div.textContent = item;
+        stackContainer.appendChild(div);
+    });
+
+    // Update message
+    currentActionDisplay.textContent = step.message;
+
+    // Render matching zone
+    if (step.phase.startsWith('match') || step.phase === 'pop_for_match' || step.phase === 'check_empty_fail') {
+        matchingZone.style.display = 'block';
+        const { closing, popped, match } = step.comparison;
+        matchClosing.textContent = closing;
+        matchClosing.className = `value ${getBracketClass(closing)}`;
+        matchPopped.textContent = popped;
+        matchPopped.className = `value ${getBracketClass(popped)}`;
+        
+        if (match === true) {
+            matchStatus.textContent = '✓ Match!';
+            matchStatus.className = 'success';
+        } else if (match === false || step.phase === 'check_empty_fail') {
+            matchStatus.textContent = '✗ Mismatch!';
+            matchStatus.className = 'fail';
+        } else {
+            matchStatus.textContent = '?';
+            matchStatus.className = '';
+        }
+    } else {
+        matchingZone.style.display = 'none';
+    }
+
+    // Handle final state overlay
+    if (step.phase.startsWith('finish')) {
+        const isValid = step.phase === 'finish_valid';
+        finalResultText.textContent = step.message;
+        finalResultText.className = isValid ? 'valid' : 'invalid';
+        finalResultReason.textContent = step.reason;
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    stackContainer.innerHTML = '';
+    expressionDisplayContainer.innerHTML = '';
+    currentActionDisplay.textContent = "Enter a string of brackets and click 'Start'.";
+    overlay.classList.remove('show');
+    matchingZone.style.display = 'none';
+    updateButtonState();
+}
+
+function startAnimation() {
+    inputString = stringInput.value;
+    if (/[^(){}[\]]/.test(inputString)) {
+        alert("Invalid characters found. Please use only '(', ')', '{', '}', '[', ']'.");
+        return;
+    }
+
+    resetAnimation();
+    simulationRunning = true;
+    
+    drawInitialState();
+    animationSteps = generateAnimationSteps(inputString);
+    currentStepIndex = 0;
+    
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+    currentStepIndex++;
+    renderState(animationSteps[currentStepIndex]);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input_vp');
+    startButton = document.getElementById('start_button_vp');
+    nextStepButton = document.getElementById('next_step_button_vp');
+    stackContainer = document.getElementById('stack_container_vp');
+    expressionDisplayContainer = document.getElementById('expression_display_container_vp');
+    currentActionDisplay = document.getElementById('current_action_display_vp');
+    overlay = document.getElementById('overlay-vp');
+    matchingZone = document.getElementById('matching_zone_vp');
+    matchClosing = document.getElementById('match_closing_vp');
+    matchPopped = document.getElementById('match_popped_vp');
+    matchStatus = document.getElementById('match_status_vp');
+    finalResultText = document.getElementById('final_result_text_vp');
+    finalResultReason = document.getElementById('final_result_reason_vp');
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) {
+            resetAnimation();
+        } else {
+            startAnimation();
+        }
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+});
+</script>
+</body>
+</html>

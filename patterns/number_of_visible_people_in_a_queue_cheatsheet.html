@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number of Visible People in a Queue Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>👀 Number of Visible People in a Queue – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Number of Visible People in a Queue</b> problem (LeetCode 1944) asks you, for each person in a queue (represented by their heights), to count how many people to their right they can see. A person can see another person if everyone in between is shorter, and the first person taller or equal to them blocks the view.
+    </p>
+
+    <h2>🧱 Pattern Template (Monotonic Stack)</h2>
+    <pre><code>class Solution {
+    public int[] canSeePersonsCount(int[] heights) {
+        int n = heights.length;
+        int[] res = new int[n];
+        Stack&lt;Integer&gt; stack = new Stack&lt;&gt;();
+        for (int i = n - 1; i &gt;= 0; i--) {
+            int count = 0;
+            while (!stack.isEmpty() &amp;&amp; heights[i] &gt; stack.peek()) {
+                stack.pop();
+                count++;
+            }
+            if (!stack.isEmpty()) count++;
+            stack.push(heights[i]);
+            res[i] = count;
+        }
+        return res;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/number_of_visible_people_in_a_queue_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Monotonic stack for "next greater" or "visible" problems</li>
+      <li>Interval and visibility counting</li>
+      <li>Stack-based array traversal</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/number-of-visible-people-in-a-queue/" target="_blank" rel="noopener noreferrer">1944. Number of Visible People in a Queue</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Monotonic Stack</span>
+        <span class="badge badge-tag">Array</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: heights = [10,6,8,5,11,9]
+Output: [3,1,2,1,1,0]
+
+Input: heights = [5,1,2,3,10]
+Output: [4,1,1,1,0]
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Process from right to left using a stack to track visible people.</li>
+      <li>Pop all shorter people and count them; the first taller or equal person is also counted.</li>
+      <li>Monotonic stacks are powerful for visibility and

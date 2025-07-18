@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remove All Adjacent Duplicates In String Animation</title>
+    <style>
+        :root {
+            --color-char: #34495e;        --color-char-border: #2c3e50;
+            --color-success: #2ecc71;    --color-fail: #e74c3c;
+            --color-highlight: #f1c40f;  --color-compare-bg: #ecf0f1;
+            --color-bg-light: #f4f7f6;   --color-bg-panel: #ffffff;   --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-rads { width: 98%; max-width: 1200px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } 
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        h3 { font-size: 1em; margin-bottom: 5px; color: #34495e;}
+
+        .controls-rads { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-rads label { font-weight: bold; margin-right: 5px; }
+        .controls-rads input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.3em; font-family: 'Courier New', monospace; width: 400px; }
+        .controls-rads button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-rads button:hover { background-color: #2980b9; }
+        .controls-rads button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-rads { display: grid; grid-template-columns: 350px 1fr; gap: 15px; }
+        .panel-rads { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .stack-rads { min-height: 400px; background-color: #f9f9f9; border-radius: 4px; border: 1px solid #ddd; padding: 5px; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 5px; }
+        .stack-item-rads { padding: 10px; border-radius: 4px; font-size: 1.5em; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; border: 3px solid var(--color-char-border); color: white; background-color: var(--color-char); transition: all 0.3s ease; animation: push-anim-rads 0.3s ease; }
+        @keyframes push-anim-rads { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .string-display-rads { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 1.8em; font-family: 'Courier New', monospace; }
+        .char-box-rads { padding: 2px 8px; border-radius: 3px; transition: background-color 0.3s, color 0.3s; }
+        .char-box-rads.highlight { background-color: var(--color-highlight); color: black; box-shadow: 0 0 10px var(--color-highlight); }
+        
+        #comparison_zone_rads { background-color: var(--color-compare-bg); margin-top: 15px; border: 2px dashed #bdc3c7; border-radius: 5px; padding: 15px; transition: opacity 0.3s ease, transform 0.3s ease; }
+        .compare-grid-rads { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-items: center; gap: 20px; font-size: 1.2em; text-align: center;}
+        .compare-item-rads { display: flex; flex-direction: column; gap: 5px; }
+        .compare-item-rads .label { font-size: 0.8em; color: #6c757d; font-weight: bold; }
+        .compare-item-rads .value { font-family: 'Courier New', monospace; font-size: 2.5em; font-weight: bold; }
+        #compare_status_rads { font-weight: bold; font-size: 1.5em; }
+        #compare_status_rads.match { color: var(--color-fail); } /* Red for match because it's a removal action */
+        #compare_status_rads.no-match { color: var(--color-success); } /* Green for no match because it's a keep/push action */
+        
+        #result_builder_rads { margin-top: 15px; }
+        #result_string_display_rads { min-height: 50px; background-color: var(--color-success); color: white; font-family: 'Courier New', monospace; font-size: 1.5em; padding: 10px; border-radius: 5px; text-align: center; letter-spacing: 2px; }
+
+        #current_action_display_rads { text-align:center; margin-top:15px; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        
+        #overlay-rads { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-rads.show { opacity: 1; pointer-events: auto;}
+        .result-box-rads { background: white; padding: 30px 50px; border-radius: 10px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .result-box-rads h2 { font-size: 1.5em; margin: 0 0 10px 0; color: #555; }
+        .result-box-rads p { margin: 0; font-size: 2em; color: var(--color-text-dark); font-family: 'Courier New', monospace; font-weight: bold; }
+        
+        @media (max-width: 1000px) { .main-content-rads { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-rads">
+        <h1>Remove All Adjacent Duplicates In String</h1>
+        <div class="controls-rads">
+            <label>Input String:</label><input id="string_input_rads" value="abbaca">
+            <button id="start_button_rads">Start</button>
+            <button id="next_step_button_rads" disabled>Next Step</button>
+        </div>
+        <div class="main-content-rads">
+            <div class="left-panel-rads">
+                 <div class="panel-rads">
+                    <h3>Stack</h3>
+                    <div id="stack_container_rads" class="stack-rads"></div>
+                </div>
+            </div>
+            <div class="right-panel-rads">
+                <div class="panel-rads">
+                     <h2>Input String</h2>
+                     <div id="string_display_container_rads" class="string-display-rads"></div>
+                </div>
+                <div class="panel-rads" id="comparison_zone_rads" style="display:none;">
+                    <h3>Comparison</h3>
+                    <div class="compare-grid-rads">
+                        <div class="compare-item-rads">
+                            <span class="label">Current Character</span>
+                            <span id="compare_current_rads" class="value">?</span>
+                        </div>
+                         <div id="compare_status_rads"></div>
+                        <div class="compare-item-rads">
+                            <span class="label">Stack Top</span>
+                            <span id="compare_peek_rads" class="value">?</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-rads" id="result_builder_rads" style="display:none;">
+                    <h3>Result String Construction</h3>
+                    <div id="result_string_display_rads"></div>
+                </div>
+                <div class="panel-rads">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_rads">Enter a string and click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-rads">
+        <div class="result-box-rads">
+            <h2>Final Result:</h2>
+            <p id="final_result_text_rads"></p>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, inputString = '';
+let stringInput, startButton, nextStepButton, stackContainer, stringDisplayContainer, currentActionDisplay,
+    overlay, comparisonZone, compareCurrent, comparePeek, compareStatus, resultBuilder, resultStringDisplay, finalResultText;
+
+const saveState = (steps, stack, charIndex, message, phase, extraData = {}) => {
+    steps.push({ charIndex, message, stack: [...stack], phase, ...extraData });
+};
+
+function generateAnimationSteps(s) {
+    const steps = [];
+    const stack = [];
+
+    saveState(steps, stack, -1, "Click 'Next Step' to begin.", 'initial');
+
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        const peek = stack.length > 0 ? stack[stack.length - 1] : null;
+
+        saveState(steps, stack, i, `Processing character '${c}'. Comparing with stack top.`, 'compare', { comparison: { current: c, peek: peek } });
+
+        if (peek !== null && peek === c) {
+            saveState(steps, stack, i, `Match found! '${c}' is the same as stack top '${peek}'.`, 'match', { comparison: { current: c, peek: peek, isMatch: true } });
+            stack.pop();
+            saveState(steps, stack, i, `Popping '${peek}' from the stack.`, 'pop', { comparison: { current: c, peek: peek, isMatch: true } });
+        } else {
+            const reason = peek === null ? "Stack is empty" : `No match: '${c}' != '${peek}'`;
+            saveState(steps, stack, i, `${reason}. Pushing '${c}' to the stack.`, 'no_match', { comparison: { current: c, peek: peek, isMatch: false } });
+            stack.push(c);
+            saveState(steps, stack, i, `Pushed '${c}' onto the stack.`, 'push');
+        }
+    }
+    
+    saveState(steps, stack, -1, "Finished processing string. Building result from stack.", 'build_start', { finalStack: [...stack] });
+
+    let builtString = '';
+    for(const char of stack) {
+        builtString += char;
+        saveState(steps, stack, -1, `Appending '${char}' to result.`, 'build_append', { builtString });
+    }
+    
+    saveState(steps, stack, -1, "Done!", 'finish', { finalResult: builtString });
+    return steps;
+}
+
+function drawInitialState() {
+    stringDisplayContainer.innerHTML = '';
+    inputString.split('').forEach(char => {
+        const charBox = document.createElement('div');
+        charBox.className = 'char-box-rads';
+        charBox.textContent = char;
+        stringDisplayContainer.appendChild(charBox);
+    });
+}
+
+function renderState(step) {
+    // Highlight current character
+    document.querySelectorAll('.char-box-rads').forEach((box, i) => {
+        box.classList.toggle('highlight', i === step.charIndex);
+    });
+    
+    // Render stack
+    stackContainer.innerHTML = '';
+    step.stack.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'stack-item-rads';
+        div.textContent = item;
+        stackContainer.appendChild(div);
+    });
+
+    // Update message
+    currentActionDisplay.textContent = step.message;
+
+    // Render comparison zone
+    if (step.phase === 'compare' || step.phase === 'match' || step.phase === 'no_match' || step.phase === 'pop') {
+        comparisonZone.style.display = 'block';
+        const { current, peek, isMatch } = step.comparison;
+        compareCurrent.textContent = current;
+        comparePeek.textContent = peek || '∅'; // Show empty set symbol for null
+
+        if (isMatch === true) {
+            compareStatus.textContent = 'Match!';
+            compareStatus.className = 'match';
+        } else if (isMatch === false) {
+            compareStatus.textContent = 'No Match';
+            compareStatus.className = 'no-match';
+        } else {
+            compareStatus.textContent = '?';
+            compareStatus.className = '';
+        }
+    } else {
+        comparisonZone.style.display = 'none';
+    }
+    
+    // Render result builder
+    if (step.phase.startsWith('build')) {
+        resultBuilder.style.display = 'block';
+        resultStringDisplay.textContent = step.builtString || '';
+    } else {
+        resultBuilder.style.display = 'none';
+        resultStringDisplay.textContent = '';
+    }
+
+    // Handle final state overlay
+    if (step.phase === 'finish') {
+        finalResultText.textContent = step.finalResult || '""'; // Show empty string in quotes
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    stackContainer.innerHTML = '';
+    stringDisplayContainer.innerHTML = '';
+    currentActionDisplay.textContent = "Enter a string and click 'Start'.";
+    overlay.classList.remove('show');
+    comparisonZone.style.display = 'none';
+    resultBuilder.style.display = 'none';
+    updateButtonState();
+}
+
+function startAnimation() {
+    inputString = stringInput.value;
+
+    resetAnimation();
+    simulationRunning = true;
+    
+    drawInitialState();
+    animationSteps = generateAnimationSteps(inputString);
+    currentStepIndex = 0;
+    
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+    currentStepIndex++;
+    renderState(animationSteps[currentStepIndex]);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input_rads');
+    startButton = document.getElementById('start_button_rads');
+    nextStepButton = document.getElementById('next_step_button_rads');
+    stackContainer = document.getElementById('stack_container_rads');
+    stringDisplayContainer = document.getElementById('string_display_container_rads');
+    currentActionDisplay = document.getElementById('current_action_display_rads');
+    overlay = document.getElementById('overlay-rads');
+    comparisonZone = document.getElementById('comparison_zone_rads');
+    compareCurrent = document.getElementById('compare_current_rads');
+    comparePeek = document.getElementById('compare_peek_rads');
+    compareStatus = document.getElementById('compare_status_rads');
+    resultBuilder = document.getElementById('result_builder_rads');
+    resultStringDisplay = document.getElementById('result_string_display_rads');
+    finalResultText = document.getElementById('final_result_text_rads');
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) {
+            resetAnimation();
+        } else {
+            startAnimation();
+        }
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+});
+</script>
+</body>
+</html>

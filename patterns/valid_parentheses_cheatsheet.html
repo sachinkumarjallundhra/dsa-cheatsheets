@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Valid Parentheses Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>✅ Valid Parentheses – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Valid Parentheses</b> problem (LeetCode 20) asks you to determine if a string containing only '(', ')', '{', '}', '[' and ']' is valid. A string is valid if open brackets are closed by the same type and in the correct order.
+    </p>
+
+    <h2>🧱 Pattern Template (Stack-Based Solution)</h2>
+    <pre><code>class Solution {
+    public boolean isValid(String s) {
+        Stack&lt;Character&gt; stack = new Stack&lt;&gt;();
+        for (char c : s.toCharArray()) {
+            if (c == '(' || c == '{' || c == '[') {
+                stack.push(c);
+            } else {
+                if (stack.isEmpty()) return false;
+                char open = stack.pop();
+                if ((c == ')' &amp;&amp; open != '(') ||
+                    (c == '}' &amp;&amp; open != '{') ||
+                    (c == ']' &amp;&amp; open != '[')) {
+                    return false;
+                }
+            }
+        }
+        return stack.isEmpty();
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/valid_parentheses_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Checking balanced parentheses in expressions</li>
+      <li>Parsing and validating nested structures</li>
+      <li>Compiler/interpreter design</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/valid-parentheses/" target="_blank" rel="noopener noreferrer">20. Valid Parentheses</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Stack</span>
+        <span class="badge badge-tag">String</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "()[]{}"
+Output: true
+
+Input: s = "(]"
+Output: false
+
+Input: s = "([)]"
+Output: false
+
+Input: s = "{[]}"
+Output: true
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a stack to track opening brackets and match them with closing ones.</li>
+      <li>Return false immediately if a mismatch or premature closing is found.</li>
+      <li>Stack should be empty at the end for a valid string.</li>
+    </ul>
+  </div>
+</body>
+</html>

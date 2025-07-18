@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stacks Pattern Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Stack Pattern – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      <b>Stack Pattern</b> is used for problems involving Last-In-First-Out (LIFO) operations, tracking nested structures, and maintaining ordered state. Common applications include parsing expressions, validating brackets, and finding next greater/smaller elements.
+    </p>
+
+    <h2>🎯 Solution Patterns</h2>
+    <h3>1. Basic Stack Operations</h3>
+    <pre><code>Stack&lt;Type&gt; stack = new Stack&lt;&gt;();
+stack.push(element);    // Add to top
+stack.pop();           // Remove from top
+stack.peek();         // View top element
+stack.isEmpty();      // Check if empty</code></pre>
+
+    <h3>2. Monotonic Stack Pattern</h3>
+    <pre><code>Stack&lt;Integer&gt; stack = new Stack&lt;&gt;();
+for (int i = 0; i &lt; arr.length; i++) {
+    // For next greater element (increasing stack)
+    while (!stack.isEmpty() &amp;&amp; arr[i] &gt; arr[stack.peek()]) {
+        int prevIndex = stack.pop();
+        result[prevIndex] = arr[i];  // Found next greater element
+    }
+    stack.push(i);
+}</code></pre>
+
+    <h3>3. Parentheses Validation Pattern</h3>
+    <pre><code>Stack&lt;Character&gt; stack = new Stack&lt;&gt;();
+for (char c : s.toCharArray()) {
+    if (c == '(' || c == '{' || c == '[') {
+        stack.push(c);
+    } else {
+        if (stack.isEmpty()) return false;
+        if (c == ')' &amp;&amp; stack.peek() != '(') return false;
+        if (c == '}' &amp;&amp; stack.peek() != '{') return false;
+        if (c == ']' &amp;&amp; stack.peek() != '[') return false;
+        stack.pop();
+    }
+}</code></pre>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    
+<h3>🟢 Easy Problems</h3>
+<ul class="problems-list">
+    <li>
+        <a href="valid_parentheses_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                20. Valid Parentheses
+                <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-notes">
+                Stack for tracking opening brackets
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="remove_all_adjacent_duplicates_in_string_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                1047. Remove All Adjacent Duplicates In String
+                <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-notes">
+                Stack for tracking adjacent characters
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="implement_queue_using_stacks_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                232. Implement Queue Using Stacks
+                <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-notes">
+                Two stacks for queue operations
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="minimum_string_length_after_removing_substrings_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                2696. Minimum String Length After Removing Substrings
+                <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-notes">
+                Stack for removing AB and CD substrings
+            </div>
+        </a>
+    </li>
+</ul>
+
+<h3>🟡 Medium Problems</h3>
+<ul class="problems-list">
+    <li>
+        <a href="daily_temperatures_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                739. Daily Temperatures
+                <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-notes">
+                Monotonic stack for next warmer day
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="decode_string_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                394. Decode String
+                <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-notes">
+                Stack for nested string decoding
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="minimum_remove_to_make_valid_parentheses_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                1249. Minimum Remove to Make Valid Parentheses
+                <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-notes">
+                Stack for tracking invalid parentheses
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="exclusive_time_of_functions_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                636. Exclusive Time of Functions
+                <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-notes">
+                Stack for tracking function execution times
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="flatten_nested_list_iterator_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                341. Flatten Nested List Iterator
+                <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-notes">
+                Stack for flattening nested structures
+            </div>
+        </a>
+    </li>
+</ul>
+
+<h3>🔴 Hard Problems</h3>
+<ul class="problems-list">
+    <li>
+        <a href="basic_calculator_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                224. Basic Calculator
+                <span class="badge badge-hard">Hard</span>
+            </div>
+            <div class="problem-notes">
+                Stack for complex expression evaluation
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="number_of_valid_subarrays_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                1063. Number of Valid Subarrays
+                <span class="badge badge-hard">Hard</span>
+            </div>
+            <div class="problem-notes">
+                Monotonic stack for valid subarray counting
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="number_of_visible_people_in_a_queue_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                1944. Number of Visible People in a Queue
+                <span class="badge badge-hard">Hard</span>
+            </div>
+            <div class="problem-notes">
+                Monotonic stack for visibility counting
+            </div>
+        </a>
+    </li>
+    <li>
+        <a href="parsing_a_boolean_expression_cheatsheet.html" class="problem-link">
+            <div class="problem-title">
+                1106. Parsing a Boolean Expression
+                <span class="badge badge-hard">Hard</span>
+            </div>
+            <div class="problem-notes">
+                Stack for boolean expression evaluation
+            </div>
+        </a>
+    </li>
+</ul>
+
+    <h2>💡 Key Tips</h2>
+    <ul>
+        <li>Always validate stack is not empty before pop/peek operations</li>
+        <li>Consider using multiple stacks for complex problems</li>
+        <li>For monotonic stack problems, decide whether to maintain increasing or decreasing order</li>
+        <li>Use StringBuilder for string manipulation problems</li>
+        <li>Consider edge cases: empty input, single element, all same elements</li>
+    </ul>
+  </div>
+
+  <style>
+    .problems-list {
+        list-style: none;
+        padding: 0;
+    }
+    .problem-link {
+        display: block;
+        padding: 12px;
+        margin: 8px 0;
+        background: #f8f9fa;
+        border-radius: 6px;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s;
+    }
+    .problem-link:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    .problem-title {
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+    .problem-notes {
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+    .badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        margin-left: 8px;
+    }
+    .badge-easy { background: #28a745; color: white; }
+    .badge-medium { background: #ffc107; color: black; }
+    .badge-hard { background: #dc3545; color: white; }
+  </style>
+</body>
+</html>

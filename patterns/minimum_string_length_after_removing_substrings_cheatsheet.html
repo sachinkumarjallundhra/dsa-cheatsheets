@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimum String Length After Removing Substrings Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🧹 Minimum String Length After Removing Substrings – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Minimum String Length After Removing Substrings</b> problem (LeetCode 2696) asks you to repeatedly remove the substrings "AB" and "CD" from a string until neither can be found, and return the length of the resulting string.
+    </p>
+
+    <h2>🧱 Pattern Template (Stack-Based Solution)</h2>
+    <pre><code>class Solution {
+    public int minLength(String s) {
+        Stack&lt;Character&gt; stack = new Stack&lt;&gt;();
+        for (char c : s.toCharArray()) {
+            if (!stack.isEmpty() &amp;&amp; (
+                (stack.peek() == 'A' &amp;&amp; c == 'B') ||
+                (stack.peek() == 'C' &amp;&amp; c == 'D')
+            )) {
+                stack.pop();
+            } else {
+                stack.push(c);
+            }
+        }
+        return stack.size();
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/minimum_string_length_after_removing_substrings_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>String reduction and simplification</li>
+      <li>Stack-based substring removal</li>
+      <li>Problems involving repeated pattern elimination</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/minimum-string-length-after-removing-substrings/" target="_blank" rel="noopener noreferrer">2696. Minimum String Length After Removing Substrings</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Stack</span>
+        <span class="badge badge-tag">String</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "ABFCACDB"
+Output: 2
+Explanation: Remove "AB" -> "FCACDB", then remove "CD" -> "FCAB", then remove "AB" -> "FC". Length is 2.
+
+Input: s = "ACBBD"
+Output: 5
+Explanation: No "AB" or "CD" can be removed.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a stack to efficiently check and remove adjacent pairs.</li>
+      <li>Always check the top of the stack for a removable pair before pushing the current character.</li>
+      <li>This approach works for any set of removable adjacent pairs.</li>
+    </ul>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Calculator Animation</title>
+    <style>
+        :root {
+            --color-result: #27ae60;      --color-sign: #e67e22;
+            --color-stack-result: #3498db; --color-stack-sign: #9b59b6;
+            --color-highlight: #f1c40f;  --color-eval-bg: #ecf0f1;
+            --color-bg-light: #f4f7f6;   --color-bg-panel: #ffffff;   --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-bc { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } 
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        h3 { font-size: 1em; margin-bottom: 5px; color: #34495e;}
+
+        .controls-bc { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-bc label { font-weight: bold; margin-right: 5px; }
+        .controls-bc input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.3em; font-family: 'Courier New', monospace; width: 400px; }
+        .controls-bc button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-bc button:hover { background-color: #2980b9; }
+        .controls-bc button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-bc { display: grid; grid-template-columns: 350px 1fr; gap: 15px; }
+        .panel-bc { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .stack-bc { min-height: 250px; background-color: #f9f9f9; border-radius: 4px; border: 1px solid #ddd; padding: 5px; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 5px; }
+        .stack-item-bc { padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; border: 2px solid; color: white; transition: all 0.3s ease; animation: push-anim-bc 0.3s ease; }
+        .stack-item-bc.result { background-color: var(--color-stack-result); border-color: #2980b9; }
+        .stack-item-bc.sign { background-color: var(--color-stack-sign); border-color: #8e44ad; }
+        @keyframes push-anim-bc { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .string-display-bc { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 1.8em; font-family: 'Courier New', monospace; }
+        .char-box-bc { padding: 2px 8px; border-radius: 3px; transition: background-color 0.3s, color 0.3s; }
+        .char-box-bc.highlight { background-color: var(--color-highlight); color: black; box-shadow: 0 0 10px var(--color-highlight); }
+        
+        .state-grid-bc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+        .state-item-bc .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-bc .value { font-size: 2em; font-weight: bold; font-family: 'Courier New', monospace; padding: 5px; border: 1px solid #eee; border-radius: 4px; }
+        #result_val { color: var(--color-result); } #sign_val { color: var(--color-sign); }
+
+        #evaluation_zone_bc { background-color: var(--color-eval-bg); margin-top: 15px; border: 2px dashed #bdc3c7; border-radius: 5px; padding: 15px; transition: opacity 0.3s ease, transform 0.3s ease; text-align: center; font-family: 'Courier New', monospace; font-size: 1.2em; font-weight: bold;}
+        
+        #current_action_display_bc { text-align:center; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        
+        #overlay-bc { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-bc.show { opacity: 1; pointer-events: auto;}
+        .result-box-bc { background: white; padding: 30px 50px; border-radius: 10px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .result-box-bc h2 { font-size: 1.5em; margin: 0 0 10px 0; color: #555;}
+        .result-box-bc p { margin: 0; font-size: 2.5em; color: var(--color-text-dark); font-family: 'Courier New', monospace; font-weight: bold; }
+        
+        @media (max-width: 1200px) { .main-content-bc { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-bc">
+        <h1>Basic Calculator</h1>
+        <div class="controls-bc">
+            <label>Expression:</label><input id="string_input_bc" value="(1+(4+5+2)-3)+6+8">
+            <button id="start_button_bc">Start</button>
+            <button id="next_step_button_bc" disabled>Next Step</button>
+        </div>
+        <div class="main-content-bc">
+            <div class="left-panel-bc">
+                 <div class="panel-bc">
+                    <h3>State</h3>
+                    <div class="state-grid-bc">
+                        <div class="state-item-bc"><div class="label">result</div><div id="result_val" class="value">0</div></div>
+                        <div class="state-item-bc"><div class="label">sign</div><div id="sign_val" class="value">1</div></div>
+                        <div class="state-item-bc"><div class="label">num</div><div id="num_val" class="value">0</div></div>
+                    </div>
+                </div>
+                <div class="panel-bc">
+                    <h3>Stack</h3>
+                    <div id="stack_container_bc" class="stack-bc"></div>
+                </div>
+            </div>
+            <div class="right-panel-bc">
+                <div class="panel-bc">
+                     <h2>Expression Processing</h2>
+                     <div id="string_display_container_bc" class="string-display-bc"></div>
+                </div>
+                <div class="panel-bc" id="evaluation_zone_bc" style="display:none;"></div>
+                <div class="panel-bc">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_bc">Enter an expression and click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-bc">
+        <div class="result-box-bc">
+            <h2>Final Result:</h2>
+            <p id="final_result_text_bc"></p>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let stringInput, startButton, nextStepButton, stackContainer, stringDisplayContainer,
+    resultVal, signVal, numVal, currentActionDisplay, evaluationZone, overlay, finalResultText;
+
+const saveState = (steps, i, msg, phase, stack, r, s, n, evalText = null) => {
+    steps.push({ i, msg, phase, stack: [...stack], result: r, sign: s, num: n, evalText });
+};
+
+function generateAnimationSteps(s) {
+    const steps = [];
+    const stack = [];
+    let result = 0, num = 0, sign = 1;
+
+    saveState(steps, -1, "Click 'Next Step' to begin.", 'initial', stack, result, sign, num);
+
+    // *** FIX IS HERE: s.length() changed to s.length ***
+    for (let i = 0; i < s.length; i++) {
+        const c = s.charAt(i);
+        if (c >= '0' && c <= '9') {
+            const oldNum = num;
+            num = num * 10 + (c - '0');
+            saveState(steps, i, `Found digit '${c}'. Updating num.`, 'digit', stack, result, sign, num, `num = ${oldNum} * 10 + ${c} = ${num}`);
+        } else if (c === '+' || c === '-') {
+            const oldResult = result;
+            result += sign * num;
+            saveState(steps, i, `Found '${c}'. Evaluating previous expression.`, 'op', stack, result, sign, num, `result = ${oldResult} + (${sign} * ${num}) = ${result}`);
+            sign = (c === '+') ? 1 : -1;
+            num = 0;
+            saveState(steps, i, `Updating sign to ${sign} and resetting num.`, 'op_reset', stack, result, sign, num);
+        } else if (c === '(') {
+            saveState(steps, i, `Found '('. Saving current result and sign to stack.`, 'paren_open_start', stack, result, sign, num);
+            stack.push(result);
+            stack.push(sign);
+            saveState(steps, i, `Pushed ${result} (result) and ${sign} (sign).`, 'paren_open_push', stack, result, sign, num);
+            result = 0;
+            sign = 1;
+            num = 0;
+            saveState(steps, i, `Resetting state for inner expression.`, 'paren_open_reset', stack, result, sign, num);
+        } else if (c === ')') {
+            const oldResult = result;
+            result += sign * num;
+            saveState(steps, i, `Found ')'. Evaluating final part of inner expression.`, 'paren_close_eval', stack, result, sign, num, `result = ${oldResult} + (${sign} * ${num}) = ${result}`);
+
+            const prevSign = stack.pop();
+            const resBeforeSign = result;
+            result *= prevSign;
+            saveState(steps, i, `Popping sign (${prevSign}) from stack and applying it.`, 'paren_close_pop_sign', stack, result, sign, num, `result = ${resBeforeSign} * ${prevSign} = ${result}`);
+
+            const prevResult = stack.pop();
+            const resBeforeAdd = result;
+            result += prevResult;
+            saveState(steps, i, `Popping outer result (${prevResult}) and adding it.`, 'paren_close_pop_result', stack, result, sign, num, `result = ${resBeforeAdd} + ${prevResult} = ${result}`);
+            num = 0;
+            sign = 1; // Reset sign after a ')'
+        }
+    }
+    
+    if (num !== 0) {
+        const oldResult = result;
+        result += sign * num;
+        saveState(steps, -1, `End of string. Evaluating final number.`, 'final_eval', stack, result, sign, num, `result = ${oldResult} + (${sign} * ${num}) = ${result}`);
+    }
+
+    saveState(steps, -1, "Finished!", 'finish', stack, result, sign, num);
+    return steps;
+}
+
+function drawInitialState(s) {
+    stringDisplayContainer.innerHTML = '';
+    s.split('').forEach((char, i) => {
+        const charBox = document.createElement('div');
+        charBox.className = 'char-box-bc';
+        charBox.id = `char-box-${i}`;
+        charBox.textContent = char;
+        stringDisplayContainer.appendChild(charBox);
+    });
+}
+
+function renderState(step) {
+    currentActionDisplay.textContent = step.msg;
+    resultVal.textContent = step.result;
+    signVal.textContent = step.sign;
+    numVal.textContent = step.num;
+
+    document.querySelectorAll('.char-box-bc').forEach((box, i) => box.classList.toggle('highlight', i === step.i));
+
+    stackContainer.innerHTML = '';
+    for (let i = 0; i < step.stack.length; i++) {
+        const item = step.stack[i];
+        const div = document.createElement('div');
+        div.className = 'stack-item-bc';
+        // The algorithm pushes result then sign. So on the stack, even indices are results, odd are signs.
+        div.classList.add((i % 2 === 0) ? 'result' : 'sign'); 
+        div.textContent = item;
+        stackContainer.appendChild(div);
+    }
+    
+    if (step.evalText) {
+        evaluationZone.style.display = 'block';
+        evaluationZone.textContent = step.evalText;
+    } else {
+        evaluationZone.style.display = 'none';
+    }
+
+    if (step.phase === 'finish') {
+        finalResultText.textContent = step.result;
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    [stackContainer, stringDisplayContainer].forEach(c => c.innerHTML = '');
+    resultVal.textContent = '0';
+    signVal.textContent = '1';
+    numVal.textContent = '0';
+    currentActionDisplay.textContent = "Enter an expression and click 'Start'.";
+    evaluationZone.style.display = 'none';
+    overlay.classList.remove('show');
+    updateButtonState();
+}
+
+function startAnimation() {
+    const s = stringInput.value;
+    if (!s) return;
+
+    resetAnimation();
+    simulationRunning = true;
+    
+    drawInitialState(s);
+    animationSteps = generateAnimationSteps(s);
+    currentStepIndex = 0;
+    
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+    currentStepIndex++;
+    renderState(animationSteps[currentStepIndex]);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input_bc');
+    startButton = document.getElementById('start_button_bc');
+    nextStepButton = document.getElementById('next_step_button_bc');
+    stackContainer = document.getElementById('stack_container_bc');
+    stringDisplayContainer = document.getElementById('string_display_container_bc');
+    resultVal = document.getElementById('result_val');
+    signVal = document.getElementById('sign_val');
+    numVal = document.getElementById('num_val');
+    currentActionDisplay = document.getElementById('current_action_display_bc');
+    evaluationZone = document.getElementById('evaluation_zone_bc');
+    overlay = document.getElementById('overlay-bc');
+    finalResultText = document.getElementById('final_result_text_bc');
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) resetAnimation();
+        else startAnimation();
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Implement Queue Using Stacks Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔄 Implement Queue Using Stacks – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Implement Queue Using Stacks</b> problem (LeetCode 232) asks you to implement a queue using two stacks. The queue should support <code>push</code>, <code>pop</code>, <code>peek</code>, and <code>empty</code> operations.
+    </p>
+
+    <h2>🧱 Pattern Template (Two Stacks)</h2>
+    <pre><code>class MyQueue {
+    private Stack&lt;Integer&gt; in = new Stack&lt;&gt;();
+    private Stack&lt;Integer&gt; out = new Stack&lt;&gt;();
+
+    public void push(int x) {
+        in.push(x);
+    }
+
+    public int pop() {
+        peek();
+        return out.pop();
+    }
+
+    public int peek() {
+        if (out.isEmpty()) {
+            while (!in.isEmpty()) {
+                out.push(in.pop());
+            }
+        }
+        return out.peek();
+    }
+
+    public boolean empty() {
+        return in.isEmpty() &amp;&amp; out.isEmpty();
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/implement_queue_using_stacks_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Simulating queue operations with stack data structures</li>
+      <li>Interview questions on data structure implementation</li>
+      <li>Understanding stack and queue mechanics</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/implement-queue-using-stacks/" target="_blank" rel="noopener noreferrer">232. Implement Queue Using Stacks</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Stack</span>
+        <span class="badge badge-tag">Queue</span>
+        <span class="badge badge-tag">Design</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input:
+["MyQueue","push","push","peek","pop","empty"]
+[[],[1],[2],[],[],[]]
+Output:
+[null,null,null,1,1,false]
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use two stacks: one for input, one for output.</li>
+      <li>Transfer elements from input to output stack only when output is empty.</li>
+      <li>This ensures amortized O(1) time for each operation.</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Temperatures Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🌡️ Daily Temperatures – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Daily Temperatures</b> problem (LeetCode 739) asks you to find, for each day, how many days you would have to wait until a warmer temperature. If there is no future day for which this is possible, put 0 instead.
+    </p>
+
+    <h2>🧱 Pattern Template (Monotonic Stack)</h2>
+    <pre><code>class Solution {
+    public int[] dailyTemperatures(int[] temperatures) {
+        int n = temperatures.length;
+        int[] answer = new int[n];
+        Stack&lt;Integer&gt; stack = new Stack&lt;&gt;(); // stores indices
+
+        for (int i = 0; i &lt; n; i++) {
+            while (!stack.isEmpty() && temperatures[i] &gt; temperatures[stack.peek()]) {
+                int prevIndex = stack.pop();
+                answer[prevIndex] = i - prevIndex;
+            }
+            stack.push(i);
+        }
+        return answer;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/daily_temperatures_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Next greater element problems</li>
+      <li>Monotonic stack applications</li>
+      <li>Stock span and similar interval problems</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/daily-temperatures/" target="_blank" rel="noopener noreferrer">739. Daily Temperatures</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Monotonic Stack</span>
+        <span class="badge badge-tag">Array</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: temperatures = [73,74,75,71,69,72,76,73]
+Output: [1,1,4,2,1,1,0,0]
+
+Input: temperatures = [30,40,50,60]
+Output: [1,1,1,0]
+
+Input: temperatures = [30,60,90]
+Output: [1,1,0]
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a stack to keep track of indices with unresolved warmer days.</li>
+      <li>Pop from the stack when you find a warmer temperature and update the answer.</li>
+      <li>Monotonic stacks are useful for "next greater" type problems.</li>
+    </ul>
+  </div>
+</body>
+</html>

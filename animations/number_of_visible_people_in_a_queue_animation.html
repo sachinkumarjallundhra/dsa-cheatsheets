@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number of Visible People in a Queue Animation</title>
+    <style>
+        :root {
+            --color-bar-default: #bdc3c7; --color-bar-border: #7f8c8d;
+            --color-viewer: #3498db; --color-stack-person: #9b59b6;
+            --color-seen: #e67e22; --color-result: #2ecc71;
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } h2 { font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-top: 8px; }
+
+        .controls-vp-p5 { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-vp-p5 label { font-weight: bold; margin-right: 5px; }
+        .controls-vp-p5 input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; font-family: 'Courier New', monospace; width: 400px; }
+        .controls-vp-p5 button { padding: 10px 15px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-vp-p5 button:disabled { background-color: #bdc3c7; }
+
+        .main-content-vp-p5 { display: grid; grid-template-columns: 350px 1fr; gap: 15px; }
+        .left-panel-vp-p5, .right-panel-vp-p5 { display: flex; flex-direction: column; gap: 15px; }
+        
+        .panel-vp-p5 { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .viz-container { position: relative; background-color: #ecf0f1; padding: 20px; border-radius: 5px; min-height: 450px; overflow: hidden; }
+        .bar-chart-container { display: flex; align-items: flex-end; gap: 10px; border-bottom: 3px solid #ccc; padding-bottom: 10px; min-height: 250px; position: relative; z-index: 2;}
+        .bar-wrapper { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .bar { width: 50px; background-color: var(--color-bar-default); border: 3px solid var(--color-bar-border); border-bottom: none; border-radius: 5px 5px 0 0; display: flex; justify-content: center; padding-top: 5px; font-weight: bold; color: var(--color-text-dark); transition: all 0.3s ease; }
+        .bar-index { font-family: 'Courier New', monospace; font-weight: bold; }
+        .bar.viewer { border-color: var(--color-viewer); box-shadow: 0 0 15px var(--color-viewer); }
+        .bar.stack-person { border-color: var(--color-stack-person); }
+        .bar.seen { border-color: var(--color-seen); box-shadow: 0 0 15px var(--color-seen); }
+
+        .result-array-container { margin-top: 15px; display: flex; gap: 10px; }
+        .res-cell { width: 50px; height: 50px; background-color: #fff; border: 1px solid #ccc; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 4px; transition: all 0.3s ease; }
+        .res-cell .res-value { font-size: 1.5em; font-weight: bold; } .res-cell .res-index { font-size: 0.7em; }
+        .res-cell.filled { background-color: #e8f5e9; border-color: var(--color-result); }
+        
+        #stack_container_p5 { min-height: 250px; border: 2px dashed var(--color-stack-person); border-radius: 5px; padding: 10px; display: flex; flex-direction: row-reverse; align-items: flex-end; gap: 5px; }
+        
+        .state-grid-p5 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+        .state-item-p5 .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-p5 .value { font-size: 2em; font-weight: bold; font-family: 'Courier New', monospace; }
+        
+        #current_action_vp_display_p5 { text-align:center; margin-top:15px; font-weight:bold; min-height:3em; font-size:1em; }
+        #overlay-vp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-vp.show { opacity: 1; }
+        .result-box { background: white; padding: 30px 50px; border-radius: 10px; text-align: center;}
+        
+        @media (max-width: 1000px) { .main-content-vp-p5 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Number of Visible People in a Queue</h1>
+        <div class="controls-vp-p5">
+            <label>Heights:</label><input id="heights_input_p5" value="10, 6, 8, 5, 11, 9">
+            <button id="start_button_vp_p5">Start</button>
+            <button id="next_step_button_vp_p5" disabled>Next Step</button>
+        </div>
+        <div class="main-content-vp-p5">
+            <div class="left-panel-vp-p5">
+                <div class="panel-vp-p5">
+                    <h2>State</h2>
+                    <div class="state-grid-p5">
+                        <div class="state-item-p5"><div class="label">Current Viewer (i)</div><div id="i_val" class="value">N/A</div></div>
+                        <div class="state-item-p5"><div class="label">Visible Count</div><div id="count_val" class="value">0</div></div>
+                    </div>
+                </div>
+                 <div class="panel-vp-p5">
+                    <h2>Stack (of heights)</h2>
+                    <div id="stack_container_p5"></div>
+                </div>
+                 <div class="panel-vp-p5">
+                    <h2>Current Action</h2>
+                    <div id="current_action_vp_display_p5">Enter heights and click 'Start'.</div>
+                </div>
+            </div>
+            <div class="right-panel-vp-p5">
+                <div class="panel-vp-p5">
+                     <div class="viz-container" id="viz_container_p5">
+                        <div class="bar-chart-container" id="bar_chart_container_p5"></div>
+                        <div>
+                            <h2>Result Array</h2>
+                            <div class="result-array-container" id="result_array_container_p5"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-vp">
+        <div class="result-box">
+            <h2>Finished!</h2>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, heights = [], maxNum = 0;
+let heightsInput, startButton, nextStepButton, barChartContainer, stackContainer, iVal, countVal,
+    resultArrayContainer, currentActionDisplay, overlay;
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length -1;
+}
+
+function generateAnimationSteps(localHeights) {
+    const steps = [], n = localHeights.length;
+    let res = new Array(n).fill(0), stack = [];
+    
+    const saveState = (type, i, count, peekVal, message, seenIdx = -1) => {
+        steps.push({ type, i, count, peekVal, res: [...res], stack: [...stack], message, seenIdx });
+    };
+
+    saveState('initial', n, 0, -1, 'Start from the right end of the queue.');
+    for (let i = n - 1; i >= 0; i--) {
+        let count = 0;
+        saveState('iterate', i, count, -1, `Person ${i} (height ${localHeights[i]}) is now the viewer.`);
+        
+        while (stack.length > 0 && localHeights[i] > stack[stack.length - 1].height) {
+            const peekHeight = stack[stack.length - 1].height;
+            const peekIdx = stack[stack.length-1].index;
+            saveState('compare_taller', i, count, peekHeight, `Viewer ${i} is taller than person ${peekIdx} (height ${peekHeight}). They can be seen.`);
+            
+            const popped = stack.pop();
+            count++;
+            saveState('pop_and_count', i, count, -1, `Popped person ${popped.index}. Visible count is now ${count}.`, popped.index);
+        }
+        
+        if (stack.length > 0) {
+            const peekHeight = stack[stack.length - 1].height;
+            const peekIdx = stack[stack.length-1].index;
+            saveState('compare_blocker', i, count, peekHeight, `Viewer ${i} can see person ${peekIdx} (height ${peekHeight}), but is blocked.`);
+            count++;
+            saveState('count_blocker', i, count, -1, `Visible count is now ${count}.`, peekIdx);
+        }
+        
+        stack.push({height: localHeights[i], index: i});
+        saveState('push', i, count, -1, `Person ${i} is added to the stack for the next viewer.`);
+        
+        res[i] = count;
+        saveState('store_result', i, count, -1, `Storing final count ${count} for person ${i}.`);
+    }
+    
+    saveState('finish', -1, 0, -1, `Finished!`);
+    return steps;
+}
+
+function drawInitialState() {
+    barChartContainer.innerHTML = ''; resultArrayContainer.innerHTML = '';
+    maxNum = Math.max(...heights, 1);
+    heights.forEach((val, i) => {
+        // Draw main bar
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bar-wrapper';
+        wrapper.id = `bar-wrapper-${i}`;
+        const bar = document.createElement('div');
+        bar.className = 'bar'; bar.id = `bar-${i}`;
+        bar.textContent = val;
+        bar.style.height = `${(val / maxNum) * 200}px`; // 200px max height
+        const indexLabel = document.createElement('div');
+        indexLabel.className = 'bar-index'; indexLabel.textContent = i;
+        wrapper.appendChild(bar);
+        wrapper.appendChild(indexLabel);
+        barChartContainer.appendChild(wrapper);
+
+        // Draw result cell
+        const resCell = document.createElement('div');
+        resCell.className = 'res-cell'; resCell.id = `res-cell-${i}`;
+        resCell.innerHTML = `<div class="res-value" id="res-val-${i}">?</div><div class="res-index">${i}</div>`;
+        resultArrayContainer.appendChild(resCell);
+    });
+}
+
+function renderState(step) {
+    currentActionDisplay.textContent = step.message;
+    iVal.textContent = step.i >= 0 ? step.i : "N/A";
+    countVal.textContent = step.count;
+
+    // Update result array
+    step.res.forEach((val, i) => {
+        const resValDiv = document.getElementById(`res-val-${i}`);
+        if(resValDiv.textContent !== String(val)) {
+            resValDiv.textContent = val;
+            document.getElementById(`res-cell-${i}`).classList.add('filled');
+        }
+    });
+
+    // Clear highlights
+    document.querySelectorAll('.bar').forEach(c => c.classList.remove('viewer', 'stack-person', 'seen'));
+    
+    // Set highlights
+    if (step.i >= 0) document.getElementById(`bar-${step.i}`)?.classList.add('viewer');
+    step.stack.forEach(p => document.getElementById(`bar-${p.index}`)?.classList.add('stack-person'));
+    if (step.seenIdx !== -1) document.getElementById(`bar-${step.seenIdx}`)?.classList.add('seen');
+    
+    // Update stack display
+    stackContainer.innerHTML = '';
+    step.stack.forEach(p => {
+        const originalWrapper = document.getElementById(`bar-wrapper-${p.index}`);
+        const clone = originalWrapper.cloneNode(true);
+        clone.querySelector('.bar').classList.add('stack-person');
+        stackContainer.appendChild(clone);
+    });
+    
+    if (step.type === 'finish') {
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    barChartContainer.innerHTML = '';
+    stackContainer.innerHTML = '';
+    resultArrayContainer.innerHTML = '';
+    iVal.textContent = 'N/A';
+    countVal.textContent = '0';
+    currentActionDisplay.textContent = "Enter heights and click 'Start'.";
+    overlay.classList.remove('show');
+    updateButtonState();
+}
+
+function startAnimation() {
+    try {
+        heights = heightsInput.value.split(',').map(s => {
+            const num = parseInt(s.trim());
+            if (isNaN(num) || num < 0) throw new Error();
+            return num;
+        });
+    } catch(e) { alert("Invalid input. Please use non-negative, comma-separated numbers."); return; }
+    if (heights.length === 0) return;
+
+    drawInitialState();
+    
+    animationSteps = generateAnimationSteps(heights);
+    currentStepIndex = 0;
+    simulationRunning = true; 
+    
+    overlay.classList.remove('show');
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length -1) return;
+    
+    currentStepIndex++;
+    const step = animationSteps[currentStepIndex];
+    renderState(step);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    heightsInput = document.getElementById('heights_input_p5'); 
+    startButton = document.getElementById('start_button_vp_p5');
+    nextStepButton = document.getElementById('next_step_button_vp_p5'); 
+    barChartContainer = document.getElementById('bar_chart_container_p5');
+    stackContainer = document.getElementById('stack_container_p5');
+    resultArrayContainer = document.getElementById('result_array_container_p5');
+    iVal = document.getElementById('i_val');
+    countVal = document.getElementById('count_val');
+    currentActionDisplay = document.getElementById('current_action_vp_display_p5');
+    overlay = document.getElementById('overlay-vp'); 
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) {
+            resetAnimation();
+        } else {
+            startAnimation();
+        }
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+});
+</script>
+</body>
+</html>

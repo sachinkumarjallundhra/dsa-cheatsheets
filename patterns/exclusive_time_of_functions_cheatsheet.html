@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exclusive Time of Functions Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>⏱️ Exclusive Time of Functions – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Exclusive Time of Functions</b> problem (LeetCode 636) asks you to calculate the exclusive time spent in each function given a list of logs for function calls and returns. Nested calls should be handled using a stack.
+    </p>
+
+    <h2>🧱 Pattern Template (Stack-Based Solution)</h2>
+    <pre><code>class Solution {
+    public int[] exclusiveTime(int n, List&lt;String&gt; logs) {
+        int[] res = new int[n];
+        Stack&lt;Integer&gt; stack = new Stack&lt;&gt;();
+        int prevTime = 0;
+        for (String log : logs) {
+            String[] parts = log.split(":");
+            int id = Integer.parseInt(parts[0]);
+            String type = parts[1];
+            int time = Integer.parseInt(parts[2]);
+            if (type.equals("start")) {
+                if (!stack.isEmpty()) {
+                    res[stack.peek()] += time - prevTime;
+                }
+                stack.push(id);
+                prevTime = time;
+            } else {
+                res[stack.pop()] += time - prevTime + 1;
+                prevTime = time + 1;
+            }
+        }
+        return res;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/exclusive_time_of_functions_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Tracking execution time of nested function calls</li>
+      <li>Stack-based interval management</li>
+      <li>Problems involving logs and time intervals</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/exclusive-time-of-functions/" target="_blank" rel="noopener noreferrer">636. Exclusive Time of Functions</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Stack</span>
+        <span class="badge badge-tag">Simulation</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: n = 2, logs = [
+  "0:start:0",
+  "1:start:2",
+  "1:end:5",
+  "0:end:6"
+]
+Output: [3, 4]
+Explanation:
+Function 0 starts at 0 and pauses at 2, resumes at 6.
+Function 1 runs from 2 to 5.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a stack to track currently running functions.</li>
+      <li>Update exclusive time for the function on top of the stack when a new function starts or ends.</li>
+      <li>Carefully handle the time intervals and increment for end logs.</li>
+    </ul>

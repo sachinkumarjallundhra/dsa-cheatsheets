@@ -30,6 +30,10 @@ class Solution {
         for (int i = 0; i &lt; recipes.length; i++) {
             String recipe = recipes[i];
             for (String ing : ingredients.get(i)) {
+                if (!supplySet.contains(ing) &amp;&amp; !inDegree.containsKey(ing)) {
+                    // If ingredient is not a supply and not a recipe, it can't be made
+                    inDegree.put(ing, -1);
+                }
                 if (!supplySet.contains(ing)) {
                     graph.computeIfAbsent(ing, k -&gt; new ArrayList&lt;&gt;()).add(recipe);
                     inDegree.put(recipe, inDegree.getOrDefault(recipe, 0) + 1);
@@ -40,12 +44,13 @@ class Solution {
         List&lt;String&gt; result = new ArrayList&lt;&gt;();
         while (!queue.isEmpty()) {
             String item = queue.poll();
-            if (inDegree.containsKey(item) &amp;&amp; inDegree.get(item) == 0) {
-                result.add(item);
-            }
             for (String next : graph.getOrDefault(item, new ArrayList&lt;&gt;())) {
+                if (inDegree.get(next) == -1) continue; // Can't be made
                 inDegree.put(next, inDegree.get(next) - 1);
-                if (inDegree.get(next) == 0) queue.add(next);
+                if (inDegree.get(next) == 0) {
+                    queue.add(next);
+                    result.add(next);
+                }
             }
         }
         return result;

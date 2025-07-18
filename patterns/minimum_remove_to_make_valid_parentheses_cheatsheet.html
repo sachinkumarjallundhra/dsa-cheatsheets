@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimum Remove to Make Valid Parentheses Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🧹 Minimum Remove to Make Valid Parentheses – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Minimum Remove to Make Valid Parentheses</b> problem (LeetCode 1249) asks you to remove the minimum number of parentheses to make the input string valid (every opening parenthesis has a corresponding closing parenthesis).
+    </p>
+
+    <h2>🧱 Pattern Template (Stack-Based Solution)</h2>
+    <pre><code>class Solution {
+    public String minRemoveToMakeValid(String s) {
+        Stack&lt;Integer&gt; stack = new Stack&lt;&gt;();
+        Set&lt;Integer&gt; removeIdx = new HashSet&lt;&gt;();
+        for (int i = 0; i &lt; s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '(') {
+                stack.push(i);
+            } else if (c == ')') {
+                if (!stack.isEmpty()) {
+                    stack.pop();
+                } else {
+                    removeIdx.add(i);
+                }
+            }
+        }
+        while (!stack.isEmpty()) {
+            removeIdx.add(stack.pop());
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i &lt; s.length(); i++) {
+            if (!removeIdx.contains(i)) {
+                sb.append(s.charAt(i));
+            }
+        }
+        return sb.toString();
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/minimum_remove_to_make_valid_parentheses_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>String cleanup and validation</li>
+      <li>Parentheses balancing problems</li>
+      <li>Stack-based index tracking</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/minimum-remove-to-make-valid-parentheses/" target="_blank" rel="noopener noreferrer">1249. Minimum Remove to Make Valid Parentheses</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Stack</span>
+        <span class="badge badge-tag">String</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "lee(t(c)o)de)"
+Output: "lee(t(c)o)de"
+
+Input: s = "a)b(c)d"
+Output: "ab(c)d"
+
+Input: s = "))(("
+Output: ""
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a stack to track indices of unmatched parentheses.</li>
+      <li>Remove indices from the original string to build the valid result.</li>
+      <li>Efficient for single-pass solutions.</li>
+    </ul>
+  </div>
+</body>
+</html>

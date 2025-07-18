@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decode String Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔓 Decode String – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Decode String</b> problem (LeetCode 394) asks you to decode an encoded string with the format <code>k[encoded_string]</code>, where the encoded_string inside the square brackets is repeated exactly k times.
+    </p>
+
+    <h2>🧱 Pattern Template (Stack-Based Solution)</h2>
+    <pre><code>class Solution {
+    public String decodeString(String s) {
+        Stack&lt;Integer&gt; countStack = new Stack&lt;&gt;();
+        Stack&lt;String&gt; stringStack = new Stack&lt;&gt;();
+        String curr = "";
+        int k = 0;
+        for (char ch : s.toCharArray()) {
+            if (Character.isDigit(ch)) {
+                k = k * 10 + (ch - '0');
+            } else if (ch == '[') {
+                countStack.push(k);
+                stringStack.push(curr);
+                curr = "";
+                k = 0;
+            } else if (ch == ']') {
+                int count = countStack.pop();
+                StringBuilder sb = new StringBuilder(stringStack.pop());
+                for (int i = 0; i &lt; count; i++) sb.append(curr);
+                curr = sb.toString();
+            } else {
+                curr += ch;
+            }
+        }
+        return curr;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/decode_string_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>String decoding and parsing</li>
+      <li>Stack-based nested structure problems</li>
+      <li>Handling repeated patterns in strings</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/decode-string/" target="_blank" rel="noopener noreferrer">394. Decode String</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Stack</span>
+        <span class="badge badge-tag">String</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "3[a]2[bc]"
+Output: "aaabcbc"
+
+Input: s = "3[a2[c]]"
+Output: "accaccacc"
+
+Input: s = "2[abc]3[cd]ef"
+Output: "abcabccdcdcdef"
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use two stacks: one for counts and one for strings.</li>
+      <li>Build the current string and repeat it as needed when ']' is encountered.</li>
+      <li>Handle multi-digit numbers for repeat counts.</li>
+    </ul>
+  </div>
+</body>

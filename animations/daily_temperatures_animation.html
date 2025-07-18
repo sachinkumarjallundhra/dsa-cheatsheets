@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Temperatures Animation</title>
+    <style>
+        :root {
+            --color-bar-default: #bdc3c7; --color-bar-border: #7f8c8d;
+            --color-current-day: #3498db; --color-stack-day: #9b59b6;
+            --color-popped-day: #e67e22; --color-result: #2ecc71;
+            --color-compare-bg: #ecf0f1; --color-bg-light: #f4f7f6;
+            --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-dt { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } 
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        h3 { font-size: 1em; margin-bottom: 5px; color: #34495e;}
+
+        .controls-dt { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-dt label { font-weight: bold; margin-right: 5px; }
+        .controls-dt input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; font-family: 'Courier New', monospace; width: 400px; }
+        .controls-dt button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-dt button:hover { background-color: #2980b9; }
+        .controls-dt button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-dt { display: grid; grid-template-columns: 350px 1fr; gap: 15px; }
+        .panel-dt { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        /* Bar Chart & Results */
+        .viz-container-dt { position: relative; padding: 20px; border-radius: 5px; }
+        .bar-chart-container-dt { display: flex; align-items: flex-end; gap: 10px; border-bottom: 3px solid #ccc; padding-bottom: 10px; min-height: 250px; }
+        .bar-wrapper-dt { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 50px; }
+        .bar-dt { width: 100%; background-color: var(--color-bar-default); border: 3px solid var(--color-bar-border); border-bottom: none; border-radius: 5px 5px 0 0; display: flex; justify-content: center; padding-top: 5px; font-weight: bold; color: var(--color-text-dark); transition: all 0.3s ease; }
+        .bar-index-dt { font-family: 'Courier New', monospace; font-weight: bold; font-size: 0.9em; }
+        .bar-dt.current-day { border-color: var(--color-current-day); box-shadow: 0 0 10px var(--color-current-day); }
+        .bar-dt.stack-day { border-color: var(--color-stack-day); }
+        .bar-dt.popped-day { border-color: var(--color-popped-day); box-shadow: 0 0 10px var(--color-popped-day); }
+        
+        .result-array-container-dt { margin-top: 15px; display: flex; gap: 10px; }
+        .res-cell-dt { width: 50px; height: 50px; background-color: #fff; border: 1px solid #ccc; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 4px; transition: all 0.3s ease; }
+        .res-cell-dt .res-value { font-size: 1.5em; font-weight: bold; } .res-cell-dt .res-index { font-size: 0.7em; }
+        .res-cell-dt.filled { background-color: #e8f5e9; border-color: var(--color-result); transform: scale(1.1); }
+        
+        /* Stack */
+        .stack-dt { min-height: 200px; background-color: #f9f9f9; border-radius: 4px; border: 1px solid #ddd; padding: 5px; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 5px; }
+        .stack-item-dt { padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; border: 2px solid var(--color-stack-day); background-color: #f3e5f5; transition: all 0.3s ease; animation: push-anim-dt 0.3s ease; }
+        @keyframes push-anim-dt { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Comparison Zone */
+        #comparison_zone_dt { background-color: var(--color-compare-bg); border: 2px dashed #bdc3c7; border-radius: 5px; padding: 15px; transition: opacity 0.3s ease; }
+        .compare-grid-dt { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-items: center; gap: 10px; font-size: 1.1em; text-align: center;}
+        .compare-item-dt { display: flex; flex-direction: column; gap: 5px; }
+        .compare-item-dt .label { font-size: 0.8em; color: #6c757d; font-weight: bold; }
+        .compare-item-dt .value { font-family: 'Courier New', monospace; font-size: 1.8em; font-weight: bold; }
+        #compare_status_dt { font-weight: bold; font-size: 2em; }
+        #calc_display_dt { font-family: 'Courier New', monospace; font-weight: bold; text-align: center; margin-top: 10px; font-size: 1.1em; }
+
+        #current_action_display_dt { text-align:center; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        
+        #overlay-dt { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-dt.show { opacity: 1; pointer-events: auto;}
+        .result-box-dt { background: white; padding: 30px 50px; border-radius: 10px; text-align: center; }
+        
+        @media (max-width: 1200px) { .main-content-dt { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-dt">
+        <h1>Daily Temperatures</h1>
+        <div class="controls-dt">
+            <label>Temperatures:</label><input id="temps_input_dt" value="73, 74, 75, 71, 69, 72, 76, 73">
+            <button id="start_button_dt">Start</button>
+            <button id="next_step_button_dt" disabled>Next Step</button>
+        </div>
+        <div class="main-content-dt">
+            <div class="left-panel-dt">
+                <div class="panel-dt">
+                    <h3>Stack (of indices)</h3>
+                    <div id="stack_container_dt" class="stack-dt"></div>
+                </div>
+                <div class="panel-dt" id="comparison_zone_dt" style="display:none;">
+                    <h3>Comparison</h3>
+                    <div class="compare-grid-dt">
+                        <div class="compare-item-dt">
+                            <span class="label">Current Day's Temp</span>
+                            <span id="compare_current_dt" class="value">?</span>
+                        </div>
+                        <div id="compare_status_dt"></div>
+                        <div class="compare-item-dt">
+                            <span class="label">Stack Top's Temp</span>
+                            <span id="compare_peek_dt" class="value">?</span>
+                        </div>
+                    </div>
+                    <div id="calc_display_dt"></div>
+                </div>
+            </div>
+            <div class="right-panel-dt">
+                <div class="panel-dt">
+                     <div class="viz-container-dt">
+                        <div class="bar-chart-container-dt" id="bar_chart_container_dt"></div>
+                        <div>
+                            <h2>Result Array (Wait Days)</h2>
+                            <div class="result-array-container-dt" id="result_array_container_dt"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-dt">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_dt">Enter comma-separated temperatures and click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-dt">
+        <div class="result-box-dt">
+            <h2>Finished!</h2>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, temperatures = [], maxTemp = 0;
+let tempsInput, startButton, nextStepButton, barChartContainer, stackContainer, resultArrayContainer,
+    currentActionDisplay, overlay, comparisonZone, compareCurrent, comparePeek, compareStatus, calcDisplay;
+
+const saveState = (steps, i, stack, answer, message, phase, extra = {}) => {
+    steps.push({ i, stack: [...stack], answer: [...answer], message, phase, ...extra });
+};
+
+function generateAnimationSteps(temps) {
+    const steps = [];
+    const n = temps.length;
+    let answer = new Array(n).fill(0);
+    const stack = []; // Stores indices
+
+    saveState(steps, -1, stack, answer, "Click 'Next Step' to begin.", 'initial');
+
+    for (let i = 0; i < n; i++) {
+        saveState(steps, i, stack, answer, `Processing Day ${i} (Temp: ${temps[i]}).`, 'iterate');
+
+        while (stack.length > 0 && temps[i] > temps[stack[stack.length - 1]]) {
+            const peekIndex = stack[stack.length - 1];
+            saveState(steps, i, stack, answer, `Current temp ${temps[i]} > stack top's temp ${temps[peekIndex]}.`, 'compare_hotter', { peekIndex });
+
+            const prevIndex = stack.pop();
+            answer[prevIndex] = i - prevIndex;
+            saveState(steps, i, stack, answer, `Popped index ${prevIndex}. Storing wait days (${i} - ${prevIndex} = ${answer[prevIndex]}) in answer[${prevIndex}].`, 'pop_and_store', { prevIndex, updatedIndex: prevIndex });
+        }
+        
+        if (stack.length > 0) {
+            const peekIndex = stack[stack.length - 1];
+            saveState(steps, i, stack, answer, `Current temp ${temps[i]} is not warmer than stack top's temp ${temps[peekIndex]}.`, 'compare_cooler', { peekIndex });
+        }
+        
+        stack.push(i);
+        saveState(steps, i, stack, answer, `Pushing index ${i} onto the stack.`, 'push');
+    }
+    
+    saveState(steps, -1, stack, answer, `Finished! Remaining indices in stack have no warmer future day.`, 'finish');
+    return steps;
+}
+
+function drawInitialState() {
+    barChartContainer.innerHTML = ''; resultArrayContainer.innerHTML = '';
+    maxTemp = Math.max(...temperatures, 1);
+    temperatures.forEach((val, i) => {
+        // Draw main bar
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bar-wrapper-dt';
+        const bar = document.createElement('div');
+        bar.className = 'bar-dt'; bar.id = `bar-${i}`;
+        bar.textContent = val;
+        bar.style.height = `${(val / maxTemp) * 200}px`; // 200px max height
+        const indexLabel = document.createElement('div');
+        indexLabel.className = 'bar-index-dt'; indexLabel.textContent = `Day ${i}`;
+        wrapper.appendChild(bar);
+        wrapper.appendChild(indexLabel);
+        barChartContainer.appendChild(wrapper);
+
+        // Draw result cell
+        const resCell = document.createElement('div');
+        resCell.className = 'res-cell-dt'; resCell.id = `res-cell-${i}`;
+        resCell.innerHTML = `<div class="res-value" id="res-val-${i}">0</div><div class="res-index">${i}</div>`;
+        resultArrayContainer.appendChild(resCell);
+    });
+}
+
+function renderState(step) {
+    currentActionDisplay.textContent = step.message;
+    calcDisplay.textContent = ''; // Clear calculation display by default
+    
+    // Clear all highlights and effects
+    document.querySelectorAll('.bar-dt').forEach(b => b.classList.remove('current-day', 'stack-day', 'popped-day'));
+    document.querySelectorAll('.res-cell-dt').forEach(c => c.classList.remove('filled'));
+
+    // Apply new highlights
+    if (step.i >= 0) document.getElementById(`bar-${step.i}`)?.classList.add('current-day');
+    step.stack.forEach(idx => document.getElementById(`bar-${idx}`)?.classList.add('stack-day'));
+    if (step.prevIndex !== undefined) document.getElementById(`bar-${step.prevIndex}`)?.classList.add('popped-day');
+
+    // Update result array
+    step.answer.forEach((val, i) => {
+        document.getElementById(`res-val-${i}`).textContent = val;
+    });
+    if (step.updatedIndex !== undefined) {
+        document.getElementById(`res-cell-${step.updatedIndex}`).classList.add('filled');
+    }
+
+    // Update stack display
+    stackContainer.innerHTML = '';
+    step.stack.forEach(idx => {
+        const item = document.createElement('div');
+        item.className = 'stack-item-dt';
+        item.textContent = `Idx ${idx} (${temperatures[idx]})`;
+        stackContainer.appendChild(item);
+    });
+
+    // Update comparison zone
+    if (step.phase.startsWith('compare') || step.phase === 'pop_and_store') {
+        comparisonZone.style.display = 'block';
+        const currentTemp = temperatures[step.i];
+        const peekTemp = temperatures[step.peekIndex];
+        
+        compareCurrent.textContent = currentTemp;
+        comparePeek.textContent = peekTemp !== undefined ? peekTemp : '–';
+        
+        if (step.phase === 'compare_hotter' || step.phase === 'pop_and_store') {
+            compareStatus.textContent = '>';
+            compareStatus.style.color = 'var(--color-result)';
+            if (step.phase === 'pop_and_store') {
+                calcDisplay.textContent = `ans[${step.prevIndex}] = ${step.i} - ${step.prevIndex} = ${step.answer[step.prevIndex]}`;
+            }
+        } else if (step.phase === 'compare_cooler') {
+            compareStatus.textContent = '≤';
+            compareStatus.style.color = 'var(--color-popped-day)';
+        }
+    } else {
+        comparisonZone.style.display = 'none';
+    }
+
+    if (step.phase === 'finish') {
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    [barChartContainer, stackContainer, resultArrayContainer].forEach(c => c.innerHTML = '');
+    currentActionDisplay.textContent = "Enter comma-separated temperatures and click 'Start'.";
+    comparisonZone.style.display = 'none';
+    overlay.classList.remove('show');
+    updateButtonState();
+}
+
+function startAnimation() {
+    try {
+        temperatures = tempsInput.value.split(',').map(s => {
+            const num = parseInt(s.trim());
+            if (isNaN(num)) throw new Error();
+            return num;
+        });
+    } catch (e) { alert("Invalid input. Please use comma-separated numbers."); return; }
+    if (temperatures.length === 0) return;
+
+    resetAnimation();
+    simulationRunning = true;
+    
+    drawInitialState();
+    animationSteps = generateAnimationSteps(temperatures);
+    currentStepIndex = 0;
+    
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+    currentStepIndex++;
+    renderState(animationSteps[currentStepIndex]);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    tempsInput = document.getElementById('temps_input_dt');
+    startButton = document.getElementById('start_button_dt');
+    nextStepButton = document.getElementById('next_step_button_dt');
+    barChartContainer = document.getElementById('bar_chart_container_dt');
+    stackContainer = document.getElementById('stack_container_dt');
+    resultArrayContainer = document.getElementById('result_array_container_dt');
+    currentActionDisplay = document.getElementById('current_action_display_dt');
+    overlay = document.getElementById('overlay-dt');
+    comparisonZone = document.getElementById('comparison_zone_dt');
+    compareCurrent = document.getElementById('compare_current_dt');
+    comparePeek = document.getElementById('compare_peek_dt');
+    compareStatus = document.getElementById('compare_status_dt');
+    calcDisplay = document.getElementById('calc_display_dt');
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) {
+            resetAnimation();
+        } else {
+            startAnimation();
+        }
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+});
+</script>
+</body>
+</html>

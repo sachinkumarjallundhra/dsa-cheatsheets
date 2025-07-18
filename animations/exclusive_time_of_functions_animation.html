@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exclusive Time of Functions Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6;   --color-bg-panel: #ffffff;
+            --color-text-dark: #2c3e50;  --color-highlight: #f1c40f;
+            --color-stack: #9b59b6;      --color-stack-border: #8e44ad;
+            --color-result: #2ecc71;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-etf { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; }
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        h3 { font-size: 1em; margin-bottom: 5px; color: #34495e;}
+
+        .controls-etf { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-etf label { font-weight: bold; margin-right: 5px; }
+        .controls-etf input, .controls-etf textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls-etf input { width: 50px; font-size: 1.1em; }
+        .controls-etf textarea { width: 350px; height: 80px; font-size: 1em; resize: vertical; }
+        .controls-etf button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-etf button:hover { background-color: #2980b9; }
+        .controls-etf button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-etf { display: grid; grid-template-columns: 350px 1fr; gap: 15px; }
+        .panel-etf { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+
+        #logs_container_etf { background: #f9f9f9; padding: 10px; border-radius: 5px; max-height: 250px; overflow-y: auto; }
+        .log-item-etf { font-family: 'Courier New', monospace; padding: 4px; border-radius: 3px; transition: background-color 0.3s; }
+        .log-item-etf.highlight { background-color: var(--color-highlight); }
+        
+        .stack-etf { min-height: 200px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 5px; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 5px; }
+        .stack-item-etf { padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; border: 2px solid var(--color-stack-border); background-color: var(--color-stack); color: white; transition: all 0.3s ease; animation: push-anim-etf 0.3s ease; }
+        @keyframes push-anim-etf { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        #state_val_etf { font-size: 2em; font-weight: bold; font-family: 'Courier New', monospace; text-align: center; }
+        
+        /* Timeline */
+        .timeline-area-etf { padding: 20px 10px; }
+        .timeline-wrapper-etf { position: relative; width: 100%; height: 80px; background: #f0f0f0; border-radius: 5px; }
+        .timeline-bar-etf { position: absolute; top: 50%; left: 0; width: 100%; height: 6px; background: #ccc; transform: translateY(-50%); }
+        .tick-mark-etf { position: absolute; top: 50%; width: 2px; height: 20px; background: #aaa; transform: translate(-1px, -50%); }
+        .tick-label-etf { position: absolute; top: calc(50% + 15px); font-size: 0.8em; transform: translateX(-50%); }
+        .gantt-segment-etf { position: absolute; top: 50%; height: 30px; transform: translateY(-50%); border-radius: 4px; opacity: 0.8; border: 1px solid rgba(0,0,0,0.3); transition: all 0.3s ease; animation: gantt-appear 0.4s ease; }
+        .gantt-segment-etf::after { content: attr(data-id); color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; height: 100%; }
+        @keyframes gantt-appear { from { opacity: 0; transform: translateY(-50%) scaleY(0); } to { opacity: 0.8; transform: translateY(-50%) scaleY(1); } }
+        
+        /* Results Array */
+        .results-container-etf { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .res-cell-etf { width: 60px; height: 60px; background-color: #fff; border: 1px solid #ccc; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 4px; transition: all 0.3s ease; }
+        .res-cell-etf .res-value { font-size: 1.5em; font-weight: bold; } .res-cell-etf .res-index { font-size: 0.7em; }
+        .res-cell-etf.updated { background-color: #e8f5e9; border-color: var(--color-result); transform: scale(1.1); }
+        
+        #current_action_display_etf { text-align:center; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+
+        #overlay-etf { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-etf.show { opacity: 1; pointer-events: auto;}
+        .result-box-etf { background: white; padding: 30px 50px; border-radius: 10px; text-align: center; }
+        
+        @media (max-width: 1200px) { .main-content-etf { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-etf">
+        <h1>Exclusive Time of Functions</h1>
+        <div class="controls-etf">
+            <label>n:</label><input id="n_input_etf" value="2">
+            <label>Logs:</label><textarea id="logs_input_etf">0:start:0
+1:start:2
+1:end:5
+0:end:6</textarea>
+            <button id="start_button_etf">Start</button>
+            <button id="next_step_button_etf" disabled>Next Step</button>
+        </div>
+        <div class="main-content-etf">
+            <div class="left-panel-etf">
+                <div class="panel-etf">
+                    <h3>Input Logs</h3>
+                    <div id="logs_container_etf"></div>
+                </div>
+                <div class="panel-etf">
+                    <h3>Call Stack</h3>
+                    <div id="stack_container_etf" class="stack-etf"></div>
+                </div>
+                <div class="panel-etf">
+                    <h3>prevTime</h3>
+                    <div id="state_val_etf">N/A</div>
+                </div>
+            </div>
+            <div class="right-panel-etf">
+                <div class="panel-etf">
+                    <h2>Timeline</h2>
+                    <div class="timeline-area-etf">
+                        <div class="timeline-wrapper-etf" id="timeline_wrapper_etf"></div>
+                    </div>
+                </div>
+                <div class="panel-etf">
+                    <h2>Exclusive Times (Results)</h2>
+                    <div class="results-container-etf" id="results_container_etf"></div>
+                </div>
+                <div class="panel-etf">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_etf">Enter `n` and logs, then click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-etf">
+        <div class="result-box-etf">
+            <h2>Finished!</h2>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, maxTime = 0;
+let nInput, logsInput, startButton, nextStepButton, logsContainer, stackContainer, stateVal,
+    timelineWrapper, resultsContainer, currentActionDisplay, overlay;
+const GANTT_COLORS = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
+
+const saveState = (steps, logIdx, msg, phase, stack, res, prevTime, gantt, updatedResIdx = -1) => {
+    steps.push({ logIdx, msg, phase, stack: [...stack], res: [...res], prevTime, gantt: JSON.parse(JSON.stringify(gantt)), updatedResIdx });
+};
+
+function generateAnimationSteps(n, logs) {
+    const steps = [];
+    let res = new Array(n).fill(0);
+    const stack = [];
+    let prevTime = 0;
+    const gantt = [];
+
+    saveState(steps, -1, "Click 'Next Step' to begin.", 'initial', stack, res, prevTime, gantt);
+
+    for (let logIdx = 0; logIdx < logs.length; logIdx++) {
+        const log = logs[logIdx];
+        const parts = log.split(':');
+        if (parts.length !== 3) continue;
+        const id = parseInt(parts[0]);
+        const type = parts[1];
+        const time = parseInt(parts[2]);
+        
+        saveState(steps, logIdx, `Processing log: ${log}`, 'scan', stack, res, prevTime, gantt);
+
+        if (type === "start") {
+            if (stack.length > 0) {
+                const prevId = stack[stack.length - 1];
+                const duration = time - prevTime;
+                if (duration > 0) {
+                    res[prevId] += duration;
+                    gantt.push({ id: prevId, start: prevTime, end: time - 1 });
+                    saveState(steps, logIdx, `Function ${prevId} was running. Adding ${duration}ms to its time.`, 'update_time', stack, res, prevTime, gantt, prevId);
+                }
+            }
+            stack.push(id);
+            saveState(steps, logIdx, `Function ${id} starts. Pushing to stack.`, 'push', stack, res, prevTime, gantt);
+            prevTime = time;
+            saveState(steps, logIdx, `Updating prevTime to ${time}.`, 'update_prev', stack, res, prevTime, gantt);
+        } else { // end
+            const duration = time - prevTime + 1;
+            const endedId = stack.pop(); // Pop first!
+            res[endedId] += duration;
+            gantt.push({ id: endedId, start: prevTime, end: time });
+            // Save state *after* the pop and update has occurred
+            saveState(steps, logIdx, `Function ${endedId} ends. Ran for ${duration}ms. Popping and updating time.`, 'pop_and_update', stack, res, prevTime, gantt, endedId);
+
+            prevTime = time + 1;
+            saveState(steps, logIdx, `Updating prevTime to ${prevTime}.`, 'update_prev', stack, res, prevTime, gantt);
+        }
+    }
+    saveState(steps, -1, "Finished!", 'finish', stack, res, prevTime, gantt);
+    return steps;
+}
+
+function drawInitialState(n, logs) {
+    // Clear containers
+    [logsContainer, stackContainer, timelineWrapper, resultsContainer].forEach(c => c.innerHTML = '');
+    
+    // Draw logs
+    logs.forEach(log => {
+        const div = document.createElement('div');
+        div.className = 'log-item-etf';
+        div.textContent = log;
+        logsContainer.appendChild(div);
+    });
+
+    // Draw results array
+    for (let i = 0; i < n; i++) {
+        const resCell = document.createElement('div');
+        resCell.className = 'res-cell-etf';
+        resCell.id = `res-cell-${i}`;
+        resCell.innerHTML = `<div class="res-value" id="res-val-${i}">0</div><div class="res-index">Func ${i}</div>`;
+        resultsContainer.appendChild(resCell);
+    }
+
+    // Draw timeline
+    const lastLog = logs[logs.length-1] || "0:end:0";
+    maxTime = parseInt(lastLog.split(':')[2]) + 2;
+    timelineWrapper.innerHTML = '<div class="timeline-bar-etf"></div>';
+    for(let t=0; t<=maxTime; t++){
+        const tick = document.createElement('div');
+        tick.className = 'tick-mark-etf';
+        tick.style.left = `${(t / maxTime) * 100}%`;
+        const label = document.createElement('div');
+        label.className = 'tick-label-etf';
+        label.textContent = t;
+        label.style.left = `${(t / maxTime) * 100}%`;
+        timelineWrapper.appendChild(tick);
+        timelineWrapper.appendChild(label);
+    }
+}
+
+function renderState(step) {
+    // Update displays
+    currentActionDisplay.textContent = step.msg;
+    stateVal.textContent = step.prevTime;
+
+    // Highlight log
+    document.querySelectorAll('.log-item-etf').forEach((log, i) => {
+        log.classList.toggle('highlight', i === step.logIdx);
+    });
+    
+    // Update stack
+    stackContainer.innerHTML = '';
+    step.stack.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'stack-item-etf';
+        div.textContent = `Func ${item}`;
+        stackContainer.appendChild(div);
+    });
+    
+    // Update results array
+    document.querySelectorAll('.res-cell-etf').forEach(c => c.classList.remove('updated'));
+    step.res.forEach((val, i) => {
+        document.getElementById(`res-val-${i}`).textContent = val;
+    });
+    if(step.updatedResIdx !== -1) {
+        document.getElementById(`res-cell-${step.updatedResIdx}`).classList.add('updated');
+    }
+
+    // Render timeline gantt chart
+    document.querySelectorAll('.gantt-segment-etf').forEach(el => el.remove());
+    step.gantt.forEach(seg => {
+        const div = document.createElement('div');
+        div.className = 'gantt-segment-etf';
+        div.style.left = `${(seg.start / maxTime) * 100}%`;
+        div.style.width = `${((seg.end - seg.start + 1) / maxTime) * 100}%`;
+        div.style.backgroundColor = GANTT_COLORS[seg.id % GANTT_COLORS.length];
+        div.setAttribute('data-id', `F${seg.id}`);
+        timelineWrapper.appendChild(div);
+    });
+
+    if (step.phase === 'finish') {
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    [logsContainer, stackContainer, timelineWrapper, resultsContainer].forEach(c => c.innerHTML = '');
+    stateVal.textContent = 'N/A';
+    currentActionDisplay.textContent = "Enter `n` and logs, then click 'Start'.";
+    overlay.classList.remove('show');
+    updateButtonState();
+}
+
+function startAnimation() {
+    const n = parseInt(nInput.value);
+    const logs = logsInput.value.trim().split('\n').filter(l => l);
+    if (isNaN(n) || n <= 0 || logs.length === 0) {
+        alert("Please provide a valid n > 0 and at least one log.");
+        return;
+    }
+
+    resetAnimation();
+    simulationRunning = true;
+    
+    drawInitialState(n, logs);
+    animationSteps = generateAnimationSteps(n, logs);
+    currentStepIndex = 0;
+    
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+    currentStepIndex++;
+    renderState(animationSteps[currentStepIndex]);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    nInput = document.getElementById('n_input_etf');
+    logsInput = document.getElementById('logs_input_etf');
+    startButton = document.getElementById('start_button_etf');
+    nextStepButton = document.getElementById('next_step_button_etf');
+    logsContainer = document.getElementById('logs_container_etf');
+    stackContainer = document.getElementById('stack_container_etf');
+    stateVal = document.getElementById('state_val_etf');
+    timelineWrapper = document.getElementById('timeline_wrapper_etf');
+    resultsContainer = document.getElementById('results_container_etf');
+    currentActionDisplay = document.getElementById('current_action_display_etf');
+    overlay = document.getElementById('overlay-etf');
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) resetAnimation();
+        else startAnimation();
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+});
+</script>
+</body>
+</html>

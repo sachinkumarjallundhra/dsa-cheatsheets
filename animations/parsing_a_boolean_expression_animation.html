@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parsing A Boolean Expression Animation</title>
+    <style>
+        :root {
+            --color-operator: #9b59b6; --color-operator-border: #8e44ad;
+            --color-value-t: #27ae60; --color-value-t-border: #2ecc71;
+            --color-value-f: #c0392b; --color-value-f-border: #e74c3c;
+            --color-paren: #7f8c8d; --color-paren-border: #95a5a6;
+            --color-highlight: #f1c40f; --color-eval-bg: #ecf0f1;
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-pbe { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } 
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        h3 { font-size: 1em; margin-bottom: 5px; color: #34495e;}
+
+        .controls-pbe { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-pbe label { font-weight: bold; margin-right: 5px; }
+        .controls-pbe input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.2em; font-family: 'Courier New', monospace; width: 450px; }
+        .controls-pbe button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-pbe button:hover { background-color: #2980b9; }
+        .controls-pbe button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-pbe { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .panel-pbe { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .stacks-container-pbe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stack-wrapper-pbe { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .stack-pbe { min-height: 400px; background-color: #f9f9f9; border-radius: 4px; padding: 5px; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 5px; }
+        
+        .stack-item-pbe { padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; border: 2px solid; transition: all 0.3s ease; animation: push-anim 0.3s ease; }
+        .op { background-color: var(--color-operator); border-color: var(--color-operator-border); color: white; }
+        .val-t { background-color: var(--color-value-t); border-color: var(--color-value-t-border); color: white; }
+        .val-f { background-color: var(--color-value-f); border-color: var(--color-value-f-border); color: white; }
+        .val-paren { background-color: var(--color-paren); border-color: var(--color-paren-border); color: white; }
+        @keyframes push-anim { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .expression-display-pbe { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 1.5em; font-family: 'Courier New', monospace; }
+        .char-box-pbe { padding: 2px 6px; border-radius: 3px; transition: background-color 0.3s, color 0.3s; }
+        .char-box-pbe.highlight { background-color: var(--color-highlight); color: black; }
+        
+        #evaluation_zone_pbe { background-color: var(--color-eval-bg); margin-top: 15px; border: 2px dashed #bdc3c7; border-radius: 5px; padding: 10px; transition: all 0.3s ease; overflow: hidden; }
+        .eval-grid-pbe { display: grid; grid-template-columns: 100px 1fr; align-items: center; gap: 5px; font-family: 'Courier New', monospace; font-size: 1.1em;}
+        .eval-grid-pbe .label { font-weight: bold; }
+        
+        #current_action_display_pbe { text-align:center; margin-top:15px; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        
+        #overlay-pbe { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-pbe.show { opacity: 1; pointer-events: auto;}
+        .result-box-pbe { background: white; padding: 30px 50px; border-radius: 10px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .result-box-pbe h2 { font-size: 1.8em; margin: 0;}
+        
+        @media (max-width: 1200px) { .main-content-pbe { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-pbe">
+        <h1>Parsing A Boolean Expression</h1>
+        <div class="controls-pbe">
+            <label>Expression:</label><input id="expression_input_pbe" value="&(|(t,f),!(t))">
+            <button id="start_button_pbe">Start</button>
+            <button id="next_step_button_pbe" disabled>Next Step</button>
+        </div>
+        <div class="main-content-pbe">
+            <div class="left-panel-pbe">
+                <div class="panel-pbe">
+                    <h2>Stacks</h2>
+                    <div class="stacks-container-pbe">
+                        <div class="stack-wrapper-pbe">
+                            <h3>Operators (ops)</h3>
+                            <div id="ops_stack_container_pbe" class="stack-pbe"></div>
+                        </div>
+                        <div class="stack-wrapper-pbe">
+                            <h3>Values (vals)</h3>
+                            <div id="vals_stack_container_pbe" class="stack-pbe"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="right-panel-pbe">
+                <div class="panel-pbe">
+                     <h2>Expression</h2>
+                     <div id="expression_display_container_pbe" class="expression-display-pbe"></div>
+                </div>
+                <div class="panel-pbe" id="evaluation_zone_pbe" style="display:none;">
+                    <h3>Evaluating Sub-Expression</h3>
+                    <div class="eval-grid-pbe">
+                        <span class="label">Operator:</span> <span id="eval_op_pbe"></span>
+                        <span class="label">Operands:</span> <span id="eval_operands_pbe"></span>
+                        <span class="label">Result:</span> <span id="eval_result_pbe"></span>
+                    </div>
+                </div>
+                <div class="panel-pbe">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_pbe">Enter a valid boolean expression and click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-pbe">
+        <div class="result-box-pbe">
+            <h2 id="final_result_text_pbe"></h2>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, expression = '';
+let expressionInput, startButton, nextStepButton, opsStackContainer, valsStackContainer, 
+    expressionDisplayContainer, currentActionDisplay, overlay, evalZone, evalOp, evalOperands, evalResult, finalResultText;
+
+const saveState = (steps, charIndex, message, ops, vals, phase, evalData = {}) => {
+    steps.push({ 
+        charIndex, 
+        message, 
+        opsStack: [...ops], 
+        valsStack: [...vals], 
+        phase, 
+        ...evalData 
+    });
+};
+
+function generateAnimationSteps(expr) {
+    const steps = [];
+    let ops = [], vals = [];
+
+    saveState(steps, -1, "Click 'Next Step' to begin processing the expression.", ops, vals, 'initial');
+
+    for (let i = 0; i < expr.length; i++) {
+        const c = expr[i];
+        if (c === ',' || c === ' ') {
+            saveState(steps, i, `Ignoring comma or space character '${c}'.`, ops, vals, 'scan');
+            continue;
+        }
+
+        if (c === 't' || c === 'f' || c === '(') {
+            vals.push(c);
+            saveState(steps, i, `Pushing character '${c}' to the Values stack.`, ops, vals, 'scan');
+        } else if (c === '!' || c === '&' || c === '|') {
+            ops.push(c);
+            saveState(steps, i, `Pushing operator '${c}' to the Operators stack.`, ops, vals, 'scan');
+        } else if (c === ')') {
+            saveState(steps, i, `Encountered ')'. Starting evaluation of a sub-expression.`, ops, vals, 'evaluate_start');
+            let temp = [];
+            while (vals.length > 0 && vals[vals.length - 1] !== '(') {
+                const popped = vals.pop();
+                temp.push(popped);
+                saveState(steps, i, `Popping operand '${popped}' from Values stack for evaluation.`, ops, vals, 'evaluate_pop_val', { evaluationOperands: [...temp] });
+            }
+            if (vals.length > 0) { // Pop '('
+                vals.pop();
+                saveState(steps, i, `Popping '(' from Values stack.`, ops, vals, 'evaluate_pop_paren', { evaluationOperands: [...temp] });
+            }
+            const op = ops.pop();
+            saveState(steps, i, `Popping operator '${op}' from Operators stack.`, ops, vals, 'evaluate_pop_op', { evaluationOperands: [...temp], evaluationOp: op });
+            
+            let res = 'f';
+            if (op === '!') {
+                res = temp[0] === 't' ? 'f' : 't';
+            } else if (op === '&') {
+                res = temp.includes('f') ? 'f' : 't';
+            } else if (op === '|') {
+                res = temp.includes('t') ? 't' : 'f';
+            }
+            
+            saveState(steps, i, `Evaluation result is '${res}'.`, ops, vals, 'evaluate_result', { evaluationOperands: [...temp], evaluationOp: op, evaluationResult: res });
+            vals.push(res);
+            saveState(steps, i, `Pushing result '${res}' back to Values stack.`, ops, vals, 'evaluate_push_result', { evaluationOperands: [...temp], evaluationOp: op, evaluationResult: res });
+        }
+    }
+    
+    const finalVal = vals.pop() === 't';
+    saveState(steps, -1, `End of expression. The final result is: ${finalVal}`, ops, vals, 'final', { finalResult: finalVal });
+    return steps;
+}
+
+function drawInitialState() {
+    expressionDisplayContainer.innerHTML = '';
+    expression.split('').forEach(char => {
+        const charBox = document.createElement('div');
+        charBox.className = 'char-box-pbe';
+        charBox.textContent = char;
+        expressionDisplayContainer.appendChild(charBox);
+    });
+}
+
+function getStackItemClass(char) {
+    if (char === 't') return 'val-t';
+    if (char === 'f') return 'val-f';
+    if (char === '(' || char === ')') return 'val-paren';
+    return 'op';
+}
+
+function renderState(step) {
+    // Update expression highlight
+    document.querySelectorAll('.char-box-pbe').forEach((box, i) => {
+        box.classList.toggle('highlight', i === step.charIndex);
+    });
+    
+    // Update stacks
+    [opsStackContainer, valsStackContainer].forEach(c => c.innerHTML = '');
+    step.opsStack.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `stack-item-pbe ${getStackItemClass(item)}`;
+        div.textContent = item;
+        opsStackContainer.appendChild(div);
+    });
+    step.valsStack.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `stack-item-pbe ${getStackItemClass(item)}`;
+        div.textContent = item;
+        valsStackContainer.appendChild(div);
+    });
+
+    // Update message
+    currentActionDisplay.textContent = step.message;
+
+    // Update evaluation zone
+    if (step.phase.startsWith('evaluate')) {
+        evalZone.style.display = 'block';
+        evalOp.textContent = step.evaluationOp || '...';
+        evalOperands.textContent = (step.evaluationOperands || []).join(', ') || '...';
+        evalResult.textContent = step.evaluationResult || '...';
+    } else {
+        evalZone.style.display = 'none';
+    }
+
+    // Handle final state
+    if (step.phase === 'final') {
+        finalResultText.textContent = `Final Result: ${step.finalResult}`;
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    [opsStackContainer, valsStackContainer, expressionDisplayContainer].forEach(c => c.innerHTML = '');
+    currentActionDisplay.textContent = "Enter a valid boolean expression and click 'Start'.";
+    overlay.classList.remove('show');
+    evalZone.style.display = 'none';
+    updateButtonState();
+}
+
+function startAnimation() {
+    expression = expressionInput.value;
+    if (!expression) { alert("Expression cannot be empty."); return; }
+    // Basic validation
+    if (/[^tf!&|(), ]/.test(expression)) {
+        alert("Invalid characters found. Use only t, f, !, &, |, (, ), ,, and space."); return;
+    }
+
+    resetAnimation();
+    simulationRunning = true;
+    
+    drawInitialState();
+    animationSteps = generateAnimationSteps(expression);
+    currentStepIndex = 0;
+    
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+    currentStepIndex++;
+    renderState(animationSteps[currentStepIndex]);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    expressionInput = document.getElementById('expression_input_pbe');
+    startButton = document.getElementById('start_button_pbe');
+    nextStepButton = document.getElementById('next_step_button_pbe');
+    opsStackContainer = document.getElementById('ops_stack_container_pbe');
+    valsStackContainer = document.getElementById('vals_stack_container_pbe');
+    expressionDisplayContainer = document.getElementById('expression_display_container_pbe');
+    currentActionDisplay = document.getElementById('current_action_display_pbe');
+    overlay = document.getElementById('overlay-pbe');
+    evalZone = document.getElementById('evaluation_zone_pbe');
+    evalOp = document.getElementById('eval_op_pbe');
+    evalOperands = document.getElementById('eval_operands_pbe');
+    evalResult = document.getElementById('eval_result_pbe');
+    finalResultText = document.getElementById('final_result_text_pbe');
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) {
+            resetAnimation();
+        } else {
+            startAnimation();
+        }
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+});
+</script>
+</body>
+</html>

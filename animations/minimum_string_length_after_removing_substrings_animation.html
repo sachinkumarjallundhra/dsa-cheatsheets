@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimum String Length Animation</title>
+    <style>
+        :root {
+            --color-char: #34495e;        --color-char-border: #2c3e50;
+            --color-match: #e74c3c;       --color-no-match: #2ecc71;
+            --color-highlight: #f1c40f;  --color-compare-bg: #ecf0f1;
+            --color-bg-light: #f4f7f6;   --color-bg-panel: #ffffff;   --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-msl { width: 98%; max-width: 1200px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } 
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        h3 { font-size: 1em; margin-bottom: 5px; color: #34495e;}
+
+        .controls-msl { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-msl label { font-weight: bold; margin-right: 5px; }
+        .controls-msl input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.3em; font-family: 'Courier New', monospace; width: 400px; }
+        .controls-msl button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-msl button:hover { background-color: #2980b9; }
+        .controls-msl button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-msl { display: grid; grid-template-columns: 350px 1fr; gap: 15px; }
+        .panel-msl { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .stack-msl { min-height: 400px; background-color: #f9f9f9; border-radius: 4px; border: 1px solid #ddd; padding: 5px; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 5px; }
+        .stack-item-msl { padding: 10px; border-radius: 4px; font-size: 1.5em; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; border: 3px solid var(--color-char-border); color: white; background-color: var(--color-char); transition: all 0.3s ease; animation: push-anim-msl 0.3s ease; }
+        @keyframes push-anim-msl { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .string-display-msl { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 1.8em; font-family: 'Courier New', monospace; }
+        .char-box-msl { padding: 2px 8px; border-radius: 3px; transition: background-color 0.3s, color 0.3s; }
+        .char-box-msl.highlight { background-color: var(--color-highlight); color: black; box-shadow: 0 0 10px var(--color-highlight); }
+        
+        #comparison_zone_msl { background-color: var(--color-compare-bg); margin-top: 15px; border: 2px dashed #bdc3c7; border-radius: 5px; padding: 15px; transition: opacity 0.3s ease, transform 0.3s ease; }
+        .compare-grid-msl { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-items: center; gap: 20px; font-size: 1.2em; text-align: center;}
+        .compare-item-msl { display: flex; flex-direction: column; gap: 5px; }
+        .compare-item-msl .label { font-size: 0.8em; color: #6c757d; font-weight: bold; }
+        .compare-item-msl .value { font-family: 'Courier New', monospace; font-size: 2.5em; font-weight: bold; }
+        #compare_status_msl { font-weight: bold; font-size: 1.5em; }
+        #compare_status_msl.match { color: var(--color-match); }
+        #compare_status_msl.no-match { color: var(--color-no-match); }
+        
+        #current_action_display_msl { text-align:center; margin-top:15px; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        
+        #overlay-msl { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-msl.show { opacity: 1; pointer-events: auto;}
+        .result-box-msl { background: white; padding: 30px 50px; border-radius: 10px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .result-box-msl h2 { font-size: 1.5em; margin: 0 0 10px 0; color: #555; }
+        .result-box-msl .final-length { font-size: 3em; font-weight: bold; color: var(--color-text-dark); margin-bottom: 10px; }
+        .result-box-msl .final-string { font-size: 1.2em; color: #6c757d; font-family: 'Courier New', monospace; }
+        
+        @media (max-width: 1000px) { .main-content-msl { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-msl">
+        <h1>Minimum String Length After Removing Substrings</h1>
+        <div class="controls-msl">
+            <label>Input String:</label><input id="string_input_msl" value="ABFCACDB">
+            <button id="start_button_msl">Start</button>
+            <button id="next_step_button_msl" disabled>Next Step</button>
+        </div>
+        <div class="main-content-msl">
+            <div class="left-panel-msl">
+                 <div class="panel-msl">
+                    <h3>Stack</h3>
+                    <div id="stack_container_msl" class="stack-msl"></div>
+                </div>
+            </div>
+            <div class="right-panel-msl">
+                <div class="panel-msl">
+                     <h2>Input String</h2>
+                     <div id="string_display_container_msl" class="string-display-msl"></div>
+                </div>
+                <div class="panel-msl" id="comparison_zone_msl" style="display:none;">
+                    <h3>Comparison</h3>
+                    <div class="compare-grid-msl">
+                        <div class="compare-item-msl">
+                            <span class="label">Stack Top</span>
+                            <span id="compare_peek_msl" class="value">?</span>
+                        </div>
+                        <div id="compare_status_msl"></div>
+                        <div class="compare-item-msl">
+                            <span class="label">Current Character</span>
+                            <span id="compare_current_msl" class="value">?</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-msl">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_msl">Enter a string and click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-msl">
+        <div class="result-box-msl">
+            <h2>Final Minimum Length:</h2>
+            <p id="final_result_length_msl" class="final-length"></p>
+            <p id="final_result_string_msl" class="final-string"></p>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, inputString = '';
+let stringInput, startButton, nextStepButton, stackContainer, stringDisplayContainer, currentActionDisplay,
+    overlay, comparisonZone, compareCurrent, comparePeek, compareStatus, 
+    finalResultLength, finalResultString;
+
+const saveState = (steps, stack, charIndex, message, phase, extraData = {}) => {
+    steps.push({ charIndex, message, stack: [...stack], phase, ...extraData });
+};
+
+function generateAnimationSteps(s) {
+    const steps = [];
+    const stack = [];
+
+    saveState(steps, stack, -1, "Click 'Next Step' to begin.", 'initial');
+
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        const peek = stack.length > 0 ? stack[stack.length - 1] : null;
+        let isMatch = false;
+        let pair = '';
+
+        saveState(steps, stack, i, `Processing character '${c}'. Comparing with stack top.`, 'compare', { comparison: { current: c, peek: peek } });
+
+        if (peek !== null) {
+            if (peek === 'A' && c === 'B') {
+                isMatch = true;
+                pair = 'AB';
+            } else if (peek === 'C' && c === 'D') {
+                isMatch = true;
+                pair = 'CD';
+            }
+        }
+        
+        if (isMatch) {
+            saveState(steps, stack, i, `Match! Pair '${pair}' is formed.`, 'match', { comparison: { current: c, peek: peek, isMatch: true, pair: pair } });
+            stack.pop();
+            saveState(steps, stack, i, `Popping '${peek}' from the stack to remove the pair.`, 'pop', { comparison: { current: c, peek: peek, isMatch: true } });
+        } else {
+            const reason = peek === null ? "Stack is empty" : `No match: '${peek}${c}' is not 'AB' or 'CD'`;
+            saveState(steps, stack, i, `${reason}. Pushing '${c}' to the stack.`, 'no_match', { comparison: { current: c, peek: peek, isMatch: false } });
+            stack.push(c);
+            saveState(steps, stack, i, `Pushed '${c}' onto the stack.`, 'push');
+        }
+    }
+    
+    saveState(steps, stack, -1, "Finished processing string. The final length is the stack's size.", 'finish');
+    return steps;
+}
+
+function drawInitialState() {
+    stringDisplayContainer.innerHTML = '';
+    inputString.split('').forEach(char => {
+        const charBox = document.createElement('div');
+        charBox.className = 'char-box-msl';
+        charBox.textContent = char;
+        stringDisplayContainer.appendChild(charBox);
+    });
+}
+
+function renderState(step) {
+    // Highlight current character
+    document.querySelectorAll('.char-box-msl').forEach((box, i) => {
+        box.classList.toggle('highlight', i === step.charIndex);
+    });
+    
+    // Render stack
+    stackContainer.innerHTML = '';
+    step.stack.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'stack-item-msl';
+        div.textContent = item;
+        stackContainer.appendChild(div);
+    });
+
+    // Update message
+    currentActionDisplay.textContent = step.message;
+
+    // Render comparison zone
+    if (step.phase === 'compare' || step.phase === 'match' || step.phase === 'no_match' || step.phase === 'pop') {
+        comparisonZone.style.display = 'block';
+        const { current, peek, isMatch, pair } = step.comparison || {};
+        compareCurrent.textContent = current;
+        comparePeek.textContent = peek || '∅'; // Show empty set symbol for null
+
+        if (isMatch === true) {
+            compareStatus.textContent = `Match! (${pair})`;
+            compareStatus.className = 'match';
+        } else if (isMatch === false) {
+            compareStatus.textContent = 'No Match';
+            compareStatus.className = 'no-match';
+        } else {
+            compareStatus.textContent = '?';
+            compareStatus.className = '';
+        }
+    } else {
+        comparisonZone.style.display = 'none';
+    }
+
+    // Handle final state overlay
+    if (step.phase === 'finish') {
+        finalResultLength.textContent = step.stack.length;
+        const finalStr = step.stack.join('');
+        finalResultString.textContent = `Remaining: "${finalStr}"`;
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    stackContainer.innerHTML = '';
+    stringDisplayContainer.innerHTML = '';
+    currentActionDisplay.textContent = "Enter a string and click 'Start'.";
+    overlay.classList.remove('show');
+    comparisonZone.style.display = 'none';
+    updateButtonState();
+}
+
+function startAnimation() {
+    inputString = stringInput.value.toUpperCase();
+    stringInput.value = inputString;
+    if (/[^A-Z]/.test(inputString)) {
+        alert("Invalid characters found. Please use only uppercase letters.");
+        return;
+    }
+
+    resetAnimation();
+    simulationRunning = true;
+    
+    drawInitialState();
+    animationSteps = generateAnimationSteps(inputString);
+    currentStepIndex = 0;
+    
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+    currentStepIndex++;
+    renderState(animationSteps[currentStepIndex]);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input_msl');
+    startButton = document.getElementById('start_button_msl');
+    nextStepButton = document.getElementById('next_step_button_msl');
+    stackContainer = document.getElementById('stack_container_msl');
+    stringDisplayContainer = document.getElementById('string_display_container_msl');
+    currentActionDisplay = document.getElementById('current_action_display_msl');
+    overlay = document.getElementById('overlay-msl');
+    comparisonZone = document.getElementById('comparison_zone_msl');
+    compareCurrent = document.getElementById('compare_current_msl');
+    comparePeek = document.getElementById('compare_peek_msl');
+    compareStatus = document.getElementById('compare_status_msl');
+    finalResultLength = document.getElementById('final_result_length_msl');
+    finalResultString = document.getElementById('final_result_string_msl');
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) {
+            resetAnimation();
+        } else {
+            startAnimation();
+        }
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+});
+</script>
+</body>
+</html>

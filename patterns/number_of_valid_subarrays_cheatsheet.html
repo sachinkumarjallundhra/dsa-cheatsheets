@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number of Valid Subarrays Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📊 Number of Valid Subarrays – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Number of Valid Subarrays</b> problem (LeetCode 1063) asks you to count the number of contiguous subarrays where every element in the subarray is greater than or equal to the last element of the subarray.
+    </p>
+
+    <h2>🧱 Pattern Template (Monotonic Stack)</h2>
+    <pre><code>class Solution {
+    public int validSubarrays(int[] nums) {
+        int n = nums.length, res = 0;
+        Stack&lt;Integer&gt; stack = new Stack&lt;&gt;();
+        for (int i = 0; i &lt; n; i++) {
+            while (!stack.isEmpty() &amp;&amp; nums[i] &lt; nums[stack.peek()]) {
+                int idx = stack.pop();
+                res += i - idx;
+            }
+            stack.push(i);
+        }
+        while (!stack.isEmpty()) {
+            int idx = stack.pop();
+            res += n - idx;
+        }
+        return res;
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/number_of_valid_subarrays_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Counting subarrays with monotonic properties</li>
+      <li>Monotonic stack applications</li>
+      <li>Efficient subarray counting</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/number-of-valid-subarrays/" target="_blank" rel="noopener noreferrer">1063. Number of Valid Subarrays</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Monotonic Stack</span>
+        <span class="badge badge-tag">Array</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: nums = [1,4,2,5,3]
+Output: 11
+
+Input: nums = [3,2,1]
+Output: 3
+
+Input: nums = [2,2,2]
+Output: 6
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a monotonic increasing stack to efficiently count valid subarrays ending at each index.</li>
+      <li>For each element, pop from the stack until the stack top is less than or equal to the current element.</li>
+      <li>After the main loop, process any remaining indices in the stack.</li>
+    </ul>

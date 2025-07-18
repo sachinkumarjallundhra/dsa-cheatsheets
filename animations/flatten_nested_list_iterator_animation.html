@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flatten Nested List Iterator Animation</title>
+    <style>
+        :root {
+            --color-list-item: #ecf0f1;  --color-integer-item: #a9cce3;
+            --color-result: #2ecc71;     --color-pointer: #3498db;
+            --color-highlight: #f1c40f;  --color-bg-light: #f4f7f6;
+            --color-bg-panel: #ffffff;   --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-fnli { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } 
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        
+        .controls-fnli { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-fnli label { font-weight: bold; margin-right: 5px; }
+        .controls-fnli input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.1em; font-family: 'Courier New', monospace; width: 400px; }
+        .controls-fnli button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-fnli button:hover { background-color: #2980b9; }
+        .controls-fnli button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-fnli { display: grid; grid-template-columns: 1fr 2fr; gap: 15px; }
+        .panel-fnli { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        /* Input List */
+        #input_list_container_fnli ul { list-style: none; padding-left: 25px; margin: 5px 0; }
+        .list-item-fnli { padding: 5px; margin: 3px 0; border-radius: 4px; border: 1px solid #ccc; transition: all 0.3s; }
+        .list-item-fnli.is-list { background-color: var(--color-list-item); border-color: #bdc3c7; }
+        .list-item-fnli.is-int { background-color: var(--color-integer-item); border-color: #85c1e9; font-weight: bold; }
+        .list-item-fnli.highlight { background-color: var(--color-highlight); border-color: #f39c12; transform: scale(1.05); }
+
+        /* Flattened List */
+        .result-array-container-fnli { display: flex; flex-wrap: wrap; gap: 10px; min-height: 50px; }
+        .res-cell-fnli { position: relative; width: 50px; height: 50px; background-color: #fff; border: 2px solid #ccc; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 4px; transition: all 0.3s ease; }
+        .res-cell-fnli .res-value { font-size: 1.5em; font-weight: bold; }
+        .res-cell-fnli.added { background-color: #e8f5e9; border-color: var(--color-result); animation: pop-in 0.3s ease; }
+        .res-cell-fnli.pointed-at { border-color: var(--color-pointer); box-shadow: 0 0 10px var(--color-pointer); }
+        .res-cell-fnli .pointer-label { position: absolute; bottom: -20px; font-size: 0.8em; font-weight: bold; color: var(--color-pointer); }
+        @keyframes pop-in { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Iterator State */
+        .iterator-state-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+        .state-item .label { font-size: 0.9em; color: #6c757d; }
+        .state-item .value { font-size: 2em; font-weight: bold; font-family: 'Courier New', monospace; }
+        .value#has_next_val.true { color: var(--color-result); } .value#has_next_val.false { color: #e74c3c; }
+
+        #current_action_display_fnli { text-align:center; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+
+        @media (max-width: 1000px) { .main-content-fnli { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-fnli">
+        <h1>Flatten Nested List Iterator</h1>
+        <div class="controls-fnli">
+            <label>Nested List:</label><input id="list_input_fnli" value="[[1,1],2,[1,1]]">
+            <button id="start_button_fnli">Start</button>
+            <button id="has_next_button_fnli" disabled>hasNext()</button>
+            <button id="next_button_fnli" disabled>next()</button>
+        </div>
+        <div class="main-content-fnli">
+            <div class="left-panel-fnli">
+                <div class="panel-fnli">
+                    <h2>Input Nested List</h2>
+                    <div id="input_list_container_fnli"></div>
+                </div>
+                 <div class="panel-fnli">
+                    <h2>Iterator State</h2>
+                    <div class="iterator-state-grid">
+                        <div class="state-item"><div class="label">Position</div><div id="position_val" class="value">0</div></div>
+                        <div class="state-item"><div class="label">Last `next()` value</div><div id="next_val" class="value">N/A</div></div>
+                    </div>
+                     <div class="state-item" style="text-align:center; margin-top:15px;"><div class="label">`hasNext()` returns:</div><div id="has_next_val" class="value">N/A</div></div>
+                </div>
+            </div>
+            <div class="right-panel-fnli">
+                <div class="panel-fnli">
+                     <h2>Flattened List (Internal State)</h2>
+                     <div id="flattened_list_container_fnli" class="result-array-container-fnli"></div>
+                </div>
+                <div class="panel-fnli">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_fnli">Enter a nested list (e.g., `[1,[4,[6]]]`) and click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, animationInterval;
+let listInput, startButton, hasNextButton, nextButton, inputListContainer, flattenedListContainer, 
+    positionVal, nextVal, hasNextVal, currentActionDisplay;
+let flattenedList = [], position = 0;
+
+const saveState = (steps, msg, phase, path, currentList) => {
+    steps.push({ msg, phase, path: [...path], flattened: [...currentList] });
+};
+
+// Generates steps for the flattening process
+function generateFlatteningSteps(nestedList) {
+    const steps = [];
+    const flattened = [];
+    
+    function recursiveHelper(list, path) {
+        for (let i = 0; i < list.length; i++) {
+            const currentPath = [...path, i];
+            const item = list[i];
+            if (Array.isArray(item)) {
+                saveState(steps, `Processing item at index ${i}. It's a list.`, 'recurse', currentPath, flattened);
+                recursiveHelper(item, currentPath);
+            } else {
+                saveState(steps, `Processing item at index ${i}. It's an integer.`, 'add', currentPath, flattened);
+                flattened.push(item);
+                saveState(steps, `Adding ${item} to the flattened list.`, 'add_done', currentPath, flattened);
+            }
+        }
+        saveState(steps, `Finished processing list at path [${path.join(', ')}].`, 'return', path, flattened);
+    }
+    
+    saveState(steps, 'Starting the flattening process.', 'initial', [], flattened);
+    recursiveHelper(nestedList, []);
+    saveState(steps, 'Flattening complete. Iterator is now ready.', 'complete', [], flattened);
+    return steps;
+}
+
+// Recursively builds the DOM for the input list
+function buildListDOM(list, parentElement, path = []) {
+    const ul = document.createElement('ul');
+    list.forEach((item, i) => {
+        const currentPath = [...path, i];
+        const li = document.createElement('li');
+        li.id = `item-${currentPath.join('-')}`;
+        li.className = 'list-item-fnli';
+        
+        if (Array.isArray(item)) {
+            li.classList.add('is-list');
+            li.textContent = `List (size ${item.length})`;
+            buildListDOM(item, li, currentPath);
+        } else {
+            li.classList.add('is-int');
+            li.textContent = item;
+        }
+        ul.appendChild(li);
+    });
+    parentElement.appendChild(ul);
+}
+
+function drawInitialState(parsedList) {
+    inputListContainer.innerHTML = '';
+    buildListDOM(parsedList, inputListContainer);
+}
+
+function renderFlatteningState(step) {
+    currentActionDisplay.textContent = step.msg;
+
+    document.querySelectorAll('.list-item-fnli').forEach(el => el.classList.remove('highlight'));
+    if (step.path.length > 0) {
+        const el = document.getElementById(`item-${step.path.join('-')}`);
+        if (el) el.classList.add('highlight');
+    }
+
+    flattenedListContainer.innerHTML = '';
+    step.flattened.forEach(val => {
+        const cell = document.createElement('div');
+        cell.className = 'res-cell-fnli added';
+        cell.innerHTML = `<div class="res-value">${val}</div>`;
+        flattenedListContainer.appendChild(cell);
+    });
+}
+
+function updateIteratorUI() {
+    positionVal.textContent = position;
+    document.querySelectorAll('.res-cell-fnli').forEach((cell, i) => {
+        cell.classList.toggle('pointed-at', i === position);
+        const existingPointer = cell.querySelector('.pointer-label');
+        if(existingPointer) existingPointer.remove();
+        if(i === position) {
+            const pointerLabel = document.createElement('div');
+            pointerLabel.className = 'pointer-label';
+            pointerLabel.textContent = 'pos';
+            cell.appendChild(pointerLabel);
+        }
+    });
+}
+
+function startAnimation() {
+    let parsedList;
+    try {
+        parsedList = JSON.parse(listInput.value);
+        if (!Array.isArray(parsedList)) throw new Error();
+    } catch (e) {
+        alert("Invalid input. Please provide a valid JSON array (e.g., [[1,1],2,[1,1]]).");
+        return;
+    }
+
+    resetAnimation(false);
+    simulationRunning = true;
+    startButton.disabled = true;
+
+    drawInitialState(parsedList);
+    animationSteps = generateFlatteningSteps(parsedList);
+    currentStepIndex = 0;
+    
+    animationInterval = setInterval(() => {
+        if (currentStepIndex >= animationSteps.length) {
+            clearInterval(animationInterval);
+            simulationRunning = false;
+            flattenedList = animationSteps[animationSteps.length - 1].flattened;
+            position = 0;
+            updateIteratorUI();
+            hasNextButton.disabled = false;
+            nextButton.disabled = false;
+            startButton.textContent = "Reset";
+            startButton.disabled = false;
+            return;
+        }
+        renderFlatteningState(animationSteps[currentStepIndex]);
+        currentStepIndex++;
+    }, 600);
+}
+
+function resetAnimation(clearInput = true) {
+    clearInterval(animationInterval);
+    simulationRunning = false;
+    animationSteps = [];
+    currentStepIndex = 0;
+    flattenedList = [];
+    position = 0;
+
+    [inputListContainer, flattenedListContainer].forEach(c => c.innerHTML = '');
+    currentActionDisplay.textContent = "Enter a nested list (e.g., [1,[4,[6]]]) and click 'Start'.";
+    positionVal.textContent = '0';
+    nextVal.textContent = 'N/A';
+    hasNextVal.textContent = 'N/A';
+    hasNextVal.className = 'value';
+
+    startButton.textContent = "Start";
+    startButton.disabled = false;
+    hasNextButton.disabled = true;
+    nextButton.disabled = true;
+
+    if (clearInput) listInput.value = "[[1,1],2,[1,1]]";
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    listInput = document.getElementById('list_input_fnli');
+    startButton = document.getElementById('start_button_fnli');
+    hasNextButton = document.getElementById('has_next_button_fnli');
+    nextButton = document.getElementById('next_button_fnli');
+    inputListContainer = document.getElementById('input_list_container_fnli');
+    flattenedListContainer = document.getElementById('flattened_list_container_fnli');
+    positionVal = document.getElementById('position_val');
+    nextVal = document.getElementById('next_val');
+    hasNextVal = document.getElementById('has_next_val');
+    currentActionDisplay = document.getElementById('current_action_display_fnli');
+    
+    startButton.addEventListener('click', () => {
+        if (startButton.textContent === 'Reset') {
+            resetAnimation(true);
+        } else {
+            startAnimation();
+        }
+    });
+
+    hasNextButton.addEventListener('click', () => {
+        const has = position < flattenedList.length;
+        hasNextVal.textContent = has;
+        hasNextVal.className = `value ${has}`;
+        currentActionDisplay.textContent = `hasNext() was called. Result is ${has}.`;
+    });
+    
+    nextButton.addEventListener('click', () => {
+        if (position < flattenedList.length) {
+            const val = flattenedList[position];
+            nextVal.textContent = val;
+            currentActionDisplay.textContent = `next() was called. Returned ${val}. Incrementing position.`;
+            position++;
+            updateIteratorUI();
+        } else {
+            currentActionDisplay.textContent = `No more elements! Cannot call next().`;
+            nextVal.textContent = 'Error';
+            hasNextVal.textContent = 'false';
+            hasNextVal.className = 'value false';
+        }
+    });
+});
+</script>
+</body>
+</html>

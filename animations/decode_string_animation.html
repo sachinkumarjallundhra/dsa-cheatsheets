@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decode String Animation</title>
+    <style>
+        :root {
+            --color-count: #3498db;      --color-count-border: #2980b9;
+            --color-string: #27ae60;     --color-string-border: #229954;
+            --color-highlight: #f1c40f;  --color-decode-bg: #ecf0f1;
+            --color-bg-light: #f4f7f6;   --color-bg-panel: #ffffff;   --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-ds { width: 98%; max-width: 1400px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } 
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        h3 { font-size: 1em; margin-bottom: 5px; color: #34495e;}
+
+        .controls-ds { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-ds label { font-weight: bold; margin-right: 5px; }
+        .controls-ds input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.3em; font-family: 'Courier New', monospace; width: 400px; }
+        .controls-ds button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-ds button:hover { background-color: #2980b9; }
+        .controls-ds button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-ds { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .panel-ds { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .stacks-container-ds { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stack-wrapper-ds { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .stack-ds { min-height: 400px; background-color: #f9f9f9; border-radius: 4px; padding: 5px; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 5px; }
+        .stack-item-ds { padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; border: 2px solid; transition: all 0.3s ease; animation: push-anim-ds 0.3s ease; }
+        .count-item { background-color: var(--color-count); border-color: var(--color-count-border); color: white; }
+        .string-item { background-color: var(--color-string); border-color: var(--color-string-border); color: white; }
+        .string-item::before, .string-item::after { content: '"'; }
+        @keyframes push-anim-ds { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .string-display-ds { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 1.8em; font-family: 'Courier New', monospace; }
+        .char-box-ds { padding: 2px 8px; border-radius: 3px; transition: background-color 0.3s, color 0.3s; }
+        .char-box-ds.highlight { background-color: var(--color-highlight); color: black; box-shadow: 0 0 10px var(--color-highlight); }
+        
+        .state-grid-ds { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; text-align: center; }
+        .state-item-ds .label { font-size: 0.9em; color: #6c757d; }
+        .state-item-ds .value { font-size: 2em; font-weight: bold; font-family: 'Courier New', monospace; padding: 5px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 4px; min-height: 1.5em; }
+        #curr_val_ds::before, #curr_val_ds::after { content: '"'; }
+
+        #decoding_zone_ds { background-color: var(--color-decode-bg); margin-top: 15px; border: 2px dashed #bdc3c7; border-radius: 5px; padding: 10px; transition: opacity 0.3s ease, transform 0.3s ease; }
+        .decode-grid-ds { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; align-items: center; font-family: 'Courier New', monospace; font-size: 1.1em;}
+        .decode-grid-ds .label { font-weight: bold; text-align: right; }
+        .decode-grid-ds .value { font-weight: bold; padding: 3px; border-radius: 3px; }
+        .decode-grid-ds .value.prev-str, .decode-grid-ds .value.repeat-str, .decode-grid-ds .value.new-str { background-color: var(--color-string); color: white; }
+        .decode-grid-ds .value.count { background-color: var(--color-count); color: white; }
+        .decode-grid-ds .value::before, .decode-grid-ds .value.prev-str::after, .decode-grid-ds .value.repeat-str::after, .decode-grid-ds .value.new-str::after { content: '"'; }
+        .decode-grid-ds .value.count::before, .decode-grid-ds .value.count::after { content: ''; }
+        
+        #current_action_display_ds { text-align:center; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        
+        #overlay-ds { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-ds.show { opacity: 1; pointer-events: auto;}
+        .result-box-ds { background: white; padding: 30px 50px; border-radius: 10px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .result-box-ds h2 { font-size: 1.5em; margin: 0 0 10px 0; color: #555;}
+        .result-box-ds p { margin: 0; font-size: 1.8em; color: var(--color-text-dark); font-family: 'Courier New', monospace; font-weight: bold; }
+        
+        @media (max-width: 1200px) { .main-content-ds { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-ds">
+        <h1>Decode String</h1>
+        <div class="controls-ds">
+            <label>Encoded String:</label><input id="string_input_ds" value="3[a2[c]]">
+            <button id="start_button_ds">Start</button>
+            <button id="next_step_button_ds" disabled>Next Step</button>
+        </div>
+        <div class="main-content-ds">
+            <div class="left-panel-ds">
+                <div class="panel-ds">
+                    <h2>Stacks</h2>
+                    <div class="stacks-container-ds">
+                        <div class="stack-wrapper-ds">
+                            <h3>Count Stack</h3>
+                            <div id="count_stack_container_ds" class="stack-ds"></div>
+                        </div>
+                        <div class="stack-wrapper-ds">
+                            <h3>String Stack</h3>
+                            <div id="string_stack_container_ds" class="stack-ds"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="right-panel-ds">
+                <div class="panel-ds">
+                     <h2>Input & State</h2>
+                     <div id="string_display_container_ds" class="string-display-ds"></div>
+                     <div class="state-grid-ds" style="margin-top: 15px;">
+                        <div class="state-item-ds"><div class="label">Current Number (k)</div><div id="k_val_ds" class="value">0</div></div>
+                        <div class="state-item-ds"><div class="label">Current String (curr)</div><div id="curr_val_ds" class="value"></div></div>
+                    </div>
+                </div>
+                <div class="panel-ds" id="decoding_zone_ds" style="display:none;">
+                    <h3>Decoding</h3>
+                    <div class="decode-grid-ds">
+                        <span class="label">Count:</span> <span id="decode_count_ds" class="value count"></span>
+                        <span class="label">Prev String:</span> <span id="decode_prev_str_ds" class="value prev-str"></span>
+                        <span class="label">Repeat Str:</span> <span id="decode_repeat_str_ds" class="value repeat-str"></span>
+                        <span class="label">New `curr`:</span> <span id="decode_new_str_ds" class="value new-str"></span>
+                    </div>
+                </div>
+                <div class="panel-ds">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_ds">Enter an encoded string and click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-ds">
+        <div class="result-box-ds">
+            <h2>Final Decoded String:</h2>
+            <p id="final_result_text_ds"></p>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let stringInput, startButton, nextStepButton, countStackContainer, stringStackContainer, 
+    stringDisplayContainer, kVal, currVal, currentActionDisplay, overlay,
+    decodingZone, decodeCount, decodePrevStr, decodeRepeatStr, decodeNewStr, finalResultText;
+
+const saveState = (steps, charIndex, msg, phase, cs, ss, curr, k, decodeData = {}) => {
+    steps.push({ charIndex, msg, phase, countStack: [...cs], stringStack: [...ss], curr, k, decodeData });
+};
+
+function generateAnimationSteps(s) {
+    const steps = [];
+    let countStack = [], stringStack = [], curr = "", k = 0;
+
+    saveState(steps, -1, "Click 'Next Step' to begin.", 'initial', countStack, stringStack, curr, k);
+
+    for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (!isNaN(parseInt(ch))) {
+            const oldK = k;
+            k = k * 10 + (ch - '0');
+            saveState(steps, i, `Found digit '${ch}'. Updating k = ${oldK}*10 + ${ch} = ${k}.`, 'digit', countStack, stringStack, curr, k);
+        } else if (ch === '[') {
+            saveState(steps, i, `Found '['. Pushing k=${k} and curr="${curr}" to stacks.`, 'bracket_open_start', countStack, stringStack, curr, k);
+            countStack.push(k);
+            stringStack.push(curr);
+            k = 0;
+            curr = "";
+            saveState(steps, i, `Stacks updated. Resetting k to 0 and curr to empty string.`, 'bracket_open_finish', countStack, stringStack, curr, k);
+        } else if (ch === ']') {
+            let decodeData = {};
+            saveState(steps, i, `Found ']'. Starting decode process.`, 'bracket_close_start', countStack, stringStack, curr, k, decodeData);
+            
+            const count = countStack.pop();
+            decodeData.count = count;
+            saveState(steps, i, `Popped count ${count} from countStack.`, 'decode_pop_count', countStack, stringStack, curr, k, decodeData);
+            
+            const prevStr = stringStack.pop();
+            decodeData.prevStr = prevStr;
+            decodeData.repeatStr = curr;
+            saveState(steps, i, `Popped previous string "${prevStr}" from stringStack.`, 'decode_pop_string', countStack, stringStack, curr, k, decodeData);
+            
+            let newStr = prevStr;
+            for(let j=0; j<count; j++) newStr += curr;
+            decodeData.newStr = newStr;
+            saveState(steps, i, `Constructing new string: "${prevStr}" + "${curr}" * ${count}.`, 'decode_combine', countStack, stringStack, curr, k, decodeData);
+
+            curr = newStr;
+            saveState(steps, i, `Updating curr to the new decoded string.`, 'decode_finish', countStack, stringStack, curr, k, decodeData);
+        } else {
+            curr += ch;
+            saveState(steps, i, `Found letter '${ch}'. Appending to curr.`, 'letter', countStack, stringStack, curr, k);
+        }
+    }
+    
+    saveState(steps, -1, `Finished!`, 'finish', countStack, stringStack, curr, k);
+    return steps;
+}
+
+function drawInitialState(s) {
+    stringDisplayContainer.innerHTML = '';
+    s.split('').forEach(char => {
+        const charBox = document.createElement('div');
+        charBox.className = 'char-box-ds';
+        charBox.textContent = char;
+        stringDisplayContainer.appendChild(charBox);
+    });
+}
+
+function renderState(step) {
+    // Update displays
+    document.querySelectorAll('.char-box-ds').forEach((box, i) => box.classList.toggle('highlight', i === step.charIndex));
+    kVal.textContent = step.k;
+    currVal.textContent = step.curr;
+    currentActionDisplay.textContent = step.msg;
+
+    // Update stacks
+    [countStackContainer, stringStackContainer].forEach(c => c.innerHTML = '');
+    step.countStack.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'stack-item-ds count-item';
+        div.textContent = item;
+        countStackContainer.appendChild(div);
+    });
+    step.stringStack.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'stack-item-ds string-item';
+        div.textContent = item;
+        stringStackContainer.appendChild(div);
+    });
+
+    // Update decoding zone
+    if (step.phase.startsWith('decode_') || step.phase === 'bracket_close_start') {
+        decodingZone.style.display = 'block';
+        const { count, prevStr, repeatStr, newStr } = step.decodeData;
+        decodeCount.textContent = count !== undefined ? count : '?';
+        decodePrevStr.textContent = prevStr !== undefined ? prevStr : '?';
+        decodeRepeatStr.textContent = repeatStr !== undefined ? repeatStr : '?';
+        decodeNewStr.textContent = newStr !== undefined ? newStr : '?';
+    } else {
+        decodingZone.style.display = 'none';
+    }
+
+    // Handle final state overlay
+    if (step.phase === 'finish') {
+        finalResultText.textContent = `"${step.curr}"`;
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    [countStackContainer, stringStackContainer, stringDisplayContainer].forEach(c => c.innerHTML = '');
+    kVal.textContent = '0';
+    currVal.textContent = '';
+    currentActionDisplay.textContent = "Enter an encoded string and click 'Start'.";
+    overlay.classList.remove('show');
+    decodingZone.style.display = 'none';
+    updateButtonState();
+}
+
+function startAnimation() {
+    const s = stringInput.value;
+    if (!s) return;
+
+    resetAnimation();
+    simulationRunning = true;
+    
+    drawInitialState(s);
+    animationSteps = generateAnimationSteps(s);
+    currentStepIndex = 0;
+    
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+    currentStepIndex++;
+    renderState(animationSteps[currentStepIndex]);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input_ds');
+    startButton = document.getElementById('start_button_ds');
+    nextStepButton = document.getElementById('next_step_button_ds');
+    countStackContainer = document.getElementById('count_stack_container_ds');
+    stringStackContainer = document.getElementById('string_stack_container_ds');
+    stringDisplayContainer = document.getElementById('string_display_container_ds');
+    kVal = document.getElementById('k_val_ds');
+    currVal = document.getElementById('curr_val_ds');
+    currentActionDisplay = document.getElementById('current_action_display_ds');
+    overlay = document.getElementById('overlay-ds');
+    decodingZone = document.getElementById('decoding_zone_ds');
+    decodeCount = document.getElementById('decode_count_ds');
+    decodePrevStr = document.getElementById('decode_prev_str_ds');
+    decodeRepeatStr = document.getElementById('decode_repeat_str_ds');
+    decodeNewStr = document.getElementById('decode_new_str_ds');
+    finalResultText = document.getElementById('final_result_text_ds');
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) resetAnimation();
+        else startAnimation();
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimum Remove to Make Valid Parentheses Animation</title>
+    <style>
+        :root {
+            --color-paren: #3498db;      --color-paren-border: #2980b9;
+            --color-remove: #e74c3c;     --color-keep: #2ecc71;
+            --color-highlight: #f1c40f;  --color-bg-light: #f4f7f6;
+            --color-bg-panel: #ffffff;   --color-text-dark: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-mrvp { width: 98%; max-width: 1200px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } 
+        h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        h3 { font-size: 1em; margin-bottom: 5px; color: #34495e;}
+
+        .controls-mrvp { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-mrvp label { font-weight: bold; margin-right: 5px; }
+        .controls-mrvp input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1.3em; font-family: 'Courier New', monospace; width: 400px; }
+        .controls-mrvp button { padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls-mrvp button:hover { background-color: #2980b9; }
+        .controls-mrvp button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content-mrvp { display: grid; grid-template-columns: 350px 1fr; gap: 15px; }
+        .panel-mrvp { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        .stack-mrvp { min-height: 400px; background-color: #f9f9f9; border-radius: 4px; border: 1px solid #ddd; padding: 5px; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 5px; }
+        .stack-item-mrvp { padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: bold; text-align: center; border: 2px solid var(--color-paren-border); background-color: var(--color-paren); color: white; transition: all 0.3s ease; animation: push-anim-mrvp 0.3s ease; }
+        @keyframes push-anim-mrvp { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .string-display-mrvp { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px; background: #f0f0f0; border-radius: 5px; font-size: 1.8em; font-family: 'Courier New', monospace; }
+        .char-box-mrvp { position: relative; padding: 2px 8px; border-radius: 3px; transition: all 0.3s; }
+        .char-box-mrvp.highlight { background-color: var(--color-highlight); color: black; box-shadow: 0 0 10px var(--color-highlight); }
+        .char-box-mrvp.remove { color: var(--color-remove); text-decoration: line-through; text-decoration-thickness: 3px; opacity: 0.7; }
+        
+        #result_builder_mrvp { margin-top: 15px; }
+        #result_string_display_mrvp { min-height: 50px; background-color: var(--color-keep); color: white; font-family: 'Courier New', monospace; font-size: 1.5em; padding: 10px; border-radius: 5px; text-align: center; letter-spacing: 2px; }
+
+        #current_action_display_mrvp { text-align:center; font-weight:bold; min-height:3em; font-size:1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+        
+        #overlay-mrvp { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #overlay-mrvp.show { opacity: 1; pointer-events: auto;}
+        .result-box-mrvp { background: white; padding: 30px 50px; border-radius: 10px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        .result-box-mrvp h2 { font-size: 1.5em; margin: 0 0 10px 0; color: #555;}
+        .result-box-mrvp p { margin: 0; font-size: 1.8em; color: var(--color-text-dark); font-family: 'Courier New', monospace; font-weight: bold; }
+        
+        @media (max-width: 1000px) { .main-content-mrvp { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-mrvp">
+        <h1>Minimum Remove to Make Valid Parentheses</h1>
+        <div class="controls-mrvp">
+            <label>Input String:</label><input id="string_input_mrvp" value="lee(t(c)o)de)">
+            <button id="start_button_mrvp">Start</button>
+            <button id="next_step_button_mrvp" disabled>Next Step</button>
+        </div>
+        <div class="main-content-mrvp">
+            <div class="left-panel-mrvp">
+                 <div class="panel-mrvp">
+                    <h3>Stack (of open '(' indices)</h3>
+                    <div id="stack_container_mrvp" class="stack-mrvp"></div>
+                </div>
+            </div>
+            <div class="right-panel-mrvp">
+                <div class="panel-mrvp">
+                     <h2>String Processing</h2>
+                     <div id="string_display_container_mrvp" class="string-display-mrvp"></div>
+                </div>
+                <div class="panel-mrvp" id="result_builder_mrvp" style="display:none;">
+                    <h3>Building Result</h3>
+                    <div id="result_string_display_mrvp"></div>
+                </div>
+                <div class="panel-mrvp">
+                    <h2>Current Action</h2>
+                    <div id="current_action_display_mrvp">Enter a string and click 'Start'.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="overlay-mrvp">
+        <div class="result-box-mrvp">
+            <h2>Final Valid String:</h2>
+            <p id="final_result_text_mrvp"></p>
+        </div>
+    </div>
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let stringInput, startButton, nextStepButton, stackContainer, stringDisplayContainer,
+    currentActionDisplay, overlay, resultBuilder, resultStringDisplay, finalResultText;
+
+const saveState = (steps, i, msg, phase, stack, removeIdx, builtStr = '') => {
+    steps.push({ i, msg, phase, stack: [...stack], removeIdx: new Set(removeIdx), builtStr });
+};
+
+function generateAnimationSteps(s) {
+    const steps = [];
+    const stack = [];
+    const removeIdx = new Set();
+
+    saveState(steps, -1, "Click 'Next Step' to begin.", 'initial', stack, removeIdx);
+
+    // Phase 1: Scan string
+    for (let i = 0; i < s.length; i++) {
+        const c = s.charAt(i);
+        if (c !== '(' && c !== ')') {
+            saveState(steps, i, `Character '${c}' is not a parenthesis, skipping.`, 'scan_letter', stack, removeIdx);
+            continue;
+        }
+
+        if (c === '(') {
+            stack.push(i);
+            saveState(steps, i, `Found '('. Pushing its index ${i} to the stack.`, 'scan_open', stack, removeIdx);
+        } else if (c === ')') {
+            if (!stack.isEmpty()) {
+                stack.pop();
+                saveState(steps, i, `Found ')'. It matches an open '('. Popping from stack.`, 'scan_close_match', stack, removeIdx);
+            } else {
+                removeIdx.add(i);
+                saveState(steps, i, `Found ')' with no matching '('. Marking index ${i} for removal.`, 'scan_close_invalid', stack, removeIdx);
+            }
+        }
+    }
+
+    // Phase 2: Cleanup unmatched open parens
+    if (stack.length > 0) {
+        saveState(steps, -1, "Scan complete. Now removing unmatched '(' from the stack.", 'cleanup_start', stack, removeIdx);
+        while (!stack.isEmpty()) {
+            const idx = stack.pop();
+            removeIdx.add(idx);
+            saveState(steps, idx, `Unmatched '(' at index ${idx}. Marking for removal.`, 'cleanup_pop', stack, removeIdx);
+        }
+    }
+
+    // Phase 3: Build result string
+    saveState(steps, -1, "All invalid parentheses marked. Building the final string.", 'build_start', stack, removeIdx);
+    let sb = '';
+    for (let i = 0; i < s.length; i++) {
+        if (!removeIdx.has(i)) {
+            sb += s.charAt(i);
+            saveState(steps, i, `Keeping character '${s.charAt(i)}' at index ${i}.`, 'build_keep', stack, removeIdx, sb);
+        } else {
+            saveState(steps, i, `Skipping character '${s.charAt(i)}' at index ${i}.`, 'build_skip', stack, removeIdx, sb);
+        }
+    }
+
+    saveState(steps, -1, "Finished!", 'finish', stack, removeIdx, sb);
+    return steps;
+}
+
+function drawInitialState(s) {
+    stringDisplayContainer.innerHTML = '';
+    s.split('').forEach((char, i) => {
+        const charBox = document.createElement('div');
+        charBox.className = 'char-box-mrvp';
+        charBox.id = `char-box-${i}`;
+        charBox.textContent = char;
+        stringDisplayContainer.appendChild(charBox);
+    });
+}
+
+function renderState(step) {
+    // Update displays
+    currentActionDisplay.textContent = step.msg;
+
+    // Highlight and mark characters
+    document.querySelectorAll('.char-box-mrvp').forEach((box, i) => {
+        box.classList.toggle('highlight', i === step.i);
+        box.classList.toggle('remove', step.removeIdx.has(i));
+    });
+
+    // Update stack
+    stackContainer.innerHTML = '';
+    step.stack.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'stack-item-mrvp';
+        div.textContent = `Idx ${item}`;
+        stackContainer.appendChild(div);
+    });
+    
+    // Update result builder
+    if (step.phase.startsWith('build')) {
+        resultBuilder.style.display = 'block';
+        resultStringDisplay.textContent = step.builtStr;
+    } else {
+        resultBuilder.style.display = 'none';
+    }
+
+    // Handle final state overlay
+    if (step.phase === 'finish') {
+        finalResultText.textContent = `"${step.builtStr}"`;
+        overlay.classList.add('show');
+    }
+}
+
+function resetAnimation() {
+    simulationRunning = false;
+    currentStepIndex = 0;
+    animationSteps = [];
+    stackContainer.innerHTML = '';
+    stringDisplayContainer.innerHTML = '';
+    currentActionDisplay.textContent = "Enter a string and click 'Start'.";
+    overlay.classList.remove('show');
+    resultBuilder.style.display = 'none';
+    updateButtonState();
+}
+
+function startAnimation() {
+    const s = stringInput.value;
+
+    resetAnimation();
+    simulationRunning = true;
+    
+    // Add isEmpty to Array prototype for convenience, mimicking Stack
+    Array.prototype.isEmpty = function() { return this.length === 0; };
+    
+    drawInitialState(s);
+    animationSteps = generateAnimationSteps(s);
+    currentStepIndex = 0;
+    
+    renderState(animationSteps[0]);
+    updateButtonState();
+}
+
+function updateButtonState() {
+    startButton.textContent = simulationRunning ? "Reset" : "Start";
+    nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+}
+
+function performNextStep() {
+    if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+    currentStepIndex++;
+    renderState(animationSteps[currentStepIndex]);
+    updateButtonState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input_mrvp');
+    startButton = document.getElementById('start_button_mrvp');
+    nextStepButton = document.getElementById('next_step_button_mrvp');
+    stackContainer = document.getElementById('stack_container_mrvp');
+    stringDisplayContainer = document.getElementById('string_display_container_mrvp');
+    currentActionDisplay = document.getElementById('current_action_display_mrvp');
+    overlay = document.getElementById('overlay-mrvp');
+    resultBuilder = document.getElementById('result_builder_mrvp');
+    resultStringDisplay = document.getElementById('result_string_display_mrvp');
+    finalResultText = document.getElementById('final_result_text_mrvp');
+    
+    startButton.addEventListener('click', () => {
+        if (simulationRunning) resetAnimation();
+        else startAnimation();
+    });
+    nextStepButton.addEventListener('click', performNextStep);
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+});
+</script>
+</body>
+</html>

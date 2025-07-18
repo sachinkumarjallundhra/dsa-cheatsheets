@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remove All Adjacent Duplicates In String Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🧹 Remove All Adjacent Duplicates In String – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Remove All Adjacent Duplicates In String</b> problem (LeetCode 1047) asks you to repeatedly remove adjacent duplicate characters in a string until no more can be removed.
+    </p>
+
+    <h2>🧱 Pattern Template (Stack-Based Solution)</h2>
+    <pre><code>class Solution {
+    public String removeDuplicates(String s) {
+        Stack&lt;Character&gt; stack = new Stack&lt;&gt;();
+        for (char c : s.toCharArray()) {
+            if (!stack.isEmpty() && stack.peek() == c) {
+                stack.pop();
+            } else {
+                stack.push(c);
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        for (char c : stack) sb.append(c);
+        return sb.toString();
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/remove_all_adjacent_duplicates_in_string_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>String simplification and cleanup</li>
+      <li>Stack-based duplicate removal</li>
+      <li>Problems involving repeated adjacent elements</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/remove-all-adjacent-duplicates-in-string/" target="_blank" rel="noopener noreferrer">1047. Remove All Adjacent Duplicates In String</a>
+        <span class="badge badge-easy">[Easy]</span>
+        <span class="badge badge-tag">Stack</span>
+        <span class="badge badge-tag">String</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: s = "abbaca"
+Output: "ca"
+
+Input: s = "azxxzy"
+Output: "ay"
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use a stack to efficiently remove adjacent duplicates.</li>
+      <li>Rebuild the string from the stack after processing.</li>
+      <li>For k duplicates, use a counter stack or modify the logic.</li>
+    </ul>
+  </div>
+</body>

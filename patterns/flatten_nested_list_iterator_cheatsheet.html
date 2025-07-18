@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flatten Nested List Iterator Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>📚 Flatten Nested List Iterator – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Flatten Nested List Iterator</b> problem (LeetCode 341) asks you to implement an iterator to flatten a nested list of integers. Each element is either an integer or a list of integers.
+    </p>
+
+    <h2>🧱 Pattern Template (DFS-Based Solution)</h2>
+    <pre><code>import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+
+public class NestedIterator implements Iterator&lt;Integer&gt; {
+    
+    private List&lt;Integer&gt; integers = new ArrayList&lt;Integer&gt;();
+    private int position = 0; // Pointer to next integer to return.
+    
+    public NestedIterator(List&lt;NestedInteger&gt; nestedList) {
+        flattenList(nestedList);
+    }
+
+    // Recursively unpacks a nested list in DFS order.
+    private void flattenList(List&lt;NestedInteger&gt; nestedList) {
+        for (NestedInteger nestedInteger : nestedList) {
+            if (nestedInteger.isInteger()) {
+                integers.add(nestedInteger.getInteger());
+            } else {
+                flattenList(nestedInteger.getList());
+            }
+        }
+    }
+    
+    @Override
+    public Integer next() {
+        // As per Java specs, we should throw an exception if no more ints.
+        if (!hasNext()) throw new NoSuchElementException();
+        // Return int at current position, and then *after*, increment position.
+        return integers.get(position++);
+    }
+
+    @Override
+    public boolean hasNext() {
+        return position &lt; integers.size();
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/flatten_nested_list_iterator_animation.html'">▶️ View Animation</button>
+    <a href="https://www.youtube.com/watch?v=4ILiBgLokM8&ab_channel=NeetCodeIO" target="_blank" rel="noopener noreferrer">▶️ Watch NeetCodeIO</a>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Flattening nested lists or arrays</li>
+      <li>Iterator design for complex data structures</li>
+      <li>Stack-based traversal of nested structures</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/flatten-nested-list-iterator/" target="_blank" rel="noopener noreferrer">341. Flatten Nested List Iterator</a>
+        <span class="badge badge-medium">[Medium]</span>
+        <span class="badge badge-tag">Stack</span>
+        <span class="badge badge-tag">Design</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: nestedList = [[1,1],2,[1,1]]
+Output: [1,1,2,1,1]
+
+Input: nestedList = [1,[4,[6]]]
+Output: [1,4,6]
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use stacks to simulate recursion and flatten nested structures.</li>
+      <li>Advance the iterator only when the next integer is found.</li>
+      <li>Handle empty lists and deeply nested structures efficiently.</li>
+    </ul>
+  </div>
+</body>
+</html>

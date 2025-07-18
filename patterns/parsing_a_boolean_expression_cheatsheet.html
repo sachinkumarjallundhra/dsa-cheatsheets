@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parsing A Boolean Expression Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔎 Parsing A Boolean Expression – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Parsing A Boolean Expression</b> problem (LeetCode 1106) asks you to evaluate a boolean expression string containing 't', 'f', '!', '&', '|', and parentheses. The operators represent NOT, AND, and OR, and can be nested.
+    </p>
+
+    <h2>🧱 Pattern Template (Stack-Based Solution)</h2>
+    <pre><code>class Solution {
+    public boolean parseBoolExpr(String expression) {
+        Stack&lt;Character&gt; ops = new Stack&lt;&gt;();
+        Stack&lt;Character&gt; vals = new Stack&lt;&gt;();
+        for (char c : expression.toCharArray()) {
+            if (c == ',' || c == ' ') continue;
+            if (c == 't' || c == 'f' || c == '(') {
+                vals.push(c);
+            } else if (c == '!' || c == '&' || c == '|') {
+                ops.push(c);
+            } else if (c == ')') {
+                List&lt;Character&gt; temp = new ArrayList&lt;&gt;();
+                while (vals.peek() != '(') temp.add(vals.pop());
+                vals.pop(); // remove '('
+                char op = ops.pop();
+                char res = 'f';
+                if (op == '!') {
+                    res = temp.get(0) == 't' ? 'f' : 't';
+                } else if (op == '&') {
+                    res = 't';
+                    for (char v : temp) if (v == 'f') { res = 'f'; break; }
+                } else if (op == '|') {
+                    res = 'f';
+                    for (char v : temp) if (v == 't') { res = 't'; break; }
+                }
+                vals.push(res);
+            }
+        }
+        return vals.pop() == 't';
+    }
+}</code></pre>
+    <button onclick="window.location.href='../animations/parsing_a_boolean_expression_animation.html'">▶️ View Animation</button>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Parsing and evaluating boolean expressions</li>
+      <li>Stack-based expression evaluation</li>
+      <li>Handling nested logical operators</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <ul>
+      <li>
+        <a href="https://leetcode.com/problems/parsing-a-boolean-expression/" target="_blank" rel="noopener noreferrer">1106. Parsing A Boolean Expression</a>
+        <span class="badge badge-hard">[Hard]</span>
+        <span class="badge badge-tag">Stack</span>
+        <span class="badge badge-tag">String</span>
+        <span class="badge badge-tag">Parsing</span>
+      </li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: expression = "&amp;(|(f))"
+Output: false
+
+Input: expression = "|(f,t)"
+Output: true
+
+Input: expression = "!(&(f,t))"
+Output: true
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Use two stacks: one for operators and one for values.</li>
+      <li>Process the expression character by character, handling parentheses and operators.</li>
+      <li>Carefully handle the NOT, AND, and OR logic for nested expressions.</li>
+    </ul>
+  </div>
+</body>
