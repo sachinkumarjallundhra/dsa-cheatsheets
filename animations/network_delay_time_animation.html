@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Delay Time (Dijkstra's) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-highlight: #f1c40f; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7; --color-node-start: #9b59b6;
+            --color-node-processing: #e67e22; --color-node-visited: #2c3e50;
+            --color-edge-default: #ccc; --color-edge-processing: #e74c3c;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container-ndt { width: 98%; max-width: 1600px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+
+        .controls-ndt { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls-ndt label { font-weight: bold; }
+        .controls-ndt input, .controls-ndt textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls-ndt input { width: 40px; }
+        .controls-ndt textarea { width: 300px; height: 60px; resize: vertical; }
+        .controls-ndt button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls-ndt button:disabled { background-color: #bdc3c7; }
+
+        .main-content-ndt { display: grid; grid-template-columns: 400px 1fr; gap: 15px; }
+        .left-panel-ndt { display: flex; flex-direction: column; gap: 15px; }
+        .panel-ndt { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .action-display { text-align: center; font-weight: bold; min-height: 2em; font-size: 1.1em; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+
+        #code_container_ndt { background: #2d2d2d; color: #f1f1f1; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; }
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        
+        #pq_container_ndt { min-height: 150px; }
+        .pq-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin-bottom: 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: pq-add 0.4s ease; }
+        @keyframes pq-add { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+        #distances_container_ndt { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; }
+        .dist-cell { border: 1px solid #ccc; border-radius: 4px; text-align: center; padding: 5px; transition: all 0.3s ease; }
+        .dist-cell .label { font-size: 0.8em; color: #666; }
+        .dist-cell .value { font-size: 1.5em; font-weight: bold; }
+        .dist-cell.updated { background-color: #e8f5e9; border-color: var(--color-success); transform: scale(1.1); }
+        
+        #graph_container_ndt { position: relative; width: 100%; min-height: 600px; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+
+        #final_result_ndt { text-align: center; font-size: 2em; font-weight: bold; padding: 20px; }
+        
+        @media (max-width: 1200px) { .main-content-ndt { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container-ndt">
+        <h1>Network Delay Time (Dijkstra's Algorithm)</h1>
+        <div class="controls-ndt">
+            <label>N (nodes):</label><input id="n_input_ndt" value="4">
+            <label>K (start):</label><input id="k_input_ndt" value="2">
+            <label>Times [[u,v,w]]:</label><textarea id="times_input_ndt">[[2,1,1],[2,3,1],[3,4,1]]</textarea>
+            <button id="start_button_ndt">Start</button>
+            <button id="next_step_button_ndt" disabled>Next Step</button>
+        </div>
+        <div class="main-content-ndt">
+            <div class="left-panel-ndt">
+                <div class="panel-ndt">
+                    <h2>Algorithm</h2>
+                    <div id="code_container_ndt"></div>
+                </div>
+                <div class="panel-ndt">
+                    <h2>Priority Queue</h2>
+                    <p style="font-size:0.8em; text-align:center; margin:-5px 0 10px 0;">(Sorted by smallest time)</p>
+                    <div id="pq_container_ndt"></div>
+                </div>
+                 <div class="panel-ndt">
+                    <h2>Current Action</h2>
+                    <div id="action_display_ndt" class="action-display">Enter network details and click 'Start'.</div>
+                </div>
+            </div>
+            <div class="right-panel-ndt">
+                <div class="panel-ndt">
+                    <h2>Network Graph</h2>
+                    <div id="graph_container_ndt">
+                        <svg width="100%" height="100%" id="graph_svg_ndt"></svg>
+                    </div>
+                </div>
+                 <div class="panel-ndt">
+                    <h2>Shortest Times from Start</h2>
+                    <div id="distances_container_ndt"></div>
+                </div>
+                 <div class="panel-ndt">
+                     <div id="final_result_ndt"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- Global State & Controls ---
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, graphSim;
+let nInput, kInput, timesInput, startButton, nextStepButton, codeContainer, pqContainer,
+    actionDisplay, graphSvg, distancesContainer, finalResult;
+
+// *** FIX: Helper function to correctly get CSS variable values ***
+const getCssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// --- Animation Class ---
+class DijkstraAnimation {
+    constructor() {
+        this.graph = null;
+        this.reset();
+    }
+    
+    reset() {
+        if (graphSim) cancelAnimationFrame(graphSim);
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.graph = null;
+        this.updateButtons();
+        this.clearDisplays();
+    }
+
+    clearDisplays() {
+        if (!codeContainer) return; // Guard for initial load
+        codeContainer.innerHTML = ''; pqContainer.innerHTML = '';
+        actionDisplay.textContent = 'Enter network details and click \'Start\'.';
+        graphSvg.innerHTML = ''; distancesContainer.innerHTML = '';
+        finalResult.innerHTML = '';
+    }
+    
+    start() {
+        this.reset();
+        try {
+            const n = parseInt(nInput.value);
+            const k = parseInt(kInput.value);
+            // Allow single quotes for easier typing by user
+            const timesStr = timesInput.value.trim().replace(/'/g, '"');
+            const times = JSON.parse(timesStr);
+            if (isNaN(n) || isNaN(k) || !Array.isArray(times)) throw new Error("Invalid input format");
+
+            this.initUI(n);
+            animationSteps = this.generateSteps(times, n, k);
+            this.graph = this.createGraphObject(times, n, k);
+            this.runGraphSimulation();
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) {
+                this.renderState(animationSteps[0]);
+            }
+            this.updateButtons();
+        } catch(e) {
+            console.error("Input Parsing Error:", e);
+            alert("Invalid input. Please use valid numbers for N/K and a valid 2D array for Times (e.g., [[2,1,1],[2,3,1]]).");
+            this.reset();
+        }
+    }
+
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+
+    initUI(n) {
+        const code = [
+            "function Dijkstra(graph, startNode):",
+            "  distances = array of size N, filled with ∞",
+            "  distances[startNode] = 0",
+            "  pq.add( (startNode, 0) )",
+            "  while pq is not empty:",
+            "    (node, dist) = pq.poll()",
+            "    if dist > distances[node]: continue",
+            "    for each neighbor of node:",
+            "      newDist = dist + edge_weight",
+            "      if newDist < distances[neighbor]:",
+            "        distances[neighbor] = newDist",
+            "        pq.add( (neighbor, newDist) )",
+            "  return max(distances)"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+
+        distancesContainer.innerHTML = '';
+        for (let i = 1; i <= n; i++) {
+            const cell = document.createElement('div');
+            cell.id = `dist-cell-${i}`;
+            cell.className = 'dist-cell';
+            cell.innerHTML = `<div class="label">Node ${i}</div><div class="value" id="dist-val-${i}">∞</div>`;
+            distancesContainer.appendChild(cell);
+        }
+    }
+
+    generateSteps(times, n, k) {
+        const steps = [];
+        const graph = new Map();
+        for (let i = 1; i <= n; i++) graph.set(i, []);
+        for (const t of times) graph.get(t[0]).push({ to: t[1], w: t[2] });
+
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let state = {
+            line: null, msg: "Initialize data structures.",
+            pq: [], dists: {}, visited: [],
+            processingNode: null, processingEdge: null, finalTime: null
+        };
+        for (let i = 1; i <= n; i++) state.dists[i] = Infinity;
+        
+        save({...state, line: 1});
+        state.dists[k] = 0;
+        save({...state, line: 2, msg: `Set distance to start node ${k} to 0.`});
+
+        const pq = [{ node: k, dist: 0 }];
+        state.pq = [...pq];
+        save({...state, line: 3, msg: `Add start node ${k} to priority queue.`});
+
+        while (pq.length > 0) {
+            save({...state, line: 4, msg: "Loop while priority queue is not empty."});
+            pq.sort((a, b) => a.dist - b.dist);
+            const { node, dist } = pq.shift();
+            state.pq = [...pq];
+            state.processingNode = node;
+            save({...state, line: 5, msg: `Popped node ${node} with distance ${dist} from PQ.`});
+
+            if (dist > state.dists[node]) {
+                save({...state, line: 6, msg: `Path to ${node} (${dist}) is worse than known (${state.dists[node]}). Skip.`});
+                state.processingNode = null;
+                continue;
+            }
+            state.visited.push(node);
+            
+            const neighbors = graph.get(node) || [];
+            for (const neighbor of neighbors) {
+                state.processingEdge = { from: node, to: neighbor.to };
+                save({...state, line: 7, msg: `Checking neighbor ${neighbor.to} of node ${node}.`});
+
+                const newDist = dist + neighbor.w;
+                save({...state, line: 8, msg: `New path cost to ${neighbor.to} is ${dist} + ${neighbor.w} = ${newDist}.`});
+
+                if (newDist < state.dists[neighbor.to]) {
+                    save({...state, line: 9, msg: `Found shorter path to ${neighbor.to}! (${newDist} < ${state.dists[neighbor.to]})`});
+                    state.dists[neighbor.to] = newDist;
+                    save({...state, line: 10, msg: `Updating distance for node ${neighbor.to} to ${newDist}.`});
+                    pq.push({ node: neighbor.to, dist: newDist });
+                    pq.sort((a, b) => a.dist - b.dist);
+                    state.pq = [...pq];
+                    save({...state, line: 11, msg: `Adding/updating node ${neighbor.to} in PQ.`});
+                } else {
+                    save({...state, line: 9, msg: `Path to ${neighbor.to} is not shorter. (${newDist} >= ${state.dists[neighbor.to]})`});
+                }
+                state.processingEdge = null;
+            }
+            state.processingNode = null;
+        }
+
+        let maxTime = 0;
+        for (let i = 1; i <= n; i++) {
+            if (state.dists[i] === Infinity) {
+                maxTime = -1;
+                break;
+            }
+            maxTime = Math.max(maxTime, state.dists[i]);
+        }
+        state.finalTime = maxTime;
+        save({...state, line: 12, msg: "Finished. Calculating result..."});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        document.querySelectorAll('.dist-cell').forEach(el => el.classList.remove('updated'));
+        for(const node in state.dists) {
+            const valEl = document.getElementById(`dist-val-${node}`);
+            if (valEl) {
+                const newVal = state.dists[node] === Infinity ? '∞' : state.dists[node];
+                if (valEl.textContent !== String(newVal)) {
+                    valEl.textContent = newVal;
+                    document.getElementById(`dist-cell-${node}`).classList.add('updated');
+                }
+            }
+        }
+        
+        pqContainer.innerHTML = '';
+        state.pq.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'pq-item';
+            div.textContent = `(Node: ${item.node}, Time: ${item.dist})`;
+            pqContainer.appendChild(div);
+        });
+
+        this.updateGraphVisuals(state);
+
+        if (state.finalTime !== null) {
+            finalResult.textContent = `Result: ${state.finalTime}`;
+        }
+    }
+    
+    createGraphObject(times, n, k) {
+        const nodes = Array.from({ length: n }, (_, i) => ({ id: i + 1, x: 0, y: 0, vx: 0, vy: 0 }));
+        const edges = times.map(t => ({ source: nodes[t[0]-1], target: nodes[t[1]-1], weight: t[2] }));
+        return { nodes, edges, startNodeId: k };
+    }
+    
+    runGraphSimulation() {
+        const width = graphSvg.clientWidth;
+        const height = graphSvg.clientHeight;
+        if (!this.graph || width === 0 || height === 0) return;
+        const { nodes, edges } = this.graph;
+
+        nodes.forEach(n => { n.x = Math.random() * width; n.y = Math.random() * height; });
+
+        const simulationTick = () => {
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[j].x - nodes[i].x, dy = nodes[j].y - nodes[i].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                    const force = -2000 / (dist * dist);
+                    nodes[i].vx += force * dx / dist; nodes[i].vy += force * dy / dist;
+                    nodes[j].vx -= force * dx / dist; nodes[j].vy -= force * dy / dist;
+                }
+            }
+            edges.forEach(e => {
+                const dx = e.target.x - e.source.x, dy = e.target.y - e.source.y;
+                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                const force = 0.05 * (dist - 150);
+                e.source.vx += force * dx / dist; e.source.vy += force * dy / dist;
+                e.target.vx -= force * dx / dist; e.target.vy -= force * dy / dist;
+            });
+            nodes.forEach(n => {
+                n.vx *= 0.9; n.vy *= 0.9;
+                n.x += n.vx; n.y += n.vy;
+                n.x = Math.max(20, Math.min(width - 20, n.x));
+                n.y = Math.max(20, Math.min(height - 20, n.y));
+            });
+            if (animationSteps.length > 0) {
+                 this.updateGraphVisuals(animationSteps[currentStepIndex]);
+            }
+            graphSim = requestAnimationFrame(simulationTick);
+        };
+        simulationTick();
+    }
+    
+    updateGraphVisuals(state) {
+        if (!this.graph) return;
+        graphSvg.innerHTML = '';
+        const { nodes, edges, startNodeId } = this.graph;
+        
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead'); marker.setAttribute('viewBox', '-0 -5 10 10');
+        marker.setAttribute('refX', 28); marker.setAttribute('refY', 0); marker.setAttribute('orient', 'auto');
+        marker.setAttribute('markerWidth', 6); marker.setAttribute('markerHeight', 6);
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0,-5 L 10 ,0 L 0,5');
+        path.setAttribute('fill', getCssVar('--color-edge-default'));
+        marker.appendChild(path); defs.appendChild(marker); graphSvg.appendChild(defs);
+
+        edges.forEach(e => {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', e.source.x); line.setAttribute('y1', e.source.y);
+            line.setAttribute('x2', e.target.x); line.setAttribute('y2', e.target.y);
+            line.setAttribute('stroke', getCssVar('--color-edge-default'));
+            line.setAttribute('stroke-width', 2);
+            line.setAttribute('marker-end', 'url(#arrowhead)');
+            if (state.processingEdge && state.processingEdge.from === e.source.id && state.processingEdge.to === e.target.id) {
+                line.setAttribute('stroke', getCssVar('--color-edge-processing'));
+                line.setAttribute('stroke-width', 4);
+            }
+            graphSvg.appendChild(line);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (e.source.x + e.target.x) / 2);
+            text.setAttribute('y', (e.source.y + e.target.y) / 2 - 5);
+            text.textContent = e.weight;
+            text.setAttribute('fill', '#333');
+            graphSvg.appendChild(text);
+        });
+
+        nodes.forEach(n => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y); circle.setAttribute('r', 20);
+            let color = getCssVar('--color-node-default');
+            if(n.id === startNodeId) color = getCssVar('--color-node-start');
+            if(state.visited.includes(n.id)) color = getCssVar('--color-node-visited');
+            if(state.processingNode === n.id) color = getCssVar('--color-node-processing');
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333'); circle.setAttribute('stroke-width', 2);
+            graphSvg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', n.x); text.setAttribute('y', n.y);
+            text.setAttribute('dy', '0.3em'); text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'white'); text.setAttribute('font-weight', 'bold');
+            text.textContent = n.id;
+            graphSvg.appendChild(text);
+        });
+    }
+}
+
+// --- Init ---
+document.addEventListener('DOMContentLoaded', () => {
+    // FIX: Assign global variables *before* they are used.
+    nInput = document.getElementById('n_input_ndt');
+    kInput = document.getElementById('k_input_ndt');
+    timesInput = document.getElementById('times_input_ndt');
+    startButton = document.getElementById('start_button_ndt');
+    nextStepButton = document.getElementById('next_step_button_ndt');
+    codeContainer = document.getElementById('code_container_ndt');
+    pqContainer = document.getElementById('pq_container_ndt');
+    actionDisplay = document.getElementById('action_display_ndt');
+    graphSvg = document.getElementById('graph_svg_ndt');
+    distancesContainer = document.getElementById('distances_container_ndt');
+    finalResult = document.getElementById('final_result_ndt');
+    
+    // FIX: Instantiate the class *after* the DOM element variables are assigned.
+    const anim = new DijkstraAnimation();
+    startButton.addEventListener('click', () => {
+        if(simulationRunning) anim.reset();
+        else anim.start();
+    });
+    nextStepButton.addEventListener('click', () => anim.next());
+});
+</script>
+</body>
+</html>

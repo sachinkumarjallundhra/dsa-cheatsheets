@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paths in Maze (3-Cycles) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-highlight: #f1c40f; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7; --color-edge-default: #ccc;
+            --color-node-anchor: #9b59b6; /* Node i */
+            --color-node-neighbor: #e67e22; /* Neighbors 1 & 2 */
+            --color-edge-check: #e74c3c; /* Edge being checked */
+            --color-cycle-found: #2ecc71; /* Green for found cycles */
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background-color: var(--color-bg-light); display: flex; flex-direction: column; align-items: center; }
+        .container { width: 98%; max-width: 1600px; background-color: var(--color-bg-panel); padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-bottom: 10px; }
+        h1 { font-size: 1.5em; } h2 { font-size: 1.2em; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input, .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls input { width: 40px; }
+        .controls textarea { width: 350px; height: 60px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:hover { background-color: #2980b9; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .main-content { display: grid; grid-template-columns: 450px 1fr; gap: 15px; }
+        .left-panel { display: flex; flex-direction: column; gap: 15px; }
+        .panel { padding: 15px; background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 5px; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 0.9em; }
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        
+        #state_container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center;}
+        .state-item { background-color: #f8f9fa; padding: 8px; border-radius: 4px; }
+        .state-item .label { font-size: 0.8em; color: #666; }
+        .state-item .value { font-size: 1.4em; font-weight: bold; min-height: 1.2em; }
+        
+        #cycles_container { min-height: 100px; }
+        .cycle-item { background: #e8f5e9; border: 1px solid var(--color-success); padding: 5px; margin-bottom: 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; }
+        @keyframes item-add { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        
+        #graph_container { position: relative; width: 100%; min-height: 600px; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        #final_result { text-align: center; font-size: 1.5em; font-weight: bold; padding: 20px; }
+        
+        @media (max-width: 1200px) { .main-content { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Paths in Maze (Finding 3-Cycles)</h1>
+        <div class="controls">
+            <label>N (rooms):</label><input id="n_input" value="5">
+            <label>Corridors [[u,v]]:</label><textarea id="corridors_input">[[1,2],[2,3],[1,3],[2,4],[4,5],[5,2]]</textarea>
+            <button id="start_button">Start</button>
+            <button id="next_step_button" disabled>Next Step</button>
+        </div>
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="panel">
+                    <h2>Algorithm</h2>
+                    <div id="code_container"></div>
+                </div>
+                <div class="panel">
+                    <h2>Current State</h2>
+                    <div id="state_container"></div>
+                </div>
+                 <div class="panel">
+                    <h2>Found Cycles (Raw)</h2>
+                    <div id="cycles_container"></div>
+                </div>
+            </div>
+            <div class="right-panel">
+                <div class="panel">
+                    <h2>Maze Graph</h2>
+                    <div id="graph_container">
+                        <svg width="100%" height="100%" id="graph_svg"></svg>
+                    </div>
+                </div>
+                 <div class="panel">
+                    <h2>Result</h2>
+                    <div id="final_result"></div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- Global State & Controls ---
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, graphSim;
+let nInput, corridorsInput, startButton, nextStepButton, codeContainer, stateContainer,
+    cyclesContainer, graphSvg, finalResult;
+
+const getCssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// --- Animation Class ---
+class CycleAnimation {
+    constructor() {
+        this.graph = null;
+        this.reset();
+    }
+    
+    reset() {
+        if (graphSim) cancelAnimationFrame(graphSim);
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.graph = null;
+        this.updateButtons();
+        this.clearDisplays();
+    }
+
+    clearDisplays() {
+        if (!codeContainer) return;
+        codeContainer.innerHTML = '';
+        stateContainer.innerHTML = '';
+        cyclesContainer.innerHTML = '';
+        graphSvg.innerHTML = '';
+        finalResult.innerHTML = '<p style="font-size:1rem; color:#666;">Enter maze details and click \'Start\'.</p>';
+    }
+    
+    start() {
+        this.reset();
+        try {
+            const n = parseInt(nInput.value);
+            const corridorsStr = corridorsInput.value.trim().replace(/'/g, '"');
+            const corridors = JSON.parse(corridorsStr);
+            if (isNaN(n) || !Array.isArray(corridors)) throw new Error("Invalid input format");
+
+            this.initUI(n);
+            animationSteps = this.generateSteps(n, corridors);
+            this.graph = this.createGraphObject(n, corridors);
+            this.runGraphSimulation();
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) {
+                this.renderState(animationSteps[0]);
+            }
+            this.updateButtons();
+        } catch(e) {
+            console.error("Input Parsing Error:", e);
+            alert("Invalid input. Please use a valid number for N and a 2D array for Corridors (e.g., [[1,2],[2,3]]).");
+            this.reset();
+        }
+    }
+
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+
+    initUI(n) {
+        const code = [
+            "function countCycles(n, corridors):",
+            "  graph = build_adjacency_list(corridors)",
+            "  count = 0",
+            "  for i from 1 to n:",
+            "    neighbors_of_i = get_neighbors(i)",
+            "    for neighbor1 in neighbors_of_i:",
+            "      for neighbor2 in neighbors_of_i:",
+            "        if neighbor1 < neighbor2:",
+            "          if graph[neighbor1].contains(neighbor2):",
+            "            count++",
+            "            // Cycle found: (i, n1, n2)",
+            "  return count / 3"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+
+        stateContainer.innerHTML = `
+            <div class="state-item"><div class="label">Anchor (i)</div><div class="value" id="val-i">-</div></div>
+            <div class="state-item"><div class="label">Neighbor 1</div><div class="value" id="val-n1">-</div></div>
+            <div class="state-item"><div class="label">Neighbor 2</div><div class="value" id="val-n2">-</div></div>
+            <div class="state-item"><div class="label">Check</div><div class="value" id="val-check">-</div></div>
+        `;
+
+        finalResult.innerHTML = `<p style="font-size:1.2rem; font-weight:bold;">Count: <span id="val-count">0</span></p>`;
+    }
+
+    generateSteps(n, corridors) {
+        const steps = [];
+        const adj = new Map();
+        for (let i = 1; i <= n; i++) adj.set(i, new Set());
+        for (const c of corridors) {
+            adj.get(c[0]).add(c[1]);
+            adj.get(c[1]).add(c[0]);
+        }
+        
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let state = {
+            line: null, msg: "Initialize.",
+            count: 0, foundCycles: [], finalResult: null,
+            anchorNode: null, n1: null, n2: null,
+            checkEdge: null, highlightCycle: null
+        };
+
+        save({...state, line: 1, msg: "Build adjacency list from corridors."});
+        save({...state, line: 2, msg: "Initialize cycle count to 0."});
+
+        for (let i = 1; i <= n; i++) {
+            state.anchorNode = i;
+            save({...state, line: 3, msg: `Start main loop. Anchor node i = ${i}.`});
+            
+            const neighbors = Array.from(adj.get(i)).sort((a,b) => a-b);
+            if (neighbors.length < 2) {
+                save({...state, line: 4, msg: `Node ${i} has fewer than 2 neighbors, cannot form a cycle. Skipping.`});
+                continue;
+            }
+            save({...state, line: 4, msg: `Get sorted neighbors of ${i}: [${neighbors.join(', ')}]`});
+
+            for (let j = 0; j < neighbors.length; j++) {
+                state.n1 = neighbors[j];
+                save({...state, line: 5, msg: `Select first neighbor: ${state.n1}`});
+
+                for (let k = j + 1; k < neighbors.length; k++) {
+                    state.n2 = neighbors[k];
+                    save({...state, line: 6, msg: `Select second neighbor: ${state.n2}`});
+                    
+                    // The condition `k > j` on sorted neighbors ensures `n1 < n2`
+                    save({...state, line: 7, msg: `Condition 'neighbor1 < neighbor2' is met.`});
+                    
+                    state.checkEdge = {u: state.n1, v: state.n2};
+                    save({...state, line: 8, msg: `Check if ${state.n1} and ${state.n2} are connected.`});
+                    
+                    if (adj.get(state.n1).has(state.n2)) {
+                        state.count++;
+                        const newCycle = [i, state.n1, state.n2].sort((a,b)=>a-b);
+                        state.foundCycles.push(newCycle);
+                        state.highlightCycle = [i, state.n1, state.n2];
+                        state.checkEdge = null;
+                        save({...state, line: 9, msg: `CONNECTED! Cycle (${i}-${state.n1}-${state.n2}) found. count = ${state.count}.`});
+                        save({...state, line: 10, msg: `Added cycle to list. Resetting highlights.`});
+                        state.highlightCycle = null;
+                    } else {
+                        save({...state, line: 8, msg: `NOT connected. No cycle with this triplet.`});
+                    }
+                    state.checkEdge = null;
+                    state.n2 = null;
+                }
+                state.n1 = null;
+            }
+            state.anchorNode = null;
+        }
+
+        state.finalResult = state.count / 3;
+        save({...state, line: 11, msg: `Finished all loops. Raw count is ${state.count}.`});
+        save({...state, line: 11, msg: `Each cycle is counted 3 times (once per node). Final result: ${state.count} / 3 = ${state.finalResult}.`});
+        return steps;
+    }
+    
+    renderState(state) {
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        document.getElementById('val-i').textContent = state.anchorNode ?? '-';
+        document.getElementById('val-n1').textContent = state.n1 ?? '-';
+        document.getElementById('val-n2').textContent = state.n2 ?? '-';
+        document.getElementById('val-check').textContent = state.msg;
+
+        document.getElementById('val-count').textContent = state.count;
+
+        cyclesContainer.innerHTML = '';
+        const uniqueCycles = new Set(state.foundCycles.map(JSON.stringify));
+        uniqueCycles.forEach(cycleStr => {
+            const cycle = JSON.parse(cycleStr);
+            const div = document.createElement('div');
+            div.className = 'cycle-item';
+            div.textContent = `(${cycle.join(', ')})`;
+            cyclesContainer.appendChild(div);
+        });
+
+        this.updateGraphVisuals(state);
+
+        if (state.finalResult !== null) {
+            finalResult.innerHTML = `
+                <p style="font-size:1rem; color:#666; margin-bottom:5px;">Each cycle (e.g., 1-2-3) is detected 3 times:</br>
+                once anchored at 1 (checking 2-3), once at 2 (checking 1-3), and once at 3 (checking 1-2).</p>
+                <p style="font-size:1.2rem; font-weight:bold;">Raw Count: <span style="color:var(--color-primary)">${state.count}</span></p>
+                <p style="font-size:1.5em; font-weight:bold;">Final Result: ${state.count} / 3 = <span style="color:var(--color-success)">${state.finalResult}</span></p>
+            `;
+        }
+    }
+    
+    createGraphObject(n, corridors) {
+        const nodes = Array.from({ length: n }, (_, i) => ({ id: i + 1, x: 0, y: 0, vx: 0, vy: 0 }));
+        const edges = corridors.map(c => ({ source: nodes[c[0]-1], target: nodes[c[1]-1] }));
+        return { nodes, edges };
+    }
+    
+    runGraphSimulation() {
+        const width = graphSvg.clientWidth;
+        const height = graphSvg.clientHeight;
+        if (!this.graph || width === 0 || height === 0) return;
+        const { nodes, edges } = this.graph;
+
+        nodes.forEach(n => { n.x = Math.random() * width; n.y = Math.random() * height; });
+
+        const simulationTick = () => {
+            // Repulsion force between nodes
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[j].x - nodes[i].x, dy = nodes[j].y - nodes[i].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                    const force = -2000 / (dist * dist);
+                    nodes[i].vx += force * dx / dist; nodes[i].vy += force * dy / dist;
+                    nodes[j].vx -= force * dx / dist; nodes[j].vy -= force * dy / dist;
+                }
+            }
+            // Spring force along edges
+            edges.forEach(e => {
+                const dx = e.target.x - e.source.x, dy = e.target.y - e.source.y;
+                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                const force = 0.05 * (dist - 150); // Ideal length of 150
+                e.source.vx += force * dx / dist; e.source.vy += force * dy / dist;
+                e.target.vx -= force * dx / dist; e.target.vy -= force * dy / dist;
+            });
+            // Update positions
+            nodes.forEach(n => {
+                n.vx *= 0.9; n.vy *= 0.9; // Damping
+                n.x += n.vx; n.y += n.vy;
+                n.x = Math.max(20, Math.min(width - 20, n.x));
+                n.y = Math.max(20, Math.min(height - 20, n.y));
+            });
+            if (animationSteps.length > 0) {
+                 this.updateGraphVisuals(animationSteps[currentStepIndex]);
+            }
+            graphSim = requestAnimationFrame(simulationTick);
+        };
+        simulationTick();
+    }
+    
+    updateGraphVisuals(state) {
+        if (!this.graph) return;
+        graphSvg.innerHTML = '';
+        const { nodes, edges } = this.graph;
+        
+        edges.forEach(e => {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', e.source.x); line.setAttribute('y1', e.source.y);
+            line.setAttribute('x2', e.target.x); line.setAttribute('y2', e.target.y);
+            
+            let color = getCssVar('--color-edge-default');
+            let width = 2;
+
+            if (state.checkEdge && ((e.source.id === state.checkEdge.u && e.target.id === state.checkEdge.v) || (e.source.id === state.checkEdge.v && e.target.id === state.checkEdge.u))) {
+                color = getCssVar('--color-edge-check');
+                width = 4;
+            }
+            
+            if (state.highlightCycle) {
+                const [c1, c2, c3] = state.highlightCycle;
+                if ((e.source.id === c1 || e.source.id === c2 || e.source.id === c3) &&
+                    (e.target.id === c1 || e.target.id === c2 || e.target.id === c3)) {
+                    color = getCssVar('--color-cycle-found');
+                    width = 5;
+                }
+            }
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', width);
+            graphSvg.appendChild(line);
+        });
+
+        nodes.forEach(n => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y); circle.setAttribute('r', 20);
+            
+            let color = getCssVar('--color-node-default');
+            if (n.id === state.anchorNode) color = getCssVar('--color-node-anchor');
+            else if (n.id === state.n1 || n.id === state.n2) color = getCssVar('--color-node-neighbor');
+            
+            if (state.highlightCycle && state.highlightCycle.includes(n.id)) {
+                color = getCssVar('--color-cycle-found');
+            }
+
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333'); circle.setAttribute('stroke-width', 2);
+            graphSvg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', n.x); text.setAttribute('y', n.y);
+            text.setAttribute('dy', '0.3em'); text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'white'); text.setAttribute('font-weight', 'bold');
+            text.textContent = n.id;
+            graphSvg.appendChild(text);
+        });
+    }
+}
+
+// --- Init ---
+document.addEventListener('DOMContentLoaded', () => {
+    nInput = document.getElementById('n_input');
+    corridorsInput = document.getElementById('corridors_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    stateContainer = document.getElementById('state_container');
+    cyclesContainer = document.getElementById('cycles_container');
+    graphSvg = document.getElementById('graph_svg');
+    finalResult = document.getElementById('final_result');
+    
+    const anim = new CycleAnimation();
+    startButton.addEventListener('click', () => {
+        if(simulationRunning) anim.reset();
+        else anim.start();
+    });
+    nextStepButton.addEventListener('click', () => anim.next());
+});
+</script>
+</body>
+</html>

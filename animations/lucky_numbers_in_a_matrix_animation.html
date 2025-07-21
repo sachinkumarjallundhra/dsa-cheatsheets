@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Numbers in a Matrix Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-lucky: #f1c40f;
+            --color-row-process: rgba(52, 152, 219, 0.1);
+            --color-col-process: rgba(155, 89, 182, 0.1);
+            --color-cell-check: #f2f2f2;
+            --color-cell-min: #aed6f1;
+            --color-cell-candidate: #d7bde2;
+            --color-cell-fail: rgba(231, 76, 60, 0.4);
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1fr) 2fr minmax(320px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 450px; height: 60px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; align-items: center; justify-content: center;}
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #matrix_container { display: grid; gap: 5px; padding: 10px; background-color: #fafafa; border-radius: 5px; }
+        .matrix-cell { width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; font-size: 1.5em; font-weight: bold; border-radius: 4px; border: 2px solid transparent; transition: all 0.3s ease; }
+        
+        .matrix-cell.processing-row { background-color: var(--color-row-process); }
+        .matrix-cell.processing-col { background-color: var(--color-col-process); }
+        .matrix-cell.checking-cell { border-color: var(--color-primary); }
+        .matrix-cell.min-in-row { background-color: var(--color-cell-min) !important; border-color: var(--color-primary); }
+        .matrix-cell.candidate-cell { background-color: var(--color-cell-candidate) !important; border-color: #8e44ad; }
+        .matrix-cell.is-not-max { background-color: var(--color-cell-fail) !important; animation: shake 0.5s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .matrix-cell.lucky-number { border-color: var(--color-lucky); background-color: var(--color-lucky) !important; color: black; transform: scale(1.1); }
+
+        .state-panel { font-size: 1.1em; }
+        .state-item { margin-bottom: 15px; }
+        .state-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; }
+        .state-item .value { font-size: 1.2em; color: var(--color-text-dark); font-weight: bold; padding: 5px; background-color: #f8f9fa; border-radius: 4px; min-height: 1.2em; text-align: center;}
+        
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .lucky-item { background: var(--color-lucky); padding: 8px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        @keyframes item-add { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Lucky Numbers in a Matrix</h1>
+            <div class="controls">
+                <label>Matrix:</label><textarea id="matrix_input">[[3,7,8],[9,11,13],[15,16,17]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter matrix and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Matrix</h2>
+            <div id="matrix_container"></div>
+        </div>
+
+        <div class="right-column">
+            <div class="panel state-panel">
+                <h2>Current State</h2>
+                <div class="state-item"><span class="label">Processing Row (i)</span><span id="state-i" class="value">-</span></div>
+                <div class="state-item"><span class="label">Min in Row</span><span id="state-min" class="value">-</span></div>
+                <div class="state-item"><span class="label">Column of Min</span><span id="state-col" class="value">-</span></div>
+                <div class="state-item"><span class="label">Is Max in Column?</span><span id="state-ismax" class="value">-</span></div>
+            </div>
+            <div class="panel">
+                 <h2>Lucky Numbers Found</h2>
+                <div id="lucky_list" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let matrixInput, startButton, nextStepButton, codeContainer, actionDisplay, matrixContainer,
+    stateI, stateMin, stateCol, stateIsMax, luckyList;
+
+class LuckyNumberAnimation {
+    constructor() {
+        this.matrix = null;
+        this.reset();
+    }
+
+    reset() {
+        animationSteps = [];
+        currentStepIndex = 0;
+        simulationRunning = false;
+        this.matrix = null;
+        this.updateButtons();
+        this.clearDisplays();
+    }
+
+    clearDisplays() {
+        if (!codeContainer) return;
+        codeContainer.innerHTML = '';
+        matrixContainer.innerHTML = '';
+        actionDisplay.textContent = 'Enter matrix and click \'Start\'.';
+        stateI.textContent = '-';
+        stateMin.textContent = '-';
+        stateCol.textContent = '-';
+        stateIsMax.textContent = '-';
+        luckyList.innerHTML = '';
+    }
+
+    start() {
+        this.reset();
+        try {
+            const matrixStr = matrixInput.value.trim().replace(/'/g, '"');
+            this.matrix = JSON.parse(matrixStr);
+            if (!Array.isArray(this.matrix) || this.matrix.length === 0 || !Array.isArray(this.matrix[0])) {
+                throw new Error("Invalid matrix format");
+            }
+            this.initUI(this.matrix);
+            animationSteps = this.generateSteps(this.matrix);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            alert("Invalid input. Please use a valid 2D array, e.g., [[1,2],[3,4]].");
+            this.reset();
+        }
+    }
+
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+
+    initUI(matrix) {
+        const code = [
+            "function findLuckyNumbers(matrix):",
+            "  lucky_numbers = []",
+            "  for i in rows:",
+            "    minVal = Infinity, colIdx = -1",
+            "    for j in columns:",
+            "      if matrix[i][j] < minVal:",
+            "        minVal = matrix[i][j]",
+            "        colIdx = j",
+            "    isMax = true",
+            "    for k in rows:",
+            "      if matrix[k][colIdx] > minVal:",
+            "        isMax = false; break;",
+            "    if isMax:",
+            "      lucky_numbers.add(minVal)",
+            "  return lucky_numbers"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+        
+        const m = matrix.length;
+        const n = matrix[0].length;
+        matrixContainer.style.gridTemplateColumns = `repeat(${n}, 65px)`;
+        matrixContainer.innerHTML = '';
+        for (let i = 0; i < m; i++) {
+            for (let j = 0; j < n; j++) {
+                const cell = document.createElement('div');
+                cell.className = 'matrix-cell';
+                cell.id = `cell-${i}-${j}`;
+                cell.textContent = matrix[i][j];
+                matrixContainer.appendChild(cell);
+            }
+        }
+    }
+
+    generateSteps(matrix) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        const m = matrix.length;
+        const n = matrix[0].length;
+        
+        let state = {
+            line: null, msg: "", luckyNumbers: [], i: null, j: null, k: null,
+            minVal: null, colIdx: null, isMax: null,
+            highlights: { row: null, col: null, check: null, min: null, candidate: null, fail: null, lucky: [] }
+        };
+
+        save({ ...state, line: 1, msg: "Initialize an empty list for lucky numbers." });
+        
+        for (let i = 0; i < m; i++) {
+            state.i = i;
+            state.highlights.row = i;
+            save({ ...state, line: 2, msg: `Scanning row ${i} to find the minimum value.` });
+
+            let minVal = Infinity, colIdx = -1;
+            state.minVal = null;
+            state.colIdx = null;
+            state.highlights.min = null;
+            save({ ...state, line: 3, msg: "Reset minVal for the new row." });
+
+            for (let j = 0; j < n; j++) {
+                state.j = j;
+                state.highlights.check = [i, j];
+                save({ ...state, line: 4, msg: `Checking cell (${i},${j}) with value ${matrix[i][j]}.` });
+                save({ ...state, line: 5, msg: `Is ${matrix[i][j]} < ${state.minVal ?? 'Infinity'}?` });
+                if (matrix[i][j] < minVal) {
+                    minVal = matrix[i][j];
+                    colIdx = j;
+                    state.minVal = minVal;
+                    state.colIdx = colIdx;
+                    state.highlights.min = [i, j];
+                    save({ ...state, line: 6, msg: `New minimum ${minVal} found at col ${colIdx}.` });
+                }
+            }
+            
+            state.j = null;
+            state.highlights.row = null;
+            state.highlights.check = null;
+            state.highlights.col = colIdx;
+            state.highlights.candidate = [i, colIdx];
+            save({ ...state, line: 8, msg: `Row minimum is ${minVal}. Now check if it's max in column ${colIdx}.` });
+            
+            let isMax = true;
+            state.isMax = true;
+            for (let k = 0; k < m; k++) {
+                state.k = k;
+                state.highlights.check = [k, colIdx];
+                save({ ...state, line: 9, msg: `Comparing candidate ${minVal} with cell (${k},${colIdx}) value ${matrix[k][colIdx]}.` });
+                save({ ...state, line: 10, msg: `Is ${matrix[k][colIdx]} > ${minVal}?` });
+                if (matrix[k][colIdx] > minVal) {
+                    isMax = false;
+                    state.isMax = false;
+                    state.highlights.fail = [k, colIdx];
+                    save({ ...state, line: 11, msg: `${matrix[k][colIdx]} > ${minVal}. It's NOT the max. Not lucky.` });
+                    break;
+                }
+            }
+            
+            state.k = null;
+            state.highlights.fail = null;
+            state.highlights.check = null;
+            
+            save({ ...state, line: 12, msg: `Finished column check. Is it lucky? ${isMax}` });
+            if (isMax) {
+                state.luckyNumbers.push(minVal);
+                state.highlights.lucky.push([i, colIdx]);
+                save({ ...state, line: 13, msg: `YES! ${minVal} is a lucky number! Adding to results.` });
+            }
+
+            state.highlights.col = null;
+            state.highlights.candidate = null;
+        }
+
+        state.i = null;
+        save({ ...state, line: 14, msg: "Finished all rows. Returning results." });
+        return steps;
+    }
+
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        stateI.textContent = state.i ?? '-';
+        stateMin.textContent = state.minVal ?? '-';
+        stateCol.textContent = state.colIdx ?? '-';
+        stateIsMax.textContent = state.isMax === null ? '-' : String(state.isMax);
+
+        luckyList.innerHTML = state.luckyNumbers.map(n => `<div class="lucky-item">${n}</div>`).join('');
+        
+        document.querySelectorAll('.matrix-cell').forEach(cell => {
+            cell.className = 'matrix-cell'; 
+        });
+        
+        const h = state.highlights;
+        
+        if (h.row !== null) {
+            for (let j = 0; j < this.matrix[0].length; j++) document.getElementById(`cell-${h.row}-${j}`)?.classList.add('processing-row');
+        }
+        if (h.col !== null) {
+            for (let i = 0; i < this.matrix.length; i++) document.getElementById(`cell-${i}-${h.col}`)?.classList.add('processing-col');
+        }
+        if (h.check) document.getElementById(`cell-${h.check[0]}-${h.check[1]}`)?.classList.add('checking-cell');
+        if (h.min) document.getElementById(`cell-${h.min[0]}-${h.min[1]}`)?.classList.add('min-in-row');
+        if (h.candidate) document.getElementById(`cell-${h.candidate[0]}-${h.candidate[1]}`)?.classList.add('candidate-cell');
+        if (h.fail) document.getElementById(`cell-${h.fail[0]}-${h.fail[1]}`)?.classList.add('is-not-max');
+        
+        h.lucky.forEach(([r, c]) => {
+            document.getElementById(`cell-${r}-${c}`)?.classList.add('lucky-number');
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    matrixInput = document.getElementById('matrix_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    matrixContainer = document.getElementById('matrix_container');
+    stateI = document.getElementById('state-i');
+    stateMin = document.getElementById('state-min');
+    stateCol = document.getElementById('state-col');
+    stateIsMax = document.getElementById('state-ismax');
+    luckyList = document.getElementById('lucky_list');
+    
+    const anim = new LuckyNumberAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+});
+</script>
+</body>
+</html>

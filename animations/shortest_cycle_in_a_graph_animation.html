@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortest Cycle in a Graph Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-visited: #7f8c8d;
+            --color-node-current: #9b59b6;
+            --color-node-neighbor: #e67e22;
+            --color-bfs-start: #1abc9c;
+            --color-cycle: #f1c40f;
+            --color-cell-update: #e8f5e9;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input, .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls input { width: 40px; }
+        .controls textarea { width: 450px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .data-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        
+        .bfs-table { width: 100%; border-collapse: collapse; }
+        .bfs-table th, .bfs-table td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 0.9em; transition: background-color 0.3s ease; }
+        .bfs-table th { background-color: #f2f2f2; }
+        .bfs-table td.updated { background-color: var(--color-cell-update); }
+        
+        #shortest_cycle_val { font-size: 2.5em; font-weight: bold; color: var(--color-success); text-align: center; transition: transform 0.2s ease; }
+        #shortest_cycle_val.updated { transform: scale(1.3); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2.5em; font-weight: bold; margin: 0; }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Shortest Cycle in a Graph</h1>
+            <div class="controls">
+                <label>N:</label><input id="n_input" value="7">
+                <label>Edges:</label><textarea id="edges_input">[[0,1],[1,2],[2,0],[3,4],[4,5],[5,6],[6,3]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (BFS from each node)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter graph and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Graph</h2>
+            <div id="graph_container"></div>
+        </div>
+
+        <div class="right-column">
+            <div class="panel">
+                <h2>Shortest Cycle Found</h2>
+                <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+                    <div id="shortest_cycle_val">∞</div>
+                </div>
+            </div>
+             <div class="panel">
+                <h2>BFS Queue</h2>
+                <div id="queue_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>BFS State (from current start)</h2>
+                <div class="data-container">
+                    <table class="bfs-table" id="bfs_table"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Shortest Cycle Length</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let nInput, edgesInput, startButton, nextStepButton, codeContainer, actionDisplay, graphContainer,
+    shortestCycleVal, queueContainer, bfsTable,
+    resultModal, finalResultText, modalCloseBtn;
+let sim;
+
+class ShortestCycleAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        if (sim) sim.stop();
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, graphContainer, queueContainer, bfsTable].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter graph and click \'Start\'.';
+        shortestCycleVal.textContent = '∞';
+    }
+    start() {
+        this.reset();
+        try {
+            const n = parseInt(nInput.value);
+            const edges = JSON.parse(edgesInput.value.trim().replace(/'/g, '"'));
+            if (isNaN(n) || !Array.isArray(edges)) throw new Error("Invalid input format.");
+
+            this.initUI();
+            animationSteps = this.generateSteps(n, edges);
+            
+            const graphData = {
+                nodes: Array.from({ length: n }, (_, i) => ({ id: i })),
+                edges: edges.map(([u, v]) => ({ source: u, target: v }))
+            };
+            sim = new ForceGraph(graphContainer, graphData);
+            
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            
+            sim.start();
+            simulationRunning = true;
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid number for N and a 2D array for Edges.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function shortestCycle(n, edges):",
+            "  graph = buildAdjacencyList(edges)",
+            "  minCycle = ∞",
+            "  for start from 0 to n-1:",
+            "    dist = array of size n, filled with -1",
+            "    parent = array of size n, filled with -1",
+            "    queue = new Queue()",
+            "    dist[start] = 0",
+            "    queue.add(start)",
+            "    while !queue.isEmpty():",
+            "      node = queue.poll()",
+            "      for neighbor in graph[node]:",
+            "        if dist[neighbor] == -1:",
+            "          dist[neighbor] = dist[node] + 1",
+            "          parent[neighbor] = node",
+            "          queue.add(neighbor)",
+            "        else if parent[node] != neighbor:",
+            "          cycleLen = dist[node] + dist[neighbor] + 1",
+            "          minCycle = min(minCycle, cycleLen)",
+            "  return minCycle == ∞ ? -1 : minCycle"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(n, edges) {
+        const graph = Array.from({ length: n }, () => []);
+        for (const [u, v] of edges) {
+            graph[u].push(v);
+            graph[v].push(u);
+        }
+
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", shortestCycle: Infinity, bfsStartNode: null,
+            dist: [], parent: [], queue: [],
+            highlights: { start: null, current: null, neighbor: null, cyclePath: null },
+            finalResult: null
+        };
+
+        save({ ...state, line: 1, msg: "Building adjacency list from edges." });
+        save({ ...state, line: 2, msg: "Initializing minCycle to infinity." });
+
+        let minCycle = Infinity;
+
+        for (let start = 0; start < n; start++) {
+            state.bfsStartNode = start;
+            state.highlights = { start: start, current: null, neighbor: null, cyclePath: null };
+            save({ ...state, line: 3, msg: `Starting new BFS traversal from node ${start}.` });
+            
+            const dist = Array(n).fill(-1);
+            const parent = Array(n).fill(-1);
+            const queue = [];
+
+            state.dist = [...dist]; state.parent = [...parent]; state.queue = [...queue];
+            save({ ...state, line: 4, msg: "Initializing dist array for this BFS." });
+            save({ ...state, line: 5, msg: "Initializing parent array for this BFS." });
+            
+            dist[start] = 0;
+            state.dist = [...dist];
+            save({ ...state, line: 7, msg: `Set distance to start node ${start} to 0.` });
+
+            queue.push(start);
+            state.queue = [...queue];
+            save({ ...state, line: 8, msg: `Add start node ${start} to the queue.` });
+
+            while (queue.length > 0) {
+                save({ ...state, line: 9, msg: "Loop while queue is not empty." });
+                const node = queue.shift();
+                state.queue = [...queue];
+                state.highlights.current = node;
+                save({ ...state, line: 10, msg: `Polling node ${node} from queue.` });
+
+                for (const neighbor of graph[node]) {
+                    state.highlights.neighbor = neighbor;
+                    save({ ...state, line: 11, msg: `Checking neighbor ${neighbor} of node ${node}.` });
+                    
+                    if (dist[neighbor] === -1) {
+                        save({ ...state, line: 12, msg: `Neighbor ${neighbor} is unvisited.` });
+                        dist[neighbor] = dist[node] + 1;
+                        state.dist = [...dist];
+                        save({ ...state, line: 13, msg: `Set dist[${neighbor}] to ${dist[neighbor]}.` });
+                        
+                        parent[neighbor] = node;
+                        state.parent = [...parent];
+                        save({ ...state, line: 14, msg: `Set parent[${neighbor}] to ${node}.` });
+
+                        queue.push(neighbor);
+                        state.queue = [...queue];
+                        save({ ...state, line: 15, msg: `Adding ${neighbor} to the queue.` });
+                    } else if (parent[node] !== neighbor) {
+                        save({ ...state, line: 16, msg: `Neighbor ${neighbor} is visited AND not the direct parent.` });
+                        
+                        const cycleLen = dist[node] + dist[neighbor] + 1;
+                        save({ ...state, line: 17, msg: `CYCLE FOUND! Length = dist[${node}] + dist[${neighbor}] + 1 = ${cycleLen}.` });
+                        
+                        if (cycleLen < minCycle) {
+                            minCycle = cycleLen;
+                            state.shortestCycle = minCycle;
+                            save({ ...state, line: 18, msg: `New shortest cycle found: ${minCycle}.` });
+                        }
+                        
+                        // Highlight the cycle path
+                        const path = new Set([node, neighbor]);
+                        let p1 = node;
+                        while(parent[p1] !== -1) { path.add(p1); p1 = parent[p1]; }
+                        path.add(p1);
+                        let p2 = neighbor;
+                        while(parent[p2] !== -1) { path.add(p2); p2 = parent[p2]; }
+                        path.add(p2);
+                        state.highlights.cyclePath = [...path];
+                        save({ ...state, msg: `Highlighting cycle of length ${cycleLen}.` });
+                        state.highlights.cyclePath = null;
+                    }
+                }
+                 state.highlights.neighbor = null;
+            }
+             state.highlights.current = null;
+        }
+
+        state.finalResult = minCycle === Infinity ? -1 : minCycle;
+        save({ ...state, line: 19, msg: `All traversals complete. Final result is ${state.finalResult}.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        const shortestEl = document.getElementById('shortest_cycle_val');
+        const newShortest = state.shortestCycle === Infinity ? '∞' : state.shortestCycle;
+        if (shortestEl.textContent !== String(newShortest)) {
+            shortestEl.classList.add('updated');
+            setTimeout(() => shortestEl.classList.remove('updated'), 200);
+        }
+        shortestEl.textContent = newShortest;
+        
+        queueContainer.innerHTML = state.queue.map(n => `<div class="data-item">${n}</div>`).join('');
+        
+        let tableHTML = `<thead><tr><th>Node</th><th>Dist</th><th>Parent</th></tr></thead><tbody>`;
+        for (let i = 0; i < state.dist.length; i++) {
+            const prevDist = animationSteps[currentStepIndex-1]?.dist[i] ?? -1;
+            const updated = state.dist[i] !== -1 && prevDist === -1 ? 'updated' : '';
+            tableHTML += `<tr><td>${i}</td><td class="${updated}">${state.dist[i]}</td><td class="${updated}">${state.parent[i]}</td></tr>`;
+        }
+        bfsTable.innerHTML = tableHTML + '</tbody>';
+
+        sim.updateStyles(state.highlights);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = state.finalResult;
+            finalResultText.style.color = state.finalResult > 0 ? 'var(--color-success)' : 'var(--color-text-dark)';
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class ForceGraph {
+    constructor(container, graphData) {
+        this.container = container;
+        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        this.svg.setAttribute('width', '100%'); this.svg.setAttribute('height', '100%');
+        this.container.innerHTML = ''; this.container.appendChild(this.svg);
+        this.width = this.container.clientWidth; this.height = this.container.clientHeight;
+        this.animationFrameId = null; this.styles = {};
+        this.nodes = graphData.nodes.map(d => ({ ...d, x: this.width/2 + (Math.random()-0.5)*50, y: this.height/2 + (Math.random()-0.5)*50, vx: 0, vy: 0 }));
+        this.edges = graphData.edges.map(d => ({ ...d }));
+    }
+
+    tick() {
+        for (let i = 0; i < this.nodes.length; i++) {
+            for (let j = i + 1; j < this.nodes.length; j++) {
+                const n1 = this.nodes[i], n2 = this.nodes[j];
+                const dx = n2.x - n1.x, dy = n2.y - n1.y;
+                let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const force = -2000 / (dist * dist);
+                n1.vx += force * dx / dist; n1.vy += force * dy / dist;
+                n2.vx -= force * dx / dist; n2.vy -= force * dy / dist;
+            }
+        }
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const dx = target.x - source.x, dy = target.y - source.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const force = (dist - 100) * 0.01;
+            source.vx += force * dx / dist; source.vy += force * dy / dist;
+            target.vx -= force * dx / dist; target.vy -= force * dy / dist;
+        });
+        this.nodes.forEach(n => {
+            n.vx *= 0.95; n.vy *= 0.95;
+            n.x += n.vx; n.y += n.vy;
+            n.x = Math.max(30, Math.min(this.width - 30, n.x));
+            n.y = Math.max(30, Math.min(this.height - 30, n.y));
+        });
+        this.draw();
+        this.animationFrameId = requestAnimationFrame(() => this.tick());
+    }
+
+    updateStyles(styles) { this.styles = styles; }
+    start() { this.tick(); }
+    stop() { cancelAnimationFrame(this.animationFrameId); }
+
+    draw() {
+        this.svg.innerHTML = '';
+        const state = animationSteps[currentStepIndex] || {};
+        
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', source.x); line.setAttribute('y1', source.y);
+            line.setAttribute('x2', target.x); line.setAttribute('y2', target.y);
+            
+            const isCycleEdge = this.styles.cyclePath?.includes(e.source) && this.styles.cyclePath?.includes(e.target);
+            line.setAttribute('stroke', isCycleEdge ? 'var(--color-cycle)' : '#ccc');
+            line.setAttribute('stroke-width', isCycleEdge ? 5 : 2);
+            this.svg.appendChild(line);
+        });
+        
+        this.nodes.forEach(n => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y);
+            circle.setAttribute('r', 20);
+            
+            let color = 'var(--color-node-default)';
+            if (state.dist && state.dist[n.id] !== -1) color = 'var(--color-node-visited)';
+            if (n.id === this.styles.start) color = 'var(--color-bfs-start)';
+            if (n.id === this.styles.neighbor) color = 'var(--color-node-neighbor)';
+            if (n.id === this.styles.current) color = 'var(--color-node-current)';
+            if (this.styles.cyclePath?.includes(n.id)) color = 'var(--color-cycle)';
+
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            this.svg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', n.x); text.setAttribute('y', n.y);
+            text.setAttribute('dy', '0.3em'); text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'white'); text.setAttribute('font-weight', 'bold');
+            text.textContent = n.id;
+            this.svg.appendChild(text);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    nInput = document.getElementById('n_input');
+    edgesInput = document.getElementById('edges_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    graphContainer = document.getElementById('graph_container');
+    shortestCycleVal = document.getElementById('shortest_cycle_val');
+    queueContainer = document.getElementById('queue_container');
+    bfsTable = document.getElementById('bfs_table');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new ShortestCycleAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

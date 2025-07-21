@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Cycle in a Graph Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-node-default: #bdc3c7;
+            --color-node-visited: #7f8c8d;
+            --color-node-path: #8e44ad;
+            --color-node-current: #d35400;
+            --color-node-start: #27ae60;
+            --color-cycle: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .data-item { padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        .visited-item { background: #dde0e3; border-color: #b0b6bc; }
+        .map-table { width: 100%; border-collapse: collapse; }
+        .map-table th, .map-table td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 0.9em; }
+        .map-table th { background-color: #f2f2f2; }
+        
+        #longest_cycle_val { font-size: 2.5em; font-weight: bold; color: var(--color-success); text-align: center; transition: transform 0.2s ease; }
+        #longest_cycle_val.updated { transform: scale(1.3); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2.5em; font-weight: bold; margin: 0; }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Longest Cycle in a Graph</h1>
+            <div class="controls">
+                <label>Edges:</label><textarea id="edges_input">[3,3,4,2,3]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter graph and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Graph</h2>
+            <div id="graph_container"></div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Longest Cycle Found</h2>
+                <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+                    <div id="longest_cycle_val">-1</div>
+                </div>
+            </div>
+             <div class="panel">
+                <h2>Current Path Map</h2>
+                <div id="path_map_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Globally Visited Nodes</h2>
+                <div id="visited_nodes_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Longest Cycle</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let edgesInput, startButton, nextStepButton, codeContainer, actionDisplay, graphContainer,
+    longestCycleVal, pathMapContainer, visitedNodesContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let sim;
+
+class LongestCycleAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        if (sim) sim.stop();
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, graphContainer, pathMapContainer, visitedNodesContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter graph and click \'Start\'.';
+        longestCycleVal.textContent = '-1';
+    }
+    start() {
+        this.reset();
+        try {
+            const edges = JSON.parse(edgesInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(edges)) throw new Error("Invalid input format.");
+
+            this.initUI();
+            animationSteps = this.generateSteps(edges);
+            
+            const n = edges.length;
+            const graphData = {
+                nodes: Array.from({ length: n }, (_, i) => ({ id: i })),
+                edges: edges.map((v, u) => (v !== -1 ? { source: u, target: v } : null)).filter(e => e)
+            };
+            sim = new ForceGraph(graphContainer, graphData);
+            
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            
+            sim.start();
+            simulationRunning = true;
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array for Edges, e.g., [1,2,0].");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function longestCycle(edges):",
+            "  longest_cycle = -1",
+            "  visited = new Set()",
+            "  for i from 0 to n-1:",
+            "    if i in visited: continue",
+            "    path_map = new Map()",
+            "    curr = i, dist = 0",
+            "    while curr != -1 and curr not in visited:",
+            "      visited.add(curr)",
+            "      path_map.put(curr, dist++)",
+            "      curr = edges[curr]",
+            "    if curr != -1 and path_map.has(curr):",
+            "      cycle_len = dist - path_map.get(curr)",
+            "      longest_cycle = max(longest_cycle, cycle_len)",
+            "  return longest_cycle"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(edges) {
+        const n = edges.length;
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", longestCycle: -1, visited: [], pathMap: {},
+            highlights: { start: null, current: null, edge: null, path: [], cycle: [] },
+            finalResult: null
+        };
+
+        save({ ...state, line: 1, msg: "Initialize longest_cycle to -1." });
+        const visited = new Set();
+        save({ ...state, line: 2, msg: "Initialize a global set for visited nodes." });
+
+        for (let i = 0; i < n; i++) {
+            state.highlights.start = i;
+            save({ ...state, line: 3, msg: `Checking starting node ${i}.` });
+
+            if (visited.has(i)) {
+                save({ ...state, line: 4, msg: `Node ${i} was already visited. Skipping.` });
+                continue;
+            }
+
+            const pathMap = new Map();
+            state.pathMap = {};
+            save({ ...state, line: 5, msg: "Starting new traversal. Creating a temporary path map." });
+
+            let curr = i;
+            let dist = 0;
+            save({ ...state, line: 6, msg: `Starting path traversal from node ${i}.` });
+
+            while (curr !== -1 && !visited.has(curr)) {
+                save({ ...state, line: 7, msg: `Is ${curr} valid and not globally visited? Yes.` });
+                
+                visited.add(curr);
+                state.visited = [...visited];
+                save({ ...state, line: 8, msg: `Adding ${curr} to global visited set.` });
+
+                pathMap.set(curr, dist);
+                state.pathMap = Object.fromEntries(pathMap);
+                state.highlights.path = [...pathMap.keys()];
+                save({ ...state, line: 9, msg: `Adding (${curr} -> dist ${dist}) to current path map.` });
+
+                const next = edges[curr];
+                state.highlights.current = curr;
+                state.highlights.edge = { u: curr, v: next };
+                save({ ...state, line: 10, msg: `Moving from ${curr} to ${next}.` });
+                curr = next;
+                dist++;
+            }
+            state.highlights.edge = null;
+            state.highlights.current = curr;
+            save({ ...state, line: 7, msg: `Path ended. Is ${curr} valid and in the current path?` });
+
+            if (curr !== -1 && pathMap.has(curr)) {
+                save({ ...state, line: 11, msg: `Yes! Cycle detected at node ${curr}.` });
+                const cycleLen = dist - pathMap.get(curr);
+                save({ ...state, line: 12, msg: `Cycle length = ${dist} - ${pathMap.get(curr)} = ${cycleLen}.` });
+                
+                if (cycleLen > state.longestCycle) {
+                    state.longestCycle = cycleLen;
+                    save({ ...state, line: 13, msg: `New longest cycle found: ${cycleLen}.` });
+                }
+
+                // Highlight the cycle
+                let cycleNode = curr;
+                const cycle = [];
+                for(let k=0; k<cycleLen; k++) {
+                    cycle.push(cycleNode);
+                    cycleNode = edges[cycleNode];
+                }
+                state.highlights.cycle = cycle;
+                save({ ...state, msg: `Cycle of length ${cycleLen} found.` });
+            }
+            state.highlights = { start: null, current: null, edge: null, path: [], cycle: [] };
+        }
+        
+        state.finalResult = state.longestCycle;
+        save({ ...state, line: 14, msg: `Finished all nodes. Final result is ${state.longestCycle}.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        const longestEl = document.getElementById('longest_cycle_val');
+        if (longestEl.textContent !== String(state.longestCycle)) {
+            longestEl.classList.add('updated');
+            setTimeout(() => longestEl.classList.remove('updated'), 200);
+        }
+        longestEl.textContent = state.longestCycle;
+        
+        visitedNodesContainer.innerHTML = state.visited.map(n => `<div class="data-item visited-item">${n}</div>`).join('');
+        let mapHtml = '<table class="map-table"><tr><th>Node</th><th>Dist</th></tr>';
+        for (const key in state.pathMap) {
+            mapHtml += `<tr><td>${key}</td><td>${state.pathMap[key]}</td></tr>`;
+        }
+        pathMapContainer.innerHTML = mapHtml + '</table>';
+
+        sim.updateStyles(state.highlights);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = state.finalResult;
+            finalResultText.style.color = state.finalResult > 0 ? 'var(--color-success)' : 'var(--color-text-dark)';
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class ForceGraph {
+    constructor(container, graphData) {
+        this.container = container;
+        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        this.svg.setAttribute('width', '100%'); this.svg.setAttribute('height', '100%');
+        this.container.innerHTML = ''; this.container.appendChild(this.svg);
+        this.width = this.container.clientWidth; this.height = this.container.clientHeight;
+        this.animationFrameId = null; this.styles = {};
+        this.nodes = graphData.nodes.map(d => ({ ...d, x: this.width/2 + (Math.random()-0.5)*50, y: this.height/2 + (Math.random()-0.5)*50, vx: 0, vy: 0 }));
+        this.edges = graphData.edges.map(d => ({ ...d }));
+    }
+
+    tick() {
+        for (let i = 0; i < this.nodes.length; i++) {
+            for (let j = i + 1; j < this.nodes.length; j++) {
+                const n1 = this.nodes[i], n2 = this.nodes[j];
+                const dx = n2.x - n1.x, dy = n2.y - n1.y;
+                let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const force = -1500 / (dist * dist);
+                n1.vx += force * dx / dist; n1.vy += force * dy / dist;
+                n2.vx -= force * dx / dist; n2.vy -= force * dy / dist;
+            }
+        }
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const dx = target.x - source.x, dy = target.y - source.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const force = (dist - 100) * 0.01;
+            source.vx += force * dx / dist; source.vy += force * dy / dist;
+            target.vx -= force * dx / dist; target.vy -= force * dy / dist;
+        });
+        this.nodes.forEach(n => {
+            n.vx *= 0.95; n.vy *= 0.95;
+            n.x += n.vx; n.y += n.vy;
+            n.x = Math.max(30, Math.min(this.width - 30, n.x));
+            n.y = Math.max(30, Math.min(this.height - 30, n.y));
+        });
+        this.draw();
+        this.animationFrameId = requestAnimationFrame(() => this.tick());
+    }
+
+    updateStyles(styles) { this.styles = styles; }
+    start() { this.tick(); }
+    stop() { cancelAnimationFrame(this.animationFrameId); }
+
+    draw() {
+        this.svg.innerHTML = '';
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead'); marker.setAttribute('viewBox', '-0 -5 10 10');
+        marker.setAttribute('refX', 28); marker.setAttribute('refY', 0);
+        marker.setAttribute('orient', 'auto'); marker.setAttribute('markerWidth', 6);
+        marker.setAttribute('markerHeight', 6);
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0,-5 L 10 ,0 L 0,5');
+        marker.appendChild(path); defs.appendChild(marker); this.svg.appendChild(defs);
+
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', source.x); line.setAttribute('y1', source.y);
+            line.setAttribute('x2', target.x); line.setAttribute('y2', target.y);
+            
+            const isCycleEdge = this.styles.cycle?.includes(e.source) && this.styles.cycle?.includes(e.target);
+            const isPathEdge = this.styles.path?.includes(e.source);
+            const h_edge = this.styles.edge;
+            const isCurrentEdge = h_edge && h_edge.u === e.source && h_edge.v === e.target;
+            
+            let color = '#ccc', width = 2;
+            path.setAttribute('fill', '#999');
+            if(isPathEdge) { color = 'var(--color-node-path)'; width = 3; path.setAttribute('fill', color); }
+            if(isCurrentEdge) { color = 'var(--color-node-current)'; width = 4; path.setAttribute('fill', color); }
+            if(isCycleEdge) { color = 'var(--color-cycle)'; width = 5; path.setAttribute('fill', color); }
+            
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', width);
+            line.setAttribute('marker-end', 'url(#arrowhead)');
+            this.svg.appendChild(line);
+        });
+
+        this.nodes.forEach(n => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y);
+            circle.setAttribute('r', 20);
+            
+            let color = 'var(--color-node-default)';
+            if (this.styles?.visited?.includes(n.id)) color = 'var(--color-node-visited)';
+            if (this.styles?.path?.includes(n.id)) color = 'var(--color-node-path)';
+            if (this.styles?.start === n.id) color = 'var(--color-node-start)';
+            if (this.styles?.current === n.id) color = 'var(--color-node-current)';
+            if (this.styles?.cycle?.includes(n.id)) color = 'var(--color-cycle)';
+            
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            this.svg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', n.x); text.setAttribute('y', n.y);
+            text.setAttribute('dy', '0.3em'); text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'white'); text.setAttribute('font-weight', 'bold');
+            text.textContent = n.id;
+            this.svg.appendChild(text);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    edgesInput = document.getElementById('edges_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    graphContainer = document.getElementById('graph_container');
+    longestCycleVal = document.getElementById('longest_cycle_val');
+    pathMapContainer = document.getElementById('path_map_container');
+    visitedNodesContainer = document.getElementById('visited_nodes_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new LongestCycleAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paths in Maze That Lead to Same Room Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🗺️ Paths in Maze That Lead to Same Room – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Paths in Maze That Lead to Same Room</b> problem (LeetCode 2077) asks you to find the number of pairs of different paths that start from room 1 and end at the same room in a maze. Each path must follow the given corridors, and two paths are different if they pass through different rooms or pass through the same rooms in a different order.
+        </p>
+
+        <h2>🎯 Solution Pattern (Graph + Path Counting)</h2>
+        <pre><code>class Solution {
+    public int numberOfPaths(int n, int[][] corridors) {
+        // Build adjacency list
+        Map&lt;Integer, Set&lt;Integer&gt;&gt; graph = new HashMap&lt;&gt;();
+        for (int i = 1; i <= n; i++) {
+            graph.put(i, new HashSet&lt;&gt;());
+        }
+        
+        // Add edges (undirected)
+        for (int[] corridor : corridors) {
+            graph.get(corridor[0]).add(corridor[1]);
+            graph.get(corridor[1]).add(corridor[0]);
+        }
+        
+        int count = 0;
+        // Check each pair of neighbors
+        for (int i = 1; i <= n; i++) {
+            for (int neighbor1 : graph.get(i)) {
+                for (int neighbor2 : graph.get(i)) {
+                    // Ensure we're counting unique paths
+                    if (neighbor1 < neighbor2 && 
+                        graph.get(neighbor1).contains(neighbor2)) {
+                        count++;
+                    }
+                }
+            }
+        }
+        
+        // Each cycle is counted three times
+        return count / 3;
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/paths_in_maze_that_lead_to_same_room_animation.html'">▶️ View Animation</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding cycles in undirected graphs</li>
+            <li>Path analysis in maze problems</li>
+            <li>Network topology analysis</li>
+            <li>Circuit path detection</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build an undirected graph using adjacency list</li>
+            <li>For each room i, look at pairs of its neighbors</li>
+            <li>If two neighbors are also connected, we found a cycle</li>
+            <li>Count cycles but avoid duplicates by using ordering</li>
+            <li>Divide final count by 3 (each cycle counted thrice)</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>No cycles in the maze</li>
+            <li>Multiple cycles sharing edges</li>
+            <li>Minimum maze size (n ≥ 3)</li>
+            <li>Single corridor</li>
+            <li>Fully connected rooms</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: n = 4, corridors = [[1,2],[1,3],[2,3],[2,4],[3,4]]
+Output: 2
+Explanation:
+- Path 1: 1 → 2 → 3
+- Path 2: 1 → 3 → 2
+Both end in room 3
+
+Input: n = 3, corridors = [[1,2],[2,3],[3,1]]
+Output: 1
+Explanation: All paths end in the same room.</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Use Set for efficient neighbor lookup</li>
+            <li>Count each cycle only once using ordered comparisons</li>
+            <li>Remember to handle undirected edges (add both directions)</li>
+            <li>Consider using boolean matrix for dense graphs</li>
+            <li>Optimize by storing neighbor relationships</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="redundant_connection_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        684. Redundant Connection
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="detect_cycles_in_2d_grid_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1559. Detect Cycles in 2D Grid
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

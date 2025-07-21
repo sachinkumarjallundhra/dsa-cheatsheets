@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconstruct Itinerary Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>✈️ Reconstruct Itinerary – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Reconstruct Itinerary</b> problem (LeetCode 332) asks you to find the itinerary that uses all given airline tickets exactly once and starts at "JFK". If multiple valid itineraries exist, return the lexicographically smallest one.
+        </p>
+
+        <h2>🎯 Solution Pattern (Hierholzer’s Algorithm + DFS)</h2>
+        <pre><code>class Solution {
+    public List&lt;String&gt; findItinerary(List&lt;List&lt;String&gt;&gt; tickets) {
+        Map&lt;String, PriorityQueue&lt;String&gt;&gt; graph = new HashMap&lt;&gt;();
+        for (List&lt;String&gt; ticket : tickets) {
+            graph.computeIfAbsent(ticket.get(0), k -> new PriorityQueue&lt;&gt;()).offer(ticket.get(1));
+        }
+        LinkedList&lt;String&gt; result = new LinkedList&lt;&gt;();
+        dfs("JFK", graph, result);
+        return result;
+    }
+    private void dfs(String airport, Map&lt;String, PriorityQueue&lt;String&gt;&gt; graph, LinkedList&lt;String&gt; result) {
+        PriorityQueue&lt;String&gt; dests = graph.get(airport);
+        while (dests != null && !dests.isEmpty()) {
+            dfs(dests.poll(), graph, result);
+        }
+        result.addFirst(airport);
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/reconstruct_itinerary_animation.html'">▶️ View Animation</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Travel planning and route reconstruction</li>
+            <li>Eulerian path finding in directed graphs</li>
+            <li>Lexicographical order traversal</li>
+            <li>Ticket usage optimization</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build a graph with each airport as a node and destinations as a min-heap (PriorityQueue)</li>
+            <li>Start DFS from "JFK"</li>
+            <li>At each airport, recursively visit the smallest destination</li>
+            <li>Add airports to the itinerary in post-order (addFirst)</li>
+            <li>Return the constructed itinerary</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Multiple tickets between same airports</li>
+            <li>Disconnected airports</li>
+            <li>Cycles in the itinerary</li>
+            <li>Lexicographical tie-breaking</li>
+            <li>Single ticket input</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: tickets = [["MUC","LHR"],["JFK","MUC"],["SFO","SJC"],["LHR","SFO"]]
+Output: ["JFK","MUC","LHR","SFO","SJC"]
+
+Input: tickets = [["JFK","SFO"],["JFK","ATL"],["SFO","ATL"],["ATL","JFK"],["ATL","SFO"]]
+Output: ["JFK","ATL","JFK","SFO","ATL","SFO"]</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Use PriorityQueue for lexicographical order</li>
+            <li>DFS post-order ensures correct itinerary construction</li>
+            <li>Always add airports to the front of the result list</li>
+            <li>Test with cycles and multiple tickets</li>
+            <li>Check for disconnected airports</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="alien_dictionary_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        269. Alien Dictionary
+                        <span class="badge badge-hard">Hard</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="course_schedule_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        207. Course Schedule
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul

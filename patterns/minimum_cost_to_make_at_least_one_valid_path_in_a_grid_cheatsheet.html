@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimum Cost to Make at Least One Valid Path in a Grid Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🟩 Minimum Cost to Make at Least One Valid Path in a Grid – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Minimum Cost to Make at Least One Valid Path in a Grid</b> problem (LeetCode 1368) asks you to find the minimum cost to modify a grid so that there is at least one valid path from the top-left to the bottom-right cell. Each cell has a direction, and you can change the direction at a cost of 1.
+        </p>
+
+        <h2>🎯 Solution Pattern (0-1 BFS / Dijkstra’s Algorithm)</h2>
+        <pre><code>class Solution {
+    private static final int[][] DIRS = {{0,1},{0,-1},{1,0},{-1,0}};
+    public int minCost(int[][] grid) {
+        int m = grid.length, n = grid[0].length;
+        int[][] cost = new int[m][n];
+        for (int[] row : cost) Arrays.fill(row, Integer.MAX_VALUE);
+        Deque&lt;int[]&gt; deque = new ArrayDeque&lt;&gt;();
+        cost[0][0] = 0;
+        deque.offerFirst(new int[]{0, 0});
+        while (!deque.isEmpty()) {
+            int[] curr = deque.pollFirst();
+            int x = curr[0], y = curr[1];
+            for (int d = 0; d < 4; d++) {
+                int nx = x + DIRS[d][0], ny = y + DIRS[d][1];
+                if (nx >= 0 && nx < m && ny >= 0 && ny < n) {
+                    int newCost = cost[x][y] + (grid[x][y] == d + 1 ? 0 : 1);
+                    if (newCost < cost[nx][ny]) {
+                        cost[nx][ny] = newCost;
+                        if (grid[x][y] == d + 1)
+                            deque.offerFirst(new int[]{nx, ny});
+                        else
+                            deque.offerLast(new int[]{nx, ny});
+                    }
+                }
+            }
+        }
+        return cost[m-1][n-1];
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/minimum_cost_to_make_at_least_one_valid_path_in_a_grid_animation.html'">▶️ View Animation</button>
+<h2>🎥 Video Explanation</h2>
+<p>
+    <a href="https://www.youtube.com/watch?v=3DwA6AsQvDI&ab_channel=NeetCodeIO" target="_blank" rel="noopener noreferrer">
+        ▶️ Watch on YouTube: Minimum Cost to Make at Least One Valid Path in a Grid (NeetCodeIO)
+    </a>
+</p>
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Grid pathfinding with modification cost</li>
+            <li>Navigation with direction constraints</li>
+            <li>Minimum cost transformation problems</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize cost matrix with infinity</li>
+            <li>Use 0-1 BFS (deque) to process cells</li>
+            <li>Move in the direction of the cell for zero cost, else pay 1</li>
+            <li>Update cost and add to deque (front for zero cost, back for cost 1)</li>
+            <li>Continue until bottom-right cell is reached</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Single cell grid</li>
+            <li>All directions already valid</li>
+            <li>No valid path unless changes are made</li>
+            <li>Large grids</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: grid = [[1,1,3],[3,2,2],[1,1,4]]
+Output: 1
+Explanation: Change grid[0][2] from 3 to 2 to make a valid path.
+
+Input: grid = [[1,2],[4,3]]
+Output: 2
+Explanation: Minimum 2 changes needed for a valid path.</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Use 0-1 BFS for optimal performance (O(m*n))</li>
+            <li>Deque allows pushing zero-cost moves to front</li>
+            <li>Direction mapping: 1=right, 2=left, 3=down, 4=up</li>
+            <li>Test with grids requiring multiple changes</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="shortest_path_in_binary_matrix_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1091. Shortest Path in Binary Matrix
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="cheapest_flights_within_k_stops_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        787. Cheapest Flights Within K Stops
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>

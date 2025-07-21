@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimum Cost Path in a Grid Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-cell-default: #ecf0f1;
+            --color-cell-current: #9b59b6;
+            --color-cell-neighbor: #f39c12;
+            --color-cell-path: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(350px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; align-items: center; justify-content: center;}
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #grid_container { display: grid; gap: 2px; padding: 10px; background-color: #fafafa; border-radius: 5px; position: relative; }
+        .grid-cell { width: 45px; height: 45px; background-color: var(--color-cell-default); color: var(--color-text-dark); transition: all 0.3s ease; position: relative; border: 1px solid #ccc; }
+        .grid-cell .arrow { font-size: 1.5em; line-height: 1; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.5; }
+        .grid-cell .cost { font-size: 0.8em; position: absolute; bottom: 2px; right: 3px; font-weight: bold; padding: 1px 3px; border-radius: 3px; }
+        
+        .grid-cell.current { background-color: var(--color-cell-current); }
+        .grid-cell.neighbor { background-color: var(--color-cell-neighbor); }
+        .grid-cell .cost.updated { animation: flash-green 0.7s; }
+        .grid-cell.final-path { background-color: var(--color-cell-path); }
+        @keyframes flash-green { 
+            50% { background-color: var(--color-success); color: white; transform: scale(1.2); }
+        }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .deque-item { background: var(--color-danger); color: white; border: 1px solid #c0392b; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        .deque-item.cost-zero { background: var(--color-success); border-color: #27ae60;}
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2.5em; font-weight: bold; margin: 0; color: var(--color-success); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Minimum Cost to Make a Valid Path in a Grid</h1>
+            <div class="controls">
+                <label>Grid:</label><textarea id="grid_input">[[1,1,1,1],[2,2,2,2],[1,1,1,1],[2,2,2,2]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (0-1 BFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter grid and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Grid</h2>
+            <div id="grid_container"></div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Deque (Front ... Back)</h2>
+                <div id="deque_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Minimum Cost</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let gridInput, startButton, nextStepButton, codeContainer, actionDisplay, gridContainer, dequeContainer,
+    resultModal, finalResultText, modalCloseBtn;
+
+class GridCostAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, gridContainer, dequeContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter grid and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const gridStr = gridInput.value.trim().replace(/'/g, '"');
+            const grid = JSON.parse(gridStr);
+            if (!Array.isArray(grid) || grid.length === 0 || !Array.isArray(grid[0])) {
+                throw new Error("Invalid grid format");
+            }
+
+            this.initUI(grid);
+            animationSteps = this.generateSteps(grid);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid 2D array for the Grid.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI(grid) {
+        const code = [
+            "function minCost(grid):",
+            "  cost = new int[m][n] filled with ∞",
+            "  deque = new Deque()",
+            "  cost[0][0] = 0",
+            "  deque.offerFirst({0, 0})",
+            "  while !deque.isEmpty():",
+            "    x, y = deque.pollFirst()",
+            "    for each direction d:",
+            "      nx, ny = get_neighbor(x, y, d)",
+            "      if is_in_bounds(nx, ny):",
+            "        moveCost = (grid[x][y] == d+1) ? 0 : 1",
+            "        newCost = cost[x][y] + moveCost",
+            "        if newCost < cost[nx][ny]:",
+            "          cost[nx][ny] = newCost",
+            "          if moveCost == 0:",
+            "            deque.offerFirst({nx, ny})",
+            "          else:",
+            "            deque.offerLast({nx, ny})",
+            "  return cost[m-1][n-1]"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+        
+        const m = grid.length, n = grid[0].length;
+        gridContainer.style.gridTemplateColumns = `repeat(${n}, 50px)`;
+        const arrows = ['','→','←','↓','↑'];
+        for (let r = 0; r < m; r++) {
+            for (let c = 0; c < n; c++) {
+                const cell = document.createElement('div');
+                cell.id = `cell-${r}-${c}`;
+                cell.className = 'grid-cell';
+                cell.innerHTML = `<div class="arrow">${arrows[grid[r][c]]}</div><div class="cost" id="cost-${r}-${c}">∞</div>`;
+                gridContainer.appendChild(cell);
+            }
+        }
+    }
+
+    generateSteps(grid) {
+        const DIRS = [[0,1],[0,-1],[1,0],[-1,0]];
+        const m = grid.length, n = grid[0].length;
+        const steps = [];
+        
+        // Use JSON.stringify for deep cloning states
+        const save = (state) => steps.push(JSON.parse(JSON.stringify(state)));
+        
+        let state = {
+            line: null, msg: "", cost: [], deque: [],
+            highlights: { current: null, neighbor: null, updated: null, path: [] },
+            finalResult: null
+        };
+
+        state.cost = Array.from({ length: m }, () => Array(n).fill(Infinity));
+        save({ ...state, line: 1, msg: "Initializing cost grid with infinity." });
+
+        const deque = [];
+        state.cost[0][0] = 0;
+        save({ ...state, line: 3, msg: "Setting cost of starting cell (0,0) to 0." });
+        
+        deque.unshift({coords: [0,0], moveCost: 0});
+        state.deque = [...deque];
+        save({ ...state, line: 4, msg: "Add starting cell (0,0) to the front of the deque." });
+        
+        while(deque.length > 0) {
+            save({ ...state, line: 5, msg: "Loop while deque is not empty." });
+            const { coords: [x, y] } = deque.shift();
+            state.deque = [...deque];
+            state.highlights = { current: [x,y], neighbor: null, updated: null, path: state.highlights.path };
+            save({ ...state, line: 6, msg: `Polling (${x},${y}) from the front of the deque.` });
+
+            for (let d = 0; d < 4; d++) {
+                const [dr, dc] = DIRS[d];
+                const nx = x + dr, ny = y + dc;
+                state.highlights.neighbor = [nx, ny];
+                save({ ...state, line: 7, msg: `Checking neighbor in direction ${d+1} -> (${nx},${ny}).` });
+                
+                if (nx >= 0 && nx < m && ny >= 0 && ny < n) {
+                    save({ ...state, line: 9, msg: `Neighbor (${nx},${ny}) is in bounds.` });
+                    const moveCost = grid[x][y] === d + 1 ? 0 : 1;
+                    save({ ...state, line: 10, msg: `Moving from (${x},${y}) in dir ${d+1} has cost ${moveCost}.` });
+
+                    const newCost = state.cost[x][y] + moveCost;
+                    save({ ...state, line: 11, msg: `New path cost to (${nx},${ny}) is ${state.cost[x][y]} + ${moveCost} = ${newCost}.` });
+
+                    save({ ...state, line: 12, msg: `Is ${newCost} < ${state.cost[nx][ny]}?` });
+                    if (newCost < state.cost[nx][ny]) {
+                        
+                        // Create a deep copy of the cost grid for this new state
+                        const newCostGrid = state.cost.map(row => [...row]);
+                        newCostGrid[nx][ny] = newCost;
+                        state.cost = newCostGrid;
+
+                        state.highlights.updated = [nx, ny];
+                        save({ ...state, line: 13, msg: `Yes. Updating cost of (${nx},${ny}) to ${newCost}.` });
+
+                        if (moveCost === 0) {
+                            deque.unshift({coords: [nx,ny], moveCost: 0});
+                            state.deque = [...deque];
+                            save({ ...state, line: 15, msg: `Cost was 0. Adding (${nx},${ny}) to the FRONT of the deque.` });
+                        } else {
+                            deque.push({coords: [nx,ny], moveCost: 1});
+                            state.deque = [...deque];
+                            save({ ...state, line: 17, msg: `Cost was 1. Adding (${nx},${ny}) to the BACK of the deque.` });
+                        }
+                        state.highlights.updated = null;
+                    }
+                }
+            }
+        }
+
+        const finalCost = state.cost[m-1][n-1];
+        state.finalResult = finalCost;
+        state.highlights.current = null;
+        state.highlights.neighbor = null;
+        save({ ...state, line: 18, msg: `Deque is empty. Final cost to reach (${m-1},${n-1}) is ${finalCost}.` });
+        
+        // Trace back the path for visualization
+        if (finalCost !== Infinity) {
+            let cx = m-1, cy = n-1;
+            const path = [];
+            while(cx !== 0 || cy !== 0) {
+                path.unshift([cx, cy]);
+                for (let d = 0; d < 4; d++) {
+                    const [dr, dc] = DIRS[d];
+                    const px = cx - dr, py = cy - dc;
+                    if (px >= 0 && px < m && py >= 0 && py < n) {
+                        const moveCost = grid[px][py] === d + 1 ? 0 : 1;
+                        if(state.cost[px][py] + moveCost === state.cost[cx][cy]) {
+                            cx = px; cy = py;
+                            break;
+                        }
+                    }
+                }
+            }
+            path.unshift([0,0]);
+            state.highlights.path = path;
+            save({ ...state, line: 18, msg: `Optimal path found with cost ${finalCost}.` });
+        }
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        dequeContainer.innerHTML = state.deque.map(item => {
+            const [r,c] = item.coords;
+            const cost = state.cost[r]?.[c] ?? '?';
+            return `<div class="deque-item ${item.moveCost === 0 ? 'cost-zero' : ''}">(${r},${c}) Cost: ${cost}</div>`;
+        }).join('');
+        
+        state.cost.forEach((row, r) => {
+            row.forEach((cost, c) => {
+                const costEl = document.getElementById(`cost-${r}-${c}`);
+                const cellEl = document.getElementById(`cell-${r}-${c}`);
+                cellEl.classList.remove('current', 'neighbor', 'final-path');
+                costEl.classList.remove('updated');
+
+                if (cost !== Infinity) {
+                    costEl.textContent = cost;
+                } else {
+                    costEl.textContent = '∞';
+                }
+            });
+        });
+        
+        const h = state.highlights;
+        if(h.current) document.getElementById(`cell-${h.current[0]}-${h.current[1]}`)?.classList.add('current');
+        if(h.neighbor) document.getElementById(`cell-${h.neighbor[0]}-${h.neighbor[1]}`)?.classList.add('neighbor');
+        if(h.updated) document.getElementById(`cost-${h.updated[0]}-${h.updated[1]}`)?.classList.add('updated');
+        if(h.path.length > 0) {
+            h.path.forEach(([r,c]) => document.getElementById(`cell-${r}-${c}`)?.classList.add('final-path'));
+        }
+
+        if (state.finalResult !== null) {
+            finalResultText.textContent = state.finalResult;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    gridInput = document.getElementById('grid_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    gridContainer = document.getElementById('grid_container');
+    dequeContainer = document.getElementById('deque_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new GridCostAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

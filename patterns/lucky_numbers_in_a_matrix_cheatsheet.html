@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Numbers in a Matrix Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🍀 Lucky Numbers in a Matrix – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Lucky Numbers in a Matrix</b> problem (LeetCode 1380) asks you to find all lucky numbers in a matrix. A lucky number is an element that is the minimum in its row and the maximum in its column.
+        </p>
+
+        <h2>🎯 Solution Pattern (Row Min & Column Max)</h2>
+        <pre><code>class Solution {
+    public List&lt;Integer&gt; luckyNumbers (int[][] matrix) {
+        List&lt;Integer&gt; result = new ArrayList&lt;&gt;();
+        int m = matrix.length, n = matrix[0].length;
+        
+        // Find min in each row
+        for (int i = 0; i < m; i++) {
+            int minVal = Integer.MAX_VALUE, colIdx = -1;
+            for (int j = 0; j < n; j++) {
+                if (matrix[i][j] < minVal) {
+                    minVal = matrix[i][j];
+                    colIdx = j;
+                }
+            }
+            // Check if minVal is the max in its column
+            boolean isMax = true;
+            for (int k = 0; k < m; k++) {
+                if (matrix[k][colIdx] > minVal) {
+                    isMax = false;
+                    break;
+                }
+            }
+            if (isMax) result.add(minVal);
+        }
+        return result;
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/lucky_numbers_in_a_matrix_animation.html'">▶️ View Animation</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Matrix analysis and filtering</li>
+            <li>Finding special elements in 2D arrays</li>
+            <li>Data selection based on row/column criteria</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>For each row, find the minimum value and its column index</li>
+            <li>Check if this value is the maximum in its column</li>
+            <li>If yes, add to result list</li>
+            <li>Return all lucky numbers found</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Multiple lucky numbers</li>
+            <li>No lucky numbers</li>
+            <li>Matrix with one row or one column</li>
+            <li>Duplicate values</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: matrix = [[3,7,8],[9,11,13],[15,16,17]]
+Output: [15]
+Explanation: 15 is the minimum in its row and the maximum in its column.
+
+Input: matrix = [[1,10,4,2],[9,3,8,7],[15,16,17,12]]
+Output: [12]
+Explanation: 12 is the minimum in its row and the maximum in its column.</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Always track both row minimum and column maximum</li>
+            <li>Use nested loops for clarity</li>
+            <li>Test with edge cases (single row/column, duplicates)</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="matrix_diagonal_sum_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Matrix Diagonal Sum
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="spiral_matrix_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Spiral Matrix
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>

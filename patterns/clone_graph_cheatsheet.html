@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clone Graph Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔄 Clone Graph – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Clone Graph</b> problem (LeetCode 133) asks you to create a deep copy of a connected undirected graph. Each node contains a value and a list of its neighbors.
+        </p>
+
+        <h2>🎯 Solution Pattern (DFS with HashMap)</h2>
+        <pre><code>class Node {
+    public int val;
+    public List&lt;Node&gt; neighbors;
+    public Node(int _val) {
+        val = _val;
+        neighbors = new ArrayList&lt;Node&gt;();
+    }
+}
+
+class Solution {
+    private HashMap&lt;Node, Node&gt; visited = new HashMap&lt;&gt;();
+    
+    public Node cloneGraph(Node node) {
+        if (node == null) return null;
+        
+        // If node was already copied
+        if (visited.containsKey(node)) {
+            return visited.get(node);
+        }
+        
+        // Create new node and mark as visited
+        Node cloneNode = new Node(node.val);
+        visited.put(node, cloneNode);
+        
+        // Recursively clone all neighbors
+        for (Node neighbor : node.neighbors) {
+            cloneNode.neighbors.add(cloneGraph(neighbor));
+        }
+        
+        return cloneNode;
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/clone_graph_animation.html'">▶️ View Animation</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Deep copying of graph structures</li>
+            <li>Backup or snapshot of network topologies</li>
+            <li>State replication in distributed systems</li>
+            <li>Game state duplication</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize a HashMap to track visited/cloned nodes</li>
+            <li>Handle base case of null input</li>
+            <li>Check if current node is already cloned</li>
+            <li>Create new node with same value</li>
+            <li>Store mapping of original to clone</li>
+            <li>Recursively clone all neighbors</li>
+            <li>Add cloned neighbors to cloned node</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty graph (null input)</li>
+            <li>Single node graph</li>
+            <li>Cyclic graphs</li>
+            <li>Disconnected components</li>
+            <li>Self-loops</li>
+            <li>Densely connected graph</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: adjList = [[2,4],[1,3],[2,4],[1,3]]
+Output: [[2,4],[1,3],[2,4],[1,3]]
+Explanation: 
+Node 1's value is 1, and it has two neighbors: Node 2 and 4
+Node 2's value is 2, and it has two neighbors: Node 1 and 3
+Node 3's value is 3, and it has two neighbors: Node 2 and 4
+Node 4's value is 4, and it has two neighbors: Node 1 and 3</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Always use HashMap to avoid infinite recursion in cycles</li>
+            <li>Consider BFS approach for very deep graphs</li>
+            <li>Remember to clone both nodes and connections</li>
+            <li>Maintain original graph structure without modifications</li>
+            <li>Test with various graph shapes (linear, star, cycle)</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="copy_list_with_random_pointer_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        138. Copy List with Random Pointer
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="clone_binary_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1485. Clone Binary Tree With Random Pointer
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clone Graph (DFS) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-neighbor: #e67e22;
+            --color-clone-new: #1abc9c;
+            --color-clone-return: #f1c40f;
+            --color-edge-new: #27ae60;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: 1.5fr 1.5fr;
+            grid-template-rows: auto 1fr auto; grid-template-areas: "header header" "main-left main-right" "footer footer";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .main-left { grid-area: main-left; }
+        .main-right { grid-area: main-right; }
+        .graph-container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+
+        .footer { grid-area: footer; display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 15px; }
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; display: flex; align-items: center; justify-content: center; }
+        
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; }
+        .stack-item.top { background-color: var(--color-node-current); color: white; border-color: var(--color-node-current); }
+        .map-table { width: 100%; border-collapse: collapse; }
+        .map-table th, .map-table td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 0.9em; }
+        .map-table th { background-color: #f2f2f2; }
+        .map-table tr.updated { background-color: #e8f5e9; }
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Clone Graph (Recursive DFS)</h1>
+            <div class="controls">
+                <label>Adjacency List:</label><textarea id="adj_list_input">[[2,4],[1,3],[2,4],[1,3]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="main-left panel">
+            <h2>Original Graph</h2>
+            <div id="graph_original_container" class="graph-container"></div>
+        </div>
+
+        <div class="main-right panel">
+            <h2>Cloned Graph (Being Built)</h2>
+            <div id="graph_cloned_container" class="graph-container"></div>
+        </div>
+
+        <div class="footer">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container" class="data-container"></div>
+            </div>
+            <div class="panel">
+                 <h2>Current Action</h2>
+                <div id="action_display">Enter graph and click 'Start'.</div>
+            </div>
+             <div class="panel data-grid">
+                <div>
+                    <h2>Visited Map</h2>
+                    <div id="visited_map_container" class="data-container"></div>
+                </div>
+                <div>
+                    <h2>Call Stack</h2>
+                    <div id="call_stack_container" class="data-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let adjListInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    graphOriginalContainer, graphClonedContainer, visitedMapContainer, callStackContainer;
+let originalSim, clonedSim;
+
+class CloneGraphAnimation {
+    constructor() {
+        this.reset();
+    }
+    reset() {
+        if (originalSim) originalSim.stop();
+        if (clonedSim) clonedSim.stop();
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, actionDisplay, graphOriginalContainer, graphClonedContainer, visitedMapContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter graph adj. list and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const adjListStr = adjListInput.value.trim().replace(/'/g, '"');
+            const adjList = JSON.parse(adjListStr);
+            if (!Array.isArray(adjList)) throw new Error("Invalid input");
+
+            this.initUI();
+            const originalGraphData = this.createGraphDataObject(adjList);
+            animationSteps = this.generateSteps(originalGraphData);
+            
+            originalSim = new ForceGraph(graphOriginalContainer, originalGraphData);
+            clonedSim = new ForceGraph(graphClonedContainer, { nodes: [], edges: [] });
+            
+            originalSim.start(this.render.bind(this));
+            clonedSim.start(this.render.bind(this));
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid 2D array for the adjacency list, e.g., [[2,4],[1,3],[2,4],[1,3]].");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    render() {
+        if (simulationRunning && animationSteps.length > 0) {
+            this.renderState(animationSteps[currentStepIndex]);
+        }
+    }
+    initUI() {
+        const code = [
+            "function cloneGraph(node):",
+            "  if (node == null) return null;",
+            "  if (visited.containsKey(node)) {",
+            "    return visited.get(node);",
+            "  }",
+            "  cloneNode = new Node(node.val);",
+            "  visited.put(node, cloneNode);",
+            "  for (neighbor in node.neighbors) {",
+            "    cloneNode.neighbors.add(",
+            "      cloneGraph(neighbor));",
+            "  }",
+            "  return cloneNode;"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+    createGraphDataObject(adjList) {
+        const nodeIds = Array.from({ length: adjList.length }, (_, i) => i + 1);
+        const nodes = nodeIds.map(id => ({ id }));
+        const edges = [];
+        adjList.forEach((neighbors, i) => {
+            const u = i + 1;
+            neighbors.forEach(v => {
+                if (u < v) edges.push({ source: u, target: v });
+            });
+        });
+        return { nodes, edges };
+    }
+    generateSteps(graph) {
+        if (!graph.nodes.length) return [];
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        const visited = new Map();
+        const callStack = [];
+        const clonedAdj = new Map();
+
+        function doClone(nodeId) {
+            let state = {
+                line: 0, msg: `Entering cloneGraph(Node ${nodeId})`, callStack: [...callStack, nodeId],
+                visited: Object.fromEntries(visited),
+                clonedAdj: Object.fromEntries(clonedAdj),
+                highlights: { original: { current: nodeId, neighbor: null }, clone: { new: null, returning: null }, newEdge: null }
+            };
+            callStack.push(nodeId);
+            save({ ...state });
+
+            state.line = 2;
+            state.msg = `Checking if Node ${nodeId} is in the visited map.`;
+            save({ ...state });
+            if (visited.has(nodeId)) {
+                state.line = 3;
+                state.msg = `Node ${nodeId} already visited. Returning its clone.`;
+                state.highlights.clone.returning = nodeId;
+                save({ ...state });
+                callStack.pop();
+                return visited.get(nodeId);
+            }
+
+            const cloneNodeId = nodeId;
+            state.line = 5;
+            state.msg = `Creating new clone for Node ${nodeId}.`;
+            state.highlights.clone.new = cloneNodeId;
+            save({ ...state });
+            
+            visited.set(nodeId, cloneNodeId);
+            clonedAdj.set(cloneNodeId, []);
+            state.line = 6;
+            state.msg = `Adding (Original ${nodeId} -> Clone ${cloneNodeId}) to visited map.`;
+            state.visited = Object.fromEntries(visited);
+            state.clonedAdj = Object.fromEntries(clonedAdj);
+            save({ ...state });
+            state.highlights.clone.new = null;
+
+            const originalNode = graph.nodes.find(n => n.id === nodeId);
+            const neighbors = graph.edges.filter(e => e.source === nodeId || e.target === nodeId)
+                                         .map(e => e.source === nodeId ? e.target : e.source);
+
+            for (const neighborId of neighbors) {
+                state.line = 7;
+                state.msg = `Looping to neighbor ${neighborId} of original Node ${nodeId}.`;
+                state.highlights.original.neighbor = neighborId;
+                save({ ...state });
+                
+                state.line = 9;
+                state.msg = `Making recursive call: cloneGraph(Node ${neighborId}).`;
+                save({ ...state });
+
+                const clonedNeighborId = doClone(neighborId);
+                
+                clonedAdj.get(cloneNodeId).push(clonedNeighborId);
+                state.line = 8;
+                state.msg = `Returned from call. Adding edge (${cloneNodeId} -> ${clonedNeighborId}) to cloned graph.`;
+                state.clonedAdj = Object.fromEntries(clonedAdj);
+                state.highlights.newEdge = [cloneNodeId, clonedNeighborId].sort((a,b)=>a-b);
+                state.highlights.clone.returning = null;
+                save({ ...state });
+                state.highlights.newEdge = null;
+            }
+            state.highlights.original.neighbor = null;
+
+            state.line = 11;
+            state.msg = `Finished all neighbors of Node ${nodeId}. Returning its clone.`;
+            state.highlights.clone.returning = nodeId;
+            save({ ...state });
+            callStack.pop();
+            return cloneNodeId;
+        }
+
+        doClone(graph.nodes[0].id);
+        steps[steps.length - 1].msg = "Cloning process complete!";
+        steps[steps.length - 1].callStack = [];
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map((nodeId, i) => `<div class="stack-item ${i === 0 ? 'top' : ''}">cloneGraph(${nodeId})</div>`).join('');
+        
+        let mapHtml = '<table class="map-table"><tr><th>Original</th><th>Clone</th></tr>';
+        for (const key in state.visited) {
+            const row = document.createElement('tr');
+            if (state.highlights.clone.new && parseInt(key) === state.highlights.clone.new) {
+                row.classList.add('updated');
+            }
+            row.innerHTML = `<td>Node ${key}</td><td>Node ${state.visited[key]}</td>`;
+            mapHtml += row.outerHTML;
+        }
+        visitedMapContainer.innerHTML = mapHtml + '</table>';
+
+        const clonedNodes = Object.keys(state.clonedAdj).map(id => ({ id: parseInt(id) }));
+        const clonedEdges = [];
+        for (const sourceId in state.clonedAdj) {
+            state.clonedAdj[sourceId].forEach(targetId => {
+                if (parseInt(sourceId) < targetId) {
+                    clonedEdges.push({ source: parseInt(sourceId), target: targetId });
+                }
+            });
+        }
+        clonedSim.updateData({ nodes: clonedNodes, edges: clonedEdges });
+        
+        originalSim.updateStyles(state.highlights.original);
+        clonedSim.updateStyles({ ...state.highlights.clone, newEdge: state.highlights.newEdge });
+    }
+}
+
+class ForceGraph {
+    constructor(container, graphData) {
+        this.container = container;
+        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        this.svg.setAttribute('width', '100%'); this.svg.setAttribute('height', '100%');
+        this.container.innerHTML = '';
+        this.container.appendChild(this.svg);
+        this.width = this.container.clientWidth;
+        this.height = this.container.clientHeight;
+        this.animationFrameId = null;
+        this.styles = {};
+        this.updateData(graphData);
+    }
+
+    updateData(graphData) {
+        const nodeMap = new Map(this.nodes?.map(n => [n.id, n]));
+        this.nodes = graphData.nodes.map(d => {
+            const existing = nodeMap.get(d.id);
+            if (existing) return existing;
+            return { ...d, x: this.width/2 + (Math.random()-0.5)*50, y: this.height/2 + (Math.random()-0.5)*50, vx: 0, vy: 0 };
+        });
+        this.edges = graphData.edges.map(d => ({ ...d }));
+    }
+
+    tick() {
+        this.nodes.forEach(n1 => {
+            n1.vx *= 0.9; n1.vy *= 0.9;
+            this.nodes.forEach(n2 => {
+                if (n1 === n2) return;
+                const dx = n2.x - n1.x, dy = n2.y - n1.y;
+                let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                if (dist < 150) {
+                    const force = -80 / dist;
+                    n1.vx += force * dx / dist; n1.vy += force * dy / dist;
+                }
+            });
+        });
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const dx = target.x - source.x, dy = target.y - source.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const force = (dist - 120) * 0.01;
+            source.vx += force * dx / dist; source.vy += force * dy / dist;
+            target.vx -= force * dx / dist; target.vy -= force * dy / dist;
+        });
+        this.nodes.forEach(n => {
+            n.x += n.vx; n.y += n.vy;
+            n.x = Math.max(30, Math.min(this.width - 30, n.x));
+            n.y = Math.max(30, Math.min(this.height - 30, n.y));
+        });
+        this.draw();
+        this.animationFrameId = requestAnimationFrame(() => this.tick());
+    }
+
+    updateStyles(styles) { this.styles = styles; }
+    start(renderCallback) { this.renderCallback = renderCallback; this.tick(); }
+    stop() { cancelAnimationFrame(this.animationFrameId); }
+
+    draw() {
+        this.svg.innerHTML = '';
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', source.x); line.setAttribute('y1', source.y);
+            line.setAttribute('x2', target.x); line.setAttribute('y2', target.y);
+            
+            const isNew = this.styles.newEdge && this.styles.newEdge[0] === e.source && this.styles.newEdge[1] === e.target;
+            line.setAttribute('stroke', isNew ? 'var(--color-edge-new)' : '#bdc3c7');
+            line.setAttribute('stroke-width', isNew ? 4 : 2);
+            this.svg.appendChild(line);
+        });
+        this.nodes.forEach(n => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y);
+            circle.setAttribute('r', 20);
+            
+            let color = 'var(--color-node-default)';
+            if (n.id === this.styles.current) color = 'var(--color-node-current)';
+            if (n.id === this.styles.neighbor) color = 'var(--color-node-neighbor)';
+            if (n.id === this.styles.new) color = 'var(--color-clone-new)';
+            if (n.id === this.styles.returning) color = 'var(--color-clone-return)';
+            
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333'); circle.setAttribute('stroke-width', 2);
+            this.svg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', n.x); text.setAttribute('y', n.y);
+            text.setAttribute('dy', '0.3em'); text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'white'); text.setAttribute('font-weight', 'bold');
+            text.textContent = n.id;
+            this.svg.appendChild(text);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    adjListInput = document.getElementById('adj_list_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    graphOriginalContainer = document.getElementById('graph_original_container');
+    graphClonedContainer = document.getElementById('graph_cloned_container');
+    visitedMapContainer = document.getElementById('visited_map_container');
+    callStackContainer = document.getElementById('call_stack_container');
+    
+    const anim = new CloneGraphAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+});
+</script>
+</body>
+</html>

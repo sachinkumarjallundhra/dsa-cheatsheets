@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reorder Routes to Make All Paths Lead to City Zero Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🏙️ Reorder Routes to Make All Paths Lead to City Zero – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Reorder Routes to Make All Paths Lead to the City Zero</b> problem (LeetCode 1466) asks you to find the minimum number of edges that need to be reversed so that every city can reach city 0. The cities are connected by directed edges.
+        </p>
+
+        <h2>🎯 Solution Pattern (DFS with Edge Direction Tracking)</h2>
+        <pre><code>class Solution {
+    public int minReorder(int n, int[][] connections) {
+        List&lt;List&lt;int[]&gt;&gt; graph = new ArrayList&lt;&gt;();
+        for (int i = 0; i < n; i++) graph.add(new ArrayList&lt;&gt;());
+        for (int[] conn : connections) {
+            graph.get(conn[0]).add(new int[]{conn[1], 1}); // original direction
+            graph.get(conn[1]).add(new int[]{conn[0], 0}); // reverse direction
+        }
+        boolean[] visited = new boolean[n];
+        return dfs(0, graph, visited);
+    }
+    private int dfs(int node, List&lt;List&lt;int[]&gt;&gt; graph, boolean[] visited) {
+        visited[node] = true;
+        int changes = 0;
+        for (int[] nei : graph.get(node)) {
+            int neighbor = nei[0], needsReverse = nei[1];
+            if (!visited[neighbor]) {
+                changes += needsReverse;
+                changes += dfs(neighbor, graph, visited);
+            }
+        }
+        return changes;
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/reorder_routes_to_make_all_paths_lead_to_city_zero_animation.html'">▶️ View Animation</button>
+<h2>🎥 Video Explanation</h2>
+<p>
+    <a href="https://www.youtube.com/watch?v=m17yOR5_PpI&ab_channel=NeetCode" target="_blank" rel="noopener noreferrer">
+        ▶️ Watch on YouTube: Reorder Routes to Make All Paths Lead to City Zero (NeetCode)
+    </a>
+</p>
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Network routing optimization</li>
+            <li>Directed graph reconfiguration</li>
+            <li>Minimum edge reversal problems</li>
+            <li>City connectivity analysis</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build an adjacency list, marking edge direction (needs reversal or not)</li>
+            <li>Start DFS from city 0</li>
+            <li>For each neighbor, if edge needs reversal, increment counter</li>
+            <li>Recursively visit all cities</li>
+            <li>Return total reversals needed</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Already all paths lead to city 0</li>
+            <li>Disconnected cities (should not happen)</li>
+            <li>Multiple edges between cities</li>
+            <li>Single city (n = 1)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: n = 6, connections = [[0,1],[1,3],[2,3],[4,0],[4,5]]
+Output: 3
+Explanation: Reverse edges [0,1], [1,3], [4,5].
+
+Input: n = 5, connections = [[1,0],[1,2],[3,2],[3,4]]
+Output: 2
+Explanation: Reverse edges [1,2], [3,4].</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Mark edge direction in adjacency list for easy reversal tracking</li>
+            <li>DFS is efficient for tree-like graphs</li>
+            <li>Count only edges that go away from city 0</li>
+            <li>Test with all edges already pointing to city 0</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="network_delay_time_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        743. Network Delay Time
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="minimum_number_of_edges_to_reach_all_nodes_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Minimum Number of Edges to Reach All Nodes
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

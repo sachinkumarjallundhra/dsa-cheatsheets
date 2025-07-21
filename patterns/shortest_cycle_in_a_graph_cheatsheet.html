@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortest Cycle in a Graph Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔁 Shortest Cycle in a Graph – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Shortest Cycle in a Graph</b> problem asks you to find the length of the shortest cycle in an undirected or directed graph. If no cycle exists, return -1.
+        </p>
+
+        <h2>🎯 Solution Pattern (BFS for Undirected Graph)</h2>
+        <pre><code>class Solution {
+    public int shortestCycle(int n, int[][] edges) {
+        List&lt;List&lt;Integer&gt;&gt; graph = new ArrayList&lt;&gt;();
+        for (int i = 0; i < n; i++) graph.add(new ArrayList&lt;&gt;());
+        for (int[] edge : edges) {
+            graph.get(edge[0]).add(edge[1]);
+            graph.get(edge[1]).add(edge[0]);
+        }
+        int minCycle = Integer.MAX_VALUE;
+        for (int start = 0; start < n; start++) {
+            int[] dist = new int[n];
+            Arrays.fill(dist, -1);
+            Queue&lt;Integer&gt; queue = new LinkedList&lt;&gt;();
+            queue.offer(start);
+            dist[start] = 0;
+            int[] parent = new int[n];
+            Arrays.fill(parent, -1);
+            while (!queue.isEmpty()) {
+                int node = queue.poll();
+                for (int nei : graph.get(node)) {
+                    if (dist[nei] == -1) {
+                        dist[nei] = dist[node] + 1;
+                        parent[nei] = node;
+                        queue.offer(nei);
+                    } else if (parent[node] != nei) {
+                        minCycle = Math.min(minCycle, dist[node] + dist[nei] + 1);
+                    }
+                }
+            }
+        }
+        return minCycle == Integer.MAX_VALUE ? -1 : minCycle;
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/shortest_cycle_in_a_graph_animation.html'">▶️ View Animation</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Cycle detection in graphs</li>
+            <li>Finding minimal repeating patterns</li>
+            <li>Network analysis and routing</li>
+            <li>Dependency resolution</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build adjacency list for the graph</li>
+            <li>For each node, run BFS to find shortest cycle starting from that node</li>
+            <li>Track parent to avoid trivial cycles</li>
+            <li>Update minimum cycle length when a cycle is found</li>
+            <li>Return minimum cycle length or -1 if none</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>No cycles in the graph</li>
+            <li>Multiple cycles, different lengths</li>
+            <li>Disconnected nodes</li>
+            <li>Self-loops (cycle of length 1)</li>
+            <li>Single node graph</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: n = 7, edges = [[0,1],[1,2],[2,0],[2,3],[3,4],[4,5],[5,3]]
+Output: 3
+Explanation: The shortest cycle is 0→1→2→0.
+
+Input: n = 4, edges = [[0,1],[1,2],[2,3]]
+Output: -1
+Explanation: No cycle exists.</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>BFS is efficient for shortest cycle detection in undirected graphs</li>
+            <li>Track parent to avoid counting trivial cycles</li>
+            <li>Test with graphs containing multiple cycles and self-loops</li>
+            <li>For directed graphs, use DFS with stack and visit time</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="longest_cycle_in_a_graph_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        2360. Longest Cycle in a Graph
+                        <span class="badge badge-hard">Hard</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="detect_cycles_in_2d_grid_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Detect Cycles in 2D Grid
+                        <span class="badge badge-medium">Medium</span>

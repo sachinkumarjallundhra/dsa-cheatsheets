@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Routes (BFS) Animation - Dashboard UI</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-highlight: #f1c40f; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-node-default: #bdc3c7; --color-node-source: #9b59b6; --color-node-target: #1abc9c;
+            --color-node-processing: #e67e22; --color-node-visited: #34495e;
+        }
+        /* --- CORE LAYOUT --- */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden; /* Prevent page scroll */
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: minmax(400px, 1.2fr) 2fr minmax(350px, 1fr);
+            grid-template-rows: auto 1fr;
+            grid-template-areas:
+                "header header header"
+                "left   main   right";
+            gap: 15px;
+            padding: 15px;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        /* --- HEADER --- */
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input, .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls input { width: 40px; }
+        .controls textarea { width: 350px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        /* --- COLUMN SETUP --- */
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        /* --- LEFT COLUMN PANELS --- */
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        /* --- MAIN COLUMN (GRAPH) --- */
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+
+        /* --- RIGHT COLUMN PANELS --- */
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .data-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        .visited-item { background: #dde0e3; border-color: #b0b6bc; }
+        .map-table { width: 100%; border-collapse: collapse; }
+        .map-table th, .map-table td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 0.9em; }
+        .map-table th { background-color: #f2f2f2; }
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- MODAL FOR FINAL RESULT --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-content h2 { font-size: 1.8em; margin-bottom: 20px;}
+        .modal-content p { font-size: 2.5em; font-weight: bold; margin: 0; }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+
+        @media (max-width: 1200px) {
+            .dashboard-container { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; grid-template-areas: "header" "main" "right"; height: auto; overflow: auto; }
+            .left-column { display: none; } /* Hide code on small screens to save space */
+             body { overflow: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Bus Routes Animation</h1>
+            <div class="controls">
+                <label>Source:</label><input id="source_input" value="1">
+                <label>Target:</label><input id="target_input" value="6">
+                <label>Routes:</label><textarea id="routes_input">[[1,2,7],[3,6,7]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (BFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter details and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Bus Map</h2>
+            <div id="graph_container">
+                <svg width="100%" height="100%" id="graph_svg"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="panel">
+                <h2>Queue [Stop, Buses]</h2>
+                <div id="queue_container" class="data-container"></div>
+            </div>
+            <div class="panel">
+                <h2>Visited Stops</h2>
+                <div id="visited_stops_container" class="data-container"></div>
+            </div>
+            <div class="panel">
+                <h2>Visited Routes</h2>
+                <div id="visited_routes_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Stop-to-Route Map</h2>
+                <div id="stop_map_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Algorithm Finished</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+// --- Global State & Controls ---
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, graphSim;
+let sourceInput, targetInput, routesInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    queueContainer, visitedStopsContainer, visitedRoutesContainer, stopMapContainer, graphSvg, resultModal, finalResultText, modalCloseBtn;
+const routeColors = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33", "#a65628", "#f781bf"];
+const getCssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// --- Animation Class ---
+class BusRouteAnimation {
+    constructor() { this.graph = null; this.reset(); }
+    reset() {
+        if (graphSim) cancelAnimationFrame(graphSim);
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false; this.graph = null;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        const containers = [codeContainer, queueContainer, visitedStopsContainer, visitedRoutesContainer, stopMapContainer, graphSvg];
+        containers.forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter details and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const source = parseInt(sourceInput.value);
+            const target = parseInt(targetInput.value);
+            const routesStr = routesInput.value.trim().replace(/'/g, '"');
+            const routes = JSON.parse(routesStr);
+            if (isNaN(source) || isNaN(target) || !Array.isArray(routes)) throw new Error("Invalid input");
+
+            this.initUI();
+            animationSteps = this.generateSteps(routes, source, target);
+            this.graph = this.createGraphObject(routes, source, target);
+            this.runGraphSimulation();
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            alert("Invalid input. Please use valid numbers and a 2D array for Routes.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    initUI() {
+        const code = [
+            "function numBusesToDestination(routes, src, tgt):",
+            "  if src == tgt: return 0",
+            "  map = build stop-to-routes map",
+            "  queue = [ (src, 0) ]",
+            "  visitedStops = { src }",
+            "  visitedRoutes = { }",
+            "  while queue is not empty:",
+            "    stop, buses = queue.poll()",
+            "    for route in map[stop]:",
+            "      if route in visitedRoutes: continue",
+            "      visitedRoutes.add(route)",
+            "      for nextStop in routes[route]:",
+            "        if nextStop == tgt: return buses + 1",
+            "        if nextStop in visitedStops: continue",
+            "        visitedStops.add(nextStop)",
+            "        queue.add( (nextStop, buses + 1) )",
+            "  return -1"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+    generateSteps(routes, source, target) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let state = {
+            line: null, msg: "", queue: [], visitedStops: [], visitedRoutes: [],
+            stopMap: {}, finalResult: null, currentStop: null, currentRoute: null,
+        };
+
+        save({...state, line: 0, msg: "Start of the algorithm."});
+        if (source === target) {
+            state.finalResult = 0;
+            save({...state, line: 1, msg: `Source is same as Target. 0 buses needed.`});
+            return steps;
+        }
+
+        const stopToRoutes = new Map();
+        for (let i = 0; i < routes.length; i++) {
+            for (let stop of routes[i]) {
+                if (!stopToRoutes.has(stop)) stopToRoutes.set(stop, []);
+                stopToRoutes.get(stop).push(i);
+            }
+        }
+        state.stopMap = Object.fromEntries(stopToRoutes);
+        save({...state, line: 2, msg: "Built map of stops to the routes they belong to."});
+
+        const queue = [[source, 0]];
+        const visitedStops = new Set([source]);
+        const visitedRoutes = new Set();
+        state.queue = [...queue]; state.visitedStops = [...visitedStops];
+        save({...state, line: 3, msg: `Add source stop ${source} to the queue.`});
+        save({...state, line: 4, msg: `Mark source stop ${source} as visited.`});
+        save({...state, line: 5, msg: `Initialize visited routes set as empty.`});
+
+        while (queue.length > 0) {
+            save({...state, line: 6, msg: "Loop while queue is not empty."});
+            const [stop, buses] = queue.shift();
+            state.queue = [...queue]; state.currentStop = stop;
+            save({...state, line: 7, msg: `Dequeue stop ${stop}. (Buses taken so far: ${buses})`});
+            
+            const availableRoutes = stopToRoutes.get(stop) || [];
+            for (const routeIndex of availableRoutes) {
+                state.currentRoute = routeIndex;
+                save({...state, line: 8, msg: `Check Route ${routeIndex} available at stop ${stop}.`});
+
+                if (visitedRoutes.has(routeIndex)) {
+                    save({...state, line: 9, msg: `Route ${routeIndex} has already been taken. Skip.`});
+                    continue;
+                }
+                visitedRoutes.add(routeIndex);
+                state.visitedRoutes = [...visitedRoutes];
+                save({...state, line: 10, msg: `Boarding new bus: Route ${routeIndex}. Mark as visited.`});
+                
+                for (const nextStop of routes[routeIndex]) {
+                    save({...state, line: 11, msg: `Checking stop ${nextStop} on Route ${routeIndex}.`});
+                    if (nextStop === target) {
+                        state.finalResult = buses + 1;
+                        save({...state, line: 12, msg: `TARGET FOUND! Total buses: ${buses} + 1 = ${state.finalResult}.`});
+                        return steps;
+                    }
+                    if (visitedStops.has(nextStop)) {
+                        save({...state, line: 13, msg: `Stop ${nextStop} has already been visited. Skip.`});
+                        continue;
+                    }
+                    visitedStops.add(nextStop);
+                    state.visitedStops = [...visitedStops];
+                    save({...state, line: 14, msg: `Marking new stop ${nextStop} as visited.`});
+                    
+                    queue.push([nextStop, buses + 1]);
+                    state.queue = [...queue];
+                    save({...state, line: 15, msg: `Adding (${nextStop}, ${buses + 1}) to queue.`});
+                }
+                state.currentRoute = null;
+            }
+            state.currentStop = null;
+        }
+
+        state.finalResult = -1;
+        save({...state, line: 16, msg: "Queue is empty, but target not found. Not reachable."});
+        return steps;
+    }
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        queueContainer.innerHTML = state.queue.map(item => `<div class="data-item">[${item[0]}, ${item[1]}]</div>`).join('');
+        visitedStopsContainer.innerHTML = state.visitedStops.map(s => `<div class="data-item visited-item">${s}</div>`).join('');
+        visitedRoutesContainer.innerHTML = state.visitedRoutes.map(r => `<div class="data-item visited-item">Route ${r}</div>`).join('');
+        
+        let mapHtml = '<table class="map-table"><tr><th>Stop</th><th>Routes</th></tr>';
+        for(const stop in state.stopMap) mapHtml += `<tr><td>${stop}</td><td>${state.stopMap[stop].join(', ')}</td></tr>`;
+        stopMapContainer.innerHTML = mapHtml + '</table>';
+
+        this.updateGraphVisuals(state);
+
+        if (state.finalResult !== null) {
+            finalResultText.textContent = state.finalResult;
+            finalResultText.style.color = state.finalResult === -1 ? getCssVar('--color-danger') : getCssVar('--color-success');
+            resultModal.style.display = 'flex';
+        }
+    }
+    createGraphObject(routes, source, target) {
+        const allStops = new Set();
+        routes.forEach(route => route.forEach(stop => allStops.add(stop)));
+        const nodes = Array.from(allStops).map(stopId => ({ id: stopId, x: 0, y: 0, vx: 0, vy: 0 }));
+        return { nodes, routes, source, target };
+    }
+    runGraphSimulation() {
+        const { nodes, routes } = this.graph;
+        const width = graphSvg.clientWidth, height = graphSvg.clientHeight;
+        if (!nodes || width === 0 || height === 0) return;
+        nodes.forEach(n => { n.x = Math.random() * width; n.y = Math.random() * height; });
+
+        const simulationTick = () => {
+            // Node-node repulsion
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[j].x - nodes[i].x, dy = nodes[j].y - nodes[i].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                    const force = -2000 / (dist * dist);
+                    nodes[i].vx += force * dx / dist; nodes[i].vy += force * dy / dist;
+                    nodes[j].vx -= force * dx / dist; nodes[j].vy -= force * dy / dist;
+                }
+            }
+            // Edge spring force
+             routes.forEach(route => {
+                for(let i=0; i < route.length -1; i++){
+                    const n1 = nodes.find(n => n.id === route[i]);
+                    const n2 = nodes.find(n => n.id === route[i+1]);
+                    if(!n1 || !n2) continue;
+                    const dx = n2.x - n1.x, dy = n2.y - n1.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                    const force = 0.03 * (dist - 100);
+                    n1.vx += force * dx / dist; n1.vy += force * dy / dist;
+                    n2.vx -= force * dx / dist; n2.vy -= force * dy / dist;
+                }
+            });
+
+            nodes.forEach(n => {
+                n.vx *= 0.9; n.vy *= 0.9; // Damping
+                n.x += n.vx; n.y += n.vy;
+                n.x = Math.max(20, Math.min(width - 20, n.x));
+                n.y = Math.max(20, Math.min(height - 20, n.y));
+            });
+            if (animationSteps.length > 0) this.updateGraphVisuals(animationSteps[currentStepIndex]);
+            graphSim = requestAnimationFrame(simulationTick);
+        };
+        simulationTick();
+    }
+    updateGraphVisuals(state) {
+        if (!this.graph) return;
+        graphSvg.innerHTML = '';
+        const { nodes, routes, source, target } = this.graph;
+        
+        routes.forEach((route, i) => {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            let d = '';
+            for (let j = 0; j < route.length; j++) {
+                const node = nodes.find(n => n.id === route[j]);
+                if (node) d += `${j === 0 ? 'M' : 'L'} ${node.x} ${node.y} `;
+            }
+            path.setAttribute('d', d);
+            path.setAttribute('stroke', routeColors[i % routeColors.length]);
+            path.setAttribute('stroke-width', state.currentRoute === i ? '8' : '4');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('opacity', state.currentRoute === i ? '1' : '0.5');
+            path.setAttribute('stroke-linejoin', 'round');
+            path.setAttribute('stroke-linecap', 'round');
+            graphSvg.appendChild(path);
+        });
+
+        nodes.forEach(n => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y);
+            circle.setAttribute('r', 18);
+            
+            let color = getCssVar('--color-node-default');
+            if (n.id === source) color = getCssVar('--color-node-source');
+            else if (n.id === target) color = getCssVar('--color-node-target');
+            if (state.visitedStops.includes(n.id)) color = getCssVar('--color-node-visited');
+            if (n.id === state.currentStop) color = getCssVar('--color-node-processing');
+            if (state.finalResult !== null && n.id === target && state.finalResult !== -1) color = getCssVar('--color-success');
+
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333'); circle.setAttribute('stroke-width', n.id === state.currentStop ? 4 : 2);
+            graphSvg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', n.x); text.setAttribute('y', n.y);
+            text.setAttribute('dy', '0.3em'); text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'white'); text.setAttribute('font-weight', 'bold');
+            text.textContent = n.id;
+            graphSvg.appendChild(text);
+        });
+    }
+}
+
+// --- Init ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Assign all DOM elements to global variables
+    sourceInput = document.getElementById('source_input');
+    targetInput = document.getElementById('target_input');
+    routesInput = document.getElementById('routes_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    queueContainer = document.getElementById('queue_container');
+    visitedStopsContainer = document.getElementById('visited_stops_container');
+    visitedRoutesContainer = document.getElementById('visited_routes_container');
+    stopMapContainer = document.getElementById('stop_map_container');
+    graphSvg = document.getElementById('graph_svg');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    // Instantiate and set up event listeners
+    const anim = new BusRouteAnimation();
+    startButton.addEventListener('click', () => {
+        if(simulationRunning) anim.reset();
+        else anim.start();
+    });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => {
+        resultModal.style.display = 'none';
+    });
+    resultModal.addEventListener('click', (e) => {
+        if (e.target === resultModal) {
+             resultModal.style.display = 'none';
+        }
+    });
+});
+</script>
+</body>
+</html>

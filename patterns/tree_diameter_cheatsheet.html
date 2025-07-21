@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Diameter Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌳 Tree Diameter – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Tree Diameter</b> problem (LeetCode 1245) asks you to find the length of the longest path between any two nodes in an undirected tree (diameter).
+        </p>
+
+        <h2>🎯 Solution Pattern (Double DFS/BFS)</h2>
+        <pre><code>class Solution {
+    public int treeDiameter(int[][] edges) {
+        int n = edges.length + 1;
+        List&lt;List&lt;Integer&gt;&gt; graph = new ArrayList&lt;&gt;();
+        for (int i = 0; i < n; i++) graph.add(new ArrayList&lt;&gt;());
+        for (int[] edge : edges) {
+            graph.get(edge[0]).add(edge[1]);
+            graph.get(edge[1]).add(edge[0]);
+        }
+        // First DFS to find farthest node from 0
+        int[] farthest = dfs(graph, 0, -1);
+        // Second DFS from farthest node to get diameter
+        int[] diameter = dfs(graph, farthest[1], -1);
+        return diameter[0];
+    }
+    // Returns [distance, node]
+    private int[] dfs(List&lt;List&lt;Integer&gt;&gt; graph, int node, int parent) {
+        int maxDist = 0, farNode = node;
+        for (int nei : graph.get(node)) {
+            if (nei == parent) continue;
+            int[] res = dfs(graph, nei, node);
+            if (res[0] + 1 > maxDist) {
+                maxDist = res[0] + 1;
+                farNode = res[1];
+            }
+        }
+        return new int[]{maxDist, farNode};
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/tree_diameter_animation.html'">▶️ View Animation</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Network latency analysis</li>
+            <li>Finding longest path in trees</li>
+            <li>Tree structure optimization</li>
+            <li>Hierarchical data analysis</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build adjacency list for the tree</li>
+            <li>Run DFS/BFS from any node to find the farthest node</li>
+            <li>Run DFS/BFS again from the farthest node to find the diameter</li>
+            <li>Return the length of the longest path found</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Single node tree (diameter is 0)</li>
+            <li>Linear tree (diameter is n-1)</li>
+            <li>Star-shaped tree</li>
+            <li>Disconnected input (should not happen)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: edges = [[0,1],[0,2]]
+Output: 2
+Explanation: The longest path is 1-0-2.
+
+Input: edges = [[0,1],[1,2],[2,3],[1,4],[4,5]]
+Output: 4
+Explanation: The longest path is 5-4-1-2-3.</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Double DFS/BFS is optimal for tree diameter</li>
+            <li>Diameter is the longest path, not necessarily passing through the root</li>
+            <li>Test with various tree shapes</li>
+            <li>Can use BFS for both traversals for large trees</li>
+        </ul>
+
+        <h2>🎯 Alternative Solution (Single DFS with Top Two Distances)</h2>
+        <pre><code>class Solution {
+    private List&lt;List&lt;Integer&gt;&gt; graph;
+    private Integer diameter = 0;
+
+    public int treeDiameter(int[][] edges) {
+        // Build the adjacency list representation of the graph.
+        this.graph = new ArrayList&lt;&gt;();
+        boolean[] visited = new boolean[edges.length + 1];
+        for (int i = 0; i < edges.length + 1; ++i) {
+            this.graph.add(new ArrayList&lt;&gt;());
+            visited[i] = false;
+        }
+        for (int[] edge : edges) {
+            Integer u = edge[0], v = edge[1];
+            this.graph.get(u).add(v);
+            this.graph.get(v).add(u);
+        }
+
+        dfs(0, visited);
+
+        return this.diameter;
+    }
+
+    /**
+     * Return the max distance starting from the 'curr' node to its leaf nodes
+     */
+    private int dfs(int curr, boolean[] visited) {
+        // The top 2 distances starting from this node
+        Integer topDistance1 = 0, topDistance2 = 0;
+
+        visited[curr] = true;
+        for (Integer neighbor : graph.get(curr)) {
+            int distance = 0;
+            if (!visited[neighbor])
+                distance = 1 + this.dfs(neighbor, visited);
+
+            if (distance > topDistance1) {
+                topDistance2 = topDistance1;
+                topDistance1 = distance;
+            } else if (distance > topDistance2) {
+                topDistance2 = distance;
+            }
+        }
+
+        // With the top 2 distances, update the current diameter
+        this.diameter = Math.max(this.diameter, topDistance1 + topDistance2);
+
+        return topDistance1;
+    }
+}
+</code></pre>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="diameter_of_binary_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Diameter of Binary Tree
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="longest_path_in_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Longest Path in Tree
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

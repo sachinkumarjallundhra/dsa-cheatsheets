@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Diameter Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-neighbor: #e67e22;
+            --color-dfs-start: #1abc9c;
+            --color-diameter-endpoint: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        .analysis-item { margin-bottom: 15px; }
+        .analysis-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; }
+        .analysis-item .value { font-size: 1.2em; font-weight: bold; padding: 5px; background-color: #f8f9fa; border-radius: 4px; min-height: 1.2em; text-align: center;}
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2.5em; font-weight: bold; margin: 0; color: var(--color-success); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Tree Diameter</h1>
+            <div class="controls">
+                <label>Edges:</label><textarea id="edges_input">[[0,1],[1,2],[2,3],[1,4],[4,5]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (Two-Pass DFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter edges and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Tree</h2>
+            <div id="graph_container"></div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>DFS Analysis</h2>
+                <div class="analysis-item">
+                    <span class="label">Current DFS Pass</span>
+                    <span id="val-dfs-pass" class="value">-</span>
+                </div>
+                <div class="analysis-item">
+                    <span class="label">Farthest Node Found</span>
+                    <span id="val-far-node" class="value">-</span>
+                </div>
+                <div class="analysis-item">
+                    <span class="label">Max Distance Found</span>
+                    <span id="val-max-dist" class="value">-</span>
+                </div>
+                 <div class="analysis-item">
+                    <span class="label">Last Returned Value</span>
+                    <span id="val-return" class="value">-</span>
+                </div>
+            </div>
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Tree Diameter</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let edgesInput, startButton, nextStepButton, codeContainer, actionDisplay, graphContainer,
+    valDfsPass, valFarNode, valMaxDist, valReturn, callStackContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let sim;
+
+class TreeDiameterAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        if (sim) sim.stop();
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, graphContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        [valDfsPass, valFarNode, valMaxDist, valReturn].forEach(el => el.textContent = '-');
+        actionDisplay.textContent = 'Enter edges and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const edgesStr = edgesInput.value.trim().replace(/'/g, '"');
+            const edges = JSON.parse(edgesStr);
+            if (!Array.isArray(edges)) throw new Error("Invalid input format.");
+
+            const nodeSet = new Set();
+            if (edges.length > 0) {
+                edges.forEach(([u,v]) => { nodeSet.add(u); nodeSet.add(v); });
+            }
+            const n = nodeSet.size === 0 ? (edges.length === 0 ? 1 : 0) : Math.max(...nodeSet) + 1;
+            
+            this.initUI();
+            animationSteps = this.generateSteps(n, edges);
+            
+            const graphData = {
+                nodes: Array.from({ length: n }, (_, i) => ({ id: i })),
+                edges: edges.map(([u, v]) => ({ source: u, target: v }))
+            };
+            sim = new ForceGraph(graphContainer, graphData);
+            
+            // Render the first state *before* starting the simulation
+            if (animationSteps.length > 0) {
+                this.renderState(animationSteps[0]);
+            }
+            
+            sim.start();
+            simulationRunning = true;
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid 2D array for Edges. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function treeDiameter(edges):",
+            "  graph = buildAdjacencyList(edges)",
+            "  // 1st DFS: Find farthest node from 0",
+            "  farthest1 = dfs(graph, 0, -1)",
+            "  // 2nd DFS: Find farthest from that node",
+            "  diameterResult = dfs(graph, farthest1.node, -1)",
+            "  return diameterResult.distance",
+            "",
+            "function dfs(graph, node, parent):",
+            "  maxDist = 0, farNode = node",
+            "  for neighbor in graph[node]:",
+            "    if neighbor == parent: continue",
+            "    res = dfs(graph, neighbor, node)",
+            "    if res.distance + 1 > maxDist:",
+            "      maxDist = res.distance + 1",
+            "      farNode = res.node",
+            "  return {distance: maxDist, node: farNode}",
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(n, edges) {
+        if (n <= 1) {
+             const finalState = {
+                line: 6, msg: "Tree has 0 or 1 nodes. Diameter is 0.", finalResult: 0,
+                callStack: [], lastReturn: null, dfsPass: 2, farNode1: 0, farNode2: 0, maxDist1: 0, maxDist2: 0,
+                highlights: { current: null, neighbor: null, start1: 0, start2: 0, diameterEndpoints: [0] }
+            };
+            return [finalState];
+        }
+
+        const graph = Array.from({ length: n }, () => []);
+        for (const [u, v] of edges) {
+            graph[u].push(v);
+            graph[v].push(u);
+        }
+
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", callStack: [], lastReturn: null,
+            dfsPass: 0, farNode1: null, farNode2: null, maxDist1: 0, maxDist2: 0,
+            highlights: { current: null, neighbor: null, start1: null, start2: null, diameterEndpoints: [] },
+            finalResult: null
+        };
+
+        save({ ...state, line: 1, msg: "Building adjacency list from edges." });
+        
+        function traceDfs(node, parent, phase) {
+            state.callStack.push({node, parent});
+            state.highlights.current = node;
+            save({ ...state, line: 8, msg: `DFS Phase ${phase}: Entering dfs(${node}, ${parent})` });
+            
+            let maxDist = 0;
+            let farNode = node;
+            
+            save({ ...state, line: 9, msg: `Initializing maxDist = 0 for subtree at ${node}.` });
+            
+            for (const neighbor of graph[node]) {
+                state.highlights.neighbor = neighbor;
+                save({ ...state, line: 10, msg: `Checking neighbor ${neighbor} of node ${node}.` });
+                
+                if (neighbor === parent) {
+                    save({ ...state, line: 11, msg: `Neighbor ${neighbor} is the parent. Skipping.` });
+                    continue;
+                }
+                
+                save({ ...state, line: 12, msg: `Making recursive call for neighbor ${neighbor}.` });
+                const res = traceDfs(neighbor, node, phase);
+                
+                state.highlights.current = node;
+                state.lastReturn = res;
+                save({ ...state, line: 12, msg: `Call from ${neighbor} returned {d: ${res.dist}, n: ${res.node}}` });
+                
+                save({ ...state, line: 13, msg: `Compare path via ${neighbor}: ${res.dist + 1} > ${maxDist}?` });
+                if (res.dist + 1 > maxDist) {
+                    maxDist = res.dist + 1;
+                    farNode = res.node;
+                    
+                    if(phase === 1) { state.maxDist1 = maxDist; state.farNode1 = farNode; }
+                    else { state.maxDist2 = maxDist; state.farNode2 = farNode; }
+
+                    save({ ...state, line: 14, msg: `New max distance ${maxDist} found.` });
+                    save({ ...state, line: 15, msg: `New farthest node is now ${farNode}.` });
+                }
+            }
+            state.highlights.neighbor = null;
+
+            state.callStack.pop();
+            state.highlights.current = state.callStack.length > 0 ? state.callStack[state.callStack.length - 1].node : null;
+            state.lastReturn = {dist: maxDist, node: farNode};
+            save({ ...state, line: 16, msg: `Finished dfs(${node}). Returning {d: ${maxDist}, n: ${farNode}}` });
+            return { dist: maxDist, node: farNode };
+        }
+
+        state.dfsPass = 1;
+        state.highlights.start1 = 0;
+        save({ ...state, line: 3, msg: "Starting 1st DFS from node 0 to find a diameter endpoint." });
+        const farthest1 = traceDfs(0, -1, 1);
+        
+        state.lastReturn = null;
+        state.farNode1 = farthest1.node;
+        save({ ...state, line: 3, msg: `1st DFS complete. Farthest node from 0 is ${farthest1.node}.` });
+
+        state.dfsPass = 2;
+        state.highlights.start2 = farthest1.node;
+        state.maxDist1 = 0; 
+        state.farNode1 = null; 
+        save({ ...state, line: 5, msg: `Starting 2nd DFS from node ${farthest1.node} to find the diameter.` });
+        const diameterResult = traceDfs(farthest1.node, -1, 2);
+        
+        state.lastReturn = null;
+        state.finalResult = diameterResult.dist;
+        state.highlights.diameterEndpoints = [farthest1.node, diameterResult.node];
+        save({ ...state, line: 6, msg: `2nd DFS complete. The tree diameter is ${diameterResult.dist}.` });
+        
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => `<div class="stack-item">dfs(${c.node}, ${c.parent})</div>`).join('');
+        
+        valDfsPass.textContent = state.dfsPass;
+        const farNode = state.dfsPass === 1 ? state.farNode1 : state.farNode2;
+        const maxDist = state.dfsPass === 1 ? state.maxDist1 : state.maxDist2;
+        valFarNode.textContent = farNode ?? '-';
+        valMaxDist.textContent = maxDist;
+        valReturn.textContent = state.lastReturn ? `{d: ${state.lastReturn.dist}, n: ${state.lastReturn.node}}` : '-';
+
+        sim.updateStyles(state.highlights);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = state.finalResult;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class ForceGraph {
+    constructor(container, graphData) {
+        this.container = container;
+        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        this.svg.setAttribute('width', '100%'); this.svg.setAttribute('height', '100%');
+        this.container.innerHTML = ''; this.container.appendChild(this.svg);
+        this.width = this.container.clientWidth; this.height = this.container.clientHeight;
+        this.animationFrameId = null; this.styles = {};
+        this.nodes = graphData.nodes.map(d => ({ ...d, x: this.width/2 + (Math.random()-0.5)*50, y: this.height/2 + (Math.random()-0.5)*50, vx: 0, vy: 0 }));
+        this.edges = graphData.edges.map(d => ({ ...d }));
+    }
+
+    tick() {
+        // --- Repulsion force between all nodes ---
+        for (let i = 0; i < this.nodes.length; i++) {
+            for (let j = i + 1; j < this.nodes.length; j++) {
+                const n1 = this.nodes[i], n2 = this.nodes[j];
+                const dx = n2.x - n1.x, dy = n2.y - n1.y;
+                let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const force = -2000 / (dist * dist);
+                n1.vx += force * dx / dist; n1.vy += force * dy / dist;
+                n2.vx -= force * dx / dist; n2.vy -= force * dy / dist;
+            }
+        }
+        
+        // --- Spring force along edges ---
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const dx = target.x - source.x, dy = target.y - source.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const force = (dist - 120) * 0.01;
+            source.vx += force * dx / dist; source.vy += force * dy / dist;
+            target.vx -= force * dx / dist; target.vy -= force * dy / dist;
+        });
+
+        this.nodes.forEach(n => {
+            n.vx *= 0.95; n.vy *= 0.95;
+            n.x += n.vx; n.y += n.vy;
+            n.x = Math.max(30, Math.min(this.width - 30, n.x));
+            n.y = Math.max(30, Math.min(this.height - 30, n.y));
+        });
+        
+        this.draw();
+        this.animationFrameId = requestAnimationFrame(() => this.tick());
+    }
+
+    updateStyles(styles) { this.styles = styles; }
+    start() { this.tick(); }
+    stop() { cancelAnimationFrame(this.animationFrameId); }
+
+    draw() {
+        this.svg.innerHTML = '';
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', source.x); line.setAttribute('y1', source.y);
+            line.setAttribute('x2', target.x); line.setAttribute('y2', target.y);
+            line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+            this.svg.appendChild(line);
+        });
+        
+        this.nodes.forEach(n => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y);
+            circle.setAttribute('r', 20);
+            
+            let color = 'var(--color-node-default)';
+            if (this.styles) { // BUG FIX: Defensive check
+                if (n.id === this.styles.start1 || n.id === this.styles.start2) color = 'var(--color-dfs-start)';
+                if (n.id === this.styles.neighbor) color = 'var(--color-node-neighbor)';
+                if (n.id === this.styles.current) color = 'var(--color-node-current)';
+                if (this.styles.diameterEndpoints && this.styles.diameterEndpoints.includes(n.id)) color = 'var(--color-diameter-endpoint)';
+            }
+            
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333'); circle.setAttribute('stroke-width', 2);
+            this.svg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', n.x); text.setAttribute('y', n.y);
+            text.setAttribute('dy', '0.3em'); text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'white'); text.setAttribute('font-weight', 'bold');
+            text.textContent = n.id;
+            this.svg.appendChild(text);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    edgesInput = document.getElementById('edges_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    graphContainer = document.getElementById('graph_container');
+    valDfsPass = document.getElementById('val-dfs-pass');
+    valFarNode = document.getElementById('val-far-node');
+    valMaxDist = document.getElementById('val-max-dist');
+    valReturn = document.getElementById('val-return');
+    callStackContainer = document.getElementById('call_stack_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new TreeDiameterAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

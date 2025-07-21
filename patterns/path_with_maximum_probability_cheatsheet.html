@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path with Maximum Probability Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Path with Maximum Probability – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Path with Maximum Probability</b> problem (LeetCode 1514) asks you to find the path from start to end in a weighted undirected graph that maximizes the product of probabilities along the path.
+        </p>
+
+        <h2>🎯 Solution Pattern (Modified Dijkstra’s Algorithm)</h2>
+        <pre><code>class Solution {
+    public double maxProbability(int n, int[][] edges, double[] succProb, int start, int end) {
+        List&lt;List&lt;Pair&lt;Integer, Double&gt;&gt;&gt; graph = new ArrayList&lt;&gt;();
+        for (int i = 0; i < n; i++) graph.add(new ArrayList&lt;&gt;());
+        for (int i = 0; i < edges.length; i++) {
+            int u = edges[i][0], v = edges[i][1];
+            double prob = succProb[i];
+            graph.get(u).add(new Pair&lt;&gt;(v, prob));
+            graph.get(v).add(new Pair&lt;&gt;(u, prob));
+        }
+        double[] maxProb = new double[n];
+        maxProb[start] = 1.0;
+        PriorityQueue&lt;Pair&lt;Double, Integer&gt;&gt; pq = new PriorityQueue&lt;&gt;((a, b) -> Double.compare(b.getKey(), a.getKey()));
+        pq.offer(new Pair&lt;&gt;(1.0, start));
+        while (!pq.isEmpty()) {
+            Pair&lt;Double, Integer&gt; curr = pq.poll();
+            double prob = curr.getKey();
+            int node = curr.getValue();
+            if (node == end) return prob;
+            for (Pair&lt;Integer, Double&gt; nei : graph.get(node)) {
+                int next = nei.getKey();
+                double edgeProb = nei.getValue();
+                if (prob * edgeProb > maxProb[next]) {
+                    maxProb[next] = prob * edgeProb;
+                    pq.offer(new Pair&lt;&gt;(maxProb[next], next));
+                }
+            }
+        }
+        return 0.0;
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/path_with_maximum_probability_animation.html'">▶️ View Animation</button>
+<h2>🎥 Video Explanation</h2>
+<p>
+    <a href="https://www.youtube.com/watch?v=kPsDTGcrzGM&ab_channel=NeetCodeIO" target="_blank" rel="noopener noreferrer">
+        ▶️ Watch on YouTube: Path with Maximum Probability (NeetCodeIO)
+    </a>
+</p>
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Reliability analysis in networks</li>
+            <li>Finding most probable paths in graphs</li>
+            <li>Probabilistic routing and navigation</li>
+            <li>Decision making under uncertainty</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build adjacency list with probabilities</li>
+            <li>Initialize maxProb array and priority queue (max heap)</li>
+            <li>Start from the source node with probability 1.0</li>
+            <li>For each node, update neighbors if a higher probability path is found</li>
+            <li>Return the probability when the end node is reached</li>
+            <li>If unreachable, return 0.0</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>No path exists between start and end</li>
+            <li>Multiple paths with same maximum probability</li>
+            <li>Disconnected graph</li>
+            <li>Zero probability edges</li>
+            <li>Start equals end</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: n = 3, edges = [[0,1],[1,2],[0,2]], succProb = [0.5,0.5,0.2], start = 0, end = 2
+Output: 0.25
+Explanation: Path 0→1→2 has probability 0.5*0.5=0.25, which is higher than direct path 0→2 (0.2).
+
+Input: n = 3, edges = [[0,1],[1,2],[0,2]], succProb = [0.5,0.5,0.3], start = 0, end = 2
+Output: 0.3
+Explanation: Direct path 0→2 is best.</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Use a max heap for priority queue to always process highest probability first</li>
+            <li>Update neighbor only if new probability is higher</li>
+            <li>Return early when end node is reached</li>
+            <li>Test with disconnected graphs and zero probabilities</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="network_delay_time_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        743. Network Delay Time
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="cheapest_flights_within_k_stops_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        787. Cheapest Flights Within K Stops
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

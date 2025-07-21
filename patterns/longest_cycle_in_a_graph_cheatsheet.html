@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Cycle in a Graph Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔄 Longest Cycle in a Graph – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Longest Cycle in a Graph</b> problem (LeetCode 2360) asks you to find the length of the longest cycle in a directed graph. If no cycle exists, return -1.
+        </p>
+
+        <h2>🎯 Solution Pattern (DFS with Distance Tracking)</h2>
+        <pre><code>class Solution {
+    public int longestCycle(int[] edges) {
+        int n = edges.length;
+        int[] visited = new int[n];
+        int[] stackIdx = new int[n];
+        Arrays.fill(visited, -1);
+        Arrays.fill(stackIdx, -1);
+        int res = -1, idx = 0;
+        for (int i = 0; i < n; i++) {
+            if (visited[i] != -1) continue;
+            int curr = i;
+            Map&lt;Integer, Integer&gt; seen = new HashMap&lt;&gt;();
+            while (curr != -1 && visited[curr] == -1) {
+                visited[curr] = i;
+                seen.put(curr, idx++);
+                curr = edges[curr];
+            }
+            if (curr != -1 && visited[curr] == i) {
+                res = Math.max(res, idx - seen.get(curr));
+            }
+            idx = 0;
+        }
+        return res;
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/longest_cycle_in_a_graph_animation.html'">▶️ View Animation</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Cycle detection in directed graphs</li>
+            <li>Finding longest repeating patterns</li>
+            <li>Network analysis and routing</li>
+            <li>Dependency resolution</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Iterate through all nodes</li>
+            <li>For each unvisited node, follow edges and track visit order</li>
+            <li>If a cycle is detected, update the longest cycle length</li>
+            <li>Return the maximum cycle length found, or -1 if none</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>No cycles in the graph</li>
+            <li>Multiple cycles, different lengths</li>
+            <li>Disconnected nodes</li>
+            <li>Self-loops</li>
+            <li>Single node graph</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: edges = [3,3,4,2,3]
+Output: 3
+Explanation: The longest cycle is 2→4→3→2.
+
+Input: edges = [2,-1,3,1]
+Output: -1
+Explanation: No cycle exists.</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Mark nodes with visit index to detect cycles efficiently</li>
+            <li>Use a map to track the order of node visits in the current path</li>
+            <li>Test with graphs containing multiple cycles and self-loops</li>
+            <li>Handle disconnected nodes gracefully</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="detect_cycles_in_2d_grid_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Detect Cycles in 2D Grid
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="course_schedule_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        207. Course Schedule
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

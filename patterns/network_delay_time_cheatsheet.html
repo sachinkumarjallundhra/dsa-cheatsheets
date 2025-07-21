@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Delay Time Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>⏱️ Network Delay Time – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Network Delay Time</b> problem (LeetCode 743) asks you to find the minimum time it takes for all nodes in a network to receive a signal that starts from a given source node. The network is represented as a weighted directed graph.
+        </p>
+
+        <h2>🎯 Solution Pattern (Dijkstra's Algorithm)</h2>
+        <pre><code>class Solution {
+    public int networkDelayTime(int[][] times, int n, int k) {
+        // Build adjacency list
+        Map&lt;Integer, List&lt;Pair&lt;Integer, Integer&gt;&gt;&gt; graph = new HashMap&lt;&gt;();
+        for (int i = 1; i <= n; i++) {
+            graph.put(i, new ArrayList&lt;&gt;());
+        }
+        for (int[] time : times) {
+            graph.get(time[0]).add(new Pair&lt;&gt;(time[1], time[2]));
+        }
+        
+        // Distance array to store minimum times
+        int[] distances = new int[n + 1];
+        Arrays.fill(distances, Integer.MAX_VALUE);
+        distances[k] = 0;
+        
+        // Priority queue for Dijkstra's algorithm
+        PriorityQueue&lt;Pair&lt;Integer, Integer&gt;&gt; pq = 
+            new PriorityQueue&lt;&gt;((a, b) -> a.getValue() - b.getValue());
+        pq.offer(new Pair&lt;&gt;(k, 0));
+        
+        // Process nodes
+        while (!pq.isEmpty()) {
+            Pair&lt;Integer, Integer&gt; pair = pq.poll();
+            int node = pair.getKey();
+            int dist = pair.getValue();
+            
+            if (dist > distances[node]) continue;
+            
+            // Check all neighbors
+            for (Pair&lt;Integer, Integer&gt; neighbor : graph.get(node)) {
+                int nextNode = neighbor.getKey();
+                int time = neighbor.getValue();
+                int newDist = dist + time;
+                
+                if (newDist < distances[nextNode]) {
+                    distances[nextNode] = newDist;
+                    pq.offer(new Pair&lt;&gt;(nextNode, newDist));
+                }
+            }
+        }
+        
+        // Find maximum time
+        int maxTime = 0;
+        for (int i = 1; i <= n; i++) {
+            if (distances[i] == Integer.MAX_VALUE) return -1;
+            maxTime = Math.max(maxTime, distances[i]);
+        }
+        
+        return maxTime;
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/network_delay_time_animation.html'">▶️ View Animation</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Network routing protocols</li>
+            <li>Signal propagation time calculation</li>
+            <li>Finding maximum delay in weighted directed graphs</li>
+            <li>Network latency analysis</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build an adjacency list representation of the network</li>
+            <li>Initialize distances array with infinity (except source = 0)</li>
+            <li>Use priority queue for Dijkstra's algorithm</li>
+            <li>Process nodes in order of minimum distance</li>
+            <li>Update distances if shorter path found</li>
+            <li>Return maximum of all distances (or -1 if any node unreachable)</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Disconnected nodes (unreachable from source)</li>
+            <li>Single node network</li>
+            <li>All nodes directly connected to source</li>
+            <li>Cycles in the graph</li>
+            <li>Zero-weight edges</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: times = [[2,1,1],[2,3,1],[3,4,1]], n = 4, k = 2
+Output: 2
+Explanation: Starting from node 2:
+- Node 1 receives signal at time 1
+- Node 3 receives signal at time 1
+- Node 4 receives signal at time 2
+Maximum time is 2
+
+Input: times = [[1,2,1]], n = 2, k = 2
+Output: -1
+Explanation: Node 1 is never reached from node 2</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Use PriorityQueue for efficient node processing</li>
+            <li>Track visited nodes implicitly through distance comparisons</li>
+            <li>Remember to convert 1-based node numbers if needed</li>
+            <li>Check for unreachable nodes before returning result</li>
+            <li>Consider using adjacency matrix for dense graphs</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="path_with_minimum_effort_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1631. Path With Minimum Effort
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="cheapest_flights_within_k_stops_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        787. Cheapest Flights Within K Stops
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Routes Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🚌 Bus Routes – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Bus Routes</b> problem (LeetCode 815) asks you to find the least number of buses to take to travel from a source bus stop to a target bus stop. Each bus follows a route with multiple stops, and you can transfer between buses at any common stop.
+        </p>
+
+        <h2>🎯 Solution Pattern (BFS with HashMap)</h2>
+        <pre><code>class Solution {
+    public int numBusesToDestination(int[][] routes, int source, int target) {
+        if (source == target) return 0;
+        
+        // Map each stop to all routes that contain it
+        Map&lt;Integer, List&lt;Integer&gt;&gt; stopToRoutes = new HashMap&lt;&gt;();
+        for (int i = 0; i < routes.length; i++) {
+            for (int stop : routes[i]) {
+                stopToRoutes.computeIfAbsent(stop, k -> new ArrayList&lt;&gt;()).add(i);
+            }
+        }
+        
+        // Queue stores: [stop, number of buses taken]
+        Queue&lt;int[]&gt; queue = new LinkedList&lt;&gt;();
+        Set&lt;Integer&gt; visitedStops = new HashSet&lt;&gt;();
+        Set&lt;Integer&gt; visitedRoutes = new HashSet&lt;&gt;();
+        
+        queue.offer(new int[]{source, 0});
+        visitedStops.add(source);
+        
+        while (!queue.isEmpty()) {
+            int[] current = queue.poll();
+            int stop = current[0], buses = current[1];
+            
+            // Check all routes that contain this stop
+            for (int routeIndex : stopToRoutes.get(stop)) {
+                if (visitedRoutes.contains(routeIndex)) continue;
+                
+                visitedRoutes.add(routeIndex);
+                // Check all stops in this route
+                for (int nextStop : routes[routeIndex]) {
+                    if (nextStop == target) return buses + 1;
+                    if (visitedStops.contains(nextStop)) continue;
+                    
+                    visitedStops.add(nextStop);
+                    queue.offer(new int[]{nextStop, buses + 1});
+                }
+            }
+        }
+        
+        return -1;
+    }
+}</code></pre>
+        <button onclick="window.location.href='../animations/bus_routes_animation.html'">▶️ View Animation</button>
+<h2>🎥 Video Explanation</h2>
+        <p>
+            <a href="https://www.youtube.com/watch?v=uDbr-6svYKw&ab_channel=codestorywithMIK" target="_blank" rel="noopener noreferrer">
+                ▶️ Watch on YouTube: Bus Routes (codestory with MIK)
+            </a>
+        </p>
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Public transportation routing</li>
+            <li>Network transfer optimization</li>
+            <li>Multi-hop connection planning</li>
+            <li>Transit system navigation</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Handle base case: source equals target</li>
+            <li>Build stop-to-routes mapping</li>
+            <li>Initialize BFS with source stop</li>
+            <li>For each stop, explore all connected routes</li>
+            <li>For each route, explore all new stops</li>
+            <li>Track visited stops and routes</li>
+            <li>Return minimum buses needed or -1</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Source equals target</li>
+            <li>No possible route to target</li>
+            <li>Multiple routes between stops</li>
+            <li>Circular routes</li>
+            <li>Single stop routes</li>
+            <li>Empty routes</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: routes = [[1,2,7],[3,6,7]], source = 1, target = 6
+Output: 2
+Explanation: 
+Take route 0 to stop 7, then route 1 to stop 6.
+
+Input: routes = [[7,12],[4,5,15],[6],[15,19],[9,12,13]], source = 15, target = 12
+Output: -1
+Explanation: No path from stop 15 to stop 12</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Use stop-to-routes mapping for efficient route lookup</li>
+            <li>Track both visited stops and routes to avoid cycles</li>
+            <li>Use BFS to ensure minimum number of transfers</li>
+            <li>Consider memory optimization for large route systems</li>
+            <li>Use early return when target is found</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="word_ladder_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        127. Word Ladder
+                        <span class="badge badge-hard">Hard</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="cheapest_flights_within_k_stops_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        787. Cheapest Flights Within K Stops
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

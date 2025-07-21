@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find the Town Judge Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-node-default: #bdc3c7;
+            --color-node-truster: #3498db;  /* Person A in [A, B] */
+            --color-node-trusted: #2ecc71;  /* Person B in [A, B] */
+            --color-node-checking: #9b59b6; /* Person being checked for judge-ness */
+            --color-node-judge: #f1c40f;    /* The final judge */
+            --color-cell-update: #fff3cd;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(400px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        /* --- HEADER --- */
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input, .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls input { width: 40px; }
+        .controls textarea { width: 350px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        /* --- COLUMNS --- */
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; min-height: 0; }
+        
+        /* --- LEFT PANELS --- */
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        /* --- MAIN GRAPH --- */
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+
+        /* --- RIGHT PANEL (DEGREES) --- */
+        .degree-table-container { flex-grow: 1; overflow-y: auto; }
+        .degree-table { width: 100%; border-collapse: collapse; }
+        .degree-table th, .degree-table td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 1.1em; transition: background-color 0.3s ease; }
+        .degree-table th { background-color: #f2f2f2; }
+        .degree-table tr.checking { background-color: #f0eaf6 !important; }
+        .degree-table td.updated { background-color: var(--color-cell-update); transform: scale(1.1); }
+
+        /* --- MODAL --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-content h2 { font-size: 1.8em; margin-bottom: 20px;}
+        .modal-content p { font-size: 2em; font-weight: bold; margin: 0; }
+        #final_result_text { font-size: 2.5em; }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+
+        @media (max-width: 1200px) {
+            .dashboard-container { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; grid-template-areas: "header" "main" "right"; height: auto; overflow: auto; }
+            .left-column { display: none; } body { overflow: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Find the Town Judge</h1>
+            <div class="controls">
+                <label>N:</label><input id="n_input" value="3">
+                <label>Trust relations:</label><textarea id="trust_input">[[1,3],[2,3]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter details and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Town Layout</h2>
+            <div id="graph_container">
+                <svg width="100%" height="100%" id="graph_svg"></svg>
+            </div>
+        </div>
+
+        <div class="right-column panel">
+            <h2>Villager Degrees</h2>
+            <div class="degree-table-container">
+                <table class="degree-table" id="degree_table"></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal_title"></h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+// --- Global State & Controls ---
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false, graphSim;
+let nInput, trustInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    degreeTable, graphSvg, resultModal, finalResultText, modalCloseBtn, modalTitle;
+const getCssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// --- Animation Class ---
+class TownJudgeAnimation {
+    constructor() { this.graph = null; this.reset(); }
+    reset() {
+        if (graphSim) cancelAnimationFrame(graphSim);
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false; this.graph = null;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        codeContainer.innerHTML = '';
+        degreeTable.innerHTML = '';
+        graphSvg.innerHTML = '';
+        actionDisplay.textContent = 'Enter details and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const n = parseInt(nInput.value);
+            const trustStr = trustInput.value.trim().replace(/'/g, '"');
+            const trust = JSON.parse(trustStr);
+            if (isNaN(n) || !Array.isArray(trust)) throw new Error("Invalid input");
+
+            this.initUI(n);
+            animationSteps = this.generateSteps(n, trust);
+            this.graph = this.createGraphObject(n, trust);
+            this.runGraphSimulation();
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            alert("Invalid input. Please use a valid number for N and a 2D array for Trust.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    initUI(n) {
+        const code = [
+            "function findJudge(n, trust):",
+            "  inDegree = new int[n+1]",
+            "  outDegree = new int[n+1]",
+            "  for [a, b] in trust:",
+            "    outDegree[a]++",
+            "    inDegree[b]++",
+            "  for i from 1 to n:",
+            "    if inDegree[i] == n - 1 && outDegree[i] == 0:",
+            "      return i",
+            "  return -1"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+        
+        let tableHTML = `<thead><tr><th>Villager</th><th>Trusted By (In)</th><th>Trusts Others (Out)</th></tr></thead><tbody>`;
+        for (let i = 1; i <= n; i++) {
+            tableHTML += `<tr id="degree-row-${i}">
+                            <td>${i}</td>
+                            <td id="in-degree-${i}">0</td>
+                            <td id="out-degree-${i}">0</td>
+                          </tr>`;
+        }
+        degreeTable.innerHTML = tableHTML + '</tbody>';
+    }
+    generateSteps(n, trust) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let state = {
+            line: null, msg: "", finalResult: null,
+            inDegree: Array(n + 1).fill(0), outDegree: Array(n + 1).fill(0),
+            truster: null, trusted: null, checking: null, judge: null,
+            updatedCell: null,
+        };
+
+        save({...state, line: 1, msg: "Initialize in-degree array."});
+        save({...state, line: 2, msg: "Initialize out-degree array."});
+        
+        for (const [a, b] of trust) {
+            state.truster = a; state.trusted = b;
+            save({...state, line: 3, msg: `Processing trust: Villager ${a} trusts Villager ${b}.`});
+            
+            state.outDegree[a]++;
+            state.updatedCell = { id: `out-degree-${a}`, value: state.outDegree[a] };
+            save({...state, line: 4, msg: `Increment out-degree for Villager ${a}.`});
+            
+            state.inDegree[b]++;
+            state.updatedCell = { id: `in-degree-${b}`, value: state.inDegree[b] };
+            save({...state, line: 5, msg: `Increment in-degree for Villager ${b}.`});
+            state.updatedCell = null;
+        }
+        state.truster = null; state.trusted = null;
+
+        for (let i = 1; i <= n; i++) {
+            state.checking = i;
+            save({...state, line: 6, msg: `Checking if Villager ${i} is the judge.`});
+
+            const inCondition = state.inDegree[i] === n - 1;
+            const outCondition = state.outDegree[i] === 0;
+            const msg = `In-degree is ${state.inDegree[i]} (needs ${n-1}) -> ${inCondition}. Out-degree is ${state.outDegree[i]} (needs 0) -> ${outCondition}.`;
+            save({...state, line: 7, msg: msg});
+
+            if (inCondition && outCondition) {
+                state.judge = i;
+                state.finalResult = i;
+                save({...state, line: 8, msg: `Conditions met! Villager ${i} is the judge.`});
+                return steps;
+            }
+        }
+        
+        state.checking = null;
+        state.finalResult = -1;
+        save({...state, line: 9, msg: "No judge found after checking all villagers."});
+        return steps;
+    }
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        document.querySelectorAll('.degree-table tr, .degree-table td').forEach(el => el.classList.remove('checking', 'updated'));
+        if(state.checking) document.getElementById(`degree-row-${state.checking}`)?.classList.add('checking');
+        if(state.updatedCell) {
+            const cell = document.getElementById(state.updatedCell.id);
+            if (cell) {
+                cell.textContent = state.updatedCell.value;
+                cell.classList.add('updated');
+            }
+        }
+
+        this.updateGraphVisuals(state);
+
+        if (state.finalResult !== null) {
+            if (state.finalResult !== -1) {
+                modalTitle.textContent = "Judge Found!";
+                finalResultText.textContent = state.finalResult;
+                finalResultText.style.color = getCssVar('--color-node-judge');
+            } else {
+                modalTitle.textContent = "No Judge Found";
+                finalResultText.textContent = "-1";
+                finalResultText.style.color = getCssVar('--color-danger');
+            }
+            resultModal.style.display = 'flex';
+        }
+    }
+    createGraphObject(n, trust) {
+        const nodes = Array.from({ length: n }, (_, i) => ({ id: i + 1, x: 0, y: 0, vx: 0, vy: 0 }));
+        const edges = trust.map(t => ({ source: nodes[t[0]-1], target: nodes[t[1]-1] }));
+        return { nodes, edges };
+    }
+    runGraphSimulation() {
+        const { nodes } = this.graph;
+        const width = graphSvg.clientWidth, height = graphSvg.clientHeight;
+        if (!nodes || width === 0 || height === 0) return;
+        nodes.forEach(n => { n.x = Math.random() * width; n.y = Math.random() * height; });
+
+        const simulationTick = () => {
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[j].x - nodes[i].x, dy = nodes[j].y - nodes[i].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                    const force = -3000 / (dist);
+                    nodes[i].vx += force * dx / dist; nodes[i].vy += force * dy / dist;
+                    nodes[j].vx -= force * dx / dist; nodes[j].vy -= force * dy / dist;
+                }
+            }
+            nodes.forEach(n => {
+                n.vx *= 0.95; n.vy *= 0.95;
+                n.x += n.vx; n.y += n.vy;
+                n.x = Math.max(30, Math.min(width - 30, n.x));
+                n.y = Math.max(30, Math.min(height - 30, n.y));
+            });
+            if (animationSteps.length > 0) this.updateGraphVisuals(animationSteps[currentStepIndex]);
+            graphSim = requestAnimationFrame(simulationTick);
+        };
+        simulationTick();
+    }
+    updateGraphVisuals(state) {
+        if (!this.graph) return;
+        graphSvg.innerHTML = '';
+        const { nodes, edges } = this.graph;
+        
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        // Arrowhead
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead'); marker.setAttribute('viewBox', '-0 -5 10 10');
+        marker.setAttribute('refX', 28); marker.setAttribute('refY', 0); marker.setAttribute('orient', 'auto');
+        marker.setAttribute('markerWidth', 6); marker.setAttribute('markerHeight', 6);
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0,-5 L 10 ,0 L 0,5');
+        path.setAttribute('fill', '#999');
+        marker.appendChild(path); defs.appendChild(marker);
+        // Crown Icon
+        const crown = document.createElementNS('http://www.w3.org/2000/svg', 'symbol');
+        crown.setAttribute('id', 'crown-icon'); crown.setAttribute('viewBox', '0 0 100 100');
+        crown.innerHTML = `<path d="M10 30 L20 70 L40 50 L50 70 L60 50 L80 70 L90 30 Z" fill="${getCssVar('--color-node-judge')}" stroke="black" stroke-width="5"/>`;
+        defs.appendChild(crown);
+        graphSvg.appendChild(defs);
+
+        edges.forEach(e => {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', e.source.x); line.setAttribute('y1', e.source.y);
+            line.setAttribute('x2', e.target.x); line.setAttribute('y2', e.target.y);
+            line.setAttribute('stroke', '#999');
+            line.setAttribute('stroke-width', 2);
+            line.setAttribute('marker-end', 'url(#arrowhead)');
+            if (e.source.id === state.truster && e.target.id === state.trusted) {
+                line.setAttribute('stroke', getCssVar('--color-danger'));
+                line.setAttribute('stroke-width', 4);
+            }
+            graphSvg.appendChild(line);
+        });
+
+        nodes.forEach(n => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y); circle.setAttribute('r', 25);
+            
+            let color = getCssVar('--color-node-default');
+            if (n.id === state.truster) color = getCssVar('--color-node-truster');
+            else if (n.id === state.trusted) color = getCssVar('--color-node-trusted');
+            else if (n.id === state.checking) color = getCssVar('--color-node-checking');
+            if (n.id === state.judge) color = getCssVar('--color-node-judge');
+            
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333'); circle.setAttribute('stroke-width', 2);
+            graphSvg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', n.x); text.setAttribute('y', n.y);
+            text.setAttribute('dy', '0.3em'); text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'white'); text.setAttribute('font-weight', 'bold');
+            text.setAttribute('font-size', '1.2em');
+            text.textContent = n.id;
+            graphSvg.appendChild(text);
+
+            if (n.id === state.judge) {
+                const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                use.setAttribute('href', '#crown-icon');
+                use.setAttribute('x', n.x - 15); use.setAttribute('y', n.y - 45);
+                use.setAttribute('width', 30); use.setAttribute('height', 30);
+                graphSvg.appendChild(use);
+            }
+        });
+    }
+}
+
+// --- Init ---
+document.addEventListener('DOMContentLoaded', () => {
+    nInput = document.getElementById('n_input');
+    trustInput = document.getElementById('trust_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    degreeTable = document.getElementById('degree_table');
+    graphSvg = document.getElementById('graph_svg');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    modalTitle = document.getElementById('modal_title');
+    
+    const anim = new TownJudgeAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => { resultModal.style.display = 'none'; });
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

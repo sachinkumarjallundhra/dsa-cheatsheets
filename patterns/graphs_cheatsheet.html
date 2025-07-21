@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Patterns Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🕸️ Graph Patterns – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            <b>Graph Patterns</b> are used to solve problems involving vertices (nodes) and edges (connections). Common applications include finding shortest paths, detecting cycles, and traversing connected components.
+        </p>
+
+        <h2>🎯 Solution Patterns</h2>
+        
+        <h3>1. Basic Graph Representation</h3>
+        <pre><code>// Adjacency List
+Map&lt;Integer, List&lt;Integer&gt;&gt; graph = new HashMap&lt;&gt;();
+
+// Adjacency Matrix
+int[][] graph = new int[n][n];
+
+// Edge List
+class Edge {
+    int from, to, weight;
+    Edge(int f, int t, int w) {
+        from = f; to = t; weight = w;
+    }
+}</code></pre>
+
+        <h3>2. DFS (Depth-First Search)</h3>
+        <pre><code>void dfs(int node, Map&lt;Integer, List&lt;Integer&gt;&gt; graph, Set&lt;Integer&gt; visited) {
+    if (visited.contains(node)) return;
+    
+    visited.add(node);
+    // Process current node
+    
+    for (int neighbor : graph.get(node)) {
+        dfs(neighbor, graph, visited);
+    }
+}</code></pre>
+
+        <h3>3. BFS (Breadth-First Search)</h3>
+        <pre><code>void bfs(int start, Map&lt;Integer, List&lt;Integer&gt;&gt; graph) {
+    Queue&lt;Integer&gt; queue = new LinkedList&lt;&gt;();
+    Set&lt;Integer&gt; visited = new HashSet&lt;&gt;();
+    
+    queue.offer(start);
+    visited.add(start);
+    
+    while (!queue.isEmpty()) {
+        int node = queue.poll();
+        // Process current node
+        
+        for (int neighbor : graph.get(node)) {
+            if (!visited.contains(neighbor)) {
+                visited.add(neighbor);
+                queue.offer(neighbor);
+            }
+        }
+    }
+}</code></pre>
+
+        <h3>4. Dijkstra's Algorithm</h3>
+        <pre><code>void dijkstra(int start, Map&lt;Integer, List&lt;Pair&lt;Integer, Integer&gt;&gt;&gt; graph) {
+    PriorityQueue&lt;Pair&lt;Integer, Integer&gt;&gt; pq = new PriorityQueue&lt;&gt;((a,b) -> a.getValue() - b.getValue());
+    Map&lt;Integer, Integer&gt; distances = new HashMap&lt;&gt;();
+    
+    pq.offer(new Pair&lt;&gt;(start, 0));
+    distances.put(start, 0);
+    
+    while (!pq.isEmpty()) {
+        Pair&lt;Integer, Integer&gt; current = pq.poll();
+        int node = current.getKey(), dist = current.getValue();
+        
+        if (dist &gt; distances.get(node)) continue;
+        
+        for (Pair&lt;Integer, Integer&gt; edge : graph.get(node)) {
+            int next = edge.getKey(), weight = edge.getValue();
+            int newDist = dist + weight;
+            
+            if (!distances.containsKey(next) || newDist &lt; distances.get(next)) {
+                distances.put(next, newDist);
+                pq.offer(new Pair&lt;&gt;(next, newDist));
+            }
+        }
+    }
+}</code></pre>
+
+        <h2>📘 Common LeetCode Problems</h2>
+        
+        <h3>🟢 Easy Problems</h3>
+        <ul class="problems-list">
+            <li>
+                <a href="find_the_town_judge_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        997. Find the Town Judge
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                    <div class="problem-notes">
+                        Degree counting for judge detection
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="find_center_of_star_graph_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1791. Find Center of Star Graph
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                    <div class="problem-notes">
+                        Edge analysis for center node
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="lucky_numbers_in_a_matrix_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1380. Lucky Numbers in a Matrix
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                    <div class="problem-notes">
+                        Row min & column max
+                    </div>
+                </a>
+            </li>
+        </ul>
+
+        <h3>🟡 Medium Problems</h3>
+        <ul class="problems-list">
+            <li>
+                <a href="network_delay_time_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        743. Network Delay Time
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        Dijkstra's for network delay
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="paths_in_maze_that_lead_to_same_room_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Paths in Maze That Lead to Same Room
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        Maze path analysis
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="clone_graph_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        133. Clone Graph
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        BFS/DFS for graph cloning
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="graph_valid_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        261. Graph Valid Tree
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        Union Find, DFS, BFS for tree validation
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="bus_routes_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        815. Bus Routes
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        BFS for minimum buses
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="reconstruct_itinerary_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        332. Reconstruct Itinerary
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        Hierholzer’s/DFS for itinerary
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="path_with_maximum_probability_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1514. Path with Maximum Probability
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        Modified Dijkstra’s for max probability
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="tree_diameter_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1245. Tree Diameter
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        Double DFS/BFS, single DFS for diameter
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="reorder_routes_to_make_all_paths_lead_to_city_zero_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1466. Reorder Routes to Make All Paths Lead to City Zero
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        DFS with edge direction tracking
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="minimum_cost_to_make_at_least_one_valid_path_in_a_grid_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        1368. Minimum Cost to Make at Least One Valid Path in a Grid
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                    <div class="problem-notes">
+                        0-1 BFS/Dijkstra’s for grid path
+                    </div>
+                </a>
+            </li>
+        </ul>
+
+        <h3>🔴 Hard Problems</h3>
+        <ul class="problems-list">
+            <li>
+                <a href="longest_cycle_in_a_graph_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        2360. Longest Cycle in a Graph
+                        <span class="badge badge-hard">Hard</span>
+                    </div>
+                    <div class="problem-notes">
+                        DFS with distance tracking
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="shortest_cycle_in_a_graph_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Shortest Cycle in a Graph
+                        <span class="badge badge-hard">Hard</span>
+                    </div>
+                    <div class="problem-notes">
+                        BFS for shortest cycle
+                    </div>
+                </a>
+            </li>
+        </ul>
+
+        <h2>💡 Key Tips</h2>
+        <ul>
+            <li>Always handle visited nodes to prevent cycles</li>
+            <li>Consider both directed and undirected graph variants</li>
+            <li>Use BFS for shortest path in unweighted graphs</li>
+            <li>Use Dijkstra's for shortest path in weighted graphs</li>
+            <li>Consider edge cases: disconnected components, self-loops</li>
+        </ul>
+    </div>
+    <style>
+    .problems-list {
+        list-style: none;
+        padding: 0;
+    }
+    .problem-link {
+        display: block;
+        padding: 12px;
+        margin: 8px 0;
+        background: #f8f9fa;
+        border-radius: 6px;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s;
+    }
+    .problem-link:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    .problem-title {
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+    .problem-notes {
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+    .badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        margin-left: 8px;
+    }
+    .badge-easy { background: #28a745; color: white; }
+    .badge-medium { background: #ffc107; color: black; }
+    .badge-hard { background: #dc3545; color: white; }
+  </style>
+</body>
+</html>

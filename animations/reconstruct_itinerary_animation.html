@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconstruct Itinerary Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-next: #e67e22;
+            --color-edge-used: #7f8c8d;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .data-item { padding: 8px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; }
+        .result-item { background: var(--color-success); color: white; }
+
+        .graph-table { width: 100%; border-collapse: collapse; font-size: 0.9em;}
+        .graph-table th, .graph-table td { border: 1px solid #ddd; padding: 4px; text-align: center; }
+        .graph-table th { background-color: #f2f2f2; }
+        .graph-table tr.updated td:first-child { background-color: #e8f5e9; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-content h2 { font-size: 1.8em; margin-bottom: 20px;}
+        #final_result_text { font-size: 1.5em; font-weight: bold; margin: 0; color: var(--color-primary); letter-spacing: 1px; }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Reconstruct Itinerary</h1>
+            <div class="controls">
+                <label>Tickets:</label><textarea id="tickets_input">[["MUC", "LHR"], ["JFK", "MUC"], ["SFO", "SJC"], ["LHR", "SFO"]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (DFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tickets and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Flight Map</h2>
+            <div id="graph_container"></div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Adjacency List (Graph)</h2>
+                <div id="graph_table_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Itinerary (Result)</h2>
+                <div id="result_list_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Itinerary</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let ticketsInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    graphContainer, graphTableContainer, callStackContainer, resultListContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let sim;
+
+class ItineraryAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        if (sim) sim.stop();
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, graphContainer, graphTableContainer, callStackContainer, resultListContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter tickets and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const ticketsStr = ticketsInput.value.trim().replace(/'/g, '"');
+            const tickets = JSON.parse(ticketsStr);
+            if (!Array.isArray(tickets)) throw new Error("Invalid input");
+
+            this.initUI();
+            animationSteps = this.generateSteps(tickets);
+            
+            const allAirports = new Set();
+            tickets.forEach(([u,v]) => { allAirports.add(u); allAirports.add(v); });
+            const graphData = {
+                nodes: Array.from(allAirports).map(id => ({ id })),
+                edges: tickets.map(([u, v], i) => ({ id: i, source: u, target: v }))
+            };
+            sim = new ForceGraph(graphContainer, graphData);
+            sim.start(this.render.bind(this));
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid 2D array for Tickets.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    render() {
+        if (simulationRunning && animationSteps.length > 0) {
+            this.renderState(animationSteps[currentStepIndex]);
+        }
+    }
+    initUI() {
+        const code = [
+            "function findItinerary(tickets):",
+            "  graph = build_adjacency_map(tickets)",
+            "  result = new LinkedList()",
+            "  dfs(\"JFK\", graph, result)",
+            "  return result",
+            "function dfs(airport, graph, result):",
+            "  destinations = graph.get(airport)",
+            "  while destinations are not empty:",
+            "    next = destinations.poll()",
+            "    dfs(next, graph, result)",
+            "  result.addFirst(airport)"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+    
+    generateSteps(tickets) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+
+        let state = {
+            line: null, msg: "", graph: {}, result: [], callStack: [],
+            highlights: { current: null, next: null, usedEdges: [] },
+            finalResult: null
+        };
+        
+        save({ ...state, line: 0, msg: "Start of algorithm." });
+
+        const graph = new Map();
+        for (const [from, to] of tickets) {
+            if (!graph.has(from)) graph.set(from, []);
+            graph.get(from).push(to);
+        }
+        graph.forEach(dests => dests.sort()); // PriorityQueue behavior
+        state.graph = Object.fromEntries(graph);
+        save({ ...state, line: 1, msg: "Built the adjacency list from tickets, sorting destinations." });
+
+        save({ ...state, line: 2, msg: "Initialized an empty list for the itinerary." });
+        save({ ...state, line: 3, msg: "Starting DFS from 'JFK'." });
+
+        function dfs(airport) {
+            state.callStack.push(airport);
+            state.highlights.current = airport;
+            save({ ...state, line: 5, msg: `Entering dfs("${airport}").` });
+            
+            state.line = 6;
+            save({ ...state, msg: `Getting destinations for "${airport}".` });
+            const destinations = graph.get(airport);
+            
+            state.line = 7;
+            save({ ...state, msg: `Checking if "${airport}" has unused flights.` });
+            while (destinations && destinations.length > 0) {
+                state.highlights.next = destinations[0];
+                state.line = 8;
+                save({ ...state, msg: `Next destination for "${airport}" is "${destinations[0]}".` });
+
+                const nextAirport = destinations.shift();
+                
+                const edgeKey = `${airport}->${nextAirport}`;
+                const edgeIndex = state.highlights.usedEdges.filter(e => e.startsWith(edgeKey)).length;
+                state.highlights.usedEdges.push(`${edgeKey}:${edgeIndex}`);
+
+                state.graph = Object.fromEntries(graph); // Update state with modified graph
+                state.line = 9;
+                state.highlights.current = airport;
+                state.highlights.next = nextAirport;
+                save({ ...state, msg: `Using ticket ${airport} -> ${nextAirport}. Making recursive call.` });
+
+                dfs(nextAirport);
+                
+                state.highlights.current = airport;
+                state.highlights.next = null;
+                save({ ...state, line: 7, msg: `Returned to dfs("${airport}"). Checking for more flights.` });
+            }
+            
+            state.line = 10;
+            state.highlights.current = airport;
+            save({ ...state, msg: `No more flights from "${airport}". Adding it to the front of the result.` });
+            state.result.unshift(airport);
+            state.callStack.pop();
+        }
+
+        dfs("JFK");
+        state.highlights.current = null;
+        save({ ...state, line: 4, msg: "DFS complete. Returning final itinerary." });
+        state.finalResult = state.result;
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(ap => `<div class="data-item stack-item">${ap}</div>`).join('');
+        resultListContainer.innerHTML = state.result.map(ap => `<div class="data-item result-item">${ap}</div>`).join('');
+        
+        let tableHTML = `<table class="graph-table"><thead><tr><th>From</th><th>To (PQ)</th></tr></thead><tbody>`;
+        const updatedAirport = state.callStack[state.callStack.length-1];
+        for(const airport in state.graph) {
+            const isUpdated = airport === updatedAirport;
+            tableHTML += `<tr class="${isUpdated ? 'updated' : ''}"><td>${airport}</td><td>[${state.graph[airport].join(', ')}]</td></tr>`;
+        }
+        graphTableContainer.innerHTML = tableHTML + '</tbody></table>';
+        
+        sim.updateStyles(state.highlights);
+        
+        if (state.finalResult) {
+            finalResultText.textContent = state.finalResult.join(" → ");
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class ForceGraph {
+    constructor(container, graphData) {
+        this.container = container;
+        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        this.svg.setAttribute('width', '100%'); this.svg.setAttribute('height', '100%');
+        this.container.innerHTML = '';
+        this.container.appendChild(this.svg);
+        this.width = this.container.clientWidth;
+        this.height = this.container.clientHeight;
+        this.animationFrameId = null;
+        this.styles = {};
+        this.nodes = graphData.nodes.map(d => ({ ...d, x: this.width/2 + (Math.random()-0.5)*50, y: this.height/2 + (Math.random()-0.5)*50, vx: 0, vy: 0 }));
+        this.edges = graphData.edges.map(d => ({ ...d }));
+    }
+
+    tick() {
+        this.nodes.forEach(n1 => {
+            n1.vx *= 0.95; n1.vy *= 0.95;
+            this.nodes.forEach(n2 => {
+                 if(n1 === n2) return;
+                 const dx = n2.x - n1.x, dy = n2.y - n1.y;
+                 const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                 if (dist < 200) {
+                    const force = -100 / dist;
+                    n1.vx += force * dx / dist; n1.vy += force * dy / dist;
+                 }
+            });
+        });
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const dx = target.x - source.x, dy = target.y - source.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const force = (dist - 150) * 0.01;
+            source.vx += force * dx / dist; source.vy += force * dy / dist;
+            target.vx -= force * dx / dist; target.vy -= force * dy / dist;
+        });
+        this.nodes.forEach(n => {
+            n.x += n.vx; n.y += n.vy;
+            n.x = Math.max(30, Math.min(this.width - 30, n.x));
+            n.y = Math.max(30, Math.min(this.height - 30, n.y));
+        });
+        this.draw();
+        this.animationFrameId = requestAnimationFrame(() => this.tick());
+    }
+
+    updateStyles(styles) { this.styles = styles; }
+    start() { this.tick(); }
+    stop() { cancelAnimationFrame(this.animationFrameId); }
+
+    draw() {
+        this.svg.innerHTML = '';
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead'); marker.setAttribute('viewBox', '-0 -5 10 10');
+        marker.setAttribute('refX', 28); marker.setAttribute('refY', 0); marker.setAttribute('orient', 'auto');
+        marker.setAttribute('markerWidth', 6); marker.setAttribute('markerHeight', 6);
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 0,-5 L 10 ,0 L 0,5');
+        marker.appendChild(path); defs.appendChild(marker); this.svg.appendChild(defs);
+        
+        this.edges.forEach(e => {
+            const source = this.nodes.find(n => n.id === e.source);
+            const target = this.nodes.find(n => n.id === e.target);
+            if (!source || !target) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', source.x); line.setAttribute('y1', source.y);
+            line.setAttribute('x2', target.x); line.setAttribute('y2', target.y);
+            
+            const edgeKey = `${e.source}->${e.target}`;
+            const numUsed = this.styles.usedEdges?.filter(used => used.startsWith(edgeKey)).length || 0;
+            const edgeInstanceKey = `${edgeKey}:${numUsed}`;
+
+            let color = '#ccc', width = 2;
+            path.setAttribute('fill', '#999');
+            if (this.styles.usedEdges?.some(used => used.startsWith(`${edgeKey}:${e.id}`))) {
+                color = 'var(--color-edge-used)';
+                path.setAttribute('fill', 'var(--color-edge-used)');
+            }
+            if (e.source === this.styles.current && e.target === this.styles.next) {
+                 const isThisEdgeUsed = this.styles.usedEdges?.includes(edgeInstanceKey);
+                 if (!isThisEdgeUsed) {
+                     color = 'var(--color-primary)';
+                     width = 4;
+                     path.setAttribute('fill', 'var(--color-primary)');
+                 }
+            }
+            
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', width);
+            line.setAttribute('marker-end', 'url(#arrowhead)');
+            this.svg.appendChild(line);
+        });
+
+        this.nodes.forEach(n => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y);
+            circle.setAttribute('r', 25);
+            
+            let color = 'var(--color-node-default)';
+            if (n.id === this.styles.next) color = 'var(--color-node-next)';
+            if (n.id === this.styles.current) color = 'var(--color-node-current)';
+            
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            this.svg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', n.x); text.setAttribute('y', n.y);
+            text.setAttribute('dy', '0.3em'); text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', 'white'); text.setAttribute('font-weight', 'bold');
+            text.textContent = n.id;
+            this.svg.appendChild(text);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    ticketsInput = document.getElementById('tickets_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    graphContainer = document.getElementById('graph_container');
+    graphTableContainer = document.getElementById('graph_table_container');
+    callStackContainer = document.getElementById('call_stack_container');
+    resultListContainer = document.getElementById('result_list_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new ItineraryAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>
