@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Zigzag Level Order Traversal Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-enqueued: #3498db;
+            --color-queue-item: #e9d8fd;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.enqueued .node-circle { fill: var(--color-node-enqueued) !important; }
+        .node-group.current .node-circle { fill: var(--color-node-current) !important; }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .queue-container { display: flex; flex-wrap: wrap; gap: 5px; min-height: 30px; }
+        .queue-item { background: var(--color-queue-item); color: var(--color-text-dark); border: 1px solid #c3a1e1; padding: 4px 8px; border-radius: 4px; font-family: 'Courier New', monospace; animation: item-add 0.4s ease; }
+        .result-container .level-row { display: flex; gap: 5px; background: #f0f9eb; padding: 5px; border-radius: 4px; margin-bottom: 5px; border: 1px solid #d4edda; }
+        .result-container .level-val { background: var(--color-success); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        
+        .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .analysis-item { text-align: center; }
+        .analysis-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; font-size: 0.9em; }
+        .analysis-item .value { font-size: 1.5em; font-weight: bold; color: var(--color-text-dark); }
+        .direction-indicator { font-size: 2.5em; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.5em; font-weight: bold; margin: 0; color: var(--color-success); }
+
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Binary Tree Zigzag Level Order Traversal</h1>
+            <div class="controls">
+                <label>Tree (array):</label><textarea id="tree_input">[3,9,20,null,null,15,7]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (BFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel"><h2>Zigzag Traversal (Result)</h2><div id="result_container" class="data-container result-container"></div></div>
+             <div class="panel"><h2>Queue</h2><div id="queue_container" class="queue-container data-container"></div></div>
+             <div class="panel"><h2>Level Analysis</h2>
+                <div class="analysis-grid">
+                    <div class="analysis-item"><span class="label">Level</span><span id="val-level" class="value">-</span></div>
+                    <div class="analysis-item"><span class="label">Direction</span><span id="val-direction" class="direction-indicator">→</span></div>
+                    <div class="analysis-item"><span class="label">Size</span><span id="val-size" class="value">-</span></div>
+                    <div class="analysis-item"><span class="label">i</span><span id="val-i" class="value">-</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, startButton, nextStepButton, codeContainer, actionDisplay, treeContainer,
+    resultContainer, queueContainer, valLevel, valSize, valI, valDirection,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class ZigzagAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, resultContainer, queueContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = 'Enter tree and click \'Start\'.';
+        valLevel.textContent = '-'; valSize.textContent = '-'; valI.textContent = '-';
+        valDirection.innerHTML = '&nbsp;';
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/null/g, 'null').replace(/'/g, '"'));
+            if (!Array.isArray(treeArr)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array for the Tree.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function zigzagLevelOrder(root):",
+            "  result = []",
+            "  if root == null: return result",
+            "  queue = [root]",
+            "  leftToRight = true",
+            "",
+            "  while !queue.isEmpty():",
+            "    size = queue.size()",
+            "    level = new LinkedList()",
+            "",
+            "    for i from 0 to size-1:",
+            "      node = queue.poll()",
+            "      if (leftToRight):",
+            "        level.addLast(node.val)",
+            "      else:",
+            "        level.addFirst(node.val)",
+            "      if node.left: queue.offer(node.left)",
+            "      if node.right: queue.offer(node.right)",
+            "",
+            "    result.add(level)",
+            "    leftToRight = !leftToRight",
+            "",
+            "  return result"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+
+    generateSteps(root) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", queue: [], result: [],
+            level: -1, levelSize: -1, i: -1, currentLevelList: [], leftToRight: true,
+            highlights: { currentNode: null, enqueuedNodes: [] },
+            finalResult: null
+        };
+
+        state.line = 1; save({ ...state, msg: "Initializing an empty result list." });
+        state.line = 2; save({ ...state, msg: "Check if root is null." });
+        if (!root) {
+            state.finalResult = [];
+            save({ ...state, msg: "Root is null, returning empty list." });
+            return steps;
+        }
+
+        const nodeQueue = [root];
+        state.queue.push(root.val);
+        state.line = 3; save({ ...state, msg: `Initialize queue and enqueue root (${root.val}).` });
+        state.line = 4; save({ ...state, msg: "Set initial direction to Left-to-Right."});
+
+        let level = 0;
+        while (nodeQueue.length > 0) {
+            state.level = level;
+            state.line = 6; save({ ...state, msg: `Starting level ${level}.` });
+
+            const size = nodeQueue.length;
+            state.levelSize = size;
+            state.line = 7; save({ ...state, msg: `Current level has ${size} node(s).` });
+            
+            state.currentLevelList = [];
+            state.line = 8; save({ ...state, msg: `Creating an empty list for the current level.`});
+
+            for (let i = 0; i < size; i++) {
+                state.i = i;
+                const node = nodeQueue.shift();
+                state.queue.shift();
+                state.highlights.currentNode = node.val;
+                state.highlights.enqueuedNodes = [];
+                state.line = 11; save({ ...state, msg: `Processing node ${i + 1}/${size}: Dequeued ${node.val}.` });
+
+                state.line = 12; save({ ...state, msg: `Direction is ${state.leftToRight ? 'L-to-R' : 'R-to-L'}.` });
+                if (state.leftToRight) {
+                    state.currentLevelList.push(node.val);
+                    state.line = 13; save({ ...state, msg: `Added ${node.val} to the END of the level list.`});
+                } else {
+                    state.currentLevelList.unshift(node.val);
+                    state.line = 15; save({ ...state, msg: `Added ${node.val} to the FRONT of the level list.`});
+                }
+                
+                if (node.left) {
+                    nodeQueue.push(node.left); state.queue.push(node.left.val);
+                    state.highlights.enqueuedNodes.push(node.left.val);
+                }
+                if (node.right) {
+                    nodeQueue.push(node.right); state.queue.push(node.right.val);
+                    state.highlights.enqueuedNodes.push(node.right.val);
+                }
+                const enqueueMsg = state.highlights.enqueuedNodes.length > 0 
+                    ? `Enqueued children: [${state.highlights.enqueuedNodes.join(', ')}]`
+                    : "Node has no children to enqueue.";
+                state.line = 16; save({ ...state, msg: enqueueMsg});
+
+                state.highlights.currentNode = null;
+            }
+            state.result.push(state.currentLevelList);
+            state.line = 19; save({ ...state, msg: `Level ${level} complete. Added to result.`});
+
+            state.leftToRight = !state.leftToRight;
+            state.line = 20; save({ ...state, msg: "Flipping direction for the next level."});
+
+            level++;
+            state.i = -1; state.levelSize = -1; state.currentLevelList = [];
+        }
+
+        state.finalResult = state.result;
+        state.line = 22;
+        save({ ...state, msg: `Queue is empty. Traversal complete.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        let resultHTML = state.result.map(level => 
+            `<div class="level-row">${level.map(v => `<span class="level-val">${v}</span>`).join('')}</div>`
+        ).join('');
+        if(state.currentLevelList.length > 0) {
+            resultHTML += `<div class="level-row" style="border-style:dashed;">${state.currentLevelList.map(v => `<span class="level-val">${v}</span>`).join('')}</div>`;
+        }
+        resultContainer.innerHTML = resultHTML;
+
+        queueContainer.innerHTML = state.queue.map(item => `<div class="queue-item">${item}</div>`).join('');
+        
+        valLevel.textContent = state.level > -1 ? state.level : '-';
+        valSize.textContent = state.levelSize > -1 ? state.levelSize : '-';
+        valI.textContent = state.i > -1 ? state.i : '-';
+        valDirection.innerHTML = state.leftToRight ? '→ <span style="font-size:0.5em;">L-to-R</span>' : '← <span style="font-size:0.5em;">R-to-L</span>';
+
+        treeDrawer.draw(state);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = JSON.stringify(state.finalResult);
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        this._layout(root);
+    }
+    
+    _layout(root) {
+        if (!root) return;
+        const width = this.svg.parentElement.clientWidth;
+        this._getNodeDepths(root, 0);
+        const inOrderNodes = [];
+        this._getInOrderList(root, inOrderNodes);
+        
+        const hSpacing = Math.min(60, width / (inOrderNodes.length + 1));
+        const totalWidth = (inOrderNodes.length - 1) * hSpacing;
+        const startX = (width - totalWidth) / 2;
+        inOrderNodes.forEach((node, i) => { this.nodeMap.get(node.val).x = startX + i * hSpacing; });
+    }
+
+    _getNodeDepths(node, depth) {
+        if (!node) return;
+        this.nodeMap.set(node.val, { node, x: 0, y: depth * 85 + 60 });
+        this._getNodeDepths(node.left, depth + 1);
+        this._getNodeDepths(node.right, depth + 1);
+    }
+    
+    _getInOrderList(node, list) {
+        if (!node) return;
+        this._getInOrderList(node.left, list);
+        list.push(node);
+        this._getInOrderList(node.right, list);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const h = state.highlights;
+        
+        const drawEdges = (node) => {
+            if (!node) return;
+            const parentPos = this.nodeMap.get(node.val);
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const childPos = this.nodeMap.get(child.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', parentPos.x); line.setAttribute('y1', parentPos.y);
+                    line.setAttribute('x2', childPos.x); line.setAttribute('y2', childPos.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        this.nodeMap.forEach(mapNode => {
+            const { node, x, y } = mapNode;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${x},${y})`);
+            g.classList.add('node-group');
+
+            if(h.enqueuedNodes.includes(node.val)) g.classList.add('enqueued');
+            if(h.currentNode === node.val) g.classList.add('current');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            circle.setAttribute('fill', 'var(--color-node-default)');
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    resultContainer = document.getElementById('result_container');
+    queueContainer = document.getElementById('queue_container');
+    valLevel = document.getElementById('val-level');
+    valSize = document.getElementById('val-size');
+    valI = document.getElementById('val-i');
+    valDirection = document.getElementById('val-direction');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new ZigzagAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

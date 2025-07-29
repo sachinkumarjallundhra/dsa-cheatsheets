@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symmetric Tree (DFS) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-node-default: #bdc3c7;
+            --color-node-t1: #3498db;
+            --color-node-t2: #e67e22;
+            --color-return: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.t1 .node-circle { fill: var(--color-node-t1) !important; }
+        .node-group.t2 .node-circle { fill: var(--color-node-t2) !important; }
+        .node-group.fail .node-circle { fill: var(--color-danger) !important; transform: scale(1.1); }
+        .return-val-anim, .call-anim { animation-duration: 0.9s; animation-timing-function: ease-in-out; animation-fill-mode: forwards; }
+        .return-val-anim { animation-name: travel-up; }
+        .call-anim { animation-name: travel-down; }
+        .anim-orb text { fill: #333; font-size: 1.2em; font-weight: bold; }
+
+        @keyframes travel-up {
+            from { transform: translate(var(--from-x), var(--from-y)) scale(0.8); opacity: 1; }
+            40% { opacity: 1; }
+            to { transform: translate(var(--to-x), var(--to-y)) scale(0.2); opacity: 0; }
+        }
+        @keyframes travel-down {
+            from { transform: translate(var(--from-x), var(--from-y)) scale(0.2); opacity: 0; }
+            60% { opacity: 1; }
+            to { transform: translate(var(--to-x), var(--to-y)) scale(0.8); opacity: 1; }
+        }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; font-size: 0.8em; }
+        
+        .comparison-panel { display: flex; justify-content: space-around; align-items: center; padding: 5px 0; }
+        .comparison-item { text-align: center; }
+        .comparison-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; }
+        .comparison-item .value { font-size: 2em; font-weight: bold; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; color: white; }
+        .comparison-item .t1 { background-color: var(--color-node-t1); }
+        .comparison-item .t2 { background-color: var(--color-node-t2); }
+        #comparison-check-icon { font-size: 2em; }
+
+        #final-result-panel { text-align: center; font-size: 2em; font-weight: bold; }
+        #final-result-panel.symmetric { color: var(--color-success); }
+        #final-result-panel.asymmetric { color: var(--color-danger); }
+
+        .subproblem-panel { display: flex; justify-content: space-between; font-size: 0.9em; }
+        .subproblem-item { text-align: center; }
+        .subproblem-item .result { font-size: 1.5em; font-weight: bold; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2.5em; font-weight: bold; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Symmetric Tree (DFS)</h1>
+            <div class="controls">
+                <label>Tree (array):</label><textarea id="tree_input">[1,2,2,3,4,4,3]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (DFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel"><h2>Call Stack</h2><div id="call_stack_container" class="data-container"></div></div>
+             <div class="panel"><h2>Current Comparison</h2>
+                <div class="comparison-panel">
+                    <div class="comparison-item"><span class="label">t1</span><div id="t1-val" class="value t1">-</div></div>
+                    <div id="comparison-check-icon"></div>
+                    <div class="comparison-item"><span class="label">t2</span><div id="t2-val" class="value t2">-</div></div>
+                </div>
+                <hr style="border-color: #eee; margin: 10px 0;">
+                <div class="subproblem-panel">
+                    <div class="subproblem-item"><span class="label">Outer Pair Symmetric?</span><div id="outer-result" class="result">-</div></div>
+                    <div class="subproblem-item"><span class="label">Inner Pair Symmetric?</span><div id="inner-result" class="result">-</div></div>
+                </div>
+             </div>
+             <div class="panel"><h2>Final Result</h2><div id="final-result-panel">?</div></div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="final_result_title"></h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, startButton, nextStepButton, codeContainer, actionDisplay, treeContainer,
+    callStackContainer, t1Val, t2Val, comparisonCheckIcon, outerResultEl, innerResultEl, finalResultPanel,
+    resultModal, finalResultTitle, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class SymmetricTreeAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = 'Enter tree and click \'Start\'.';
+        t1Val.textContent = '-'; t2Val.textContent = '-';
+        comparisonCheckIcon.innerHTML = '';
+        outerResultEl.textContent = '-'; innerResultEl.textContent = '-';
+        finalResultPanel.textContent = '?'; finalResultPanel.className = '';
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/null/g, 'null').replace(/'/g, '"'));
+            if (!Array.isArray(treeArr)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array for the Tree.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "private boolean isMirror(TreeNode t1, TreeNode t2) {",
+            "  if (t1 == null && t2 == null) return true;",
+            "  if (t1 == null || t2 == null) return false;",
+            "",
+            "  return (t1.val == t2.val)",
+            "      && isMirror(t1.left, t2.right)",
+            "      && isMirror(t1.right, t2.left);",
+            "}"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map((val, i) => val !== null ? { val, left: null, right: null, id: i } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+
+    generateSteps(root) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", callStack: [],
+            comparison: { t1: null, t2: null, result: null, subResults: { outer: null, inner: null } },
+            highlights: { t1_id: null, t2_id: null, fail_ids: [] },
+            animation: { type: null, from1: null, from2: null, to1: null, to2: null, value: null },
+            finalResult: null
+        };
+        
+        if (!root) {
+             state.finalResult = true; save({ ...state, msg: "Root is null, tree is symmetric." }); return steps;
+        }
+
+        function traceMirror(t1, t2) {
+            const t1Val = t1 ? t1.val : 'ø';
+            const t2Val = t2 ? t2.val : 'ø';
+            state.callStack.push(`(${t1Val}, ${t2Val})`);
+            state.highlights = { t1_id: t1?.id, t2_id: t2?.id, fail_ids: [] };
+            state.comparison = { t1: t1?.val, t2: t2?.val, result: null, subResults: { outer: null, inner: null } };
+            save({ ...state, line: 0, msg: `Comparing t1=${t1Val} and t2=${t2Val}.` });
+
+            state.line = 1; save({ ...state, msg: "Are both nodes null?" });
+            if (t1 === null && t2 === null) {
+                state.comparison.result = 'pass';
+                save({ ...state, msg: "Yes. They are symmetric. Returning true." });
+                state.callStack.pop();
+                return true;
+            }
+
+            state.line = 2; save({ ...state, msg: "Is exactly one node null?" });
+            if (t1 === null || t2 === null) {
+                state.comparison.result = 'fail';
+                state.highlights.fail_ids = [t1?.id, t2?.id].filter(id => id !== undefined);
+                save({ ...state, msg: "FAIL: One is null, the other isn't. Returning false." });
+                state.callStack.pop();
+                return false;
+            }
+            
+            state.line = 4; save({ ...state, msg: `Do values match? (${t1.val} == ${t2.val})`});
+            if (t1.val !== t2.val) {
+                state.comparison.result = 'fail';
+                state.highlights.fail_ids = [t1.id, t2.id];
+                save({ ...state, msg: `FAIL: Values do not match. Returning false.` });
+                state.callStack.pop();
+                return false;
+            }
+            state.comparison.result = 'pass';
+            save({ ...state, msg: `Values match. Now check children.`});
+            
+            state.line = 5; save({ ...state, msg: "Checking outer children: (t1.left, t2.right)." });
+            state.animation = { type: 'call', from1: t1.id, from2: t2.id, to1: t1.left?.id, to2: t2.right?.id };
+            save({ ...state, msg: "Descending to outer pair..." });
+            state.animation.type = null;
+            const outerResult = traceMirror(t1.left, t2.right);
+
+            state.animation = { type: 'return', from1: t1.left?.id, from2: t2.right?.id, to1: t1.id, to2: t2.id, value: outerResult };
+            save({ ...state, msg: "Outer children check returning..." });
+            state.animation.type = null;
+            
+            state.highlights = { t1_id: t1?.id, t2_id: t2?.id, fail_ids: [] };
+            state.comparison.subResults.outer = outerResult;
+            save({ ...state, msg: `Outer pair returned ${outerResult}.`});
+            if (!outerResult) {
+                save({ ...state, msg: "Outer children not symmetric. Propagating false." });
+                state.callStack.pop();
+                return false;
+            }
+            
+            state.line = 6; save({ ...state, msg: "Checking inner children: (t1.right, t2.left)." });
+            state.animation = { type: 'call', from1: t1.id, from2: t2.id, to1: t1.right?.id, to2: t2.left?.id };
+            save({ ...state, msg: "Descending to inner pair..." });
+            state.animation.type = null;
+            const innerResult = traceMirror(t1.right, t2.left);
+
+            state.animation = { type: 'return', from1: t1.right?.id, from2: t2.left?.id, to1: t1.id, to2: t2.id, value: innerResult };
+            save({ ...state, msg: "Inner children check returning..." });
+            state.animation.type = null;
+
+            state.highlights = { t1_id: t1?.id, t2_id: t2?.id, fail_ids: [] };
+            state.comparison.subResults.inner = innerResult;
+            save({ ...state, msg: `Inner pair returned ${innerResult}.` });
+            if (!innerResult) {
+                 save({ ...state, msg: "Inner children not symmetric. Propagating false." });
+                 state.callStack.pop();
+                 return false;
+            }
+            
+            save({ ...state, msg: "Both inner and outer children are symmetric. Returning true."});
+            state.callStack.pop();
+            return true;
+        }
+
+        const result = traceMirror(root.left, root.right);
+        state.finalResult = result;
+        state.highlights = {};
+        state.comparison = {t1: null, t2: null, subResults: {}};
+        save({ ...state, line: null, msg: `Final result: ${result}.`});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => `<div class="stack-item">isMirror${c}</div>`).join('');
+        
+        const renderVal = v => v === null || v === undefined ? 'ø' : v;
+        t1Val.textContent = renderVal(state.comparison.t1);
+        t2Val.textContent = renderVal(state.comparison.t2);
+
+        if(state.comparison.result === 'pass') comparisonCheckIcon.innerHTML = `<span style="color:var(--color-success)">✔</span>`;
+        else if (state.comparison.result === 'fail') comparisonCheckIcon.innerHTML = `<span style="color:var(--color-danger)">✖</span>`;
+        else comparisonCheckIcon.innerHTML = '';
+        
+        const renderSubResult = (res) => {
+            if (res === null) return '-';
+            return res ? `<span style="color:var(--color-success)">✔</span>` : `<span style="color:var(--color-danger)">✖</span>`;
+        };
+        outerResultEl.innerHTML = renderSubResult(state.comparison.subResults.outer);
+        innerResultEl.innerHTML = renderSubResult(state.comparison.subResults.inner);
+        
+        if (state.finalResult !== null) {
+            finalResultPanel.textContent = state.finalResult ? 'SYMMETRIC' : 'NOT SYMMETRIC';
+            finalResultPanel.className = state.finalResult ? 'symmetric' : 'asymmetric';
+            
+            if (currentStepIndex === animationSteps.length - 1) {
+                finalResultTitle.textContent = `Tree is ${state.finalResult ? 'Symmetric' : 'Not Symmetric'}`;
+                finalResultText.textContent = state.finalResult ? 'All mirrored nodes match.' : 'A mismatch was found.';
+                finalResultText.style.color = state.finalResult ? 'var(--color-success)' : 'var(--color-danger)';
+                resultModal.style.display = 'flex';
+            }
+        }
+        treeDrawer.draw(state);
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        if(root) this._layout(root);
+    }
+    
+    _layout(root) {
+        const width = this.svg.parentElement.clientWidth;
+        this._getNodeDepths(root, 0);
+        const inOrderNodes = [];
+        this._getInOrderList(root, inOrderNodes);
+        
+        const hSpacing = Math.min(60, width / (inOrderNodes.length + 1));
+        const totalWidth = (inOrderNodes.length - 1) * hSpacing;
+        const startX = (width - totalWidth) / 2;
+        inOrderNodes.forEach((node, i) => { this.nodeMap.get(node.id).x = startX + i * hSpacing; });
+    }
+
+    _getNodeDepths(node, depth) {
+        if (!node) return;
+        this.nodeMap.set(node.id, { node, x: 0, y: depth * 85 + 60 });
+        this._getNodeDepths(node.left, depth + 1);
+        this._getNodeDepths(node.right, depth + 1);
+    }
+    
+    _getInOrderList(node, list) {
+        if (!node) return;
+        this._getInOrderList(node.left, list);
+        list.push(node);
+        this._getInOrderList(node.right, list);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const h = state.highlights;
+        
+        const drawEdges = (node) => {
+            if (!node) return;
+            const parentPos = this.nodeMap.get(node.id);
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const childPos = this.nodeMap.get(child.id);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', parentPos.x); line.setAttribute('y1', parentPos.y);
+                    line.setAttribute('x2', childPos.x); line.setAttribute('y2', childPos.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        this.nodeMap.forEach(mapNode => {
+            const { node, x, y } = mapNode;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${x},${y})`);
+            g.classList.add('node-group');
+
+            if(h.fail_ids?.includes(node.id)) g.classList.add('fail');
+            else if(h.t1_id === node.id) g.classList.add('t1');
+            else if(h.t2_id === node.id) g.classList.add('t2');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            circle.setAttribute('fill', 'var(--color-node-default)');
+            circle.setAttribute('stroke', '#333'); circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            this.svg.appendChild(g);
+        });
+        
+        if (state.animation.type) {
+            const anim = state.animation;
+            const from1 = this.nodeMap.get(anim.from1);
+            const from2 = this.nodeMap.get(anim.from2);
+            const to1 = anim.to1 !== undefined ? this.nodeMap.get(anim.to1) : from1 ? {x: from1.x-40, y: from1.y+70} : null;
+            const to2 = anim.to2 !== undefined ? this.nodeMap.get(anim.to2) : from2 ? {x: from2.x+40, y: from2.y+70} : null;
+
+            [ { from: from1, to: to1 }, { from: from2, to: to2 } ].forEach((pair, i) => {
+                if (pair.from && pair.to) {
+                    const animGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    animGroup.classList.add('anim-orb', anim.type === 'call' ? 'call-anim' : 'return-val-anim');
+                    animGroup.style.setProperty('--from-x', `${pair.from.x}px`); animGroup.style.setProperty('--from-y', `${pair.from.y}px`);
+                    animGroup.style.setProperty('--to-x', `${pair.to.x}px`); animGroup.style.setProperty('--to-y', `${pair.to.y}px`);
+                    const animCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    animCircle.setAttribute('r', 15);
+                    animCircle.setAttribute('fill', i === 0 ? 'var(--color-node-t1)' : 'var(--color-node-t2)');
+                    if(anim.type === 'return') animCircle.setAttribute('fill', 'var(--color-return)');
+                    animGroup.appendChild(animCircle);
+                    if (anim.type === 'return') {
+                         const animText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                         animText.setAttribute('text-anchor', 'middle'); animText.setAttribute('dy', '0.3em');
+                         animText.textContent = anim.value ? 'T' : 'F'; animGroup.appendChild(animText);
+                    }
+                    this.svg.appendChild(animGroup);
+                }
+            });
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    callStackContainer = document.getElementById('call_stack_container');
+    t1Val = document.getElementById('t1-val');
+    t2Val = document.getElementById('t2-val');
+    comparisonCheckIcon = document.getElementById('comparison-check-icon');
+    outerResultEl = document.getElementById('outer-result');
+    innerResultEl = document.getElementById('inner-result');
+    finalResultPanel = document.getElementById('final-result-panel');
+    resultModal = document.getElementById('result_modal');
+    finalResultTitle = document.getElementById('final_result_title');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new SymmetricTreeAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

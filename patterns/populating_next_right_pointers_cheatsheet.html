@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Populating Next Right Pointers in Each Node Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Populating Next Right Pointers in Each Node – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Populating Next Right Pointers in Each Node</b> problem (LeetCode 116) asks you to connect each node in a perfect binary tree to its next right node. If there is no next right node, the pointer should be set to <code>null</code>.
+        </p>
+
+        <h2>🎯 Solution Pattern (BFS Level Order)</h2>
+        <pre><code>// Java Solution (BFS)
+class Solution {
+    public Node connect(Node root) {
+        if (root == null) return null;
+        Queue&lt;Node&gt; queue = new LinkedList&lt;&gt;();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            Node prev = null;
+            for (int i = 0; i &lt; size; i++) {
+                Node node = queue.poll();
+                if (prev != null) prev.next = node;
+                prev = node;
+                if (node.left != null) queue.offer(node.left);
+                if (node.right != null) queue.offer(node.right);
+            }
+        }
+        return root;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/populating_next_right_pointers_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Connecting nodes at the same level</li>
+            <li>Tree-based navigation</li>
+            <li>Problems involving next pointers</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize a queue and add the root node</li>
+            <li>For each level, connect nodes using a <code>prev</code> pointer</li>
+            <li>Add children to the queue for the next level</li>
+            <li>Repeat until all levels are processed</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (return null)</li>
+            <li>Single node tree</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [1,2,3,4,5,6,7]
+Output: [1,#,2,3,#,4,5,6,7,#]
+Explanation: Each node is connected to its next right node.
+</code></pre>
+    </div>
+    

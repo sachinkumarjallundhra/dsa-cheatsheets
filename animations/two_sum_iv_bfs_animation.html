@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two Sum IV (BST) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #16a085; --color-success: #2ecc71; --color-warning: #f1c40f;
+            --color-info: #3498db; --color-danger: #e74c3c;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-enqueued: #3498db;
+            --color-node-complement: #f1c40f;
+            --color-node-found: #2ecc71;
+            --color-set-item: #d5f5e3;
+            --color-queue-item: #d6eaf8;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f8f5; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input, .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls textarea { width: 400px; height: 40px; resize: vertical; }
+        .controls input { width: 80px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.enqueued .node-circle { fill: var(--color-node-enqueued) !important; }
+        .node-group.current .node-circle { fill: var(--color-node-current) !important; }
+        .node-group.complement .node-circle { fill: var(--color-node-complement) !important; }
+        .node-group.found .node-circle { fill: var(--color-node-found) !important; stroke: #239b56 !important; }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .item-list { display: flex; flex-wrap: wrap; gap: 5px; min-height: 30px; align-content: flex-start; }
+        .item { padding: 4px 8px; border-radius: 4px; font-family: 'Courier New', monospace; animation: item-add 0.4s ease; border: 1px solid;}
+        .item.set { background-color: var(--color-set-item); border-color: #a3e9a4; }
+        .item.queue { background-color: var(--color-queue-item); border-color: #aed6f1; }
+        .item.highlight { background-color: var(--color-warning); }
+
+        .analysis-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; }
+        .analysis-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; font-size: 0.9em; }
+        .analysis-item .value { font-size: 1.5em; font-weight: bold; color: var(--color-text-dark); }
+        .analysis-item.full-width { grid-column: 1 / 3; }
+        #val-found { padding: 5px; border-radius: 4px; }
+        #val-found.yes { background-color: var(--color-success); color: white; }
+        #val-found.no { background-color: #fbeee6; color: var(--color-danger); }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_title { font-size: 1.8em; margin: 0; }
+        #final_result_text { font-size: 1.2em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Two Sum IV – Input Is a BST</h1>
+            <div class="controls">
+                <label>Tree (array):</label><textarea id="tree_input">[5,3,6,2,4,null,7]</textarea>
+                <label>Target (k):</label><input id="k_input" type="number" value="9">
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (BFS + Set)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and target, then click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Tree Visualization</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Analysis</h2>
+                <div class="analysis-container">
+                    <div class="analysis-item full-width"><span class="label">Target (k)</span><span id="val-target" class="value">-</span></div>
+                    <div class="analysis-item"><span class="label">Current Node</span><span id="val-current" class="value">-</span></div>
+                    <div class="analysis-item"><span class="label">Complement</span><span id="val-complement" class="value">-</span></div>
+                    <div class="analysis-item full-width"><span class="label">Is Complement in Set?</span><span id="val-found" class="value">-</span></div>
+                </div>
+             </div>
+             <div class="panel"><h2>Queue</h2><div id="queue_container" class="data-container item-list"></div></div>
+             <div class="panel"><h2>Set (Visited Values)</h2><div id="set_container" class="data-container item-list"></div></div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="final_result_title"></h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, kInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    treeContainer, queueContainer, setContainer, valTarget, valCurrent, valComplement,
+    valFound, resultModal, finalResultTitle, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class TwoSumBstAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, queueContainer, setContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = "Enter tree and target, then click 'Start'.";
+        valTarget.textContent = '-'; valCurrent.textContent = '-';
+        valComplement.textContent = '-'; valFound.textContent = '-';
+        valFound.className = 'value';
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/null/g, 'null'));
+            const k = parseInt(kInput.value, 10);
+            if (!Array.isArray(treeArr) || isNaN(k)) throw new Error("Invalid input.");
+            
+            const root = this.buildTree(treeArr);
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root, k);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array for the Tree and a number for k.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function findTarget(root, k):",
+            "  set = new HashSet()",
+            "  queue = [root]",
+            "  while !queue.isEmpty():",
+            "    node = queue.poll()",
+            "    complement = k - node.val",
+            "    if set.contains(complement):",
+            "      return true",
+            "    set.add(node.val)",
+            "    if node.left: queue.offer(node.left)",
+            "    if node.right: queue.offer(node.right)",
+            "  return false"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) { // Re-using from previous examples
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+
+    generateSteps(root, k) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", k, queue: [], set: [],
+            current: null, complement: null, found: null,
+            finalResult: null,
+            highlights: { current: null, enqueued: [], complement: null, foundPair: [] },
+        };
+        state.msg = "Starting algorithm."; save(state);
+        
+        if (!root) {
+            state.line = 11; state.msg = "Root is null, no pair possible.";
+            state.finalResult = { success: false };
+            save(state);
+            return steps;
+        }
+
+        const set = new Set();
+        const queue = [root];
+        
+        state.line = 1; state.msg = "Initialize an empty set to store visited values."; save(state);
+        
+        state.queue = [root.val];
+        state.line = 2; state.msg = `Initialize queue and add root (${root.val}).`; save(state);
+        
+        while (queue.length > 0) {
+            state.highlights = { current: null, enqueued: [], complement: null, foundPair: [] };
+            state.line = 3; state.msg = "Queue is not empty. Start processing a node."; save(state);
+
+            const node = queue.shift();
+            state.queue = queue.map(n => n.val);
+            state.current = node.val;
+            state.highlights.current = node.val;
+            state.line = 4; state.msg = `Dequeued node ${node.val}.`; save(state);
+            
+            const complement = k - node.val;
+            state.complement = complement;
+            state.line = 5; state.msg = `Calculate complement: ${k} - ${node.val} = ${complement}.`; save(state);
+            
+            state.line = 6; state.msg = `Check if complement (${complement}) exists in the set.`;
+            state.highlights.complement = set.has(complement) ? complement : null;
+            save(state);
+            
+            if (set.has(complement)) {
+                state.found = true;
+                state.msg = `Yes! Complement ${complement} found in the set. A pair exists!`;
+                state.line = 7;
+                state.highlights.foundPair = [node.val, complement];
+                state.finalResult = { success: true, pair: [node.val, complement], k };
+                save(state);
+                return steps;
+            }
+            
+            state.found = false;
+            state.msg = `No, complement ${complement} is not in the set.`;
+            state.highlights.complement = null;
+            save(state);
+
+            set.add(node.val);
+            state.set = [...set];
+            state.line = 8; state.msg = `Add current node's value (${node.val}) to the set.`; save(state);
+            state.current = null; state.complement = null; state.found = null;
+            state.highlights.current = null;
+
+            state.highlights.enqueued = [];
+            if (node.left) {
+                queue.push(node.left);
+                state.queue = queue.map(n => n.val);
+                state.highlights.enqueued.push(node.left.val);
+                state.line = 9; state.msg = `Enqueuing left child: ${node.left.val}.`; save(state);
+            }
+            
+            if (node.right) {
+                queue.push(node.right);
+                state.queue = queue.map(n => n.val);
+                state.highlights.enqueued.push(node.right.val);
+                state.line = 10; state.msg = `Enqueuing right child: ${node.right.val}.`; save(state);
+            }
+        }
+        
+        state.line = 11; state.msg = "Queue is empty and no pair was found.";
+        state.finalResult = { success: false };
+        save(state);
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        // Render data displays
+        queueContainer.innerHTML = state.queue.map(item => `<div class="item queue">${item}</div>`).join('');
+        setContainer.innerHTML = state.set.map(item => {
+            const isComplement = item === state.highlights.complement;
+            return `<div class="item set ${isComplement ? 'highlight' : ''}">${item}</div>`;
+        }).join('');
+        
+        // Render analysis panel
+        valTarget.textContent = state.k !== undefined ? state.k : '-';
+        valCurrent.textContent = state.current !== null ? state.current : '-';
+        valComplement.textContent = state.complement !== null ? state.complement : '-';
+        if (state.found === true) {
+            valFound.textContent = 'YES';
+            valFound.className = 'value yes';
+        } else if (state.found === false) {
+            valFound.textContent = 'NO';
+            valFound.className = 'value no';
+        } else {
+            valFound.textContent = '-';
+            valFound.className = 'value';
+        }
+
+        treeDrawer.draw(state);
+        
+        if (state.finalResult !== null) {
+            if (state.finalResult.success) {
+                const [a, b] = state.finalResult.pair;
+                finalResultTitle.textContent = "Target Found!";
+                finalResultTitle.style.color = 'var(--color-success)';
+                finalResultText.innerHTML = `The pair <strong>${a} + ${b} = ${state.finalResult.k}</strong> exists in the tree.`;
+            } else {
+                finalResultTitle.textContent = "Target Not Found";
+                finalResultTitle.style.color = 'var(--color-danger)';
+                finalResultText.textContent = `No pair of nodes sums up to ${state.k}.`;
+            }
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class TreeGraph { // Re-using from first BST example
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        if(root) this._layout(root);
+    }
+    
+    _layout(root) {
+        const width = this.svg.parentElement.clientWidth;
+        this._getNodeDepths(root, 0);
+        const inOrderNodes = [];
+        this._getInOrderList(root, inOrderNodes);
+        
+        const hSpacing = Math.min(60, width / (inOrderNodes.length + 1));
+        const totalWidth = (inOrderNodes.length - 1) * hSpacing;
+        const startX = (width - totalWidth) / 2;
+        inOrderNodes.forEach((node, i) => { this.nodeMap.get(node.val).x = startX + i * hSpacing; });
+    }
+
+    _getNodeDepths(node, depth) {
+        if (!node) return;
+        this.nodeMap.set(node.val, { node, x: 0, y: depth * 85 + 60 });
+        this._getNodeDepths(node.left, depth + 1);
+        this._getNodeDepths(node.right, depth + 1);
+    }
+    
+    _getInOrderList(node, list) {
+        if (!node) return;
+        this._getInOrderList(node.left, list);
+        list.push(node);
+        this._getInOrderList(node.right, list);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const h = state.highlights;
+        
+        const drawEdges = (node) => {
+            if (!node) return;
+            const parentPos = this.nodeMap.get(node.val);
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const childPos = this.nodeMap.get(child.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', parentPos.x); line.setAttribute('y1', parentPos.y);
+                    line.setAttribute('x2', childPos.x); line.setAttribute('y2', childPos.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        this.nodeMap.forEach(mapNode => {
+            const { node, x, y } = mapNode;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${x},${y})`);
+            g.classList.add('node-group');
+
+            if(h.enqueued.includes(node.val)) g.classList.add('enqueued');
+            if(h.current === node.val) g.classList.add('current');
+            if(h.complement === node.val) g.classList.add('complement');
+            if(h.foundPair.includes(node.val)) g.classList.add('found');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            circle.setAttribute('fill', 'var(--color-node-default)');
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    kInput = document.getElementById('k_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    queueContainer = document.getElementById('queue_container');
+    setContainer = document.getElementById('set_container');
+    valTarget = document.getElementById('val-target');
+    valCurrent = document.getElementById('val-current');
+    valComplement = document.getElementById('val-complement');
+    valFound = document.getElementById('val-found');
+    resultModal = document.getElementById('result_modal');
+    finalResultTitle = document.getElementById('final_result_title');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new TwoSumBstAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

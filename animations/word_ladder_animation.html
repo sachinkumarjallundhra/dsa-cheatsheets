@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Ladder Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #e67e22; --color-success: #2ecc71; --color-warning: #f39c12;
+            --color-info: #3498db; --color-danger: #e74c3c;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-visited: #7f8c8d;
+            --color-node-in-queue: #3498db;
+            --color-node-path: #2ecc71;
+            --color-edge-default: #d8dcdf;
+            --color-edge-path: #2ecc71;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: grid; grid-template-columns: auto 1fr auto 1fr auto 1fr; gap: 10px 15px; padding: 10px; background-color: #fdf3e6; border-radius: 5px; align-items: center;}
+        .controls label { font-weight: bold; justify-self: end;}
+        .controls input, .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; }
+        .controls textarea { grid-column: 2 / 7; resize: vertical; height: 40px;}
+        .control-buttons { grid-column: 1 / 7; display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
+        .control-buttons button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .control-buttons button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0;min-width: 0;  }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: auto; }
+        .graph-node text { font-family: 'Courier New', monospace; font-size: 1.1em; font-weight: bold; pointer-events: none; }
+        
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .item-list { display: flex; flex-wrap: wrap; gap: 5px; min-height: 30px; align-content: flex-start; }
+        .item { background: #e9d8fd; color: var(--color-text-dark); border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; font-family: 'Courier New', monospace; animation: item-add 0.4s ease; }
+        .item.visited { background-color: #e5e7e9; border-color: #b2babb; }
+        .item.queue { background-color: #d6eaf8; border-color: #aed6f1; }
+
+        .analysis-container { display: flex; justify-content: space-around; }
+        .analysis-item { text-align: center; }
+        .analysis-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; font-size: 0.9em; }
+        .analysis-item .value { font-size: 1.5em; font-weight: bold; color: var(--color-text-dark); }
+        .transform-display { text-align: center; font-family: 'Courier New', monospace; font-size: 1.2em; padding: 8px; background: #fef9e7; border-radius: 4px; }
+        .transform-display .good { color: var(--color-success); }
+        .transform-display .bad { color: var(--color-danger); text-decoration: line-through; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.5em; font-weight: bold; margin: 0; }
+
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Word Ladder</h1>
+            <div class="controls">
+                <label for="begin_word_input">Begin:</label><input id="begin_word_input" value="hit">
+                <label for="end_word_input">End:</label><input id="end_word_input" value="cog">
+                <label for="word_list_input">Word List:</label>
+                <textarea id="word_list_input">["hot","dot","dog","lot","log","cog"]</textarea>
+                <div class="control-buttons">
+                    <button id="start_button">Start</button>
+                    <button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (BFS)</h2>
+                <div id="code_container"></div>
+            </div>
+             <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Transformation</h2>
+                <div id="transform_display" class="transform-display">-</div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter words and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Graph Visualization</h2>
+            <div id="graph_container">
+                 <svg width="100%" height="100%" id="graph_svg"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel"><h2>State</h2>
+                <div class="analysis-container">
+                    <div class="analysis-item"><span class="label">Steps</span><span id="val-steps" class="value">-</span></div>
+                </div>
+             </div>
+             <div class="panel"><h2>Queue</h2><div id="queue_container" class="data-container item-list"></div></div>
+             <div class="panel"><h2>Visited Set</h2><div id="visited_container" class="data-container item-list"></div></div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="final_result_title"></h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="control-buttons button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let beginWordInput, endWordInput, wordListInput, startButton, nextStepButton, codeContainer,
+    actionDisplay, transformDisplay, graphContainer, queueContainer, visitedContainer,
+    valSteps, resultModal, finalResultTitle, finalResultText, modalCloseBtn;
+let graphDrawer;
+
+class WordLadderAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, queueContainer, visitedContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('graph_svg').innerHTML = '';
+        actionDisplay.textContent = 'Enter words and click \'Start\'.';
+        transformDisplay.innerHTML = '-';
+        valSteps.textContent = '-';
+    }
+    start() {
+        this.reset();
+        try {
+            const beginWord = beginWordInput.value.trim();
+            const endWord = endWordInput.value.trim();
+            const wordList = JSON.parse(wordListInput.value.trim().replace(/'/g, '"'));
+            if (!beginWord || !endWord || !Array.isArray(wordList)) throw new Error("Invalid input.");
+            
+            this.initUI();
+            graphDrawer = new GraphVisualizer(document.getElementById('graph_svg'), beginWord, endWord, wordList);
+            animationSteps = this.generateSteps(beginWord, endWord, wordList);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please check your Begin/End words and Word List (must be a valid JSON array).");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function ladderLength(begin, end, wordList):",
+            "  wordSet = new Set(wordList)",
+            "  if !wordSet.contains(end): return 0",
+            "  queue = [begin]",
+            "  visited = {begin}",
+            "  steps = 1",
+            "  while !queue.isEmpty():",
+            "    size = queue.size()",
+            "    for i from 0 to size-1:",
+            "      word = queue.poll()",
+            "      if word == end: return steps",
+            "      for each char position j:",
+            "        for each char c from 'a' to 'z':",
+            "          next_word = transform(word, j, c)",
+            "          if wordSet.contains(next_word) and !visited.contains(next_word):",
+            "            queue.offer(next_word)",
+            "            visited.add(next_word)",
+            "    steps++",
+            "  return 0"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(beginWord, endWord, wordList) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", transform: "-", steps: 0,
+            queue: [], visited: [], parents: {}, finalResult: null,
+            highlights: { current: null, neighbor: null, neighborStatus: null, path: [] },
+        };
+
+        const wordSet = new Set(wordList);
+        state.line = 1; state.msg = "Create a set from the word list for fast lookups."; save(state);
+        
+        state.line = 2; state.msg = `Check if endWord ('${endWord}') exists in the word set.`; save(state);
+        if (!wordSet.has(endWord)) {
+            state.finalResult = { value: 0, success: false, msg: `End word '${endWord}' not in list.` };
+            state.msg = `End word '${endWord}' not in list. No path possible.`;
+            save(state);
+            return steps;
+        }
+        
+        const queue = [beginWord];
+        const visited = new Set([beginWord]);
+        const parents = {};
+        let level = 1;
+
+        state.queue = [...queue];
+        state.visited = [...visited];
+        state.line = 3; state.msg = `Initialize queue with '${beginWord}'.`; save(state);
+
+        state.line = 4; state.msg = `Mark '${beginWord}' as visited.`; save(state);
+
+        state.steps = level;
+        state.line = 5; state.msg = `Initialize steps to 1.`; save(state);
+
+        while (queue.length > 0) {
+            state.highlights = { current: null, neighbor: null, neighborStatus: null, path: [] };
+            state.line = 6; state.msg = "Start new level. Queue is not empty."; save(state);
+            
+            const size = queue.length;
+            state.line = 7; state.msg = `Processing ${size} word(s) at current level ${level}.`; save(state);
+            
+            for (let i = 0; i < size; i++) {
+                const word = queue.shift();
+                state.queue = [...queue];
+                state.highlights.current = word;
+                state.line = 9; state.msg = `Dequeued '${word}'.`; save(state);
+                
+                state.line = 10; state.msg = `Is '${word}' the end word ('${endWord}')?`; save(state);
+                if (word === endWord) {
+                    state.msg = `Yes! Found the end word. Path length is ${level}.`;
+                    
+                    let path = [];
+                    let curr = endWord;
+                    while(curr) {
+                        path.unshift(curr);
+                        curr = parents[curr];
+                    }
+                    state.highlights.path = path;
+                    state.finalResult = { value: level, success: true, msg: `Shortest path found in ${level} steps.` };
+                    save(state);
+                    return steps;
+                }
+
+                const arr = word.split('');
+                state.line = 11; state.msg = `Generating neighbors for '${word}'.`; save(state);
+                
+                for (let j = 0; j < arr.length; j++) {
+                    const oldChar = arr[j];
+                    state.line = 12; save(state);
+
+                    for (let code = 97; code <= 122; code++) { // 'a' to 'z'
+                        const c = String.fromCharCode(code);
+                        if (c === oldChar) continue;
+
+                        arr[j] = c;
+                        const nextWord = arr.join('');
+                        
+                        state.transform = `${word} -> ${nextWord}`;
+                        state.highlights.neighbor = nextWord;
+                        state.line = 13; save(state);
+
+                        state.line = 14; 
+                        if (wordSet.has(nextWord) && !visited.has(nextWord)) {
+                            state.highlights.neighborStatus = 'good';
+                            state.msg = `'${nextWord}' is valid and not visited.`;
+                            save(state);
+                            
+                            queue.push(nextWord);
+                            visited.add(nextWord);
+                            parents[nextWord] = word;
+                            
+                            state.queue = [...queue];
+                            state.line = 15; state.msg = `Enqueuing '${nextWord}'.`; save(state);
+                            
+                            state.visited = [...visited];
+                            state.line = 16; state.msg = `Marking '${nextWord}' as visited.`; save(state);
+
+                        } else {
+                            state.highlights.neighborStatus = 'bad';
+                            if (!wordSet.has(nextWord)) state.msg = `'${nextWord}' is not in the word list.`;
+                            else state.msg = `'${nextWord}' has already been visited.`;
+                            save(state);
+                        }
+                        state.highlights.neighbor = null; state.highlights.neighborStatus = null;
+                    }
+                    arr[j] = oldChar;
+                }
+                 state.highlights.current = null;
+                 state.transform = '-';
+            }
+            level++;
+            state.steps = level;
+            state.line = 17; state.msg = `Level complete. Incrementing steps to ${level}.`; save(state);
+        }
+
+        state.line = 18;
+        state.finalResult = { value: 0, success: false, msg: "No path found to the end word." };
+        state.msg = "Queue is empty, but end word was not found.";
+        save(state);
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        valSteps.textContent = state.steps > 0 ? state.steps : '-';
+        queueContainer.innerHTML = state.queue.map(item => `<div class="item queue">${item}</div>`).join('');
+        visitedContainer.innerHTML = state.visited.map(item => `<div class="item visited">${item}</div>`).join('');
+        
+        let transformHTML = '-';
+        if (state.transform !== '-') {
+            const [from, to] = state.transform.split(' -> ');
+            const statusClass = state.highlights.neighborStatus === 'good' ? 'good' : (state.highlights.neighborStatus === 'bad' ? 'bad' : '');
+            transformHTML = `${from} &rarr; <span class="${statusClass}">${to}</span>`;
+        }
+        transformDisplay.innerHTML = transformHTML;
+
+        graphDrawer.draw(state);
+        
+        if (state.finalResult !== null) {
+            finalResultTitle.textContent = state.finalResult.success ? "Success!" : "Path Not Found";
+            finalResultTitle.style.color = state.finalResult.success ? 'var(--color-success)' : 'var(--color-danger)';
+            finalResultText.textContent = state.finalResult.msg;
+            finalResultText.style.color = state.finalResult.success ? 'var(--color-success)' : 'var(--color-danger)';
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class GraphVisualizer {
+    constructor(svg, beginWord, endWord, wordList) {
+        this.svg = svg;
+        this.nodes = {};
+        this.edges = new Set();
+        this.wordLength = beginWord.length;
+
+        const allWords = new Set([beginWord, endWord, ...wordList]);
+        allWords.forEach(word => {
+            this.nodes[word] = { id: word, x: 0, y: 0, level: -1 };
+        });
+    }
+
+    draw(state) {
+        // First, calculate layout for any new nodes based on parents
+        this.calculateLayout(state);
+        
+        // Ensure SVG is large enough
+        let maxX = 0, maxY = 0;
+        Object.values(this.nodes).forEach(n => {
+            if (n.level !== -1) {
+                maxX = Math.max(maxX, n.x);
+                maxY = Math.max(maxY, n.y);
+            }
+        });
+        this.svg.setAttribute('width', Math.max(this.svg.parentElement.clientWidth, maxX + 80));
+        this.svg.setAttribute('height', Math.max(this.svg.parentElement.clientHeight, maxY + 50));
+        this.svg.innerHTML = '';
+
+        const h = state.highlights;
+        const inQueue = new Set(state.queue);
+        const visited = new Set(state.visited);
+        const pathNodes = new Set(h.path);
+        
+        // Create path edges for highlighting
+        const pathEdges = new Set();
+        for (let i = 0; i < h.path.length - 1; i++) {
+            const edgeKey = [h.path[i], h.path[i+1]].sort().join('-');
+            pathEdges.add(edgeKey);
+        }
+
+        // Draw edges
+        for (const [child, parent] of Object.entries(state.parents)) {
+            const pNode = this.nodes[parent];
+            const cNode = this.nodes[child];
+            if (pNode && cNode) {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', pNode.x); line.setAttribute('y1', pNode.y);
+                line.setAttribute('x2', cNode.x); line.setAttribute('y2', cNode.y);
+                const edgeKey = [parent, child].sort().join('-');
+                line.setAttribute('stroke', pathEdges.has(edgeKey) ? 'var(--color-edge-path)' : 'var(--color-edge-default)');
+                line.setAttribute('stroke-width', pathEdges.has(edgeKey) ? 4 : 2);
+                this.svg.appendChild(line);
+            }
+        }
+        
+        // Draw nodes
+        for (const node of Object.values(this.nodes)) {
+            if (node.level === -1) continue; // Don't draw nodes not yet discovered
+            
+            let color = 'var(--color-node-default)';
+            let stroke = '#333';
+            let strokeWidth = 2;
+            
+            if (visited.has(node.id)) color = 'var(--color-node-visited)';
+            if (inQueue.has(node.id)) color = 'var(--color-node-in-queue)';
+            if (node.id === h.current) color = 'var(--color-node-current)';
+            if (pathNodes.has(node.id)) {
+                color = 'var(--color-node-path)';
+                stroke = '#239b56';
+                strokeWidth = 4;
+            }
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${node.x},${node.y})`);
+            g.classList.add('graph-node');
+
+            const radius = this.wordLength * 6 + 10;
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', radius);
+            circle.style.fill = color;
+            circle.style.stroke = stroke;
+            circle.style.strokeWidth = strokeWidth;
+            g.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dy', '0.35em');
+            text.style.fill = 'white';
+            text.textContent = node.id;
+            g.appendChild(text);
+            
+            this.svg.appendChild(g);
+        }
+    }
+
+    calculateLayout(state) {
+        if (!state.queue && !state.visited) return;
+
+        const levelCounts = {};
+        const allDiscovered = new Set([...state.visited, ...state.queue]);
+        
+        allDiscovered.forEach(word => {
+            if (this.nodes[word] && this.nodes[word].level === -1) {
+                const parent = state.parents[word];
+                const parentLevel = parent ? this.nodes[parent].level : 0;
+                this.nodes[word].level = parentLevel + 1;
+            }
+        });
+        
+        for (const node of Object.values(this.nodes)) {
+            if (node.level !== -1) {
+                levelCounts[node.level] = (levelCounts[node.level] || 0) + 1;
+            }
+        }
+        
+        const vSpacing = 100;
+        const hSpacing = this.wordLength * 15 + 20;
+        const width = this.svg.parentElement.clientWidth;
+        
+        const nodesByLevel = {};
+        for (const node of Object.values(this.nodes)) {
+            if(node.level !== -1) {
+                if (!nodesByLevel[node.level]) nodesByLevel[node.level] = [];
+                nodesByLevel[node.level].push(node);
+            }
+        }
+        
+        for (const level in nodesByLevel) {
+            const levelNodes = nodesByLevel[level];
+            const count = levelNodes.length;
+            const levelY = level * vSpacing + 50;
+            
+            levelNodes.forEach((node, i) => {
+                node.y = levelY;
+                node.x = (width / 2) + (i - (count - 1) / 2) * hSpacing;
+            });
+        }
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    beginWordInput = document.getElementById('begin_word_input');
+    endWordInput = document.getElementById('end_word_input');
+    wordListInput = document.getElementById('word_list_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    transformDisplay = document.getElementById('transform_display');
+
+    graphContainer = document.getElementById('graph_container');
+    queueContainer = document.getElementById('queue_container');
+    visitedContainer = document.getElementById('visited_container');
+    valSteps = document.getElementById('val-steps');
+
+    resultModal = document.getElementById('result_modal');
+    finalResultTitle = document.getElementById('final_result_title');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new WordLadderAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

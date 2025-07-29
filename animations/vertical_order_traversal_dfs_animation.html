@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertical Order Traversal (DFS) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #8e44ad; --color-success: #2ecc71; --color-warning: #f39c12;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6; /* Purple */
+            --color-map-highlight: #fffbe6;
+            --color-sort-highlight: #fdebd0;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(500px, 1.3fr) 2fr minmax(450px, 1.1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #f2e7f9; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.current .node-circle { fill: var(--color-node-current) !important; stroke: #5d3f6b !important; }
+        .column-line { stroke: #e0e0e0; stroke-width: 1.5; stroke-dasharray: 4 4; }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; font-family: 'Courier New', monospace; }
+        
+        #map_container { display: flex; flex-direction: column; gap: 8px; }
+        .map-col { border: 1px solid #ccc; border-radius: 5px; padding: 5px; transition: background-color 0.3s; }
+        .map-col-header { font-weight: bold; color: var(--color-text-dark); margin-bottom: 5px; }
+        .map-row { margin-left: 15px; margin-bottom: 3px; }
+        .map-row-header { font-weight: bold; color: #666; }
+        .map-pq { display: flex; flex-wrap: wrap; gap: 4px; margin-left: 10px; background: #f0f0f0; padding: 4px; border-radius: 3px;}
+        .map-pq-val { background: #e0e0e0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+        .map-col.highlight, .map-row.highlight { background-color: var(--color-map-highlight); }
+        .map-row.sorting { background-color: var(--color-sort-highlight); }
+
+        .result-container .level-row { display: flex; gap: 5px; background: #f0f9eb; padding: 5px; border-radius: 4px; margin-bottom: 5px; border: 1px solid #d4edda; }
+        .result-container .level-val { background: var(--color-success); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.5em; font-weight: bold; margin: 0; color: var(--color-success); }
+
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Vertical Order Traversal (DFS)</h1>
+            <div class="controls">
+                <label>Tree (array):</label><textarea id="tree_input">[3,9,8,4,0,1,7,null,null,null,2,5]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (DFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Tree Visualization</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel"><h2>Data Structure (Map)</h2><div id="map_container" class="data-container"></div></div>
+             <div class="panel"><h2>Result</h2><div id="result_container" class="data-container result-container"></div></div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    mapContainer, resultContainer, resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class VerticalOrderDfsAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, mapContainer, resultContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = 'Enter tree and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/null/g, 'null').replace(/'/g, '"'));
+            if (!Array.isArray(treeArr)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array for the Tree.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            `// Main Function`,
+            `function verticalTraversal(root):`,
+            `  map = new TreeMap()`,
+            `  dfs(root, 0, 0)`,
+            `  result = []`,
+            `  for col_map in map.values():`,
+            `    col_list = []`,
+            `    for sub_list in col_map.values():`,
+            `      sort(sub_list)`,
+            `      col_list.addAll(sub_list)`,
+            `    result.add(col_list)`,
+            `  return result`,
+            ``,
+            `// Helper Function`,
+            `function dfs(node, col, level):`,
+            `  if node == null: return`,
+            `  map.putIfAbsent(col, new TreeMap())`,
+            `  map.get(col).putIfAbsent(level, new List())`,
+            `  map.get(col).get(level).add(node.val)`,
+            `  dfs(node.left, col - 1, level + 1)`,
+            `  dfs(node.right, col + 1, level + 1)`,
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+
+    generateSteps(root) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", map: {}, result: [],
+            currentColList: null, finalResult: null,
+            highlights: { currentNode: null, activeMapCell: null, isSorting: false },
+        };
+
+        if (!root) {
+            state.line = 11; state.msg = "Root is null, returning empty list.";
+            state.finalResult = [];
+            save(state);
+            return steps;
+        }
+
+        state.line = 2; state.msg = "Initialize a map to store nodes by column and level."; save(state);
+        
+        state.line = 3; state.msg = `Initial call to dfs(root, 0, 0).`; save(state);
+        
+        const dfs = (node, col, level) => {
+            state.highlights.currentNode = node ? node.val : null;
+            state.highlights.activeMapCell = null;
+            state.highlights.isSorting = false;
+
+            state.line = 15; state.msg = `DFS on node ${node ? node.val : 'null'} (col: ${col}, level: ${level}). Check if node is null.`; save(state);
+            if (!node) {
+                state.msg = `Node is null. Returning from this recursive call.`;
+                save(state);
+                return;
+            }
+
+            if (!state.map[col]) {
+                state.map[col] = {};
+                state.line = 16; state.msg = `Column ${col} not in map. Creating new entry.`; save(state);
+            }
+            if (!state.map[col][level]) {
+                state.map[col][level] = [];
+                state.line = 17; state.msg = `Level ${level} not in map for column ${col}. Creating new entry.`; save(state);
+            }
+            
+            const list = state.map[col][level];
+            list.push(node.val);
+            state.highlights.activeMapCell = [col, level];
+            state.line = 18; state.msg = `Added ${node.val} to map at [col:${col}, level:${level}]. List is now [${list.join(', ')}].`; save(state);
+            state.highlights.activeMapCell = null;
+
+            state.line = 19; state.msg = `Recursive call for left child of ${node.val}.`; save(state);
+            dfs(node.left, col - 1, level + 1);
+            state.highlights.currentNode = node.val;
+            state.line = 19; state.msg = `Returned from left subtree of ${node.val}.`; save(state);
+
+            state.line = 20; state.msg = `Recursive call for right child of ${node.val}.`; save(state);
+            dfs(node.right, col + 1, level + 1);
+            state.highlights.currentNode = node.val;
+            state.line = 20; state.msg = `Returned from right subtree of ${node.val}.`; save(state);
+
+            state.msg = `Finished DFS for node ${node.val}. Returning.`; save(state);
+        };
+
+        dfs(root, 0, 0);
+
+        state.highlights.currentNode = null;
+        state.line = 4; state.msg = "DFS complete. Now building final result list from the map."; save(state);
+        
+        state.line = 5; save(state);
+        const sortedCols = Object.keys(state.map).map(Number).sort((a, b) => a - b);
+        for (const col of sortedCols) {
+            state.line = 5; state.msg = `Processing column ${col}.`;
+            state.highlights.activeMapCell = [col, null];
+            save(state);
+            
+            state.currentColList = [];
+            state.line = 6; state.msg = `Creating a new list for column ${col}.`; save(state);
+            
+            state.line = 7;
+            const sortedLevels = Object.keys(state.map[col]).map(Number).sort((a, b) => a - b);
+            for (const level of sortedLevels) {
+                state.msg = `Processing level ${level} in column ${col}.`;
+                state.highlights.activeMapCell = [col, level];
+                save(state);
+                
+                const subList = state.map[col][level];
+                state.line = 8;
+                state.highlights.isSorting = true;
+                state.msg = `Sorting the list [${subList.join(', ')}] for this level.`; save(state);
+                
+                subList.sort((a, b) => a - b);
+                state.msg = `Sorted list is [${subList.join(', ')}].`; save(state);
+                state.highlights.isSorting = false;
+                
+                state.currentColList.push(...subList);
+                state.line = 9; state.msg = `Adding sorted items to the column list.`; save(state);
+            }
+            state.result.push(state.currentColList);
+            state.currentColList = null;
+            state.line = 10; state.msg = `Added list for column ${col} to final result.`; save(state);
+            state.highlights.activeMapCell = null;
+        }
+
+        state.finalResult = state.result;
+        state.line = 11; state.msg = "Finished building result. Traversal complete."; save(state);
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        this.renderMap(state);
+        this.renderResult(state);
+        treeDrawer.draw(state);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = JSON.stringify(state.finalResult);
+            resultModal.style.display = 'flex';
+        }
+    }
+
+    renderMap(state) {
+        mapContainer.innerHTML = '';
+        const sortedCols = Object.keys(state.map).map(Number).sort((a,b) => a - b);
+        for (const col of sortedCols) {
+            const colDiv = document.createElement('div');
+            colDiv.className = 'map-col';
+            if (state.highlights.activeMapCell && state.highlights.activeMapCell[0] === col && state.highlights.activeMapCell[1] === null) {
+                colDiv.classList.add('highlight');
+            }
+            colDiv.innerHTML = `<div class="map-col-header">Col: ${col}</div>`;
+            const sortedRows = Object.keys(state.map[col]).map(Number).sort((a,b) => a - b);
+            for (const row of sortedRows) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'map-row';
+                const isActiveCell = state.highlights.activeMapCell && state.highlights.activeMapCell[0] === col && state.highlights.activeMapCell[1] === row;
+                if (isActiveCell) {
+                    rowDiv.classList.add('highlight');
+                    if (state.highlights.isSorting) {
+                        rowDiv.classList.add('sorting');
+                    }
+                }
+                const pqHTML = state.map[col][row].map(val => `<span class="map-pq-val">${val}</span>`).join('');
+                rowDiv.innerHTML = `<span class="map-row-header">Row ${row}:</span><div class="map-pq">${pqHTML}</div>`;
+                colDiv.appendChild(rowDiv);
+            }
+            mapContainer.appendChild(colDiv);
+        }
+    }
+    
+    renderResult(state) {
+        let resultHTML = state.result.map(level => 
+            `<div class="level-row">${level.map(v => `<span class="level-val">${v}</span>`).join('')}</div>`
+        ).join('');
+        if(state.currentColList !== null) {
+            resultHTML += `<div class="level-row" style="border-style:dashed;">${state.currentColList.map(v => `<span class="level-val">${v}</span>`).join('')}</div>`;
+        }
+        resultContainer.innerHTML = resultHTML;
+    }
+}
+
+class TreeGraph { // (Same as previous Vertical Traversal example, no changes needed)
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        if(root) {
+            this._assignCoords(root, 0, 0);
+            this._layout();
+        }
+    }
+
+    _assignCoords(node, col, row) {
+        if (!node) return;
+        node.col = col;
+        node.row = row;
+        this.nodeMap.set(node.val, { node });
+        this._assignCoords(node.left, col - 1, row + 1);
+        this._assignCoords(node.right, col + 1, row + 1);
+    }
+    
+    _layout() {
+        const width = this.svg.parentElement.clientWidth;
+        const height = this.svg.parentElement.clientHeight;
+        let minCol = 0, maxCol = 0, maxRow = 0;
+        this.nodeMap.forEach(({node}) => {
+            minCol = Math.min(minCol, node.col);
+            maxCol = Math.max(maxCol, node.col);
+            maxRow = Math.max(maxRow, node.row);
+        });
+
+        const hSpacing = Math.min(80, width / (maxCol - minCol + 3));
+        const vSpacing = Math.min(85, height / (maxRow + 2));
+        const startX = width / 2 - ((minCol + maxCol) / 2) * hSpacing;
+        const startY = vSpacing;
+
+        this.colLines = [];
+        for (let c = minCol; c <= maxCol; c++) {
+            const x = startX + (c * hSpacing);
+            this.colLines.push(x);
+        }
+        
+        this.nodeMap.forEach(mapNode => {
+            const { node } = mapNode;
+            mapNode.x = startX + node.col * hSpacing;
+            mapNode.y = startY + node.row * vSpacing;
+        });
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const h = state.highlights;
+        
+        if (this.colLines) {
+            this.colLines.forEach(x => {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x); line.setAttribute('y1', 0);
+                line.setAttribute('x2', x); line.setAttribute('y2', '100%');
+                line.classList.add('column-line');
+                this.svg.appendChild(line);
+            });
+        }
+
+        const drawEdges = (node) => {
+            if (!node) return;
+            const parentPos = this.nodeMap.get(node.val);
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const childPos = this.nodeMap.get(child.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', parentPos.x); line.setAttribute('y1', parentPos.y);
+                    line.setAttribute('x2', childPos.x); line.setAttribute('y2', childPos.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        this.nodeMap.forEach(mapNode => {
+            const { node, x, y } = mapNode;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${x},${y})`);
+            g.classList.add('node-group');
+
+            if(h.currentNode === node.val) g.classList.add('current');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            circle.setAttribute('fill', 'var(--color-node-default)');
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    mapContainer = document.getElementById('map_container');
+    resultContainer = document.getElementById('result_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new VerticalOrderDfsAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

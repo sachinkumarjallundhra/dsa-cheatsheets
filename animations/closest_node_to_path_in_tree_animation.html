@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Closest Node to Path in Tree Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #27ae60; --color-secondary: #2980b9; --color-accent: #f39c12;
+            --color-danger: #c0392b; --color-info: #8e44ad;
+            --color-node-default: #bdc3c7;
+            --color-node-start: var(--color-primary);
+            --color-node-end: var(--color-danger);
+            --color-node-target: var(--color-accent);
+            --color-node-path: #a5d6a7;
+            --color-node-path-text: #1b5e20;
+            --color-node-dfs: var(--color-info);
+            --color-node-bfs: var(--color-secondary);
+            --color-node-answer: var(--color-accent);
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: grid; grid-template-columns: auto 1fr; gap: 10px 15px; padding: 10px; background-color: #e8f6f3; border-radius: 5px; align-items: center;}
+        .controls label { font-weight: bold; justify-self: end;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; resize: vertical; height: 50px; }
+        .control-buttons { grid-column: 1 / 3; display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
+        .control-buttons button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .control-buttons button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.85em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 1px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: auto; }
+        .graph-node text { font-family: 'Segoe UI', sans-serif; pointer-events: none; font-size: 1.1em; font-weight: bold; }
+        .answer-star { fill: gold; stroke: orange; stroke-width: 1px; }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .item-list { display: flex; flex-wrap: wrap; gap: 5px; min-height: 30px; align-content: flex-start; }
+        .item { padding: 4px 8px; border-radius: 4px; font-family: 'Courier New', monospace; animation: item-add 0.4s ease; border: 1px solid; }
+        .item.path { background-color: var(--color-node-path); border-color: #7cb342; }
+        .item.queue { background-color: #d6eaf8; border-color: #aed6f1; }
+        .item.result { background-color: #fff3e0; border-color: var(--color-accent); font-weight: bold; }
+        
+        .query-info-container { text-align: center; font-family: 'Courier New', monospace; }
+        .query-info-item { margin-bottom: 8px; }
+        .query-info-item .label { font-weight: bold; color: #666; display: block; font-size: 0.9em; }
+        .query-info-item .value { font-size: 1.4em; font-weight: bold; color: var(--color-text-dark); }
+        .query-info-item .value .start { color: var(--color-primary); }
+        .query-info-item .value .end { color: var(--color-danger); }
+        .query-info-item .value .node { color: var(--color-accent); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.5em; font-weight: bold; margin: 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Closest Node to Path in Tree</h1>
+            <div class="controls">
+                <label>Nodes (n):</label><input id="n_input" type="number" value="7">
+                <label>Edges:</label> <textarea id="edges_input">[[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]]</textarea>
+                <label>Query:</label> <textarea id="query_input">[[5,3,4],[4,6,0]]</textarea>
+                <div class="control-buttons">
+                    <button id="start_button">Start</button>
+                    <button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter graph and queries, then click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Graph Visualization</h2>
+            <div id="graph_container">
+                 <svg width="100%" height="100%" id="graph_svg"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Current Query</h2>
+                <div class="query-info-container">
+                    <div class="query-info-item"><span class="label">Query</span><span id="val-query-idx" class="value">-</span></div>
+                    <div class="query-info-item"><span class="label">[Start, End, Node]</span><span id="val-query-data" class="value">-</span></div>
+                    <div class="query-info-item"><span class="label">Result for this Query</span><span id="val-query-result" class="value">-</span></div>
+                </div>
+             </div>
+             <div class="panel"><h2>Path</h2><div id="path_container" class="data-container item-list"></div></div>
+             <div class="panel"><h2>BFS Queue</h2><div id="queue_container" class="data-container item-list"></div></div>
+             <div class="panel"><h2>Final Results</h2><div id="results_container" class="data-container item-list"></div></div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>All Queries Complete!</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="control-buttons button">Close</button>
+        </div>
+    </div>
+
+<script>
+// Basic force simulation for graph layout
+class ForceSimulation {
+    constructor(nodes, edges) {
+        this.nodes = nodes; this.edges = edges;
+        this.alpha = 0.3;
+    }
+    tick() {
+        if (this.alpha < 0.01) return false; // Stop simulation
+        const k = 0.1, repulsion = 10000, gravity = 0.1, linkDist = 100;
+        
+        // Repulsion force
+        for (const n1 of this.nodes) {
+            n1.dx = n1.dx || 0; n1.dy = n1.dy || 0;
+            for (const n2 of this.nodes) {
+                if (n1 === n2) continue;
+                const dx = n1.x - n2.x, dy = n1.y - n2.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 1) dist = 1;
+                const force = repulsion / (dist * dist);
+                n1.dx += (dx / dist) * force;
+                n1.dy += (dy / dist) * force;
+            }
+        }
+        // Link force
+        for (const edge of this.edges) {
+            const source = edge.source, target = edge.target;
+            const dx = target.x - source.x, dy = target.y - source.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 0) {
+                const delta = (dist - linkDist) / dist * this.alpha * k;
+                source.dx += dx * delta; source.dy += dy * delta;
+                target.dx -= dx * delta; target.dy -= dy * delta;
+            }
+        }
+        // Apply forces
+        for (const node of this.nodes) {
+            node.x += node.dx * this.alpha;
+            node.y += node.dy * this.alpha;
+            node.dx = 0; node.dy = 0;
+        }
+        this.alpha *= 0.99; // Cooling
+        return true;
+    }
+}
+
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let nInput, edgesInput, queryInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    graphContainer, pathContainer, queueContainer, resultsContainer,
+    valQueryIdx, valQueryData, valQueryResult,
+    resultModal, finalResultText, modalCloseBtn;
+let graphDrawer;
+
+class ClosestNodeAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, pathContainer, queueContainer, resultsContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('graph_svg').innerHTML = '';
+        actionDisplay.textContent = "Enter graph and queries, then click 'Start'.";
+        valQueryIdx.textContent = '-'; valQueryData.textContent = '-'; valQueryResult.textContent = '-';
+    }
+    start() {
+        this.reset();
+        try {
+            const n = parseInt(nInput.value);
+            const edges = JSON.parse(edgesInput.value.replace(/'/g, '"'));
+            const queries = JSON.parse(queryInput.value.replace(/'/g, '"'));
+            if (isNaN(n) || !Array.isArray(edges) || !Array.isArray(queries)) throw new Error("Invalid input.");
+            
+            this.initUI();
+            graphDrawer = new GraphVisualizer(document.getElementById('graph_svg'), n, edges);
+            animationSteps = this.generateSteps(n, edges, queries);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) {
+                 graphDrawer.runLayout(() => this.renderState(animationSteps[0]));
+            }
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Check n, edges (JSON 2D array), and query (JSON 2D array).");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            `// Main Function`,
+            `function closestNode(n, edges, query):`,
+            `  // ... build graph`,
+            `  results = []`,
+            `  for i from 0 to query.length-1:`,
+            `    [start, end, node] = query[i]`,
+            `    path = []`,
+            `    dfsPath(graph, start, end, visited, path)`,
+            `    pathSet = new Set(path)`,
+            `    result = bfsToPath(graph, node, pathSet)`,
+            `    results[i] = result`,
+            `  return results`,
+            ``,
+            `// Path-finding Helper`,
+            `function dfsPath(graph, cur, end, visited, path):`,
+            `  visited[cur] = true; path.add(cur)`,
+            `  if cur == end: return true`,
+            `  for nei in graph.get(cur):`,
+            `    if !visited[nei] and dfsPath(nei, ...):`,
+            `      return true`,
+            `  path.remove(path.size - 1)`,
+            `  return false`,
+            ``,
+            `// Search-to-path Helper`,
+            `function bfsToPath(graph, start, pathSet):`,
+            `  queue = [start]; visited = {start}`,
+            `  while !queue.isEmpty():`,
+            `    node = queue.poll()`,
+            `    if pathSet.contains(node): return node`,
+            `    for nei in graph.get(node):`,
+            `      if !visited[nei]:`,
+            `        visited[nei] = true; queue.offer(nei)`,
+            `  return -1`
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(n, edges, queries) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        const graph = Array.from({ length: n }, () => []);
+        for (const [u, v] of edges) {
+            graph[u].push(v);
+            graph[v].push(u);
+        }
+
+        let state = {
+            line: 3, msg: "Initializing results array.", queryIdx: -1,
+            query: null, path: [], queue: [], results: [], phase: '',
+            finalResult: null,
+            highlights: { current: null, start: null, end: null, target: null, path: [], answer: null },
+        };
+        save(state);
+        
+        for (let i = 0; i < queries.length; i++) {
+            const [start, end, node] = queries[i];
+            state.queryIdx = i;
+            state.query = queries[i];
+            state.path = []; state.queue = [];
+            state.highlights = { current: null, start, end, target: node, path: [], answer: null };
+
+            state.line = 4; state.msg = `Starting Query ${i+1}: [${start},${end},${node}].`; save(state);
+            state.phase = 'DFS';
+            
+            // Phase 1: DFS Path finding
+            state.line = 7; state.msg = `Finding path from ${start} to ${end} using DFS.`;
+            const path = [];
+            const dfsVisited = new Array(n).fill(false);
+            
+            const generateDfsSteps = (cur, end) => {
+                state.highlights.current = cur;
+                path.push(cur);
+                dfsVisited[cur] = true;
+                state.path = [...path];
+                state.line = 15; state.msg = `DFS at node ${cur}. Adding to path.`; save(state);
+
+                state.line = 16; state.msg = `Is ${cur} the end node (${end})?`; save(state);
+                if (cur === end) {
+                    state.msg = `Yes, path found!`; save(state);
+                    return true;
+                }
+                
+                state.line = 17;
+                for (const nei of graph[cur]) {
+                    state.msg = `Checking neighbor ${nei} of ${cur}.`; save(state);
+                    state.line = 18; save(state);
+                    if (!dfsVisited[nei]) {
+                        if (generateDfsSteps(nei, end)) {
+                            state.highlights.current = cur;
+                            state.line = 19; state.msg = `Path from ${nei} succeeded. Returning true.`;
+                            save(state);
+                            return true;
+                        }
+                         state.highlights.current = cur;
+                    }
+                }
+                
+                path.pop();
+                state.path = [...path];
+                state.line = 20; state.msg = `Node ${cur} is a dead end. Backtracking.`; save(state);
+                state.line = 21; save(state);
+                return false;
+            };
+
+            generateDfsSteps(start, end);
+            state.highlights.path = [...path];
+            state.highlights.current = null;
+            state.line = 8; state.msg = `Path found: [${path.join(', ')}]. Storing in a set.`; save(state);
+
+            // Phase 2: BFS to Path
+            state.phase = 'BFS';
+            const pathSet = new Set(path);
+            const queue = [node];
+            const bfsVisited = new Array(n).fill(false);
+            bfsVisited[node] = true;
+            
+            state.queue = [...queue];
+            state.line = 25; state.msg = `Starting BFS from node ${node} to find closest node on path.`; save(state);
+            
+            let found = false;
+            while (queue.length > 0 && !found) {
+                state.line = 26; save(state);
+                const currBfsNode = queue.shift();
+                state.highlights.current = currBfsNode;
+                state.queue = [...queue];
+                state.line = 27; state.msg = `Dequeued ${currBfsNode} from BFS queue.`; save(state);
+
+                state.line = 28; state.msg = `Is ${currBfsNode} on the path?`; save(state);
+                if (pathSet.has(currBfsNode)) {
+                    state.msg = `Yes! ${currBfsNode} is on the path. It's the answer.`;
+                    state.results.push(currBfsNode);
+                    state.highlights.answer = currBfsNode;
+                    save(state);
+                    found = true;
+                    break;
+                }
+                state.msg = `No, ${currBfsNode} is not on the path.`; save(state);
+
+                state.line = 29;
+                for (const nei of graph[currBfsNode]) {
+                    state.msg = `Checking neighbor ${nei} of ${currBfsNode}.`; save(state);
+                    state.line = 30; save(state);
+                    if (!bfsVisited[nei]) {
+                        bfsVisited[nei] = true;
+                        queue.push(nei);
+                        state.queue = [...queue];
+                        state.line = 31; state.msg = `Visited and enqueued ${nei}.`; save(state);
+                    }
+                }
+            }
+             state.highlights.current = null;
+             state.line = 10; state.msg = `Query ${i+1} complete. Result: ${state.highlights.answer}.`; save(state);
+        }
+
+        state.finalResult = state.results;
+        state.msg = "All queries complete!";
+        state.line = 11;
+        save(state);
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        pathContainer.innerHTML = state.path.map(item => `<div class="item path">${item}</div>`).join('');
+        queueContainer.innerHTML = state.queue.map(item => `<div class="item queue">${item}</div>`).join('');
+        resultsContainer.innerHTML = state.results.map(item => `<div class="item result">${item}</div>`).join('');
+        
+        valQueryIdx.textContent = state.queryIdx > -1 ? state.queryIdx + 1 : '-';
+        if (state.query) {
+            valQueryData.innerHTML = `[<span class="start">${state.query[0]}</span>, <span class="end">${state.query[1]}</span>, <span class="node">${state.query[2]}</span>]`;
+        } else {
+            valQueryData.textContent = '-';
+        }
+        valQueryResult.textContent = state.highlights.answer !== null ? state.highlights.answer : '-';
+
+        graphDrawer.draw(state);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = `Final Answers: [${state.finalResult.join(', ')}]`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class GraphVisualizer {
+    constructor(svg, n, edges) {
+        this.svg = svg;
+        // Start nodes at random positions to help the simulation
+        this.nodes = Array.from({length: n}, (_, i) => ({id: i, x: Math.random() * 500, y: Math.random() * 300}));
+        this.edges = edges.map(e => ({source: this.nodes[e[0]], target: this.nodes[e[1]]}));
+        this.simulation = new ForceSimulation(this.nodes, this.edges);
+        this.animationFrameId = null;
+    }
+
+    runLayout(callback) {
+        // 1. Run the simulation for a fixed number of steps to get relative positions
+        let i = 0;
+        while (i < 150 && this.simulation.tick()) {
+            i++;
+        }
+
+        // 2. Find the bounding box of the resulting graph
+        const width = this.svg.parentElement.clientWidth;
+        const height = this.svg.parentElement.clientHeight;
+        const padding = 40; // Add padding around the graph
+
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const node of this.nodes) {
+            minX = Math.min(minX, node.x);
+            maxX = Math.max(maxX, node.x);
+            minY = Math.min(minY, node.y);
+            maxY = Math.max(maxY, node.y);
+        }
+
+        const graphWidth = maxX - minX;
+        const graphHeight = maxY - minY;
+
+        // 3. Calculate scale and offset to fit the graph in the view
+        let scale, offsetX, offsetY;
+        
+        // Handle single-node or co-located nodes case to avoid division by zero
+        if (graphWidth < 1 || graphHeight < 1) {
+            scale = 1;
+            offsetX = width / 2 - (this.nodes.length > 0 ? this.nodes[0].x : 0);
+            offsetY = height / 2 - (this.nodes.length > 0 ? this.nodes[0].y : 0);
+        } else {
+            const scaleX = (width - 2 * padding) / graphWidth;
+            const scaleY = (height - 2 * padding) / graphHeight;
+            scale = Math.min(scaleX, scaleY);
+
+            // Center the graph
+            offsetX = (width - graphWidth * scale) / 2;
+            offsetY = (height - graphHeight * scale) / 2;
+        }
+
+        // 4. Apply the transformation to all nodes
+        for (const node of this.nodes) {
+            node.x = (node.x - minX) * scale + offsetX;
+            node.y = (node.y - minY) * scale + offsetY;
+        }
+
+        if (callback) callback();
+    }
+    
+    draw(state) {
+        const width = this.svg.parentElement.clientWidth;
+        const height = this.svg.parentElement.clientHeight;
+        this.svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        this.svg.innerHTML = '';
+        
+        const h = state.highlights;
+        const pathSet = new Set(h.path);
+
+        // Draw edges
+        this.edges.forEach(edge => {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', edge.source.x); line.setAttribute('y1', edge.source.y);
+            line.setAttribute('x2', edge.target.x); line.setAttribute('y2', edge.target.y);
+            line.style.stroke = pathSet.has(edge.source.id) && pathSet.has(edge.target.id) ? 'var(--color-primary)' : '#ccc';
+            line.style.strokeWidth = pathSet.has(edge.source.id) && pathSet.has(edge.target.id) ? 3 : 2;
+            this.svg.appendChild(line);
+        });
+        
+        // Draw nodes
+        this.nodes.forEach(node => {
+            let fill = 'var(--color-node-default)';
+            let stroke = '#333';
+            let r = 15;
+            let textColor = 'white';
+
+            if (pathSet.has(node.id)) {
+                fill = 'var(--color-node-path)';
+                textColor = 'var(--color-node-path-text)';
+            }
+            if (node.id === h.start) { fill = 'var(--color-node-start)'; textColor = 'white'; r = 18; }
+            if (node.id === h.end) { fill = 'var(--color-node-end)'; textColor = 'white'; r = 18; }
+            if (node.id === h.target) { fill = 'var(--color-node-target)'; textColor = 'white'; r = 18; }
+            
+            if (state.phase === 'DFS' && node.id === h.current) { fill = 'var(--color-node-dfs)'; textColor = 'white';}
+            if (state.phase === 'BFS' && node.id === h.current) { fill = 'var(--color-node-bfs)'; textColor = 'white';}
+            
+            if (node.id === h.answer) { r = 20; }
+
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${node.x},${node.y})`);
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', r);
+            circle.style.fill = fill;
+            circle.style.stroke = stroke;
+            g.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('text-anchor', 'middle'); text.setAttribute('dy', '0.35em');
+            text.style.fill = textColor;
+            text.textContent = node.id;
+            g.appendChild(text);
+
+            if (node.id === h.answer) {
+                 const star = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                 star.setAttribute('d', 'M0,-10 L2.94,-4.05 L9.51,-3.09 L4.76,1.55 L6.18,7.69 L0,4.2 L-6.18,7.69 L-4.76,1.55 L-9.51,-3.09 L-2.94,-4.05 Z');
+                 star.setAttribute('transform', `scale(${r*0.6})`);
+                 star.classList.add('answer-star');
+                 g.appendChild(star);
+            }
+            
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    nInput = document.getElementById('n_input');
+    edgesInput = document.getElementById('edges_input');
+    queryInput = document.getElementById('query_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    graphContainer = document.getElementById('graph_container');
+    pathContainer = document.getElementById('path_container');
+    queueContainer = document.getElementById('queue_container');
+    resultsContainer = document.getElementById('results_container');
+    valQueryIdx = document.getElementById('val-query-idx');
+    valQueryData = document.getElementById('val-query-data');
+    valQueryResult = document.getElementById('val-query-result');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new ClosestNodeAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Zigzag Level Order Traversal Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌳 Binary Tree Zigzag Level Order Traversal – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Binary Tree Zigzag Level Order Traversal</b> problem (LeetCode 103) asks you to traverse a binary tree level by level, but alternate the direction at each level (left-to-right, then right-to-left).
+        </p>
+
+        <h2>🎯 Solution Pattern (BFS with Direction Toggle)</h2>
+        <pre><code>class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; zigzagLevelOrder(TreeNode root) {
+        List&lt;List&lt;Integer&gt;&gt; result = new ArrayList&lt;&gt;();
+        if (root == null) return result;
+        Queue&lt;TreeNode&gt; queue = new LinkedList&lt;&gt;();
+        queue.offer(root);
+        boolean leftToRight = true;
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            LinkedList&lt;Integer&gt; level = new LinkedList&lt;&gt;();
+            for (int i = 0; i &lt; size; i++) {
+                TreeNode node = queue.poll();
+                if (leftToRight) {
+                    level.addLast(node.val);
+                } else {
+                    level.addFirst(node.val);
+                }
+                if (node.left != null) queue.offer(node.left);
+                if (node.right != null) queue.offer(node.right);
+            }
+            result.add(level);
+            leftToRight = !leftToRight;
+        }
+        return result;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/binary_tree_zigzag_level_order_traversal_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Zigzag/spiral traversal of trees</li>
+            <li>Problems requiring alternate direction at each level</li>
+            <li>Visualizing tree layers in a zigzag manner</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize a queue and add the root node</li>
+            <li>Use a boolean to track direction (left-to-right or right-to-left)</li>
+            <li>While the queue is not empty:</li>
+            <ul>
+                <li>Process each node at the current level</li>
+                <li>Add values to the level list at the appropriate end</li>
+                <li>Add children to the queue</li>
+            </ul>
+            <li>Toggle direction after each level</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (return empty list)</li>
+            <li>Single node tree</li>
+            <li>Skewed trees (all left or all right)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [3,9,20,null,null,15,7]
+Output: [[3],[20,9],[15,7]]
+Explanation: The tree is traversed level by level, alternating direction.
+</code></pre>
+    </div>
+</body>
+</html>
