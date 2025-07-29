@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flatten Binary Tree to Linked List Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌳 Flatten Binary Tree to Linked List – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Flatten Binary Tree to Linked List</b> problem (LeetCode 114) asks you to flatten a binary tree to a linked list in-place. The linked list should use the right pointers and follow the preorder traversal of the tree.
+        </p>
+
+        <h2>🎯 Solution Pattern (Reverse Postorder DFS)</h2>
+        <pre><code>class Solution {
+    private TreeNode prev = null;
+    public void flatten(TreeNode root) {
+        if (root == null) return;
+        flatten(root.right);
+        flatten(root.left);
+        root.right = prev;
+        root.left = null;
+        prev = root;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/flatten_binary_tree_to_linked_list_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Tree to linked list conversion</li>
+            <li>In-place tree manipulation</li>
+            <li>Preorder traversal problems</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Traverse the tree in reverse preorder (right, left, root)</li>
+            <li>At each node, set its right child to the previously visited node</li>
+            <li>Set its left child to null</li>
+            <li>Update the previous node pointer</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (root is null)</li>
+            <li>Single node tree</li>
+            <li>Already flattened tree</li>
+            <li>Left-skewed or right-skewed trees</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [1,2,5,3,4,null,6]
+Output: [1,null,2,null,3,null,4,null,5,null,6]
+Explanation: The tree is flattened to a linked list following preorder traversal.
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Reverse postorder (right, left, root) is key for in-place flattening</li>
+            <li>Iterative solutions using a stack are also possible</li>
+            <li>Always set left child to null to maintain linked list structure</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="binary_tree_preorder_traversal_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Binary Tree Preorder Traversal
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diameter of Binary Tree Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-path-calc: #e67e22;
+            --color-diameter-path: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-height { font-size: 0.8em; fill: var(--color-text-dark); font-weight: bold; }
+        .node-group.path-calc .node-circle { fill: var(--color-node-path-calc) !important; }
+        .node-group.diameter-path .node-circle { fill: var(--color-diameter-path) !important; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        .analysis-item { margin-bottom: 15px; }
+        .analysis-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; }
+        .analysis-item .value { font-size: 1.2em; font-weight: bold; padding: 5px; background-color: #f8f9fa; border-radius: 4px; min-height: 1.2em; text-align: center;}
+        
+        #diameter_val { font-size: 2.5em; font-weight: bold; color: var(--color-success); text-align: center; transition: transform 0.2s ease; }
+        #diameter_val.updated { transform: scale(1.3); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2.5em; font-weight: bold; margin: 0; color: var(--color-success); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Diameter of Binary Tree</h1>
+            <div class="controls">
+                <label>Tree (array):</label><textarea id="tree_input">[1,2,3,4,5]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (DFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Global Diameter</h2>
+                <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+                    <div id="diameter_val">0</div>
+                </div>
+            </div>
+             <div class="panel analysis-item">
+                <span class="label">Last Returned Height</span>
+                <span id="val-return" class="value">-</span>
+            </div>
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Diameter</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, startButton, nextStepButton, codeContainer, actionDisplay, treeContainer,
+    diameterVal, valReturn, callStackContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class DiameterAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = 'Enter tree and click \'Start\'.';
+        diameterVal.textContent = '0';
+        valReturn.textContent = '-';
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(treeArr)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array for the Tree.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function diameterOfBinaryTree(root):",
+            "  diameter = 0",
+            "  dfs(root)",
+            "  return diameter",
+            "",
+            "function dfs(node):",
+            "  if node == null: return 0",
+            "  left_h = dfs(node.left)",
+            "  right_h = dfs(node.right)",
+            "  diameter = max(diameter, left_h + right_h)",
+            "  return 1 + max(left_h, right_h)"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+
+    generateSteps(root) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", callStack: [], diameter: 0, lastReturn: null,
+            nodeHeights: {},
+            highlights: { current: null, pathCalc: [], finalPath: null },
+            finalResult: null
+        };
+
+        save({ ...state, line: 1, msg: "Initializing global diameter to 0." });
+        
+        function traceDfs(node) {
+            if (!node) {
+                save({ ...state, line: 6, msg: `Node is null, returning height 0.` });
+                return 0;
+            }
+            state.callStack.push(node.val);
+            state.highlights.current = node.val;
+            save({ ...state, line: 5, msg: `Calling dfs(${node.val}).` });
+            
+            save({ ...state, line: 7, msg: `Recursively calling for left child of ${node.val}.` });
+            const leftH = traceDfs(node.left);
+            
+            state.highlights.current = node.val;
+            state.lastReturn = leftH;
+            save({ ...state, line: 7, msg: `Returned from left. Left height = ${leftH}.` });
+            
+            save({ ...state, line: 8, msg: `Recursively calling for right child of ${node.val}.` });
+            const rightH = traceDfs(node.right);
+            
+            state.highlights.current = node.val;
+            state.lastReturn = rightH;
+            save({ ...state, line: 8, msg: `Returned from right. Right height = ${rightH}.` });
+
+            const pathThroughNode = leftH + rightH;
+            
+            // Highlight path for calculation
+            const getPath = (n, h) => {
+                if(!n || h <= 0) return [];
+                const l = getPath(n.left, h-1);
+                const r = getPath(n.right, h-1);
+                return [n.val, ...(l.length > r.length ? l : r)];
+            }
+            const leftPath = getPath(node.left, leftH);
+            const rightPath = getPath(node.right, rightH);
+            state.highlights.pathCalc = [node.val, ...leftPath, ...rightPath];
+            save({ ...state, line: 9, msg: `Calculating path through ${node.val}: ${leftH} + ${rightH} = ${pathThroughNode}.` });
+
+            if (pathThroughNode > state.diameter) {
+                state.diameter = pathThroughNode;
+                state.highlights.finalPath = { root: node.val, path: state.highlights.pathCalc };
+                save({ ...state, line: 9, msg: `New longest path! Updating diameter to ${state.diameter}.` });
+            }
+            state.highlights.pathCalc = [];
+            
+            const height = 1 + Math.max(leftH, rightH);
+            state.nodeHeights[node.val] = height;
+            save({ ...state, line: 10, msg: `Height of subtree at ${node.val} is 1 + max(${leftH}, ${rightH}) = ${height}.` });
+
+            state.callStack.pop();
+            state.highlights.current = state.callStack.length > 0 ? state.callStack[state.callStack.length - 1] : null;
+            state.lastReturn = height;
+            save({ ...state, line: 10, msg: `Returning height ${height} from dfs(${node.val}).` });
+            return height;
+        }
+
+        save({ ...state, line: 2, msg: "Starting DFS from the root." });
+        traceDfs(root);
+        
+        state.finalResult = state.diameter;
+        save({ ...state, line: 3, msg: `DFS complete. Final diameter is ${state.diameter}.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => `<div class="stack-item">dfs(${c})</div>`).join('');
+        
+        const diameterEl = document.getElementById('diameter_val');
+        if (diameterEl.textContent !== String(state.diameter)) {
+            diameterEl.classList.add('updated');
+            setTimeout(() => diameterEl.classList.remove('updated'), 200);
+        }
+        diameterEl.textContent = state.diameter;
+        valReturn.textContent = state.lastReturn ?? '-';
+
+        treeDrawer.draw(state);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = state.finalResult;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+        this.assignPositions(root, 0, this.width / 2, this.width);
+    }
+    
+    assignPositions(node, level, x, width) {
+        if (!node) return;
+        node.x = x;
+        node.y = level * 80 + 50;
+        this.nodeMap.set(node.val, node);
+        const childWidth = width / 2;
+        this.assignPositions(node.left, level + 1, x - childWidth / 2.5, childWidth);
+        this.assignPositions(node.right, level + 1, x + childWidth / 2.5, childWidth);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const drawEdges = (node) => {
+            if (!node) return;
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const childNode = this.nodeMap.get(child.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', node.x); line.setAttribute('y1', node.y);
+                    line.setAttribute('x2', childNode.x); line.setAttribute('y2', childNode.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        this.nodeMap.forEach(node => {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${node.x},${node.y})`);
+            
+            const isPathCalc = state.highlights.pathCalc.includes(node.val);
+            const isFinalPath = state.finalResult !== null && state.highlights.finalPath?.path.includes(node.val);
+            g.classList.add('node-group');
+            if(isPathCalc) g.classList.add('path-calc');
+            if(isFinalPath) g.classList.add('diameter-path');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            let color = 'var(--color-node-default)';
+            if (state.highlights.current === node.val) color = 'var(--color-node-current)';
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            if (state.nodeHeights[node.val]) {
+                const hText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                hText.setAttribute('text-anchor', 'middle');
+                hText.setAttribute('dy', '2.8em');
+                hText.classList.add('node-height');
+                hText.textContent = `h: ${state.nodeHeights[node.val]}`;
+                g.appendChild(hText);
+            }
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    diameterVal = document.getElementById('diameter_val');
+    valReturn = document.getElementById('val-return');
+    callStackContainer = document.getElementById('call_stack_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new DiameterAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

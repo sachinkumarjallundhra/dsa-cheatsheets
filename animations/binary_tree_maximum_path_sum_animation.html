@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Maximum Path Sum Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-path-calc: #e67e22;
+            --color-final-path: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.path-calc .node-circle { fill: var(--color-node-path-calc) !important; }
+        .node-group.final-path .node-circle { fill: var(--color-final-path) !important; }
+        .node-group.current .node-circle { fill: var(--color-node-current) !important; }
+        .return-val-anim { animation: travel-up 0.9s ease-in-out forwards; }
+        .return-val-anim text { fill: #333; font-size: 1em; font-weight: bold; }
+        
+        @keyframes travel-up {
+            from { transform: translate(var(--from-x), var(--from-y)) scale(0.8); opacity: 1; }
+            40% { opacity: 1; }
+            to { transform: translate(var(--to-x), var(--to-y)) scale(0.2); opacity: 0; }
+        }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        .analysis-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .analysis-item { text-align: center; background: #fdfdfd; padding: 5px; border-radius: 4px; border: 1px solid #eee; }
+        .analysis-item .label { font-size: 0.85em; font-weight: bold; color: #666; display: block; margin-bottom: 2px; }
+        .analysis-item .value { font-size: 1.2em; font-weight: bold; }
+        #max-sum-val.updated { transform: scale(1.3); color: var(--color-success); transition: all 0.2s ease;}
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2.5em; font-weight: bold; margin: 0; color: var(--color-success); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Binary Tree Maximum Path Sum</h1>
+            <div class="controls">
+                <label>Tree (array):</label><textarea id="tree_input">[-10,9,20,null,null,15,7]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (DFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+            <div class="panel"><h2 style="font-size:1.1em">Global Max Sum</h2><div class="analysis-item" style="padding:10px;"><span id="max-sum-val" class="value" style="font-size: 2.5em;">-</span></div></div>
+            <div class="panel"><h2>Node Analysis</h2><div id="analysis_box" class="analysis-box"></div></div>
+            <div class="panel"><h2>Call Stack</h2><div id="call_stack_container" class="data-container"></div></div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Maximum Path Sum</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    treeContainer, maxSumVal, analysisBox, callStackContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class MaxPathSumAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, analysisBox, callStackContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = "Enter tree and click 'Start'.";
+        maxSumVal.textContent = '-';
+        maxSumVal.classList.remove('updated');
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/null/g, 'null').replace(/'/g, '"'));
+            if (!Array.isArray(treeArr)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "private int dfs(TreeNode node) {",
+            "  if (node == null) return 0;",
+            "",
+            "  left = Math.max(0, dfs(node.left));",
+            "  right = Math.max(0, dfs(node.right));",
+            "",
+            "  maxSum = Math.max(maxSum, node.val + left + right);",
+            "",
+            "  return node.val + Math.max(left, right);",
+            "}"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+
+    generateSteps(root) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", callStack: [],
+            maxSum: Number.MIN_SAFE_INTEGER,
+            analysis: { rawLeft: null, rawRight: null, gainLeft: null, gainRight: null, pathSumCalc: null, returnValCalc: null },
+            highlights: { currentNode: null, pathCalc: [], finalPath: [] },
+            returnAnimation: { isActive: false, from: null, to: null, value: null },
+            finalResult: null
+        };
+        
+        let finalPathMap = {};
+
+        function traceDfs(node) {
+            state.callStack.push(node ? node.val : 'ø');
+            state.highlights.currentNode = node ? node.val : null;
+            state.analysis = {};
+            save({ ...state, line: 0, msg: `Calling dfs on ${node ? `node ${node.val}` : 'null'}.` });
+
+            save({ ...state, line: 1, msg: "Is node null?" });
+            if (node === null) {
+                save({ ...state, line: 1, msg: "Yes. Base case, returning a gain of 0." });
+                state.callStack.pop();
+                return { gain: 0, path: [] };
+            }
+
+            save({ ...state, line: 3, msg: `Recursively calling for left child of ${node.val}.` });
+            const leftData = traceDfs(node.left);
+            
+            state.returnAnimation = { isActive: true, from: node.left ? node.left.val : 'null', to: node.val, value: leftData.gain };
+            save({ ...state, msg: `Returning from left child...`});
+            state.returnAnimation.isActive = false;
+
+            state.highlights.currentNode = node.val;
+            state.analysis.rawLeft = leftData.gain;
+            const leftGain = Math.max(0, leftData.gain);
+            state.analysis.gainLeft = leftGain;
+            save({ ...state, line: 3, msg: `Left returned ${leftData.gain}. Gain is max(0, ${leftData.gain}) = ${leftGain}.` });
+
+            save({ ...state, line: 4, msg: `Recursively calling for right child of ${node.val}.` });
+            const rightData = traceDfs(node.right);
+            
+            state.returnAnimation = { isActive: true, from: node.right ? node.right.val : 'null', to: node.val, value: rightData.gain };
+            save({ ...state, msg: `Returning from right child...`});
+            state.returnAnimation.isActive = false;
+
+            state.highlights.currentNode = node.val;
+            state.analysis.rawRight = rightData.gain;
+            const rightGain = Math.max(0, rightData.gain);
+            state.analysis.gainRight = rightGain;
+            save({ ...state, line: 4, msg: `Right returned ${rightData.gain}. Gain is max(0, ${rightData.gain}) = ${rightGain}.` });
+            
+            const pathThroughNode = node.val + leftGain + rightGain;
+            state.analysis.pathSumCalc = `${node.val} + ${leftGain} + ${rightGain} = ${pathThroughNode}`;
+            state.highlights.pathCalc = [node.val, ...(leftGain > 0 ? leftData.path : []), ...(rightGain > 0 ? rightData.path : [])];
+            save({ ...state, line: 6, msg: `Calculating path sum through ${node.val}.` });
+
+            if (pathThroughNode > state.maxSum) {
+                const oldMax = state.maxSum;
+                state.maxSum = pathThroughNode;
+                state.highlights.finalPath = [...state.highlights.pathCalc];
+                save({ ...state, line: 6, msg: `New max path! ${pathThroughNode} > ${oldMax}. Updating maxSum.` });
+            }
+            state.highlights.pathCalc = [];
+            
+            const returnGain = node.val + Math.max(leftGain, rightGain);
+            let returnPath;
+            if (leftGain > rightGain) {
+                returnPath = [node.val, ...leftData.path];
+            } else {
+                returnPath = [node.val, ...rightData.path];
+            }
+            state.analysis.returnValCalc = `${node.val} + max(${leftGain}, ${rightGain}) = ${returnGain}`;
+            save({ ...state, line: 8, msg: `Calculating gain to return to parent.` });
+            
+            state.callStack.pop();
+            return { gain: returnGain, path: returnPath };
+        }
+        
+        traceDfs(root);
+        state.finalResult = state.maxSum;
+        state.highlights.currentNode = null;
+        save({ ...state, line: null, msg: "DFS complete. Returning final maxSum."});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => `<div class="stack-item">dfs(${c})</div>`).join('');
+        
+        const maxSumEl = document.getElementById('max-sum-val');
+        if(maxSumEl.textContent !== String(state.maxSum) && state.maxSum !== Number.MIN_SAFE_INTEGER) {
+            maxSumEl.classList.add('updated');
+            setTimeout(() => maxSumEl.classList.remove('updated'), 300);
+        }
+        maxSumEl.textContent = state.maxSum === Number.MIN_SAFE_INTEGER ? '-' : state.maxSum;
+        
+        analysisBox.innerHTML = `
+            <div class="analysis-item"><span class="label">Left Return</span><span class="value">${state.analysis.rawLeft ?? '-'}</span></div>
+            <div class="analysis-item"><span class="label">Right Return</span><span class="value">${state.analysis.rawRight ?? '-'}</span></div>
+            <div class="analysis-item"><span class="label">Left Gain</span><span class="value">${state.analysis.gainLeft ?? '-'}</span></div>
+            <div class="analysis-item"><span class="label">Right Gain</span><span class="value">${state.analysis.gainRight ?? '-'}</span></div>
+            <div class="analysis-item" style="grid-column: 1 / -1;"><span class="label">Path through Node</span><span class="value">${state.analysis.pathSumCalc ?? '-'}</span></div>
+            <div class="analysis-item" style="grid-column: 1 / -1;"><span class="label">Gain to Parent</span><span class="value">${state.analysis.returnValCalc ?? '-'}</span></div>
+        `;
+
+        treeDrawer.draw(state);
+
+        if(state.finalResult !== null && currentStepIndex === animationSteps.length-1) {
+            finalResultText.textContent = state.finalResult;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        this._layout(root);
+    }
+    
+    _layout(root) {
+        if (!root) return;
+        const width = this.svg.parentElement.clientWidth;
+        this._getNodeDepths(root, 0);
+        const inOrderNodes = [];
+        this._getInOrderList(root, inOrderNodes);
+        
+        const hSpacing = Math.min(60, width / (inOrderNodes.length + 1));
+        const totalWidth = (inOrderNodes.length - 1) * hSpacing;
+        const startX = (width - totalWidth) / 2;
+        inOrderNodes.forEach((node, i) => { this.nodeMap.get(node.val).x = startX + i * hSpacing; });
+    }
+
+    _getNodeDepths(node, depth) {
+        if (!node) return;
+        this.nodeMap.set(node.val, { node, x: 0, y: depth * 85 + 60 });
+        this._getNodeDepths(node.left, depth + 1);
+        this._getNodeDepths(node.right, depth + 1);
+    }
+    
+    _getInOrderList(node, list) {
+        if (!node) return;
+        this._getInOrderList(node.left, list);
+        list.push(node);
+        this._getInOrderList(node.right, list);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const h = state.highlights;
+        
+        const drawEdges = (node) => {
+            if (!node) return;
+            const parentPos = this.nodeMap.get(node.val);
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const childPos = this.nodeMap.get(child.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', parentPos.x); line.setAttribute('y1', parentPos.y);
+                    line.setAttribute('x2', childPos.x); line.setAttribute('y2', childPos.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        this.nodeMap.forEach(mapNode => {
+            const { node, x, y } = mapNode;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${x},${y})`);
+            g.classList.add('node-group');
+
+            if(h.finalPath.includes(node.val)) g.classList.add('final-path');
+            if(h.pathCalc.includes(node.val)) g.classList.add('path-calc');
+            if(h.currentNode === node.val) g.classList.add('current');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25); circle.classList.add('node-circle');
+            circle.setAttribute('fill', 'var(--color-node-default)');
+            circle.setAttribute('stroke', '#333'); circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            this.svg.appendChild(g);
+        });
+
+        if (state.returnAnimation.isActive) {
+            let fromPos;
+            const toPos = this.nodeMap.get(state.returnAnimation.to);
+            if (state.returnAnimation.from === 'null') {
+                 const parentNode = this.nodeMap.get(state.returnAnimation.to)?.node;
+                 const isLeftReturn = state.analysis.rawRight === null;
+                 fromPos = { x: toPos.x + (isLeftReturn ? -40 : 40), y: toPos.y + 70 };
+            } else { fromPos = this.nodeMap.get(state.returnAnimation.from); }
+            if (fromPos && toPos) {
+                const animGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                animGroup.classList.add('return-val-anim');
+                animGroup.style.setProperty('--from-x', `${fromPos.x}px`); animGroup.style.setProperty('--from-y', `${fromPos.y}px`);
+                animGroup.style.setProperty('--to-x', `${toPos.x}px`); animGroup.style.setProperty('--to-y', `${toPos.y}px`);
+                const animCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                animCircle.setAttribute('r', 15); animCircle.setAttribute('fill', 'var(--color-final-path)'); animGroup.appendChild(animCircle);
+                const animText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                animText.setAttribute('text-anchor', 'middle'); animText.setAttribute('dy', '0.3em'); animText.textContent = state.returnAnimation.value; animGroup.appendChild(animText);
+                this.svg.appendChild(animGroup);
+            }
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    maxSumVal = document.getElementById('max-sum-val');
+    analysisBox = document.getElementById('analysis_box');
+    callStackContainer = document.getElementById('call_stack_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new MaxPathSumAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

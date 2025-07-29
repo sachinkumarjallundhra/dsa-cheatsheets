@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nested List Weight Sum II Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>📚 Nested List Weight Sum II – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Nested List Weight Sum II</b> problem (LeetCode 364) asks you to calculate the sum of all integers in a nested list, weighted by their depth from the bottom up (inverse depth). The deepest integers have weight 1, and the root level has the largest weight.
+        </p>
+
+        <h2>🎯 Solution Pattern</h2>
+        <h3>BFS Level Order Traversal</h3>
+        <pre><code>public int depthSumInverse(List&lt;NestedInteger&gt; nestedList) {
+    int sum = 0, prev = 0;
+    Queue&lt;NestedInteger&gt; queue = new LinkedList&lt;&gt;(nestedList);
+    while (!queue.isEmpty()) {
+        int size = queue.size();
+        int levelSum = 0;
+        for (int i = 0; i &lt; size; i++) {
+            NestedInteger ni = queue.poll();
+            if (ni.isInteger()) {
+                levelSum += ni.getInteger();
+            } else {
+                queue.addAll(ni.getList());
+            }
+        }
+        prev += levelSum;
+        sum += prev;
+    }
+    return sum;
+}
+</code></pre>
+<button onclick="window.location.href='../animations/nested_list_weight_sum_ii_bfs_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h3>DFS with Depth Tracking</h3>
+        <pre><code>public int depthSumInverse(List&lt;NestedInteger&gt; nestedList) {
+    List&lt;List&lt;Integer&gt;&gt; levels = new ArrayList&lt;&gt;();
+    dfs(nestedList, 0, levels);
+    int sum = 0;
+    for (int i = 0; i &lt; levels.size(); i++) {
+        int weight = levels.size() - i;
+        for (int val : levels.get(i)) {
+            sum += val * weight;
+        }
+    }
+    return sum;
+}
+private void dfs(List&lt;NestedInteger&gt; list, int depth, List&lt;List&lt;Integer&gt;&gt; levels) {
+    if (levels.size() == depth) levels.add(new ArrayList&lt;&gt;());
+    for (NestedInteger ni : list) {
+        if (ni.isInteger()) {
+            levels.get(depth).add(ni.getInteger());
+        } else {
+            dfs(ni.getList(), depth + 1, levels);
+        }
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/nested_list_weight_sum_ii_dfs_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Weighted sum calculations in nested structures</li>
+            <li>Interview and coding test problems</li>
+            <li>Tree and graph traversal with custom weights</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use BFS or DFS to traverse the nested list by depth</li>
+            <li>Collect integers at each depth</li>
+            <li>Apply inverse weights (deepest = 1, root = max weight)</li>
+            <li>Sum up weighted values for the result</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty list (sum is 0)</li>
+            <li>All integers at the same depth</li>
+            <li>Deeply nested lists</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: nestedList = [[1,1],2,[1,1]]
+Output: 8
+Explanation: Four 1's at depth 2, one 2 at depth 1. (1+1+1+1)*1 + 2*2 = 4 + 4 = 8
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>BFS is optimal for level-wise traversal and inverse weighting</li>
+            <li>DFS can collect values by depth for post-processing</li>
+            <li>Test with various nesting depths</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="nested_list_weight_sum_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Nested List Weight Sum I
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertical Order Traversal of a Binary Tree Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🏙️ Vertical Order Traversal of a Binary Tree – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+        The <b>Vertical Order Traversal of a Binary Tree</b> problem (LeetCode 987) asks you to return the vertical order traversal of a binary tree, grouping nodes by their column index (left to right), and within each column, nodes are ordered by row (top to bottom) and value (ascending).
+    </p>
+
+    <h2>🎯 Solution Pattern (BFS + TreeMap + Sorting)</h2>
+    <pre><code>// Java Solution (BFS)
+class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; verticalTraversal(TreeNode root) {
+        TreeMap&lt;Integer, TreeMap&lt;Integer, PriorityQueue&lt;Integer&gt;&gt;&gt; map = new TreeMap&lt;&gt;();
+        Queue&lt;Object[]&gt; queue = new LinkedList&lt;&gt;(); // {node, col, row}
+        queue.offer(new Object[]{root, 0, 0});
+        while (!queue.isEmpty()) {
+            Object[] arr = queue.poll();
+            TreeNode node = (TreeNode) arr[0];
+            int col = (int) arr[1];
+            int row = (int) arr[2];
+            map.putIfAbsent(col, new TreeMap&lt;&gt;());
+            map.get(col).putIfAbsent(row, new PriorityQueue&lt;&gt;());
+            map.get(col).get(row).offer(node.val);
+            if (node.left != null) queue.offer(new Object[]{node.left, col - 1, row + 1});
+            if (node.right != null) queue.offer(new Object[]{node.right, col + 1, row + 1});
+        }
+        List&lt;List&lt;Integer&gt;&gt; res = new ArrayList&lt;&gt;();
+        for (TreeMap&lt;Integer, PriorityQueue&lt;Integer&gt;&gt; rows : map.values()) {
+            List&lt;Integer&gt; colList = new ArrayList&lt;&gt;();
+            for (PriorityQueue&lt;Integer&gt; pq : rows.values()) {
+                while (!pq.isEmpty()) {
+                    colList.add(pq.poll());
+                }
+            }
+            res.add(colList);
+        }
+        return res;
+    }
+}
+</code></pre>
+    <p>
+    <b>How it works:</b> Use BFS to traverse the tree, tracking each node's column and row. Store values in a TreeMap by column and row, using a PriorityQueue to sort values at the same position. Build the result column by column, top to bottom, and left to right.
+    </p>
+
+    <h2>🎯 Solution Pattern (DFS + TreeMap + Sorting)</h2>
+    <pre><code>// Java Solution (DFS)
+class Solution {
+    TreeMap&lt;Integer, TreeMap&lt;Integer, ArrayList&lt;Integer&gt;&gt;&gt; map = new TreeMap&lt;&gt;();
+    public List&lt;List&lt;Integer&gt;&gt; verticalTraversal(TreeNode root) {
+        List&lt;List&lt;Integer&gt;&gt; res = new ArrayList&lt;&gt;();
+        if(root == null) return res;
+        dfs(root, 0, 0);
+        for(Map.Entry&lt;Integer, TreeMap&lt;Integer, ArrayList&lt;Integer&gt;&gt;&gt; entry : map.entrySet()) {
+            TreeMap&lt;Integer, ArrayList&lt;Integer&gt;&gt; levelMap = entry.getValue();
+            ArrayList&lt;Integer&gt; list = new ArrayList&lt;&gt;();
+            for(Map.Entry&lt;Integer, ArrayList&lt;Integer&gt;&gt; subEntry: levelMap.entrySet()) {
+                ArrayList&lt;Integer&gt; subList = subEntry.getValue();
+                Collections.sort(subList);
+                list.addAll(subList);
+            }
+            res.add(list);
+        }
+        return res;
+    }
+    public void dfs(TreeNode root, int col, int level) {
+        if(root == null) return;
+        if(!map.containsKey(col)) {
+            map.put(col, new TreeMap&lt;&gt;());
+        }
+        if(!map.get(col).containsKey(level)) {
+            map.get(col).put(level, new ArrayList&lt;&gt;());
+        }
+        map.get(col).get(level).add(root.val);
+
+        dfs(root.left, col - 1, level + 1);
+        dfs(root.right, col + 1, level + 1);
+    }
+}
+</code></pre>
+    <p>
+    <b>How it works:</b> Use DFS to collect each node's column and level. Store values in a TreeMap by column and level. Sort values at the same position, then build the result column by column, top to bottom, and left to right.
+    </p>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+        <li>Tree visualization and printing</li>
+        <li>Column-based grouping in trees</li>
+        <li>Interview and coding test problems</li>
+    </ul>
+
+    <h2>📝 Algorithm Steps</h2>
+    <ol>
+        <li>Track column and row for each node</li>
+        <li>Group nodes by column and row</li>
+        <li>Sort nodes at the same position by value</li>
+        <li>Build result column by column</li>
+    </ol>
+
+    <h2>⚠️ Edge Cases to Consider</h2>
+    <ul>
+        <li>Multiple nodes at the same position (row, col)</li>
+        <li>Single node tree</li>
+        <li>Empty tree</li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: root = [3,9,20,null,null,15,7]
+Output: [[9],[3,15],[20],[7]]
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+        <li>DFS is simple for collecting node positions</li>
+        <li>BFS can also be used for level-order grouping</li>
+        <li>Sorting ensures correct order for ties</li>
+    </ul>
+
+    <h2>🔗 Related Problems</h2>
+    <ul class="problems-list">
+        <li>
+            <a href="binary_tree_level_order_traversal_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Binary Tree Level Order Traversal
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="binary_tree_right_side_view_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Binary Tree Right Side View
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+            </a>
+        </li>
+    </ul>
+</div>
+</body>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serialize and Deserialize Binary Tree Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌳 Serialize and Deserialize Binary Tree – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Serialize and Deserialize Binary Tree</b> problem (LeetCode 297) asks you to convert a binary tree to a string (serialize) and then reconstruct the tree from the string (deserialize).
+        </p>
+
+        <h2>🎯 Solution Pattern (Preorder DFS with Null Markers)</h2>
+        <pre><code>public class Codec {
+    // Encodes a tree to a single string.
+    public String serialize(TreeNode root) {
+        StringBuilder sb = new StringBuilder();
+        serializeHelper(root, sb);
+        return sb.toString();
+    }
+    private void serializeHelper(TreeNode node, StringBuilder sb) {
+        if (node == null) {
+            sb.append("null,");
+            return;
+        }
+        sb.append(node.val).append(",");
+        serializeHelper(node.left, sb);
+        serializeHelper(node.right, sb);
+    }
+
+    // Decodes your encoded data to tree.
+    public TreeNode deserialize(String data) {
+        String[] nodes = data.split(",");
+        Queue&lt;String&gt; queue = new LinkedList&lt;&gt;(Arrays.asList(nodes));
+        return deserializeHelper(queue);
+    }
+    private TreeNode deserializeHelper(Queue&lt;String&gt; queue) {
+        String val = queue.poll();
+        if (val.equals("null")) return null;
+        TreeNode node = new TreeNode(Integer.parseInt(val));
+        node.left = deserializeHelper(queue);
+        node.right = deserializeHelper(queue);
+        return node;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/serialize_and_deserialize_binary_tree_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Saving and loading tree structures</li>
+            <li>Transferring trees over networks</li>
+            <li>Tree cloning and comparison</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Serialize: Traverse tree in preorder, append values and "null" for empty nodes</li>
+            <li>Deserialize: Read values from string, reconstruct tree recursively</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (root is null)</li>
+            <li>Single node tree</li>
+            <li>Skewed trees (all left or all right)</li>
+            <li>Large trees (string size)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [1,2,3,null,null,4,5]
+Serialized: "1,2,null,null,3,4,null,null,5,null,null,"
+Deserialized: [1,2,3,null,null,4,5]
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Use preorder traversal for simple recursive serialization</li>
+            <li>Include null markers to preserve tree structure</li>
+            <li>Use a queue for deserialization to maintain order</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="flatten_binary_tree_to_linked_list_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Flatten Binary Tree to Linked List
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>

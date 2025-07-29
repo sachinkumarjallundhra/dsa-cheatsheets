@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flatten Binary Tree to Linked List Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-prev: #f1c40f;
+            --color-edge-remove: #e74c3c;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 1em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group { transition: transform 0.5s ease-in-out; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .edge { transition: all 0.5s ease-in-out; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; }
+        
+        .prev-node-display { font-size: 2em; font-weight: bold; color: var(--color-node-prev); text-align: center; }
+
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Flatten Binary Tree to Linked List</h1>
+            <div class="controls">
+                <label>Tree (array):</label><textarea id="tree_input">[1,2,5,3,4,null,6]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (Recursive)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Global 'prev' Pointer</h2>
+                <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+                    <div id="prev_node_display" class="prev-node-display">null</div>
+                </div>
+            </div>
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, startButton, nextStepButton, codeContainer, actionDisplay, treeContainer,
+    prevNodeDisplay, callStackContainer;
+let treeDrawer;
+
+class FlattenTreeAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        const svg = document.getElementById('tree_svg');
+        if (svg) svg.innerHTML = '';
+        [codeContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter tree and click \'Start\'.';
+        prevNodeDisplay.textContent = 'null';
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(treeArr)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'));
+            animationSteps = this.generateSteps(root);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array for the Tree.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function flatten(node):",
+            "  if node == null: return",
+            "  flatten(node.right)",
+            "  flatten(node.left)",
+            "  node.right = prev",
+            "  node.left = null",
+            "  prev = node",
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        let idCounter = 0;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null, id: idCounter++ } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+    
+    getTreeState(root) {
+        if (!root) return null;
+        const state = { val: root.val, id: root.id };
+        if (root.left) state.left = this.getTreeState(root.left);
+        if (root.right) state.right = this.getTreeState(root.right);
+        return state;
+    }
+
+    generateSteps(root) {
+        const steps = [];
+        const save = (state) => steps.push(JSON.parse(JSON.stringify(state)));
+        
+        let state = {
+            line: null, msg: "", callStack: [], tree: this.getTreeState(root),
+            prev: null, 
+            highlights: { current: null, edge: null },
+        };
+        
+        let prevNode = null;
+        const self = this;
+
+        function traceFlatten(node) {
+            if (!node) {
+                save({ ...state, line: 1, msg: `Node is null, returning.` });
+                return;
+            }
+            state.callStack.push(node.val);
+            state.highlights.current = node.val;
+            save({ ...state, line: 0, msg: `Calling flatten(${node.val}).` });
+            
+            save({ ...state, line: 2, msg: `Recursively calling for right child.` });
+            traceFlatten(node.right);
+            
+            state.highlights.current = node.val;
+            save({ ...state, line: 2, msg: `Returned from right child of ${node.val}.` });
+            
+            save({ ...state, line: 3, msg: `Recursively calling for left child.` });
+            traceFlatten(node.left);
+            
+            state.highlights.current = node.val;
+            save({ ...state, line: 3, msg: `Returned from left child of ${node.val}.` });
+            
+            // Rewire
+            state.highlights.edge = { from: node.id, to: prevNode?.id, type: 'right' };
+            save({ ...state, line: 4, msg: `Set ${node.val}.right = prev (${prevNode?.val ?? 'null'}).` });
+            node.right = prevNode;
+            state.tree = self.getTreeState(root);
+            
+            state.highlights.edge = { from: node.id, to: node.left?.id, type: 'left' };
+            save({ ...state, line: 5, msg: `Set ${node.val}.left = null.` });
+            node.left = null;
+            state.tree = self.getTreeState(root);
+            state.highlights.edge = null;
+            
+            prevNode = node;
+            state.prev = prevNode.val;
+            save({ ...state, line: 6, msg: `Update prev = ${node.val}.` });
+
+            state.callStack.pop();
+            state.highlights.current = state.callStack.length > 0 ? state.callStack[state.callStack.length - 1] : null;
+        }
+
+        traceFlatten(root);
+        state.msg = "Flattening complete!";
+        state.line = null;
+        state.highlights.current = null;
+        save({ ...state });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => `<div class="stack-item">flatten(${c})</div>`).join('');
+        prevNodeDisplay.textContent = state.prev ?? 'null';
+
+        treeDrawer.draw(state.tree, state.highlights);
+    }
+}
+
+class TreeGraph {
+    constructor(svg) {
+        this.svg = svg;
+        this.nodePositions = new Map();
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+    }
+    
+    // --- KEY CHANGE: Re-calculate positions every draw based on current tree structure ---
+    assignPositions(node, level, x, width) {
+        if (!node) return;
+        this.nodePositions.set(node.id, { x, y: level * 80 + 50 });
+        const childWidth = width / 2;
+        // In the flattened state, only right child exists, position it directly below
+        if (node.left === null && node.right) {
+             this.assignPositions(node.right, level + 1, x, width);
+        } else {
+            this.assignPositions(node.left, level + 1, x - childWidth / 2.5, childWidth);
+            this.assignPositions(node.right, level + 1, x + childWidth / 2.5, childWidth);
+        }
+    }
+
+    draw(tree, highlights) {
+        this.svg.innerHTML = '';
+        if (!tree) return;
+        
+        this.nodePositions.clear();
+        this.assignPositions(tree, 0, this.width / 2, this.width);
+        
+        const edges = [];
+        const nodes = [];
+        function collectElements(node) {
+            if(!node) return;
+            nodes.push(node);
+            if(node.left) { edges.push({source: node, target: node.left, type: 'left'}); collectElements(node.left); }
+            if(node.right) { edges.push({source: node, target: node.right, type: 'right'}); collectElements(node.right); }
+        }
+        collectElements(tree);
+
+        edges.forEach(edge => {
+            const sourcePos = this.nodePositions.get(edge.source.id);
+            const targetPos = this.nodePositions.get(edge.target.id);
+            if (!sourcePos || !targetPos) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', sourcePos.x); line.setAttribute('y1', sourcePos.y);
+            line.setAttribute('x2', targetPos.x); line.setAttribute('y2', targetPos.y);
+            
+            const h_edge = highlights.edge;
+            let stroke = '#ccc';
+            if(h_edge && h_edge.from === edge.source.id && h_edge.to === edge.target.id){
+                stroke = edge.type === 'left' ? 'var(--color-edge-remove)' : 'var(--color-success)';
+            }
+            
+            line.setAttribute('stroke', stroke);
+            line.setAttribute('stroke-width', 2);
+            line.classList.add('edge');
+            this.svg.appendChild(line);
+        });
+
+        nodes.forEach(node => {
+            const pos = this.nodePositions.get(node.id);
+            if (!pos) return;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${pos.x},${pos.y})`);
+            g.classList.add('node-group');
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            
+            let color = 'var(--color-node-default)';
+            if (highlights.prev === node.val) color = 'var(--color-node-prev)';
+            if (highlights.current === node.val) color = 'var(--color-node-current)';
+            
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val');
+            valText.textContent = node.val;
+            g.appendChild(valText);
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    prevNodeDisplay = document.getElementById('prev_node_display');
+    callStackContainer = document.getElementById('call_stack_container');
+    
+    const anim = new FlattenTreeAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+});
+</script>
+</body>
+</html>

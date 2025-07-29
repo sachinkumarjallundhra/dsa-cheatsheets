@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inorder Successor in BST (Iterative) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-p: #3498db;
+            --color-node-candidate: #f1c40f;
+            --color-node-successor: #2ecc71;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: flex-end; justify-content: center;}
+        .controls .input-group { display: flex; flex-direction: column; }
+        .controls label { font-weight: bold; margin-bottom: 3px; font-size: 0.9em; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 40px; resize: vertical; }
+        .controls input[type=number] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 60px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.successor .node-circle { fill: var(--color-node-successor) !important; transform: scale(1.1); }
+        .node-group.candidate .node-circle { fill: var(--color-node-candidate) !important; }
+        .node-group.current .node-circle { fill: var(--color-node-current) !important; }
+        .node-p-label { font-size: 1.2em; font-weight: bold; }
+        .traversal-arrow { stroke: var(--color-node-candidate); stroke-width: 4px; marker-end: url(#arrowhead); animation: dash 0.5s linear infinite; stroke-dasharray: 10, 5; }
+        
+        .analysis-item { text-align: center; background: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; }
+        .analysis-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; }
+        .analysis-item .value { font-size: 2.5em; font-weight: bold; color: var(--color-text-dark); min-height: 1.2em; }
+        #successor-val.updated { color: var(--color-node-candidate); transform: scale(1.2); transition: all 0.2s ease;}
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2.5em; font-weight: bold; margin: 0; color: var(--color-success); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+
+        @keyframes dash { to { stroke-dashoffset: -15; } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Inorder Successor in BST (Iterative)</h1>
+            <div class="controls">
+                <div class="input-group"><label>Tree (array):</label><textarea id="tree_input">[5,3,8,2,4,7,9,1,null,null,null,6]</textarea></div>
+                <div class="input-group"><label for="p_input">p:</label><input type="number" id="p_input" value="4"></div>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (Iterative)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and p, then click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg">
+                     <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--color-node-candidate)" />
+                        </marker>
+                    </defs>
+                 </svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+            <div class="analysis-item">
+                <span class="label">Current Node (root)</span>
+                <span id="current-node-val" class="value">-</span>
+            </div>
+            <div class="analysis-item">
+                <span class="label">Potential Successor</span>
+                <span id="successor-val" class="value">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Successor</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, pInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    treeContainer, currentNodeVal, successorVal,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class InorderSuccessorAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        codeContainer.innerHTML = '';
+        document.getElementById('tree_svg').innerHTML = `<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--color-node-candidate)" /></marker></defs>`;
+        actionDisplay.textContent = "Enter tree and p, then click 'Start'.";
+        currentNodeVal.textContent = '-';
+        successorVal.textContent = '-';
+        successorVal.classList.remove('updated');
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/null/g, 'null').replace(/'/g, '"'));
+            const pVal = parseInt(pInput.value);
+            if (!Array.isArray(treeArr) || isNaN(pVal)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            const nodeSet = new Set(treeArr.filter(v => v !== null));
+            if (!nodeSet.has(pVal)) throw new Error(`Node p=${pVal} not found in the tree.`);
+
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root, pVal);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert(e.message || "Invalid input.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function inorderSuccessor(root, p):",
+            "  successor = null",
+            "",
+            "  while (root != null):",
+            "    if (p.val < root.val):",
+            "      successor = root",
+            "      root = root.left",
+            "    else:",
+            "      root = root.right",
+            "",
+            "  return successor"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+
+    generateSteps(root, pVal) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "",
+            highlights: { p: pVal, currentNode: null, candidate: null, finalSuccessor: null, traversalPath: null },
+            finalResult: null
+        };
+
+        let successorNode = null;
+        let currentNode = root;
+
+        state.line = 1; save({ ...state, msg: "Initialize potential successor to null."});
+
+        while(currentNode) {
+            state.highlights.currentNode = currentNode.val;
+            state.highlights.traversalPath = null;
+            state.line = 3; save({ ...state, msg: `Current node is ${currentNode.val}. Loop continues.`});
+            
+            state.line = 4; save({ ...state, msg: `Is ${pVal} < ${currentNode.val}?`});
+            if (pVal < currentNode.val) {
+                successorNode = currentNode;
+                state.highlights.candidate = successorNode.val;
+                state.line = 5; save({ ...state, msg: `Yes. Store ${currentNode.val} as a potential successor.`});
+                
+                state.highlights.traversalPath = { from: currentNode.val, to: currentNode.left ? currentNode.left.val : 'null' };
+                state.line = 6; save({ ...state, msg: `Move left to find an even better (closer) successor.`});
+                currentNode = currentNode.left;
+
+            } else {
+                state.highlights.traversalPath = { from: currentNode.val, to: currentNode.right ? currentNode.right.val : 'null' };
+                state.line = 8; save({ ...state, msg: `No. Successor must be in the right subtree. Move right.`});
+                currentNode = currentNode.right;
+            }
+        }
+        
+        state.highlights.currentNode = null;
+        state.highlights.traversalPath = null;
+        state.line = 3; save({ ...state, msg: "Current node is null. Loop terminates."});
+        
+        state.finalResult = successorNode ? successorNode.val : null;
+        state.highlights.finalSuccessor = state.finalResult;
+        state.line = 10; save({ ...state, msg: `Return the last stored successor: ${state.finalResult ?? 'null'}.`});
+
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        currentNodeVal.textContent = state.highlights.currentNode ?? 'null';
+        const succEl = document.getElementById('successor-val');
+        if(succEl.textContent !== String(state.highlights.candidate ?? '-')) {
+             succEl.classList.add('updated');
+             setTimeout(() => succEl.classList.remove('updated'), 300);
+        }
+        succEl.textContent = state.highlights.candidate ?? '-';
+
+        treeDrawer.draw(state);
+
+        if (state.finalResult !== null && currentStepIndex === animationSteps.length - 1) {
+            finalResultText.textContent = state.finalResult;
+            resultModal.style.display = 'flex';
+        } else if (state.finalResult === null && currentStepIndex === animationSteps.length - 1) {
+            finalResultText.textContent = 'None Found';
+            finalResultText.style.color = 'var(--color-danger)';
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+        this._layout();
+    }
+    
+    _layout() {
+        if (!this.root) return;
+        this._getNodeDepths(this.root, 0);
+        const inOrderNodes = [];
+        this._getInOrderList(this.root, inOrderNodes);
+        const hSpacing = Math.min(60, this.width / (inOrderNodes.length + 1));
+        const totalWidth = (inOrderNodes.length - 1) * hSpacing;
+        const startX = (this.width - totalWidth) / 2;
+        inOrderNodes.forEach((node, i) => {
+            const mapNode = this.nodeMap.get(node.val);
+            mapNode.x = startX + i * hSpacing;
+        });
+    }
+
+    _getNodeDepths(node, depth) {
+        if (!node) return;
+        this.nodeMap.set(node.val, { node, x: 0, y: depth * 85 + 60 });
+        this._getNodeDepths(node.left, depth + 1);
+        this._getNodeDepths(node.right, depth + 1);
+    }
+    
+    _getInOrderList(node, list) {
+        if (!node) return;
+        this._getInOrderList(node.left, list);
+        list.push(node);
+        this._getInOrderList(node.right, list);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = `<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="var(--color-node-candidate)" /></marker></defs>`;
+        const h = state.highlights;
+        
+        const drawEdges = (node) => {
+            if (!node) return;
+            const parentPos = this.nodeMap.get(node.val);
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const childPos = this.nodeMap.get(child.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', parentPos.x); line.setAttribute('y1', parentPos.y);
+                    line.setAttribute('x2', childPos.x); line.setAttribute('y2', childPos.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        if(h.traversalPath && h.traversalPath.to !== 'null') {
+            const fromPos = this.nodeMap.get(h.traversalPath.from);
+            const toPos = this.nodeMap.get(h.traversalPath.to);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+            line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+            line.classList.add('traversal-arrow');
+            this.svg.appendChild(line);
+        }
+
+        this.nodeMap.forEach(mapNode => {
+            const { node, x, y } = mapNode;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${x},${y})`);
+            g.classList.add('node-group');
+
+            if(h.finalSuccessor === node.val) g.classList.add('successor');
+            else if(h.candidate === node.val) g.classList.add('candidate');
+            if(h.currentNode === node.val) g.classList.add('current');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            circle.setAttribute('fill', 'var(--color-node-default)');
+            
+            let strokeColor = '#333';
+            let strokeWidth = 2;
+            if (node.val === h.p) { strokeColor = 'var(--color-node-p)'; strokeWidth = 4; }
+            circle.setAttribute('stroke', strokeColor);
+            circle.setAttribute('stroke-width', strokeWidth);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            if (node.val === h.p) {
+                const pLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                pLabel.textContent = 'p'; pLabel.setAttribute('x', -35); pLabel.setAttribute('y', 0);
+                pLabel.setAttribute('fill', 'var(--color-node-p)'); pLabel.classList.add('node-p-label');
+                g.appendChild(pLabel);
+            }
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    pInput = document.getElementById('p_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    currentNodeVal = document.getElementById('current-node-val');
+    successorVal = document.getElementById('successor-val');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new InorderSuccessorAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => {
+        resultModal.style.display = 'none';
+        finalResultText.style.color = 'var(--color-success)'; // Reset color
+    });
+    resultModal.addEventListener('click', (e) => { 
+        if (e.target === resultModal) {
+            resultModal.style.display = 'none';
+            finalResultText.style.color = 'var(--color-success)'; // Reset color
+        }
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Right Side View (BFS) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-right-side: #27ae60;
+            --color-queue-item: #e9d8fd;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.right-side .node-circle { fill: var(--color-node-right-side) !important; }
+        .node-group.current .node-circle { fill: var(--color-node-current) !important; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .flex-container { display: flex; flex-wrap: wrap; gap: 8px; min-height: 45px; align-content: flex-start; padding: 5px; }
+        .data-item { padding: 10px 15px; border-radius: 5px; font-weight: bold; font-size: 1.2em; animation: item-add 0.4s ease; }
+        .result-item { background: var(--color-success); color: white; }
+        .queue-item { background: var(--color-queue-item); color: var(--color-text-dark); border: 1px solid #c3a1e1;}
+        .level-analysis-container { display: flex; justify-content: space-around; }
+        .analysis-item { text-align: center; }
+        .analysis-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; font-size: 0.9em; }
+        .analysis-item .value { font-size: 1.5em; font-weight: bold; color: var(--color-text-dark); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2em; font-weight: bold; margin: 0; color: var(--color-success); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Binary Tree Right Side View (BFS)</h1>
+            <div class="controls">
+                <label>Tree (array):</label><textarea id="tree_input">[1,2,3,null,5,null,4]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (BFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Right Side View (Result)</h2>
+                <div id="result_list_container" class="flex-container"></div>
+            </div>
+            <div class="panel">
+                <h2>Level Analysis</h2>
+                <div class="level-analysis-container">
+                    <div class="analysis-item"><span class="label">Level</span><span id="val-level" class="value">-</span></div>
+                    <div class="analysis-item"><span class="label">Size</span><span id="val-size" class="value">-</span></div>
+                    <div class="analysis-item"><span class="label">i</span><span id="val-i" class="value">-</span></div>
+                </div>
+            </div>
+             <div class="panel">
+                <h2>Queue</h2>
+                <div id="queue_container" class="flex-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, startButton, nextStepButton, codeContainer, actionDisplay, treeContainer,
+    resultListContainer, queueContainer, valLevel, valSize, valI,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class RightSideViewBFSAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, resultListContainer, queueContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = 'Enter tree and click \'Start\'.';
+        valLevel.textContent = '-'; valSize.textContent = '-'; valI.textContent = '-';
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/null/g, 'null').replace(/'/g, '"'));
+            if (!Array.isArray(treeArr)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array for the Tree.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function rightSideView(root):",
+            "  result = []",
+            "  if root == null: return result",
+            "  queue = [root]",
+            "",
+            "  while queue is not empty:",
+            "    level_size = queue.size()",
+            "",
+            "    for i from 0 to level_size-1:",
+            "      node = queue.dequeue()",
+            "",
+            "      if i == level_size - 1:",
+            "        result.add(node.val)",
+            "",
+            "      if node.left: queue.enqueue(node.left)",
+            "      if node.right: queue.enqueue(node.right)",
+            "",
+            "  return result"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+
+    generateSteps(root) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", queue: [], resultList: [],
+            level: -1, levelSize: -1, i: -1,
+            highlights: { currentNode: null, rightSideNodes: [] },
+            finalResult: null
+        };
+
+        save({ ...state, line: 1, msg: "Initializing an empty result list." });
+
+        save({ ...state, line: 2, msg: "Check if root is null." });
+        if (!root) {
+            save({ ...state, line: 2, msg: "Root is null, returning empty list.", finalResult: [] });
+            return steps;
+        }
+
+        const nodeQueue = [root];
+        state.queue.push(root.val);
+        save({ ...state, line: 3, msg: `Initialize queue and enqueue root (${root.val}).` });
+
+        let level = 0;
+        while (nodeQueue.length > 0) {
+            state.level = level;
+            save({ ...state, line: 5, msg: `Starting level ${level}. Queue is not empty.` });
+
+            const size = nodeQueue.length;
+            state.levelSize = size;
+            save({ ...state, line: 6, msg: `Current level has ${size} node(s).` });
+            
+            for (let i = 0; i < size; i++) {
+                state.i = i;
+                save({ ...state, line: 8, msg: `Looping: processing node ${i + 1} of ${size} for this level.` });
+
+                const node = nodeQueue.shift();
+                state.queue.shift();
+                state.highlights.currentNode = node.val;
+                save({ ...state, line: 9, msg: `Dequeued node ${node.val}.` });
+
+                const isRightmost = (i === size - 1);
+                save({ ...state, line: 11, msg: `Is this the rightmost node? (i=${i}, size-1=${size - 1}) -> ${isRightmost ? 'Yes' : 'No'}.` });
+                if (isRightmost) {
+                    state.resultList.push(node.val);
+                    state.highlights.rightSideNodes.push(node.val);
+                    save({ ...state, line: 12, msg: `Yes. Add ${node.val} to the result list.` });
+                }
+
+                save({ ...state, line: 14, msg: `Checking for left child of ${node.val}.` });
+                if (node.left) {
+                    nodeQueue.push(node.left);
+                    state.queue.push(node.left.val);
+                    save({ ...state, line: 14, msg: `Enqueued left child: ${node.left.val}.` });
+                }
+
+                save({ ...state, line: 15, msg: `Checking for right child of ${node.val}.` });
+                if (node.right) {
+                    nodeQueue.push(node.right);
+                    state.queue.push(node.right.val);
+                    save({ ...state, line: 15, msg: `Enqueued right child: ${node.right.val}.` });
+                }
+                state.highlights.currentNode = null;
+            }
+            level++;
+            state.i = -1;
+            state.levelSize = -1;
+        }
+
+        state.finalResult = state.resultList;
+        state.line = 17;
+        save({ ...state, msg: `Queue is empty. Traversal complete. Return result.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        resultListContainer.innerHTML = state.resultList.map(item => `<div class="data-item result-item">${item}</div>`).join('');
+        queueContainer.innerHTML = state.queue.map(item => `<div class="data-item queue-item">${item}</div>`).join('');
+        
+        valLevel.textContent = state.level > -1 ? state.level : '-';
+        valSize.textContent = state.levelSize > -1 ? state.levelSize : '-';
+        valI.textContent = state.i > -1 ? state.i : '-';
+
+        treeDrawer.draw(state);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = `[${state.finalResult.join(', ')}]`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+        this.assignPositions(root, 0, this.width / 2, this.width);
+    }
+    
+    assignPositions(node, level, x, width) {
+        if (!node) return;
+        node.x = x;
+        node.y = level * 80 + 50;
+        this.nodeMap.set(node.val, node);
+        const childWidth = width / 2;
+        this.assignPositions(node.left, level + 1, x - childWidth / 2.5, childWidth);
+        this.assignPositions(node.right, level + 1, x + childWidth / 2.5, childWidth);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const drawEdges = (node) => {
+            if (!node) return;
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const childNode = this.nodeMap.get(child.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', node.x); line.setAttribute('y1', node.y);
+                    line.setAttribute('x2', childNode.x); line.setAttribute('y2', childNode.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        this.nodeMap.forEach(node => {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${node.x},${node.y})`);
+            
+            g.classList.add('node-group');
+            if(state.highlights.rightSideNodes.includes(node.val)) g.classList.add('right-side');
+            if(state.highlights.currentNode === node.val) g.classList.add('current');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            circle.setAttribute('fill', 'var(--color-node-default)');
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    resultListContainer = document.getElementById('result_list_container');
+    queueContainer = document.getElementById('queue_container');
+    valLevel = document.getElementById('val-level');
+    valSize = document.getElementById('val-size');
+    valI = document.getElementById('val-i');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new RightSideViewBFSAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

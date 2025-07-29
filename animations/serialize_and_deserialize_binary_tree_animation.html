@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serialize and Deserialize Binary Tree Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-built: #2ecc71;
+            --color-return: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: flex-end; justify-content: center;}
+        .controls .input-group { display: flex; flex-direction: column; }
+        .controls label { font-weight: bold; margin-bottom: 3px; font-size: 0.9em; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 450px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.85em; flex-shrink: 1; overflow-y: auto;}
+        .code-block { margin-bottom: 10px; border: 1px solid #444; border-radius: 4px; padding-bottom: 5px; }
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.built .node-circle { fill: var(--color-node-built) !important; }
+        .node-group.current .node-circle { fill: var(--color-node-current) !important; }
+        
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; font-family: 'Courier New', monospace; }
+        #string-output { font-size: 1.1em; word-wrap: break-word; }
+        .queue-container { display: flex; flex-wrap: wrap; gap: 5px; min-height: 30px; }
+        .queue-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 4px 8px; border-radius: 4px; animation: item-add 0.4s ease; }
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; font-size: 0.85em; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.2em; font-weight: bold; margin: 0; color: var(--color-success); font-family: 'Courier New', monospace; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Serialize and Deserialize Binary Tree</h1>
+            <div class="controls">
+                <div class="input-group">
+                    <label>Mode:</label>
+                    <select id="mode_select" style="padding: 8px;">
+                        <option value="serialize" selected>Serialize (Tree to String)</option>
+                        <option value="deserialize">Deserialize (String to Tree)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Tree / Serialized String:</label>
+                    <textarea id="main_input">[1,2,3,null,null,4,5]</textarea>
+                </div>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Select a mode and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2 id="main-panel-title">Tree to Serialize</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+            <div id="serialize-panel" class="panel">
+                <h2>Serialized String</h2>
+                <div id="string-output" class="data-container"></div>
+            </div>
+             <div id="deserialize-panel" class="panel" style="display:none;">
+                <h2>Queue of Values</h2>
+                <div id="queue_container" class="queue-container data-container"></div>
+            </div>
+            <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="final_result_title"></h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let modeSelect, mainInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    mainPanelTitle, treeContainer, serializePanel, stringOutput, deserializePanel,
+    queueContainer, callStackContainer, resultModal, finalResultTitle, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class CodecAnimation {
+    constructor() {
+        this.reset();
+        modeSelect.addEventListener('change', () => this.handleModeChange());
+    }
+    
+    handleModeChange() {
+        const isSerialize = modeSelect.value === 'serialize';
+        mainPanelTitle.textContent = isSerialize ? 'Tree to Serialize' : 'Deserialized Tree';
+        serializePanel.style.display = isSerialize ? 'flex' : 'none';
+        deserializePanel.style.display = isSerialize ? 'none' : 'flex';
+        mainInput.value = isSerialize ? '[1,2,3,null,null,4,5]' : '1,2,null,null,3,4,null,null,5,null,null,';
+        this.reset();
+    }
+    
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, stringOutput, queueContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = "Select a mode and click 'Start'.";
+    }
+    start() {
+        this.reset();
+        try {
+            this.initUI();
+            if (modeSelect.value === 'serialize') this.startSerialize();
+            else this.startDeserialize();
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert(e.message || "Invalid input.");
+            this.reset();
+        }
+    }
+    
+    startSerialize() {
+        const treeArr = JSON.parse(mainInput.value.trim().replace(/null/g, 'null').replace(/'/g, '"'));
+        if (!Array.isArray(treeArr)) throw new Error("Invalid tree format.");
+        const root = this.buildTree(treeArr);
+        treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+        animationSteps = this.generateSerializeSteps(root);
+    }
+    
+    startDeserialize() {
+        const data = mainInput.value.trim();
+        if(!data) throw new Error("Serialized string cannot be empty.");
+        const nodes = data.endsWith(',') ? data.slice(0, -1).split(',') : data.split(',');
+        const queue = [...nodes];
+        animationSteps = this.generateDeserializeSteps(queue);
+    }
+
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const serializeCode = [
+            "// Encodes a tree to a single string.",
+            "function serializeHelper(node, sb):",
+            "  if (node == null) {",
+            "    sb.append(\"null,\");",
+            "    return;",
+            "  }",
+            "  sb.append(node.val).append(\",\");",
+            "  serializeHelper(node.left, sb);",
+            "  serializeHelper(node.right, sb);"
+        ];
+        const deserializeCode = [
+             "// Decodes your encoded data to tree.",
+             "function deserializeHelper(queue):",
+             "  val = queue.poll();",
+             "  if (val == \"null\") return null;",
+             "  node = new TreeNode(val);",
+             "  node.left = deserializeHelper(queue);",
+             "  node.right = deserializeHelper(queue);",
+             "  return node;"
+        ];
+        codeContainer.innerHTML = `
+            <div class="code-block" id="serialize-code-block">${serializeCode.map((line, i) => `<div class="code-line" id="code-line-ser-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('')}</div>
+            <div class="code-block" id="deserialize-code-block">${deserializeCode.map((line, i) => `<div class="code-line" id="code-line-des-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('')}</div>
+        `;
+        const isSerialize = modeSelect.value === 'serialize';
+        document.getElementById('serialize-code-block').style.display = isSerialize ? 'block' : 'none';
+        document.getElementById('deserialize-code-block').style.display = isSerialize ? 'none' : 'block';
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+    
+    generateSerializeSteps(root) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            mode: 'serialize', line: null, msg: "", callStack: [],
+            outputString: "",
+            highlights: { currentNode: null }
+        };
+
+        function traceSerialize(node) {
+            const nodeVal = node ? node.val : 'ø';
+            state.callStack.push(nodeVal);
+            state.highlights.currentNode = node ? node.val : null;
+            save({ ...state, line: 1, msg: `Calling serializeHelper on ${node ? `node ${node.val}` : 'null'}.`});
+            
+            save({ ...state, line: 2, msg: "Is node null?" });
+            if (node === null) {
+                state.outputString += "null,";
+                save({ ...state, line: 3, msg: "Yes. Appending 'null' to the string."});
+                save({ ...state, line: 4, msg: "Returning from null node." });
+                state.callStack.pop();
+                return;
+            }
+            
+            state.outputString += `${node.val},`;
+            save({ ...state, line: 6, msg: `No. Appending node's value '${node.val}' to the string.` });
+
+            save({ ...state, line: 7, msg: `Recursing on left child of ${node.val}.` });
+            traceSerialize(node.left);
+            state.highlights.currentNode = node.val;
+            save({ ...state, msg: `Returned from left subtree of ${node.val}.`});
+
+            save({ ...state, line: 8, msg: `Recursing on right child of ${node.val}.` });
+            traceSerialize(node.right);
+            state.highlights.currentNode = node.val;
+            save({ ...state, msg: `Returned from right subtree of ${node.val}.`});
+
+            state.callStack.pop();
+        }
+
+        traceSerialize(root);
+        state.finalResult = state.outputString;
+        state.highlights.currentNode = null;
+        save({ ...state, line: null, msg: "Serialization complete."});
+        return steps;
+    }
+
+    generateDeserializeSteps(queue) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+
+        let state = {
+            mode: 'deserialize', line: null, msg: "", callStack: [],
+            queue: [...queue],
+            visibleNodes: [], visibleEdges: [],
+            highlights: { currentNode: null },
+        };
+        const originalQueue = [...queue];
+
+        function traceDeserialize() {
+            const val = state.queue[0];
+            state.callStack.push(val);
+            save({ ...state, line: 1, msg: `Calling deserializeHelper.`});
+
+            state.queue.shift();
+            save({ ...state, line: 2, msg: `Dequeued value: '${val}'.` });
+
+            save({ ...state, line: 3, msg: `Is value 'null'?`});
+            if (val === 'null') {
+                save({ ...state, line: 3, msg: `Yes. Returning null.` });
+                state.callStack.pop();
+                return null;
+            }
+            
+            const intVal = parseInt(val);
+            const newNode = { val: intVal };
+            state.highlights.currentNode = intVal;
+            state.visibleNodes.push(intVal);
+            save({ ...state, line: 4, msg: `No. Creating new node for ${intVal}.` });
+            
+            save({ ...state, line: 5, msg: `Recursively building left child of ${intVal}.` });
+            const leftChild = traceDeserialize();
+            if (leftChild) state.visibleEdges.push({ from: intVal, to: leftChild.val });
+            state.highlights.currentNode = intVal;
+            save({ ...state, msg: `Left child of ${intVal} built. It is ${leftChild ? leftChild.val : 'null'}.`});
+            
+            save({ ...state, line: 6, msg: `Recursively building right child of ${intVal}.` });
+            const rightChild = traceDeserialize();
+            if (rightChild) state.visibleEdges.push({ from: intVal, to: rightChild.val });
+            state.highlights.currentNode = intVal;
+            save({ ...state, msg: `Right child of ${intVal} built. It is ${rightChild ? rightChild.val : 'null'}.`});
+
+            save({ ...state, line: 7, msg: `Returning fully built node ${intVal}.`});
+            state.callStack.pop();
+            return newNode;
+        }
+
+        const finalRoot = traceDeserialize();
+        // Silently build tree for layout
+        const layoutRoot = this.buildTreeFromPreorder(originalQueue);
+        treeDrawer = new TreeGraph(document.getElementById('tree_svg'), layoutRoot);
+
+        state.finalResult = "Tree built successfully!";
+        state.highlights.currentNode = null;
+        save({ ...state, line: null, msg: "Deserialization complete."});
+
+        return steps;
+    }
+    
+    buildTreeFromPreorder(queue) {
+        const val = queue.shift();
+        if (val === "null" || val === undefined) return null;
+        const node = { val: parseInt(val) };
+        node.left = this.buildTreeFromPreorder(queue);
+        node.right = this.buildTreeFromPreorder(queue);
+        return node;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.mode === 'serialize') {
+            if (state.line !== null) document.getElementById(`code-line-ser-${state.line}`)?.classList.add('highlight');
+            stringOutput.textContent = state.outputString;
+            treeDrawer.draw(state.highlights.currentNode, null, null);
+        } else { // deserialize
+            if (state.line !== null) document.getElementById(`code-line-des-${state.line}`)?.classList.add('highlight');
+            queueContainer.innerHTML = state.queue.map(item => `<div class="queue-item">${item}</div>`).join('');
+            treeDrawer.draw(state.highlights.currentNode, state.visibleNodes, state.visibleEdges);
+        }
+        
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => `<div class="stack-item">helper(${c})</div>`).join('');
+
+        if(state.finalResult && currentStepIndex === animationSteps.length-1) {
+            finalResultTitle.textContent = state.mode === 'serialize' ? 'Final Serialized String' : 'Deserialization Complete';
+            finalResultText.textContent = state.finalResult;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        if (root) this._layout(root);
+    }
+    
+    _layout(root) {
+        const width = this.svg.parentElement.clientWidth;
+        this._getNodeDepths(root, 0);
+        const inOrderNodes = [];
+        this._getInOrderList(root, inOrderNodes);
+        
+        const hSpacing = Math.min(60, width / (inOrderNodes.length + 1));
+        const totalWidth = (inOrderNodes.length - 1) * hSpacing;
+        const startX = (width - totalWidth) / 2;
+
+        inOrderNodes.forEach((node, i) => {
+            this.nodeMap.set(node.val, { node, x: startX + i * hSpacing, y: this.nodeMap.get(node.val).y });
+        });
+    }
+
+    _getNodeDepths(node, depth) {
+        if (!node) return;
+        this.nodeMap.set(node.val, { node, x: 0, y: depth * 85 + 60 });
+        this._getNodeDepths(node.left, depth + 1);
+        this._getNodeDepths(node.right, depth + 1);
+    }
+    
+    _getInOrderList(node, list) {
+        if (!node) return;
+        this._getInOrderList(node.left, list);
+        list.push(node);
+        this._getInOrderList(node.right, list);
+    }
+
+    draw(currentNodeVal, visibleNodes, visibleEdges) {
+        this.svg.innerHTML = '';
+        if(visibleEdges) { // Deserialize
+            visibleEdges.forEach(edge => {
+                const fromPos = this.nodeMap.get(edge.from);
+                const toPos = this.nodeMap.get(edge.to);
+                if(fromPos && toPos) {
+                     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                     line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+                     line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+                     line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                     this.svg.appendChild(line);
+                }
+            });
+            visibleNodes.forEach(nodeVal => {
+                const mapNode = this.nodeMap.get(nodeVal);
+                if (!mapNode) return;
+                this.drawNode(mapNode, nodeVal === currentNodeVal, true);
+            });
+        } else { // Serialize
+             const drawEdgesRecursive = (node) => {
+                if (!node) return;
+                const parentPos = this.nodeMap.get(node.val);
+                [node.left, node.right].forEach(child => {
+                    if (child) {
+                        const childPos = this.nodeMap.get(child.val);
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', parentPos.x); line.setAttribute('y1', parentPos.y);
+                        line.setAttribute('x2', childPos.x); line.setAttribute('y2', childPos.y);
+                        line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                        this.svg.appendChild(line);
+                        drawEdgesRecursive(child);
+                    }
+                });
+            };
+            drawEdgesRecursive(this.root);
+            this.nodeMap.forEach(mapNode => {
+                 this.drawNode(mapNode, mapNode.node.val === currentNodeVal, false);
+            });
+        }
+    }
+
+    drawNode(mapNode, isCurrent, isBuilt) {
+        const { node, x, y } = mapNode;
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        g.classList.add('node-group');
+        if(isCurrent) g.classList.add('current');
+        if(isBuilt) g.classList.add('built');
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 25); circle.classList.add('node-circle');
+        circle.setAttribute('fill', 'var(--color-node-default)');
+        circle.setAttribute('stroke', '#333'); circle.setAttribute('stroke-width', 2);
+        g.appendChild(circle);
+
+        const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+        valText.classList.add('node-val'); valText.textContent = node.val;
+        g.appendChild(valText);
+        
+        this.svg.appendChild(g);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    modeSelect = document.getElementById('mode_select');
+    mainInput = document.getElementById('main_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    mainPanelTitle = document.getElementById('main-panel-title');
+    treeContainer = document.getElementById('tree_container');
+    serializePanel = document.getElementById('serialize-panel');
+    stringOutput = document.getElementById('string-output');
+    deserializePanel = document.getElementById('deserialize-panel');
+    queueContainer = document.getElementById('queue_container');
+    callStackContainer = document.getElementById('call_stack_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultTitle = document.getElementById('final_result_title');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new CodecAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

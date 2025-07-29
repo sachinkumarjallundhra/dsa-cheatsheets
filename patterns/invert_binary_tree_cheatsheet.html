@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invert Binary Tree Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔄 Invert Binary Tree – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Invert Binary Tree</b> problem (LeetCode 226) asks you to swap the left and right children of every node in a binary tree, effectively mirroring the tree.
+        </p>
+
+        <h2>🎯 Solution Pattern (Recursive DFS)</h2>
+        <pre><code>class Solution {
+    public TreeNode invertTree(TreeNode root) {
+        if (root == null) return null;
+        TreeNode left = invertTree(root.left);
+        TreeNode right = invertTree(root.right);
+        root.left = right;
+        root.right = left;
+        return root;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/invert_binary_tree_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Tree mirroring</li>
+            <li>Symmetry checks</li>
+            <li>Tree manipulation for visualization</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Recursively invert left and right subtrees</li>
+            <li>Swap left and right children at each node</li>
+            <li>Return the root of the inverted tree</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (root is null)</li>
+            <li>Single node tree</li>
+            <li>Skewed trees (all left or all right)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [4,2,7,1,3,6,9]
+Output: [4,7,2,9,6,3,1]
+Explanation: The tree is mirrored.
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Recursive DFS is the simplest approach</li>
+            <li>Iterative solutions using a queue or stack are also possible</li>
+            <li>Test with empty and skewed trees</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="diameter_of_binary_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Diameter of Binary Tree
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>

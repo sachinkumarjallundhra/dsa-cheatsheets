@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maximum Depth of Binary Tree Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌳 Maximum Depth of Binary Tree – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Maximum Depth of Binary Tree</b> problem (LeetCode 104) asks you to find the maximum depth (height) of a binary tree. The depth is the number of nodes along the longest path from the root node down to the farthest leaf node.
+        </p>
+
+        <h2>🎯 Solution Pattern (Recursive DFS)</h2>
+        <pre><code>class Solution {
+    public int maxDepth(TreeNode root) {
+        if (root == null) return 0;
+        int left = maxDepth(root.left);
+        int right = maxDepth(root.right);
+        return 1 + Math.max(left, right);
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/maximum_depth_of_binary_tree_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Tree height calculation</li>
+            <li>Balanced tree checks</li>
+            <li>Recursive tree traversal practice</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>If the node is null, return 0</li>
+            <li>Recursively find the depth of left and right subtrees</li>
+            <li>Return 1 + max(left, right)</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (depth is 0)</li>
+            <li>Single node tree (depth is 1)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [3,9,20,null,null,15,7]
+Output: 3
+Explanation: The maximum depth is 3 (path: 3 → 20 → 15 or 3 → 20 → 7).
+</code></pre>
+    </div>

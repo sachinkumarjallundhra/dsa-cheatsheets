@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two Sum IV – Input Is a BST Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>➕ Two Sum IV – Input Is a BST – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+        The <b>Two Sum IV – Input Is a BST</b> problem (LeetCode 653) asks you to determine if there exist two elements in a Binary Search Tree (BST) such that their sum equals a given target.
+    </p>
+
+    <h2>🎯 Solution Pattern (DFS + HashSet)</h2>
+    <pre><code>// Java Solution
+class Solution {
+    public boolean findTarget(TreeNode root, int k) {
+        Set&lt;Integer&gt; set = new HashSet&lt;&gt;();
+        return dfs(root, k, set);
+    }
+    private boolean dfs(TreeNode node, int k, Set&lt;Integer&gt; set) {
+        if (node == null) return false;
+        if (set.contains(k - node.val)) return true;
+        set.add(node.val);
+        return dfs(node.left, k, set) || dfs(node.right, k, set);
+    }
+}
+</code></pre>
+    <p>
+    <b>How it works:</b> Traverse the tree with DFS, storing visited values in a set. For each node, check if (target - node.val) exists in the set.
+    </p>
+    <h2>🎯 Solution Pattern (BFS + HashSet)</h2>
+<pre><code>// Java Solution (BFS)
+class Solution {
+    public boolean findTarget(TreeNode root, int k) {
+        if (root == null) return false;
+        Set&lt;Integer&gt; set = new HashSet&lt;&gt;();
+        Queue&lt;TreeNode&gt; queue = new LinkedList&lt;&gt;();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            TreeNode node = queue.poll();
+            if (set.contains(k - node.val)) return true;
+            set.add(node.val);
+            if (node.left != null) queue.offer(node.left);
+            if (node.right != null) queue.offer(node.right);
+        }
+        return false;
+    }
+}
+</code></pre>
+<p>
+<b>How it works:</b> Use BFS to traverse the tree level by level, storing visited values in a set. For each node, check if (target - node.val) exists in the set.
+</p>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+        <li>Finding pairs with a given sum in BSTs</li>
+        <li>Interview and coding test problems</li>
+        <li>Tree-based two sum queries</li>
+    </ul>
+
+    <h2>📝 Algorithm Steps</h2>
+    <ol>
+        <li>Traverse the BST using DFS</li>
+        <li>For each node, check if (target - node.val) is in the set</li>
+        <li>If found, return true; otherwise, add node.val to the set</li>
+        <li>Continue traversal until a pair is found or all nodes are visited</li>
+    </ol>
+
+    <h2>⚠️ Edge Cases to Consider</h2>
+    <ul>
+        <li>Tree with only one node (return false)</li>
+        <li>No such pair exists (return false)</li>
+        <li>Negative values and zero in the tree</li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: root = [5,3,6,2,4,null,7], k = 9
+Output: true
+Explanation: 5 + 4 = 9
+
+Input: root = [5,3,6,2,4,null,7], k = 28
+Output: false
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+        <li>HashSet makes lookup O(1) per node</li>
+        <li>Can also use inorder traversal + two pointers for sorted array</li>
+        <li>Works for any binary tree, not just BST</li>
+    </ul>
+
+    <h2>🔗 Related Problems</h2>
+    <ul class="problems-list">
+        <li>
+            <a href="two_sum_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Two Sum
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="binary_search_tree_iterator_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Binary Search Tree Iterator
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+            </a>
+        </li>
+    </ul>
+</div>
+</body>
+</html>

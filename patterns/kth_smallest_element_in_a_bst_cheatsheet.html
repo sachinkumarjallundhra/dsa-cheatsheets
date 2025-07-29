@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kth Smallest Element in a BST Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔢 Kth Smallest Element in a BST – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+        The <b>Kth Smallest Element in a BST</b> problem (LeetCode 230) asks you to find the kth smallest value in a Binary Search Tree (BST).
+    </p>
+
+    <h2>🎯 Solution Pattern (Inorder Traversal)</h2>
+    <pre><code>// Java Solution
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+class Solution {
+    private int count = 0;
+    private int result = -1;
+
+    public int kthSmallest(TreeNode root, int k) {
+        inorder(root, k);
+        return result;
+    }
+
+    private void inorder(TreeNode node, int k) {
+        if (node == null) return;
+        inorder(node.left, k);
+        count++;
+        if (count == k) {
+            result = node.val;
+            return;
+        }
+        inorder(node.right, k);
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/kth_smallest_element_in_a_bst_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+    <p>
+    <b>How it works:</b> Inorder traversal of a BST visits nodes in ascending order. Count nodes as you traverse; when count equals k, record the value.
+    </p>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+        <li>Finding order statistics in BSTs</li>
+        <li>Interview and coding test problems</li>
+        <li>Tree-based data structure queries</li>
+    </ul>
+
+    <h2>📝 Algorithm Steps</h2>
+    <ol>
+        <li>Perform inorder traversal (left-root-right)</li>
+        <li>Keep a counter for visited nodes</li>
+        <li>Return the value when counter reaches k</li>
+    </ol>
+
+    <h2>⚠️ Edge Cases to Consider</h2>
+    <ul>
+        <li>k is 1 (smallest element)</li>
+        <li>k equals number of nodes (largest element)</li>
+        <li>Tree is empty (handle gracefully)</li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: root = [3,1,4,null,2], k = 1
+Output: 1
+
+Input: root = [5,3,6,2,4,null,null,1], k = 3
+Output: 3
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+        <li>Inorder traversal is optimal for BST order queries</li>
+        <li>For frequent queries, augment BST with subtree sizes</li>
+        <li>Iterative inorder traversal is possible with a stack</li>
+    </ul>
+
+    <h2>🔗 Related Problems</h2>
+    <ul class="problems-list">
+        <li>
+            <a href="validate_binary_search_tree_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Validate Binary Search Tree
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="inorder_successor_in_bst_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Inorder Successor in BST
+                    <span class="badge badge-medium">Medium</span>
+                </div>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Height of Binary Tree After Subtree Removal Queries Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🌲 Height of Binary Tree After Subtree Removal Queries – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+        The <b>Height of Binary Tree After Subtree Removal Queries</b> problem (LeetCode 2458) asks: for each query node, what is the height of the tree if you remove the subtree rooted at that node? Height is the number of edges in the longest path from root to any node.
+    </p>
+
+    <h2>🎬 Animation</h2>
+    <p>
+        <a href="https://www.youtube.com/watch?v=EY4bCorJH4g&ab_channel=Techdose" target="_blank">
+            ▶️ Watch Video Explanation on YouTube (Techdose)
+        </a>
+    </p>
+
+    <h2>🎯 Solution Pattern (Depth Grouping + Top 2 Heights)</h2>
+    <pre><code>// Java Solution
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+class Solution {
+    Map&lt;Integer, Integer&gt; nodeDepth = new HashMap&lt;&gt;();
+    Map&lt;Integer, Integer&gt; nodeHeight = new HashMap&lt;&gt;();
+
+    public int[] treeQueries(TreeNode&lt;Integer&gt; root, int[] queries) {
+        treeDfs(root, 0);
+
+        // Group nodes by depth, keep [height, value] for each node
+        Map&lt;Integer, List&lt;int[]&gt;&gt; depthGroups = new HashMap&lt;&gt;();
+        for (Map.Entry&lt;Integer, Integer&gt; entry : nodeDepth.entrySet()) {
+            int value = entry.getKey();
+            int depth = entry.getValue();
+            depthGroups.computeIfAbsent(depth, k -&gt; new ArrayList&lt;&gt;())
+                .add(new int[]{nodeHeight.get(value), value});
+        }
+
+        // For each depth, keep only the top 2 heights
+        for (List&lt;int[]&gt; group : depthGroups.values()) {
+            group.sort((a, b) -&gt; b[0] - a[0]);
+            if (group.size() &gt; 2) {
+                group.subList(2, group.size()).clear();
+            }
+        }
+
+        int[] result = new int[queries.length];
+        for (int i = 0; i &lt; queries.length; i++) {
+            int q = queries[i];
+            int depth = nodeDepth.get(q);
+            List&lt;int[]&gt; depthGroup = depthGroups.get(depth);
+
+            if (depthGroup.size() == 1) {
+                result[i] = depth - 1;
+            } else if (depthGroup.get(0)[1] == q) {
+                result[i] = depthGroup.get(1)[0] + depth;
+            } else {
+                result[i] = depthGroup.get(0)[0] + depth;
+            }
+        }
+        return result;
+    }
+
+    private int treeDfs(TreeNode&lt;Integer&gt; node, int depth) {
+        if (node == null) return -1;
+        nodeDepth.put(node.val, depth);
+        int leftHeight = treeDfs(node.left, depth + 1);
+        int rightHeight = treeDfs(node.right, depth + 1);
+        int height = Math.max(leftHeight, rightHeight) + 1;
+        nodeHeight.put(node.val, height);
+        return height;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/height_of_binary_tree_after_subtree_removal_queries_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+<p>
+<b>How it works:</b> Precompute depth and height for each node. For each depth, keep the top 2 subtree heights. For each query, if the removed node is the tallest at its depth, use the second tallest; otherwise, use the tallest. This gives the new tree height after removal.
+</p>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+        <li>Dynamic tree queries</li>
+        <li>Tree height recalculation after removals</li>
+        <li>Advanced tree DP/interview problems</li>
+    </ul>
+
+    <h2>📝 Algorithm Steps</h2>
+    <ol>
+        <li>DFS to compute depth and height for each node</li>
+        <li>For each depth, keep the top 2 subtree heights</li>
+        <li>For each query, use the second tallest if the removed node is the tallest at its depth</li>
+    </ol>
+
+    <h2>⚠️ Edge Cases to Consider</h2>
+    <ul>
+        <li>Query node is root (height becomes -1)</li>
+        <li>Query node is a leaf</li>
+        <li>Multiple queries for same node</li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: root = [1,3,4,2,null,6,5,7,null,null,null,null,8], queries = [4]
+Output: [2]
+Explanation: Remove subtree rooted at 4, height of remaining tree is 2.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+        <li>Preprocessing with DFS makes queries O(1)</li>
+        <li>Track both subtree heights and heights excluding subtrees</li>
+        <li>Animation helps visualize the process</li>
+    </ul>
+</div>
+</body>
+</html>

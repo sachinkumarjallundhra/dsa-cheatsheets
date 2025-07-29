@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convert Sorted Array to BST Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-array-mid: #f1c40f;
+            --color-array-boundary: rgba(41, 128, 185, 0.2);
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; font-size: 0.9em; }
+        
+        .array-container { display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
+        .array-cells { display: flex; gap: 2px; }
+        .array-cell { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid #ccc; background: #fff; font-weight: bold; position: relative; transition: all 0.3s ease; }
+        .array-cell .index { position: absolute; top: -18px; font-size: 0.7em; color: #666; }
+        .array-cell.boundary { background-color: var(--color-array-boundary); }
+        .array-cell.mid { background-color: var(--color-array-mid); transform: scale(1.2); border-color: #c0392b; }
+
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Convert Sorted Array to Binary Search Tree</h1>
+            <div class="controls">
+                <label>Sorted Array:</label><textarea id="array_input">[-10,-3,0,5,9]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (Recursive)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter sorted array and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Resulting Binary Search Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Input Array</h2>
+                <div id="array_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let arrayInput, startButton, nextStepButton, codeContainer, actionDisplay, treeContainer,
+    arrayContainer, callStackContainer;
+let treeDrawer;
+
+class ArrayToBSTAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        const svg = document.getElementById('tree_svg');
+        if (svg) svg.innerHTML = '';
+        [codeContainer, arrayContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter sorted array and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const nums = JSON.parse(arrayInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(nums)) throw new Error("Invalid input format.");
+            
+            this.initUI(nums);
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'));
+            animationSteps = this.generateSteps(nums);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid array of numbers. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI(nums) {
+        const code = [
+            "function sortedArrayToBST(nums):",
+            "  return build(nums, 0, nums.length - 1)",
+            "",
+            "function build(nums, left, right):",
+            "  if left > right: return null",
+            "  mid = left + (right - left) / 2",
+            "  node = new TreeNode(nums[mid])",
+            "  node.left = build(nums, left, mid - 1)",
+            "  node.right = build(nums, mid + 1, right)",
+            "  return node"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+
+        arrayContainer.innerHTML = `
+            <div class="array-cells">
+                ${nums.map((val, i) => `<div class="array-cell" id="arr-cell-${i}"><div class="index">${i}</div>${val}</div>`).join('')}
+            </div>`;
+    }
+
+    generateSteps(nums) {
+        if (!nums || nums.length === 0) return [];
+        const steps = [];
+        const save = (state) => steps.push(JSON.parse(JSON.stringify(state)));
+        
+        let state = {
+            line: null, msg: "", callStack: [], tree: null,
+            arrayHighlights: { left: -1, right: -1, mid: -1 },
+            highlights: { current: null, edge: null },
+        };
+        
+        let idCounter = 0;
+        
+        function traceBuild(left, right) {
+            state.callStack.push(`build(${left}, ${right})`);
+            state.arrayHighlights = { left, right, mid: -1 };
+            save({ ...state, line: 3, msg: `Calling build for subarray [${left}, ${right}].` });
+
+            if (left > right) {
+                save({ ...state, line: 4, msg: `Base case: left > right. Returning null.` });
+                state.callStack.pop();
+                return null;
+            }
+
+            const mid = left + Math.floor((right - left) / 2);
+            state.arrayHighlights.mid = mid;
+            save({ ...state, line: 5, msg: `Calculated mid index: ${mid}. Value is ${nums[mid]}.` });
+
+            const node = { val: nums[mid], id: idCounter++, left: null, right: null };
+            state.highlights.current = node.id;
+            
+            const findAndInsert = (root, newNode) => {
+                if (!root) return newNode;
+                let current = root;
+                while (true) {
+                    if (newNode.val < current.val) {
+                        if (!current.left) { current.left = newNode; break; }
+                        current = current.left;
+                    } else {
+                        if (!current.right) { current.right = newNode; break; }
+                        current = current.right;
+                    }
+                }
+                return root;
+            };
+            state.tree = findAndInsert(state.tree, JSON.parse(JSON.stringify(node)));
+            save({ ...state, line: 6, msg: `Creating new node with value ${nums[mid]}.` });
+            
+            save({ ...state, line: 7, msg: `Recursively building left subtree for [${left}, ${mid - 1}].` });
+            node.left = traceBuild(left, mid - 1);
+            
+            state.highlights.current = node.id;
+            state.arrayHighlights = { left, right, mid };
+            save({ ...state, line: 7, msg: `Returned from left subtree. Left child is ${node.left ? node.left.val : 'null'}.` });
+            
+            save({ ...state, line: 8, msg: `Recursively building right subtree for [${mid + 1}, ${right}].` });
+            node.right = traceBuild(mid + 1, right);
+            
+            state.highlights.current = node.id;
+            state.arrayHighlights = { left, right, mid };
+            save({ ...state, line: 8, msg: `Returned from right subtree. Right child is ${node.right ? node.right.val : 'null'}.` });
+            
+            state.callStack.pop();
+            state.highlights.current = state.callStack.length > 0 ? null : node.id;
+            save({ ...state, line: 9, msg: `Returning node ${node.val}.` });
+            return node;
+        }
+
+        save({ ...state, line: 1, msg: "Starting the process." });
+        const finalTree = traceBuild(0, nums.length - 1);
+        
+        state.tree = finalTree;
+        state.msg = "Finished building the Binary Search Tree.";
+        state.line = null;
+        state.arrayHighlights = { left: -1, right: -1, mid: -1 };
+        save({ ...state });
+        
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => `<div class="stack-item">${c}</div>`).join('');
+        
+        document.querySelectorAll('.array-cell').forEach((cell, i) => {
+            cell.classList.remove('boundary', 'mid');
+            if (i >= state.arrayHighlights.left && i <= state.arrayHighlights.right) {
+                cell.classList.add('boundary');
+            }
+            if (i === state.arrayHighlights.mid) {
+                cell.classList.add('mid');
+            }
+        });
+
+        treeDrawer.draw(state.tree, state.highlights);
+    }
+}
+
+class TreeGraph {
+    constructor(svg) {
+        this.svg = svg;
+        this.nodePositions = new Map();
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+    }
+    
+    assignPositions(node, level, x, width) {
+        if (!node) return;
+        this.nodePositions.set(node.id, { x, y: level * 80 + 50 });
+        const childWidth = width / 2;
+        this.assignPositions(node.left, level + 1, x - childWidth / 2.5, childWidth);
+        this.assignPositions(node.right, level + 1, x + childWidth / 2.5, childWidth);
+    }
+
+    draw(tree, highlights) {
+        this.svg.innerHTML = '';
+        if (!tree) return;
+        
+        this.nodePositions.clear();
+        this.assignPositions(tree, 0, this.width / 2, this.width);
+        
+        const edges = [];
+        const nodes = [];
+        function collectElements(node) {
+            if(!node) return;
+            nodes.push(node);
+            if(node.left) { edges.push({source: node, target: node.left}); collectElements(node.left); }
+            if(node.right) { edges.push({source: node, target: node.right}); collectElements(node.right); }
+        }
+        collectElements(tree);
+
+        edges.forEach(edge => {
+            const sourcePos = this.nodePositions.get(edge.source.id);
+            const targetPos = this.nodePositions.get(edge.target.id);
+            if (!sourcePos || !targetPos) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', sourcePos.x); line.setAttribute('y1', sourcePos.y);
+            line.setAttribute('x2', targetPos.x); line.setAttribute('y2', targetPos.y);
+            line.setAttribute('stroke', '#ccc');
+            line.setAttribute('stroke-width', 2);
+            this.svg.appendChild(line);
+        });
+
+        nodes.forEach(node => {
+            const pos = this.nodePositions.get(node.id);
+            if (!pos) return;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${pos.x},${pos.y})`);
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            
+            let color = 'var(--color-node-default)';
+            if (highlights.current === node.id) color = 'var(--color-node-current)';
+            
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val');
+            valText.textContent = node.val;
+            g.appendChild(valText);
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    arrayInput = document.getElementById('array_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    arrayContainer = document.getElementById('array_container');
+    callStackContainer = document.getElementById('call_stack_container');
+    
+    const anim = new ArrayToBSTAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+});
+</script>
+</body>
+</html>

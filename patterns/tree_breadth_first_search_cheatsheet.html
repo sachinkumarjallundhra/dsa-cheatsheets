@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Breadth First Search (BFS) Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌳 Tree Breadth First Search (BFS) – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Tree Breadth First Search (BFS)</b> pattern is used to traverse a tree level by level, visiting all nodes at each depth before moving to the next level. It is commonly implemented using a queue.
+        </p>
+
+        <h2>🎯 Solution Pattern (Level Order Traversal)</h2>
+        <pre><code>class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; levelOrder(TreeNode root) {
+        List&lt;List&lt;Integer&gt;&gt; result = new ArrayList&lt;&gt;();
+        if (root == null) return result;
+        Queue&lt;TreeNode&gt; queue = new LinkedList&lt;&gt;();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            List&lt;Integer&gt; level = new ArrayList&lt;&gt;();
+            for (int i = 0; i &lt; size; i++) {
+                TreeNode node = queue.poll();
+                level.add(node.val);
+                if (node.left != null) queue.offer(node.left);
+                if (node.right != null) queue.offer(node.right);
+            }
+            result.add(level);
+        }
+        return result;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/tree_breadth_first_search_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Level order traversal</li>
+            <li>Finding shortest path in unweighted trees</li>
+            <li>Solving problems by levels (e.g., populating next pointers)</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize a queue and add the root node</li>
+            <li>While the queue is not empty:</li>
+            <ul>
+                <li>Record the number of nodes at the current level</li>
+                <li>Process each node at this level, adding their children to the queue</li>
+                <li>Store the values for this level</li>
+            </ul>
+            <li>Repeat until all levels are processed</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (return empty list)</li>
+            <li>Single node tree</li>
+            <li>Skewed trees (all left or all right)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [3,9,20,null,null,15,7]
+Output: [[3],[9,20],[15,7]]
+Explanation: The tree is traversed level by level.
+</code></pre>
+    </div>
+    
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symmetric Tree Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔄 Symmetric Tree – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+        The <b>Symmetric Tree</b> problem (LeetCode 101) asks you to determine if a binary tree is a mirror of itself (symmetric around its center).
+    </p>
+
+    <h2>🎯 Solution Pattern (DFS - Recursive)</h2>
+    <pre><code>// Java Solution (DFS)
+class Solution {
+    public boolean isSymmetric(TreeNode root) {
+        return root == null || isMirror(root.left, root.right);
+    }
+    private boolean isMirror(TreeNode t1, TreeNode t2) {
+        if (t1 == null && t2 == null) return true;
+        if (t1 == null || t2 == null) return false;
+        return (t1.val == t2.val)
+            && isMirror(t1.left, t2.right)
+            && isMirror(t1.right, t2.left);
+    }
+}
+</code></pre>
+    <p>
+    <b>How it works:</b> Recursively compare left and right subtrees. They must be mirrors at every level for the tree to be symmetric.
+    </p>
+
+    <h2>🎯 Solution Pattern (BFS - Iterative)</h2>
+    <pre><code>// Java Solution (BFS)
+class Solution {
+    public boolean isSymmetric(TreeNode root) {
+        if (root == null) return true;
+        Queue&lt;TreeNode&gt; queue = new LinkedList&lt;&gt;();
+        queue.offer(root.left);
+        queue.offer(root.right);
+        while (!queue.isEmpty()) {
+            TreeNode t1 = queue.poll();
+            TreeNode t2 = queue.poll();
+            if (t1 == null && t2 == null) continue;
+            if (t1 == null || t2 == null) return false;
+            if (t1.val != t2.val) return false;
+            queue.offer(t1.left);
+            queue.offer(t2.right);
+            queue.offer(t1.right);
+            queue.offer(t2.left);
+        }
+        return true;
+    }
+}
+</code></pre>
+    <p>
+    <b>How it works:</b> Use a queue to compare nodes in pairs. Always compare left of one subtree with right of the other. If all pairs match, the tree is symmetric.
+    </p>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+        <li>Checking tree symmetry</li>
+        <li>Mirror structure validation</li>
+        <li>Interview and coding test problems</li>
+    </ul>
+
+    <h2>📝 Algorithm Steps</h2>
+    <ol>
+        <li>Start with the left and right children of the root</li>
+        <li>Recursively or iteratively check if left subtree is a mirror of right subtree</li>
+        <li>Return true if all corresponding nodes match</li>
+    </ol>
+
+    <h2>⚠️ Edge Cases to Consider</h2>
+    <ul>
+        <li>Empty tree (symmetric)</li>
+        <li>Single node tree (symmetric)</li>
+        <li>Unbalanced trees</li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: root = [1,2,2,3,4,4,3]
+Output: true
+
+Input: root = [1,2,2,null,3,null,3]
+Output: false
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+        <li>Iterative solution is useful for large trees</li>
+        <li>Symmetry must hold at every level</li>
+        <li>Test with both balanced and unbalanced trees</li>
+    </ul>
+
+    <h2>🔗 Related Problems</h2>
+    <ul class="problems-list">
+        <li>
+            <a href="invert_binary_tree_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Invert Binary Tree
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="binary_tree_level_order_traversal_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Binary Tree Level Order Traversal
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+            </a>
+        </li>
+    </ul>
+</div>
+</body>
+</html>

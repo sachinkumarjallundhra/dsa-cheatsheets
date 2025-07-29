@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Queries Animation (Depth Grouping Approach)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-query: #e67e22;
+            --color-cell-update: #e8f5e9;
+            --color-group-process: #fff3cd;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 400px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-info { font-size: 0.8em; fill: var(--color-text-dark); font-weight: bold; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; font-size: 0.9em;}
+        
+        .map-table { width: 100%; border-collapse: collapse; }
+        .map-table th, .map-table td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 0.9em; }
+        .map-table th { background-color: #f2f2f2; }
+        .map-table tr.updated { background-color: var(--color-cell-update); }
+        .map-table tr.processing { background-color: var(--color-group-process); }
+        
+        .results-array { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; justify-content: center; padding-top: 10px;}
+        .result-cell { min-width: 30px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: center; background: #eee; font-family: 'Courier New', monospace;}
+        .result-cell.highlight { background-color: var(--color-node-query); color: white; border-color: #c0392b; transform: scale(1.2); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.5em; font-weight: bold; margin: 0; color: var(--color-primary); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Tree Queries (Depth Grouping Approach)</h1>
+            <div class="controls">
+                <label>Tree (array):</label><textarea id="tree_input">[5,8,9,2,1,3,7,null,null,4,6]</textarea>
+                <label>Queries:</label><textarea id="queries_input">[3,2,4,8]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and queries, then click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Binary Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="panel data-grid">
+                <div>
+                    <h2>Depth Map</h2>
+                    <div id="depth_map_container" class="data-container"></div>
+                </div>
+                 <div>
+                    <h2>Height Map</h2>
+                    <div id="height_map_container" class="data-container"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <h2>Depth Groups (Top 2 by Height)</h2>
+                <div id="depth_groups_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+            <div class="panel">
+                <h2>Query Results</h2>
+                <div id="results_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Results</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, queriesInput, startButton, nextStepButton, codeContainer, actionDisplay, treeContainer,
+    depthMapContainer, heightMapContainer, depthGroupsContainer, callStackContainer, resultsContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class TreeQueriesAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, depthMapContainer, heightMapContainer, depthGroupsContainer, callStackContainer, resultsContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = 'Enter tree and queries, then click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/'/g, '"'));
+            const queries = JSON.parse(queriesInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(treeArr) || !Array.isArray(queries)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            if (!root) throw new Error("Could not build tree from input array.");
+            
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root, queries);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// Phase 1: Compute Depth and Height",
+            "function dfsDepthHeight(node, d):",
+            "  if node == null: return -1",
+            "  depth[node] = d",
+            "  leftH = dfsDepthHeight(node.left, d+1)",
+            "  rightH = dfsDepthHeight(node.right, d+1)",
+            "  height[node] = 1 + max(leftH, rightH)",
+            "  return height[node]",
+            "// Phase 2: Group nodes by depth",
+            "depthGroups = group_nodes_by_depth()",
+            "for group in depthGroups:",
+            "  sort_group_by_height(group)",
+            "  prune_group_to_top_2(group)",
+            "// Phase 3: Answer queries",
+            "for q in queries:",
+            "  depth = depthMap[q]",
+            "  group = depthGroups[depth]",
+            "  if group.size == 1:",
+            "    result = depth - 1",
+            "  else if group[0].val == q:",
+            "    result = group[1].height + depth",
+            "  else:",
+            "    result = group[0].height + depth",
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const root = { val: arr[0], left: null, right: null };
+        const queue = [root];
+        let i = 1;
+        while (queue.length > 0 && i < arr.length) {
+            const node = queue.shift();
+            if (arr[i] !== null) {
+                node.left = { val: arr[i], left: null, right: null };
+                queue.push(node.left);
+            }
+            i++;
+            if (i < arr.length && arr[i] !== null) {
+                node.right = { val: arr[i], left: null, right: null };
+                queue.push(node.right);
+            }
+            i++;
+        }
+        return root;
+    }
+
+    generateSteps(root, queries) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", callStack: [], depthMap: {}, heightMap: {}, depthGroups: {}, results: [],
+            phase: 'DepthHeight', highlights: { current: null, query: null, resIndex: null, group: null }
+        };
+
+        const depthMap = new Map(), heightMap = new Map();
+        
+        function traceDepthHeight(node, d) {
+            if (!node) {
+                save({ ...state, line: 2, msg: `Node is null, returning -1.` });
+                return -1;
+            }
+            state.callStack.push({ func: 'dfsDH', node: node.val, d });
+            state.highlights.current = node.val;
+            save({ ...state, line: 1, msg: `Calling dfsDepthHeight(${node.val}, d=${d}).` });
+            
+            depthMap.set(node.val, d);
+            state.depthMap = Object.fromEntries(depthMap);
+            save({ ...state, line: 3, msg: `Set depth[${node.val}] = ${d}.` });
+            
+            save({ ...state, line: 4, msg: `Calling for left child of ${node.val}.` });
+            const leftH = traceDepthHeight(node.left, d + 1);
+            
+            state.highlights.current = node.val;
+            save({ ...state, line: 5, msg: `Calling for right child of ${node.val}.` });
+            const rightH = traceDepthHeight(node.right, d + 1);
+            
+            state.highlights.current = node.val;
+            const h = 1 + Math.max(leftH, rightH);
+            heightMap.set(node.val, h);
+            state.heightMap = Object.fromEntries(heightMap);
+            save({ ...state, line: 6, msg: `Set height[${node.val}] = 1 + max(${leftH}, ${rightH}) = ${h}.` });
+
+            state.callStack.pop();
+            save({ ...state, line: 7, msg: `Returning height ${h} for ${node.val}.` });
+            return h;
+        }
+
+        traceDepthHeight(root, 0);
+        state.highlights.current = null;
+        save({ ...state, msg: "Phase 1 complete: All depths and heights calculated." });
+        
+        state.phase = 'Grouping';
+        const depthGroups = new Map();
+        for (const [nodeVal, depth] of depthMap.entries()) {
+            if (!depthGroups.has(depth)) depthGroups.set(depth, []);
+            depthGroups.get(depth).push({ height: heightMap.get(nodeVal), val: nodeVal });
+        }
+        state.depthGroups = Object.fromEntries(depthGroups);
+        save({ ...state, line: 9, msg: "Phase 2: Grouped all nodes by their depth." });
+
+        for (const [depth, group] of depthGroups.entries()) {
+            state.highlights.group = depth;
+            save({ ...state, line: 10, msg: `Processing group for depth ${depth}.` });
+
+            group.sort((a,b) => b.height - a.height);
+            state.depthGroups = Object.fromEntries(depthGroups);
+            save({ ...state, line: 11, msg: `Sorted group for depth ${depth} by height.` });
+            
+            if(group.length > 2) group.splice(2);
+            state.depthGroups = Object.fromEntries(depthGroups);
+            save({ ...state, line: 12, msg: `Pruned group for depth ${depth} to top 2.` });
+        }
+        state.highlights.group = null;
+        save({ ...state, msg: "Phase 2 complete: All groups sorted and pruned." });
+        
+        state.phase = 'Query';
+        state.results = Array(queries.length).fill('?');
+        save({ ...state, line: 14, msg: "Answering queries using precomputed groups." });
+        queries.forEach((q, i) => {
+            state.highlights.query = q;
+            state.highlights.resIndex = i;
+            
+            const depth = depthMap.get(q);
+            state.highlights.group = depth;
+            save({ ...state, line: 15, msg: `Query for node ${q}, which is at depth ${depth}.` });
+
+            const group = depthGroups.get(depth);
+            save({ ...state, line: 16, msg: `Looking at the group for depth ${depth}.` });
+            
+            let res;
+            if (group.length === 1) {
+                res = depth - 1;
+                save({ ...state, line: 17, msg: `Group has 1 node. Height is depth-1 = ${res}.` });
+            } else if (group[0].val === q) {
+                res = group[1].height + depth;
+                save({ ...state, line: 19, msg: `${q} is tallest. Using 2nd tallest: ${group[1].height} + ${depth} = ${res}.` });
+            } else {
+                res = group[0].height + depth;
+                save({ ...state, line: 21, msg: `${q} is not tallest. Using tallest: ${group[0].height} + ${depth} = ${res}.` });
+            }
+            state.results[i] = res;
+        });
+        
+        state.finalResult = state.results;
+        state.highlights.query = null;
+        state.highlights.resIndex = null;
+        state.highlights.group = null;
+        save({ ...state, msg: "All queries answered." });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => 
+            `<div class="stack-item">${c.func}(${c.node}, ${c.d})</div>`
+        ).join('');
+        
+        const createTable = (map, current, headers) => {
+            let html = `<table class="map-table"><thead><tr><th>${headers[0]}</th><th>${headers[1]}</th></tr></thead><tbody>`;
+            for (const key in map) html += `<tr class="${current == key ? 'updated':''}"><td>${key}</td><td>${map[key]}</td></tr>`;
+            return html + '</tbody></table>';
+        };
+        depthMapContainer.innerHTML = createTable(state.depthMap, state.highlights.current, ["Node", "Depth"]);
+        heightMapContainer.innerHTML = createTable(state.heightMap, state.highlights.current, ["Node", "Height"]);
+
+        let groupsHtml = '<table class="map-table"><thead><tr><th>Depth</th><th>Top 2 [h, val]</th></tr></thead><tbody>';
+        for(const depth in state.depthGroups) {
+            const groupText = state.depthGroups[depth].map(item => `[${item.height},${item.val}]`).join(', ');
+            groupsHtml += `<tr class="${state.highlights.group == depth ? 'processing' : ''}"><td>${depth}</td><td>${groupText}</td></tr>`;
+        }
+        depthGroupsContainer.innerHTML = groupsHtml + '</tbody></table>';
+
+        resultsContainer.innerHTML = `<div class="results-array">${state.results.map((r,i) => `<div class="result-cell ${i === state.highlights.resIndex ? 'highlight':''}">${r}</div>`).join('')}</div>`;
+
+        treeDrawer.draw(state);
+        
+        if (state.finalResult) {
+            finalResultText.textContent = `[${state.finalResult.join(', ')}]`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+        this.assignPositions(root, 0, this.width / 2, this.width);
+    }
+    
+    assignPositions(node, level, x, width) {
+        if (!node) return;
+        node.x = x;
+        node.y = level * 80 + 50;
+        this.nodeMap.set(node.val, node);
+        const childWidth = width / 2;
+        this.assignPositions(node.left, level + 1, x - childWidth / 2, childWidth);
+        this.assignPositions(node.right, level + 1, x + childWidth / 2, childWidth);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const drawEdges = (node) => {
+            if (!node) return;
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const childNode = this.nodeMap.get(child.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', node.x); line.setAttribute('y1', node.y);
+                    line.setAttribute('x2', childNode.x); line.setAttribute('y2', childNode.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        this.nodeMap.forEach(node => {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${node.x},${node.y})`);
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            let color = 'var(--color-node-default)';
+            if (state.highlights.current === node.val) color = 'var(--color-node-current)';
+            if (state.highlights.query === node.val) color = 'var(--color-node-query)';
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            if (state.depthMap[node.val] !== undefined) {
+                const dText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                dText.setAttribute('text-anchor', 'middle');
+                dText.setAttribute('dy', '-2em');
+                dText.classList.add('node-info');
+                dText.textContent = `d: ${state.depthMap[node.val]}`;
+                g.appendChild(dText);
+            }
+            if (state.heightMap[node.val] !== undefined) {
+                const hText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                hText.setAttribute('text-anchor', 'middle');
+                hText.setAttribute('dy', '2.8em');
+                hText.classList.add('node-info');
+                hText.textContent = `h: ${state.heightMap[node.val]}`;
+                g.appendChild(hText);
+            }
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    queriesInput = document.getElementById('queries_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    depthMapContainer = document.getElementById('depth_map_container');
+    heightMapContainer = document.getElementById('height_map_container');
+    depthGroupsContainer = document.getElementById('depth_groups_container');
+    callStackContainer = document.getElementById('call_stack_container');
+    resultsContainer = document.getElementById('results_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new TreeQueriesAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

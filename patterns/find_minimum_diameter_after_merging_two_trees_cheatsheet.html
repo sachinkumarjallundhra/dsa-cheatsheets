@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Minimum Diameter After Merging Two Trees Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🌳 Find Minimum Diameter After Merging Two Trees – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+        <b>LeetCode 3203. Find Minimum Diameter After Merging Two Trees (Hard)</b><br>
+        You are given two undirected trees with <code>n</code> and <code>m</code> nodes, numbered from 0 to n-1 and 0 to m-1. Each tree is described by its edge list: <code>edges1</code> and <code>edges2</code>. You must connect one node from the first tree with one node from the second tree with a new edge. Return the minimum possible diameter of the resulting tree.<br>
+        <b>Diameter:</b> The length of the longest path between any two nodes in the tree.
+    </p>
+
+    <h2>🎯 Solution Pattern (Tree Diameter + Max Depth)</h2>
+    <pre><code>// Java Solution (Adjacency List + BFS)
+// edges1: int[][], edges2: int[][]
+class Solution {
+    public int minimumDiameterAfterMerge(int[][] edges1, int[][] edges2) {
+        // Handle both trees empty: merging creates a single edge between two nodes
+        if (edges1.length == 0 && edges2.length == 0) return 1;
+        // Handle one tree empty: diameter is diameter of non-empty tree + 1
+        if (edges1.length == 0) return treeDiameter(edges2) + 1;
+        if (edges2.length == 0) return treeDiameter(edges1) + 1;
+
+        // Diameter of first tree and second tree
+        int d1 = treeDiameter(edges1);
+        int d2 = treeDiameter(edges2);
+
+        // Radii (ceil of diameter / 2)
+        int r1 = (d1 + 1) / 2;
+        int r2 = (d2 + 1) / 2;
+
+        // Final merged diameter
+        return Math.max(Math.max(d1, d2), r1 + r2 + 1);
+    }
+
+    private int treeDiameter(int[][] edges) {
+        if (edges.length == 0) return 0; // single-node tree
+
+        List<List<Integer>> graph = buildGraph(edges);
+        int[] farthest = bfs(graph, 0);
+        int[] farthest2 = bfs(graph, farthest[1]);
+        return farthest2[0];
+    }
+
+    private List<List<Integer>> buildGraph(int[][] edges) {
+        int n = 0;
+        for (int[] e : edges) {
+            n = Math.max(n, Math.max(e[0], e[1]));
+        }
+        n = edges.length == 0 ? 1 : n + 1; // handle empty tree
+
+        List<List<Integer>> graph = new ArrayList<>();
+        for (int i = 0; i < n; i++) graph.add(new ArrayList<>());
+        for (int[] e : edges) {
+            graph.get(e[0]).add(e[1]);
+            graph.get(e[1]).add(e[0]);
+        }
+        return graph;
+    }
+
+    // BFS returns [distance, node] of farthest node from 'start'
+    private int[] bfs(List<List<Integer>> graph, int start) {
+        int n = graph.size();
+        boolean[] visited = new boolean[n];
+        Queue<Integer> queue = new LinkedList<>();
+        queue.offer(start);
+        visited[start] = true;
+
+        int dist = -1, node = start;
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            dist++;
+            for (int i = 0; i < size; i++) {
+                int cur = queue.poll();
+                node = cur;
+                for (int nei : graph.get(cur)) {
+                    if (!visited[nei]) {
+                        visited[nei] = true;
+                        queue.offer(nei);
+                    }
+                }
+            }
+        }
+        return new int[]{dist, node};
+    }
+}
+</code></pre>
+    <p>
+    <b>How it works:</b> Compute the diameter and height of both trees using BFS. The minimum diameter after merging is the maximum of the two original diameters and the sum of their heights plus one (for the new edge).
+    </p>
+    <h2>🎬 Animation</h2>
+<p>
+    <a href="https://www.youtube.com/watch?v=tK1TLnhmXzw&ab_channel=NeetCodeIO" target="_blank">
+        ▶️ Watch Video Explanation on YouTube (NeetCodeIO)
+    </a>
+</p>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+        <li>Tree merging and network design</li>
+        <li>Diameter minimization problems</li>
+        <li>Graph theory and tree algorithms</li>
+    </ul>
+
+    <h2>📝 Algorithm Steps</h2>
+    <ol>
+        <li>Build adjacency list for both trees</li>
+        <li>Use BFS twice to find diameter and height for each tree</li>
+        <li>Try all possible connections (deepest nodes give minimum diameter)</li>
+        <li>Return max of both diameters and h1 + h2 + 1</li>
+    </ol>
+
+    <h2>⚠️ Edge Cases to Consider</h2>
+    <ul>
+        <li>One or both trees are empty</li>
+        <li>Trees with only one node</li>
+        <li>Unbalanced trees</li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: edges1 = [[0,1],[1,2]], edges2 = [[0,1]]
+Output: 3
+Explanation: Connect deepest nodes (2 and 1), diameter is max(2,1,1+1+1)=3.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+        <li>Deepest nodes connection minimizes diameter</li>
+        <li>Diameter = longest path between any two nodes</li>
+        <li>Use BFS for diameter and height calculation</li>
+    </ul>
+</div>
+</body>
+</html>

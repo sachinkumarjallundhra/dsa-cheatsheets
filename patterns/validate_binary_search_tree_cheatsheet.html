@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validate Binary Search Tree Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>✅ Validate Binary Search Tree – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Validate Binary Search Tree</b> problem (LeetCode 98) asks you to determine if a binary tree is a valid BST, meaning for every node, all nodes in the left subtree are less and all nodes in the right subtree are greater.
+        </p>
+
+        <h2>🎯 Solution Pattern (DFS with Min/Max Bounds)</h2>
+        <pre><code>class Solution {
+    public boolean isValidBST(TreeNode root) {
+        return validate(root, Long.MIN_VALUE, Long.MAX_VALUE);
+    }
+    private boolean validate(TreeNode node, long min, long max) {
+        if (node == null) return true;
+        if (node.val <= min || node.val >= max) return false;
+        return validate(node.left, min, node.val) &&
+               validate(node.right, node.val, max);
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/validate_binary_search_tree_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Checking tree validity before insertion/search</li>
+            <li>Tree-based data structure validation</li>
+            <li>Interview and coding test problems</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Start DFS from root with min/max bounds</li>
+            <li>Check if current node value is within bounds</li>
+            <li>Recursively validate left and right subtrees with updated bounds</li>
+            <li>Return true if all nodes satisfy BST property</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (valid BST)</li>
+            <li>Single node tree</li>
+            <li>Duplicate values (not allowed in BST)</li>
+            <li>Skewed trees</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [2,1,3]
+Output: true
+
+Input: root = [5,1,4,null,null,3,6]
+Output: false
+Explanation: Node 4 has left child 3, which is not valid for BST.
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Use long for bounds to avoid integer overflow</li>
+            <li>Inorder traversal should yield sorted values for BST</li>
+            <li>Test with trees containing duplicate values</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="convert_sorted_array_to_binary_search_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Convert Sorted Array to Binary Search Tree
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

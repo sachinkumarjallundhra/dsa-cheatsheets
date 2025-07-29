@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Right Side View Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>👀 Binary Tree Right Side View – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Binary Tree Right Side View</b> problem (LeetCode 199) asks you to return the values of the nodes you can see when looking at a binary tree from the right side.
+        </p>
+
+        <h2>🎯 Solution Pattern</h2>
+        <h3>Level Order BFS</h3>
+        <pre><code>class Solution {
+    public List&lt;Integer&gt; rightSideView(TreeNode root) {
+        List&lt;Integer&gt; res = new ArrayList&lt;&gt;();
+        if (root == null) return res;
+        Queue&lt;TreeNode&gt; queue = new LinkedList&lt;&gt;();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i &lt; size; i++) {
+                TreeNode node = queue.poll();
+                if (i == size - 1) res.add(node.val); // rightmost node
+                if (node.left != null) queue.offer(node.left);
+                if (node.right != null) queue.offer(node.right);
+            }
+        }
+        return res;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/binary_tree_right_side_view_bfs_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h3>DFS with Depth Tracking</h3>
+        <pre><code>class Solution {
+    public List&lt;Integer&gt; rightSideView(TreeNode root) {
+        List&lt;Integer&gt; res = new ArrayList&lt;&gt;();
+        dfs(root, 0, res);
+        return res;
+    }
+    private void dfs(TreeNode node, int depth, List&lt;Integer&gt; res) {
+        if (node == null) return;
+        if (depth == res.size()) res.add(node.val); // first node at this depth
+        dfs(node.right, depth + 1, res); // right first
+        dfs(node.left, depth + 1, res);
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/binary_tree_right_side_view_dfs_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Tree visualization from the side</li>
+            <li>Level order traversal applications</li>
+            <li>Interview and coding test problems</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use BFS to traverse the tree level by level</li>
+            <li>At each level, record the last node (rightmost)</li>
+            <li>Return the collected right side view</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (return empty list)</li>
+            <li>Single node tree</li>
+            <li>Skewed trees (all left or all right)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [1,2,3,null,5,null,4]
+Output: [1,3,4]
+Explanation: Right side view is 1, 3, 4.
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>BFS is simple and intuitive for this problem</li>
+            <li>DFS with depth tracking can also be used</li>
+            <li>Always add the last node of each level</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="binary_tree_level_order_traversal_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Binary Tree Level Order Traversal
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>

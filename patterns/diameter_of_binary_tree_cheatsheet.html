@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diameter of Binary Tree Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌳 Diameter of Binary Tree – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Diameter of Binary Tree</b> problem (LeetCode 543) asks you to find the length of the longest path between any two nodes in a binary tree. The path may or may not pass through the root.
+        </p>
+
+        <h2>🎯 Solution Pattern (DFS for Height & Diameter)</h2>
+        <pre><code>class Solution {
+    private int diameter = 0;
+    public int diameterOfBinaryTree(TreeNode root) {
+        dfs(root);
+        return diameter;
+    }
+    private int dfs(TreeNode node) {
+        if (node == null) return 0;
+        int left = dfs(node.left);
+        int right = dfs(node.right);
+        diameter = Math.max(diameter, left + right);
+        return 1 + Math.max(left, right);
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/diameter_of_binary_tree_animation.html'">▶️ View Animation</button>
+
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding longest path in trees</li>
+            <li>Network latency analysis</li>
+            <li>Tree structure optimization</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use DFS to compute the height of left and right subtrees</li>
+            <li>At each node, update diameter as left height + right height</li>
+            <li>Return the maximum diameter found</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (diameter is 0)</li>
+            <li>Single node tree (diameter is 0)</li>
+            <li>Skewed trees (all left or all right)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [1,2,3,4,5]
+Output: 3
+Explanation: The longest path is 4→2→1→3 or 5→2→1→3.
+
+Input: root = [1,2]
+Output: 1
+Explanation: The longest path is 2→1.
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Diameter is the number of edges, not nodes</li>
+            <li>DFS is optimal for subtree calculations</li>
+            <li>Update diameter at every node</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="maximum_depth_of_binary_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Maximum Depth of Binary Tree
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>

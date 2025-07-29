@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diameter of Binary Tree</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --main-text: #333;
+            --primary-color: #9b59b6; /* Purple for current node */
+            --secondary-color: #e67e22; /* Orange for path calculation */
+            --success-color: #27ae60; /* Green for success/final */
+            --diameter-color: #f1c40f; /* Yellow for final diameter */
+            --highlight-bg: #f3e5f5;
+            --code-bg: #2d2d2d;
+            --code-text: #f8f8f2;
+            --node-bg: #ffffff;
+            --node-border: #333;
+            --edge-color: #aaa;
+            --font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            --font-family-mono: 'Consolas', 'Menlo', 'Courier New', monospace;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--main-text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 1600px;
+            margin-top: 20px;
+        }
+
+        .visualization-pane, .control-pane {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pane-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Tree Visualization */
+        .tree-container {
+            position: relative;
+            flex-grow: 1;
+            min-height: 450px;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .node-group text {
+            font-family: var(--font-family);
+            font-size: 14px;
+            pointer-events: none;
+            fill: #fff;
+            font-weight: bold;
+        }
+        
+        .node-group .node-height-text {
+             fill: var(--main-text);
+             font-size: 12px;
+             font-style: italic;
+        }
+
+        .node-circle { transition: fill 0.4s ease, stroke 0.4s ease; }
+        .edge { transition: stroke 0.4s ease; }
+
+        /* Status Panels */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .status-box {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+        }
+        .status-box .label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .status-box .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--success-color);
+            transition: transform 0.2s ease-in-out;
+        }
+        .status-box .value.updated {
+            transform: scale(1.2);
+        }
+
+        /* Code Panel */
+        .code-container pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 5px;
+            font-family: var(--font-family-mono);
+            font-size: 0.9em;
+            margin: 0;
+        }
+        .code-container code > div {
+            transition: background-color 0.3s ease;
+            padding: 2px 5px;
+            margin: 0 -5px;
+            border-radius: 3px;
+        }
+        .code-highlight { background-color: rgba(255, 255, 255, 0.2); }
+
+        /* Explanation and Call Stack */
+        .explanation-box, .callstack-box {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        #explanation { font-size: 0.95em; line-height: 1.5; min-height: 4.5em; }
+        #callstack { list-style: none; padding: 0; margin: 0; font-family: var(--font-family-mono); font-size: 0.9em; }
+        #callstack li { padding: 8px; border-bottom: 1px solid #e0e0e0; transition: all 0.3s ease; }
+        #callstack li:last-child { border-bottom: none; }
+        #callstack li.active-call { background-color: var(--highlight-bg); font-weight: bold; }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .controls button {
+            padding: 10px 20px; font-size: 1em; cursor: pointer; border: none;
+            border-radius: 5px; background-color: var(--primary-color); color: white;
+            transition: background-color 0.3s;
+        }
+        .controls button:hover { background-color: #8e44ad; }
+        .controls button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .controls input {
+            padding: 8px; border: 1px solid #ccc; border-radius: 4px;
+            font-family: var(--font-family-mono); width: 300px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Diameter of a Binary Tree</h1>
+
+    <div class="controls">
+        <label for="tree-input">Tree (array):</label>
+        <input type="text" id="tree-input" value="[1,2,3,4,5,null,null]">
+        <button id="play-pause-btn">Play</button>
+        <button id="next-btn">Next</button>
+        <button id="reset-btn">Reset</button>
+    </div>
+
+    <div class="container">
+        <div class="visualization-pane">
+            <h3 class="pane-title">Visualization</h3>
+            <div class="tree-container" id="tree-container">
+                <svg width="100%" height="100%" id="tree-svg"></svg>
+            </div>
+        </div>
+        <div class="control-pane">
+            <div class="status-grid">
+                <div class="status-box">
+                    <div class="label">Max Diameter</div>
+                    <div class="value" id="max-diameter-val">0</div>
+                </div>
+                <div class="status-box">
+                    <div class="label">Last Returned Height</div>
+                    <div class="value" id="last-return-val">0</div>
+                </div>
+            </div>
+            <div class="code-container">
+                <h3 class="pane-title">Algorithm Code</h3>
+                <pre><code id="code-block">
+<div data-line="1">int maxDiameter = 0;</div>
+<div data-line="2">public int diameterOfBinaryTree(TreeNode root) {</div>
+<div data-line="3">    dfs(root);</div>
+<div data-line="4">    return maxDiameter;</div>
+<div data-line="5">}</div>
+<div data-line="6"></div>
+<div data-line="7">private int dfs(TreeNode node) {</div>
+<div data-line="8">    if (node == null) return -1;</div>
+<div data-line="9"></div>
+<div data-line="10">    int leftHeight = dfs(node.left);</div>
+<div data-line="11">    int rightHeight = dfs(node.right);</div>
+<div data-line="12"></div>
+<div data-line="13">    maxDiameter = Math.max(maxDiameter, leftHeight + rightHeight + 2);</div>
+<div data-line="14"></div>
+<div data-line="15">    return 1 + Math.max(leftHeight, rightHeight);</div>
+<div data-line="16">}</div>
+                </code></pre>
+            </div>
+            <div class="explanation-box">
+                <h3 class="pane-title">Explanation</h3>
+                <p id="explanation">Enter a tree array and click 'Play' or 'Reset'.</p>
+            </div>
+            <div class="callstack-box">
+                <h3 class="pane-title">Call Stack</h3>
+                <ul id="callstack"></ul>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM ELEMENTS ---
+    const treeInput = document.getElementById('tree-input');
+    const treeSvg = document.getElementById('tree-svg');
+    const codeLines = document.querySelectorAll('#code-block > div');
+    const explanationP = document.getElementById('explanation');
+    const callstackUl = document.getElementById('callstack');
+    const maxDiameterVal = document.getElementById('max-diameter-val');
+    const lastReturnVal = document.getElementById('last-return-val');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    // --- ANIMATION STATE ---
+    let animationSteps = [];
+    let currentStep = -1;
+    let isPlaying = false;
+    let animationTimer;
+    let nodeMap = new Map();
+    let rootNode = null;
+
+    // --- CORE LOGIC & TRACING ---
+
+    // Build a tree from an array representation
+    function buildTreeFromArray(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        nodeMap.clear();
+        const nodes = arr.map((val, i) => {
+            if (val === null) return null;
+            const node = { val, left: null, right: null, id: i };
+            nodeMap.set(val, node);
+            return node;
+        });
+
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < arr.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < arr.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+    
+    // Assign x, y positions to nodes for drawing
+    function assignNodePositions(node, level = 0, x = treeSvg.parentElement.clientWidth / 2, width = treeSvg.parentElement.clientWidth) {
+        if (!node) return;
+        node.x = x;
+        node.y = 50 + level * 80;
+        const childWidth = width / 2;
+        assignNodePositions(node.left, level + 1, x - childWidth / 2, childWidth);
+        assignNodePositions(node.right, level + 1, x + childWidth / 2, childWidth);
+    }
+    
+    // Trace the algorithm to generate animation steps
+    function traceDiameter() {
+        animationSteps = [];
+        let state = { maxDiameter: 0, diameterPathNodes: [] };
+
+        function traceDfs(node, callStack) {
+            const currentCall = { nodeVal: node ? node.val : 'null' };
+            const newCallStack = [...callStack, currentCall];
+
+            animationSteps.push({
+                type: 'call', line: 7, callStack: newCallStack,
+                currentNodeVal: node ? node.val : null,
+                explanation: `Calling dfs(${node ? `node ${node.val}`: 'null'}).`
+            });
+
+            if (node === null) {
+                animationSteps.push({
+                    type: 'base_case', line: 8, callStack: newCallStack,
+                    explanation: 'Node is null. Base case reached. Returning height of -1.'
+                });
+                return -1;
+            }
+            
+            // Recurse left
+            animationSteps.push({
+                type: 'recurse_left', line: 10, callStack: newCallStack,
+                currentNodeVal: node.val,
+                explanation: `Recursing to the left of node ${node.val}.`
+            });
+            const leftHeight = traceDfs(node.left, newCallStack);
+            animationSteps.push({
+                type: 'return_from_left', line: 10, callStack: newCallStack,
+                currentNodeVal: node.val, lastReturn: leftHeight,
+                explanation: `Returned from left subtree. Left height is ${leftHeight}.`
+            });
+            
+            // Recurse right
+            animationSteps.push({
+                type: 'recurse_right', line: 11, callStack: newCallStack,
+                currentNodeVal: node.val,
+                explanation: `Recursing to the right of node ${node.val}.`
+            });
+            const rightHeight = traceDfs(node.right, newCallStack);
+            animationSteps.push({
+                type: 'return_from_right', line: 11, callStack: newCallStack,
+                currentNodeVal: node.val, lastReturn: rightHeight,
+                explanation: `Returned from right subtree. Right height is ${rightHeight}.`
+            });
+
+            // Process node
+            const currentPathDiameter = leftHeight + rightHeight + 2;
+            animationSteps.push({
+                type: 'calc_path', line: 13, callStack: newCallStack,
+                currentNodeVal: node.val, leftH: leftHeight, rightH: rightHeight,
+                maxDiameter: state.maxDiameter,
+                pathCalcNodes: { center: node.val, left: node.left?.val, right: node.right?.val },
+                explanation: `At node ${node.val}, calculate path diameter: ${leftHeight} (left) + ${rightHeight} (right) + 2 = ${currentPathDiameter}.`
+            });
+            
+            if (currentPathDiameter > state.maxDiameter) {
+                const oldMax = state.maxDiameter;
+                state.maxDiameter = currentPathDiameter;
+                // Find path nodes for highlighting
+                const findPath = (startNode, depth) => {
+                    if (!startNode || depth < 0) return [];
+                    const path = [startNode.val];
+                    let curr = startNode;
+                    for(let i=0; i<depth; i++) {
+                        // A bit of a simplification: assumes longest path is one-sided
+                        if (curr.left && (!curr.right || (nodeMap.get(curr.left.val)?.height > nodeMap.get(curr.right.val)?.height))) {
+                             curr = curr.left;
+                        } else {
+                             curr = curr.right;
+                        }
+                         if(curr) path.push(curr.val); else break;
+                    }
+                    return path;
+                };
+                
+                state.diameterPathNodes = [node.val, ...findPath(node.left, leftHeight), ...findPath(node.right, rightHeight)];
+
+                animationSteps.push({
+                    type: 'update_max', line: 13, callStack: newCallStack,
+                    currentNodeVal: node.val, oldMax: oldMax, newMax: state.maxDiameter,
+                    diameterPathNodes: [...state.diameterPathNodes],
+                    explanation: `New max diameter found! Updating from ${oldMax} to ${state.maxDiameter}.`
+                });
+            }
+
+            // Return height
+            const myHeight = 1 + Math.max(leftHeight, rightHeight);
+            if (nodeMap.has(node.val)) nodeMap.get(node.val).height = myHeight;
+
+            animationSteps.push({
+                type: 'return_height', line: 15, callStack: newCallStack,
+                currentNodeVal: node.val, returnHeight: myHeight,
+                explanation: `Height of subtree at node ${node.val} is 1 + max(${leftHeight}, ${rightHeight}) = ${myHeight}. Returning.`
+            });
+
+            return myHeight;
+        }
+
+        animationSteps.push({type: 'start', line: 2, explanation: 'Starting the process to find the diameter.'});
+        traceDfs(rootNode, []);
+        animationSteps.push({type: 'end', line: 4, maxDiameter: state.maxDiameter, diameterPathNodes: [...state.diameterPathNodes], explanation: `DFS complete. The final diameter is ${state.maxDiameter}.`});
+    }
+
+    // --- UI & ANIMATION CONTROLLERS ---
+    
+    function drawTree(highlightState = {}) {
+        treeSvg.innerHTML = '';
+        const { current, pathCalc, diameter } = highlightState;
+
+        // Draw edges first
+        nodeMap.forEach(node => {
+            [node.left, node.right].forEach(childNode => {
+                if (childNode) {
+                    const isDiameterEdge = diameter?.includes(node.val) && diameter?.includes(childNode.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', node.x);
+                    line.setAttribute('y1', node.y);
+                    line.setAttribute('x2', childNode.x);
+                    line.setAttribute('y2', childNode.y);
+                    line.setAttribute('stroke', isDiameterEdge ? 'var(--diameter-color)' : 'var(--edge-color)');
+                    line.setAttribute('stroke-width', isDiameterEdge ? '4' : '2');
+                    line.classList.add('edge');
+                    treeSvg.appendChild(line);
+                }
+            });
+        });
+
+        // Draw nodes on top of edges
+        nodeMap.forEach(node => {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+            g.classList.add('node-group');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            
+            let fill = 'var(--node-border)';
+            if (diameter?.includes(node.val)) fill = 'var(--diameter-color)';
+            else if (pathCalc?.center === node.val) fill = 'var(--secondary-color)';
+            else if (current === node.val) fill = 'var(--primary-color)';
+
+            circle.setAttribute('fill', fill);
+            g.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dy', '0.35em');
+            text.textContent = node.val;
+            g.appendChild(text);
+            
+            if (node.height !== undefined) {
+                 const hText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                 hText.setAttribute('text-anchor', 'middle');
+                 hText.setAttribute('dy', '35'); // position below the node
+                 hText.classList.add('node-height-text');
+                 hText.textContent = `h=${node.height}`;
+                 g.appendChild(hText);
+            }
+            treeSvg.appendChild(g);
+        });
+    }
+
+    const highlightCode = (line) => {
+        codeLines.forEach(l => l.classList.remove('code-highlight'));
+        if (line > 0) document.querySelector(`[data-line="${line}"]`)?.classList.add('code-highlight');
+    };
+    
+    const updateCallStack = (stack = []) => {
+        callstackUl.innerHTML = '';
+        stack.slice().reverse().forEach((call, index) => {
+            const li = document.createElement('li');
+            li.textContent = `dfs(${call.nodeVal})`;
+            if (index === 0) li.classList.add('active-call');
+            callstackUl.appendChild(li);
+        });
+    };
+    
+    const executeStep = () => {
+        if (currentStep < 0 || currentStep >= animationSteps.length) {
+            pauseAnimation();
+            return;
+        }
+
+        const step = animationSteps[currentStep];
+        highlightCode(step.line);
+        explanationP.textContent = step.explanation;
+        if (step.callStack) updateCallStack(step.callStack);
+
+        const highlightState = {
+            current: step.currentNodeVal,
+            pathCalc: step.pathCalcNodes,
+            diameter: step.diameterPathNodes
+        };
+        drawTree(highlightState);
+
+        if (step.lastReturn !== undefined) {
+            lastReturnVal.textContent = step.lastReturn;
+            lastReturnVal.classList.add('updated');
+            setTimeout(() => lastReturnVal.classList.remove('updated'), 200);
+        }
+        
+        if (step.newMax !== undefined) {
+             maxDiameterVal.textContent = step.newMax;
+             maxDiameterVal.classList.add('updated');
+             setTimeout(() => maxDiameterVal.classList.remove('updated'), 200);
+        } else if (step.maxDiameter !== undefined) {
+            maxDiameterVal.textContent = step.maxDiameter;
+        }
+        
+        if (step.type === 'end') {
+            maxDiameterVal.textContent = step.maxDiameter;
+            pauseAnimation();
+        }
+    };
+    
+    const next = () => {
+        if (currentStep < animationSteps.length - 1) {
+            currentStep++;
+            executeStep();
+            updateControls();
+        }
+    };
+
+    const playAnimation = () => {
+        isPlaying = true;
+        playPauseBtn.textContent = 'Pause';
+        animationTimer = setInterval(() => {
+            if (currentStep < animationSteps.length - 1) {
+                next();
+            } else {
+                pauseAnimation();
+            }
+        }, 1200);
+    };
+
+    const pauseAnimation = () => {
+        isPlaying = false;
+        playPauseBtn.textContent = 'Play';
+        clearInterval(animationTimer);
+    };
+
+    const togglePlayPause = () => {
+        if (animationSteps.length === 0) {
+            reset();
+        }
+        if (isPlaying) {
+            pauseAnimation();
+        } else {
+            if (currentStep >= animationSteps.length - 1) {
+                reset();
+            }
+            playAnimation();
+        }
+        updateControls();
+    };
+
+    const updateControls = () => {
+        nextBtn.disabled = currentStep >= animationSteps.length - 1;
+        playPauseBtn.disabled = false;
+        if (currentStep >= animationSteps.length - 1) {
+             playPauseBtn.textContent = 'Play';
+        }
+    };
+    
+    const reset = () => {
+        pauseAnimation();
+        try {
+            const treeArr = JSON.parse(treeInput.value.replace(/null/g, 'null'));
+            if (!Array.isArray(treeArr)) throw new Error();
+            rootNode = buildTreeFromArray(treeArr);
+        } catch (e) {
+            alert('Invalid array format. Please use a valid JSON array like [1,2,null,3].');
+            return;
+        }
+        
+        assignNodePositions(rootNode);
+        traceDiameter();
+        
+        currentStep = -1;
+        maxDiameterVal.textContent = '0';
+        lastReturnVal.textContent = '0';
+        highlightCode(0);
+        updateCallStack([]);
+        drawTree();
+        explanationP.textContent = "Algorithm reset. Click 'Play' or 'Next' to start.";
+        updateControls();
+        next(); // Show the first step immediately
+    };
+
+    playPauseBtn.addEventListener('click', togglePlayPause);
+    nextBtn.addEventListener('click', () => { pauseAnimation(); next(); });
+    resetBtn.addEventListener('click', reset);
+    
+    // Initial setup
+    reset();
+    pauseAnimation(); // Start in a paused state
+    explanationP.textContent = "Enter a tree array (e.g., [1,2,3,4,5]) and click 'Reset' or 'Play'.";
+    currentStep = -1;
+    updateControls();
+});
+</script>
+
+</body>
+</html>

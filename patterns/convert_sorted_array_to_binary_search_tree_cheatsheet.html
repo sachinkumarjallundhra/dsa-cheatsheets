@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convert Sorted Array to Binary Search Tree Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌱 Convert Sorted Array to Binary Search Tree – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Convert Sorted Array to Binary Search Tree</b> problem (LeetCode 108) asks you to build a height-balanced BST from a sorted array.
+        </p>
+
+        <h2>🎯 Solution Pattern (Recursive Divide & Conquer)</h2>
+        <pre><code>class Solution {
+    public TreeNode sortedArrayToBST(int[] nums) {
+        return build(nums, 0, nums.length - 1);
+    }
+    private TreeNode build(int[] nums, int left, int right) {
+        if (left > right) return null;
+        int mid = left + (right - left) / 2;
+        TreeNode node = new TreeNode(nums[mid]);
+        node.left = build(nums, left, mid - 1);
+        node.right = build(nums, mid + 1, right);
+        return node;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/convert_sorted_array_to_binary_search_tree_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Balanced BST construction</li>
+            <li>Efficient searching and insertion</li>
+            <li>Tree-based data structure initialization</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Find the middle element of the array/subarray</li>
+            <li>Create a tree node with the middle value</li>
+            <li>Recursively build left subtree from left half</li>
+            <li>Recursively build right subtree from right half</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty array (return null)</li>
+            <li>Single element array</li>
+            <li>Even number of elements (choose left/mid as root)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: nums = [-10,-3,0,5,9]
+Output: [0,-3,9,-10,null,5]
+Explanation: One possible BST is shown above.
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Always choose middle element for balance</li>
+            <li>Divide & conquer ensures O(n) time</li>
+            <li>Test with empty and single-element arrays</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="binary_search_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Binary Search Tree
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>

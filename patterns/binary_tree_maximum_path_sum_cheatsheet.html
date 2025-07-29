@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Maximum Path Sum Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>💰 Binary Tree Maximum Path Sum – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Binary Tree Maximum Path Sum</b> problem (LeetCode 124) asks you to find the maximum sum of any path in a binary tree. The path can start and end at any node, but must go downwards (parent-child connections).
+        </p>
+
+        <h2>🎯 Solution Pattern (DFS with Global Max Tracking)</h2>
+        <pre><code>class Solution {
+    private int maxSum = Integer.MIN_VALUE;
+    public int maxPathSum(TreeNode root) {
+        dfs(root);
+        return maxSum;
+    }
+    private int dfs(TreeNode node) {
+        if (node == null) return 0;
+        int left = Math.max(0, dfs(node.left));
+        int right = Math.max(0, dfs(node.right));
+        maxSum = Math.max(maxSum, node.val + left + right);
+        return node.val + Math.max(left, right);
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/binary_tree_maximum_path_sum_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding the most valuable path in a tree</li>
+            <li>Tree-based dynamic programming</li>
+            <li>Network or resource optimization</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use DFS to traverse the tree</li>
+            <li>At each node, calculate max path sum through that node</li>
+            <li>Update global max if current path sum is higher</li>
+            <li>Return max single path sum for parent calculation</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Negative values in nodes</li>
+            <li>Single node tree</li>
+            <li>All negative nodes (max is largest node)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [1,2,3]
+Output: 6
+Explanation: Path is 2→1→3.
+
+Input: root = [-10,9,20,null,null,15,7]
+Output: 42
+Explanation: Path is 15→20→7.
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Ignore negative path sums when propagating up</li>
+            <li>Update global max at every node</li>
+            <li>DFS is optimal for subtree calculations</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="diameter_of_binary_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Diameter of Binary Tree
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>

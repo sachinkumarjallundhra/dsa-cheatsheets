@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Depth-First Search (DFS) Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌲 Tree Depth-First Search (DFS) – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            <b>Tree Depth-First Search (DFS)</b> is a traversal technique for trees where you explore as far as possible along each branch before backtracking. DFS is used for subtree calculations, path finding, and many recursive tree problems.
+        </p>
+
+        <h2>🎯 Solution Pattern (Recursive DFS)</h2>
+        <pre><code>// Binary Tree DFS (Preorder)
+void dfs(TreeNode node) {
+    if (node == null) return;
+    // Process node value
+    dfs(node.left);
+    dfs(node.right);
+}
+
+// DFS with return value (e.g., subtree sum)
+int dfs(TreeNode node) {
+    if (node == null) return 0;
+    int left = dfs(node.left);
+    int right = dfs(node.right);
+    // Combine results
+    return node.val + left + right;
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Subtree sum, size, or depth calculation</li>
+            <li>Finding paths or ancestors</li>
+            <li>Lowest common ancestor (LCA)</li>
+            <li>Tree serialization/deserialization</li>
+            <li>Checking tree properties (balanced, symmetric, etc.)</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Start DFS from the root node</li>
+            <li>Process the current node (preorder, inorder, or postorder)</li>
+            <li>Recursively visit left and right children</li>
+            <li>Combine results as needed for the problem</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty tree (root is null)</li>
+            <li>Single node tree</li>
+            <li>Skewed trees (all left or all right)</li>
+            <li>Large/deep trees (stack overflow risk)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>// Example: Sum of all nodes in a binary tree
+int sum(TreeNode root) {
+    if (root == null) return 0;
+    return root.val + sum(root.left) + sum(root.right);
+}
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>Use recursion for most tree DFS problems</li>
+            <li>For iterative DFS, use a stack</li>
+            <li>Preorder: process before children; Postorder: process after children</li>
+            <li>Return values from DFS for subtree calculations</li>
+            <li>Careful with null checks to avoid NullPointerException</li>
+        </ul>
+
+        <h2>📘 Common LeetCode DFS Problems</h2>
+
+<div class="problems-section">
+    <h3 class="problems-header easy">🟢 Easy Problems</h3>
+    <ul class="problems-list">
+        <li>
+            <div class="problem-card easy">
+                <div class="problem-title">
+                    Diameter of Binary Tree
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/diameter-of-binary-tree/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="diameter_of_binary_tree_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Find the longest path between any two nodes.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card easy">
+                <div class="problem-title">
+                    Invert Binary Tree
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/invert-binary-tree/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="invert_binary_tree_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Swap left and right children recursively.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card easy">
+                <div class="problem-title">
+                    Convert Sorted Array to Binary Search Tree
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/convert-sorted-array-to-binary-search-tree/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="convert_sorted_array_to_binary_search_tree_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Recursively build BST from sorted array.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card easy">
+                <div class="problem-title">
+                    Maximum Depth of Binary Tree
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/maximum-depth-of-binary-tree/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="maximum_depth_of_binary_tree_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Find the height of the tree using DFS.
+                </div>
+            </div>
+        </li>
+    </ul>
+
+    <h3 class="problems-header medium">🟡 Medium Problems</h3>
+    <ul class="problems-list">
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Flatten Binary Tree to Linked List
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/flatten-binary-tree-to-linked-list/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="flatten_binary_tree_to_linked_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Transform tree to right-skewed linked list.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Build Binary Tree from Preorder and Inorder Traversal
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="build_binary_tree_from_preorder_and_inorder_traversal_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Reconstruct tree using DFS and array indices.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Binary Tree Right Side View
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/binary-tree-right-side-view/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="binary_tree_right_side_view_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Collect rightmost nodes at each level.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Lowest Common Ancestor of a Binary Tree
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="lowest_common_ancestor_of_a_binary_tree_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    DFS to find LCA of two nodes.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Validate Binary Search Tree
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/validate-binary-search-tree/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="validate_binary_search_tree_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Check BST property using DFS and bounds.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Nested List Weight Sum II
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/nested-list-weight-sum-ii/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="nested_list_weight_sum_ii_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    DFS with depth tracking for weighted sum.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Inorder Successor in BST
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/inorder-successor-in-bst/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="inorder_successor_in_bst_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Find next node in inorder traversal.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Delete Nodes And Return Forest
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/delete-nodes-and-return-forest/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="delete_nodes_and_return_forest_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    DFS to split tree into forest.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Kth Smallest Element in a BST
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/kth-smallest-element-in-a-bst/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="kth_smallest_element_in_a_bst_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Inorder DFS for kth smallest value.
+                </div>
+            </div>
+        </li>
+    </ul>
+
+    <h3 class="problems-header hard">🔴 Hard Problems</h3>
+    <ul class="problems-list">
+        <li>
+            <div class="problem-card hard">
+                <div class="problem-title">
+                    Serialize and Deserialize Binary Tree
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/serialize-and-deserialize-binary-tree/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="serialize_and_deserialize_binary_tree_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Encode and decode tree structure using DFS.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card hard">
+                <div class="problem-title">
+                    Binary Tree Maximum Path Sum
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/binary-tree-maximum-path-sum/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="binary_tree_maximum_path_sum_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Find max path sum using postorder DFS.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card hard">
+                <div class="problem-title">
+                    Height of Binary Tree After Subtree Removal Queries
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/height-of-binary-tree-after-subtree-removal-queries/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="height_of_binary_tree_after_subtree_removal_queries_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Efficient subtree height queries with DFS.
+                </div>
+            </div>
+        </li>
+    </ul>
+</div>
+<style>
+.problems-section {
+    margin-bottom: 32px;
+}
+.problems-header {
+    font-size: 1.2em;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+.problems-header.easy { color: #28a745; }
+.problems-header.medium { color: #ffc107; }
+.problems-header.hard { color: #dc3545; }
+.problems-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.problem-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    padding: 16px 18px 10px 18px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+    border-left: 6px solid #dee2e6;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.problem-card.easy { border-color: #28a745; }
+.problem-card.medium { border-color: #ffc107; }
+.problem-card.hard { border-color: #dc3545; }
+.problem-card:hover {
+    box-shadow: 0 4px 16px rgba(44,62,80,0.10);
+    border-left-width: 10px;
+}
+.problem-title {
+    font-weight: bold;
+    font-size: 1.08em;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+.badge-easy { background: #28a745; color: white; }
+.badge-medium { background: #ffc107; color: black; }
+.badge-hard { background: #dc3545; color: white; }
+.problem-actions {
+    margin-bottom: 6px;
+}
+.problem-actions a {
+    display: inline-block;
+    margin-right: 12px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.97em;
+    border: 1px solid #dee2e6;
+    transition: background 0.2s, color 0.2s;
+}
+.problem-actions a:hover {
+    background: #007bff;
+    color: #fff;
+}
+.problem-notes {
+    font-size: 0.93em;
+    color: #6c757d;
+    margin-bottom: 2px;
+    margin-top: 2px;
+}
+</style>
+    </div>
+</body>
+</html>

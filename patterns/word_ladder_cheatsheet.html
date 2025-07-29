@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Ladder Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🔤 Word Ladder – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+        The <b>Word Ladder</b> problem (LeetCode 127) asks you to find the shortest transformation sequence from a start word to an end word, changing one letter at a time, with each intermediate word existing in a given word list.
+    </p>
+
+    <h2>🎯 Solution Pattern (BFS + Preprocessing)</h2>
+    <pre><code>// Java Solution
+class Solution {
+    public int ladderLength(String beginWord, String endWord, List&lt;String&gt; wordList) {
+        Set&lt;String&gt; wordSet = new HashSet&lt;&gt;(wordList);
+        if (!wordSet.contains(endWord)) return 0;
+        Queue&lt;String&gt; queue = new LinkedList&lt;&gt;();
+        queue.offer(beginWord);
+        Set&lt;String&gt; visited = new HashSet&lt;&gt;();
+        visited.add(beginWord);
+        int steps = 1;
+        while (!queue.isEmpty()) {
+            int size = queue.size();
+            for (int i = 0; i &lt; size; i++) {
+                String word = queue.poll();
+                if (word.equals(endWord)) return steps;
+                char[] arr = word.toCharArray();
+                for (int j = 0; j &lt; arr.length; j++) {
+                    char old = arr[j];
+                    for (char c = 'a'; c &lt;= 'z'; c++) {
+                        arr[j] = c;
+                        String next = new String(arr);
+                        if (wordSet.contains(next) && !visited.contains(next)) {
+                            queue.offer(next);
+                            visited.add(next);
+                        }
+                    }
+                    arr[j] = old;
+                }
+            }
+            steps++;
+        }
+        return 0;
+    }
+}
+</code></pre>
+    <p>
+    <b>How it works:</b> Use BFS to explore all possible one-letter transformations. Each level of BFS represents a transformation step. Stop when the end word is found.
+    </p>
+    <h2>🎬 Animation</h2>
+<p>
+    <a href="https://www.youtube.com/watch?v=h9iTnkgv05E&ab_channel=NeetCode" target="_blank">
+        ▶️ Watch Video Explanation on YouTube (NeetCode)
+    </a>
+</p>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+        <li>Shortest path in word transformation problems</li>
+        <li>Interview and coding test problems</li>
+        <li>Graph traversal in disguised forms</li>
+    </ul>
+
+    <h2>📝 Algorithm Steps</h2>
+    <ol>
+        <li>Add all words to a set for O(1) lookup</li>
+        <li>Use BFS starting from <code>beginWord</code></li>
+        <li>For each word, try all possible one-letter changes</li>
+        <li>If the new word is in the set and not visited, add to queue</li>
+        <li>Return steps when <code>endWord</code> is reached</li>
+    </ol>
+
+    <h2>⚠️ Edge Cases to Consider</h2>
+    <ul>
+        <li><code>endWord</code> not in word list (return 0)</li>
+        <li>No possible transformation (return 0)</li>
+        <li>Words of different lengths (invalid input)</li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: beginWord = "hit", endWord = "cog", wordList = ["hot","dot","dog","lot","log","cog"]
+Output: 5
+Explanation: "hit" → "hot" → "dot" → "dog" → "cog"
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+        <li>Preprocessing can speed up neighbor lookup</li>
+        <li>BFS guarantees shortest transformation</li>
+        <li>Use a set for fast word existence checks</li>
+    </ul>
+
+    <h2>🔗 Related Problems</h2>
+    <ul class="problems-list">
+        <li>
+            <a href="word_ladder_ii_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Word Ladder II
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="minimum_genetic_mutation_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Minimum Genetic Mutation
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+            </a>
+        </li>
+    </ul>
+</div>
+</body>
+</html>

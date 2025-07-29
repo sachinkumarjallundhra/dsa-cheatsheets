@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Nodes And Return Forest Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+<div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🌳 Delete Nodes And Return Forest – Java Cheat Sheet</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+        The <b>Delete Nodes And Return Forest</b> problem (LeetCode 1110) asks you to delete a set of nodes from a binary tree and return the forest (a list of the remaining trees).
+    </p>
+
+    <h2>🎯 Solution Pattern (DFS + Set Lookup)</h2>
+    <pre><code>// Java Solution
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+class Solution {
+    public List&lt;TreeNode&gt; delNodes(TreeNode root, int[] to_delete) {
+        Set&lt;Integer&gt; toDelete = new HashSet&lt;&gt;();
+        for (int val : to_delete) toDelete.add(val);
+        List&lt;TreeNode&gt; forest = new ArrayList&lt;&gt;();
+        dfs(root, true, toDelete, forest);
+        return forest;
+    }
+
+    private TreeNode dfs(TreeNode node, boolean isRoot, Set&lt;Integer&gt; toDelete, List&lt;TreeNode&gt; forest) {
+        if (node == null) return null;
+        boolean deleted = toDelete.contains(node.val);
+        if (isRoot && !deleted) forest.add(node);
+        node.left = dfs(node.left, deleted, toDelete, forest);
+        node.right = dfs(node.right, deleted, toDelete, forest);
+        return deleted ? null : node;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/delete_nodes_and_return_forest_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+    <p>
+    <b>How it works:</b> Use DFS to traverse the tree. If a node is deleted, its children become new roots. If a node is a root and not deleted, add it to the forest. Recursively process children, returning <code>null</code> if a node is deleted.
+    </p>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+        <li>Tree partitioning</li>
+        <li>Forest construction after deletions</li>
+        <li>Interview and coding test problems</li>
+    </ul>
+
+    <h2>📝 Algorithm Steps</h2>
+    <ol>
+        <li>Convert <code>to_delete</code> array to a set for O(1) lookup</li>
+        <li>DFS the tree, marking deleted nodes</li>
+        <li>If a node is deleted, its children are new roots</li>
+        <li>Add non-deleted roots to the result forest</li>
+    </ol>
+
+    <h2>⚠️ Edge Cases to Consider</h2>
+    <ul>
+        <li>All nodes deleted (forest is empty)</li>
+        <li>No nodes deleted (forest is the original tree)</li>
+        <li>Root node deleted</li>
+    </ul>
+
+    <h2>🧪 Example</h2>
+    <pre><code>Input: root = [1,2,3,4,5,6,7], to_delete = [3,5]
+Output: [[1,2,null,4],[6],[7]]
+Explanation: Delete 3 and 5, return the roots of the resulting trees.
+</code></pre>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+        <li>Use a set for fast deletion checks</li>
+        <li>DFS is ideal for subtree manipulation</li>
+        <li>Careful with root node deletion</li>
+    </ul>
+
+    <h2>🔗 Related Problems</h2>
+    <ul class="problems-list">
+        <li>
+            <a href="binary_tree_maximum_path_sum_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Binary Tree Maximum Path Sum
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+            </a>
+        </li>
+        <li>
+            <a href="lowest_common_ancestor_of_a_binary_tree_cheatsheet.html" class="problem-link">
+                <div class="problem-title">
+                    Lowest Common Ancestor of a Binary Tree
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+            </a>
+        </li>
+    </ul>

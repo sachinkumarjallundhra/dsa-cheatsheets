@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lowest Common Ancestor of a Binary Tree Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🧬 Lowest Common Ancestor of a Binary Tree – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Lowest Common Ancestor of a Binary Tree</b> problem (LeetCode 236) asks you to find the lowest (deepest) node in a binary tree that is an ancestor of two given nodes p and q.
+        </p>
+
+        <h2>🎯 Solution Pattern (Recursive DFS)</h2>
+        <pre><code>class Solution {
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+        if (root == null || root == p || root == q) return root;
+        TreeNode left = lowestCommonAncestor(root.left, p, q);
+        TreeNode right = lowestCommonAncestor(root.right, p, q);
+        if (left != null && right != null) return root;
+        return left != null ? left : right;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/lowest_common_ancestor_of_a_binary_tree_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding relationships in trees</li>
+            <li>Genealogy and ancestry problems</li>
+            <li>Network and hierarchy analysis</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Recursively traverse the tree</li>
+            <li>If root is null, p, or q, return root</li>
+            <li>Check left and right subtrees for p or q</li>
+            <li>If both sides return non-null, root is LCA</li>
+            <li>Otherwise, return non-null side</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>p or q is the root</li>
+            <li>p and q are the same node</li>
+            <li>Tree is empty</li>
+            <li>p or q not present in tree</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1
+Output: 3
+Explanation: The LCA of nodes 5 and 1 is 3.
+
+Input: root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 4
+Output: 5
+Explanation: The LCA of nodes 5 and 4 is 5.
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>DFS is optimal for subtree ancestor search</li>
+            <li>Return node itself if it matches p or q</li>
+            <li>Handles all binary tree shapes</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="diameter_of_binary_tree_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Diameter of Binary Tree
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>

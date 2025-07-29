@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nested List Weight Sum II Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-highlight-current: #9b59b6;
+            --color-highlight-level: #f1c40f;
+            --color-highlight-value: #e67e22;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 1.5fr minmax(400px, 1.2fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.85em; flex-shrink: 1; overflow-y: auto;}
+        .code-block { margin-bottom: 10px; border: 1px solid #444; border-radius: 4px; padding-bottom: 5px; }
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #nested_list_container { background: #fafafa; border: 1px solid #e9e9e9; padding: 10px; font-family: 'Courier New', monospace; font-size: 1.1em; overflow-y: auto; flex-grow: 1; }
+        .nested-item { padding: 3px 8px; border-radius: 4px; margin: 2px 0; transition: all 0.3s ease; }
+        .nested-item.current { background-color: var(--color-highlight-current); color: white; font-weight: bold; }
+        
+        .levels-container { overflow-y: auto; flex-grow: 1; }
+        .level-box { border: 1px solid #ddd; border-radius: 5px; margin-bottom: 8px; padding: 5px; transition: all 0.3s ease; }
+        .level-box.highlight { border-color: var(--color-highlight-level); border-width: 2px; box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
+        .level-label { font-weight: bold; margin-bottom: 5px; }
+        .level-values { display: flex; flex-wrap: wrap; gap: 5px; min-height: 20px; }
+        .level-val { background: #eee; padding: 2px 6px; border-radius: 3px; }
+        .level-val.highlight { background-color: var(--color-highlight-value); color: white; }
+
+        .calc-panel { text-align: center; }
+        .calc-panel .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; }
+        .calc-panel .value { font-size: 2em; font-weight: bold; }
+        #sum-val.updated { transform: scale(1.2); transition: transform 0.2s ease; }
+        #calculation-string { font-family: 'Courier New', monospace; font-size: 1.1em; min-height: 1.2em; background-color: #f8f9fa; padding: 5px; border-radius: 4px; margin-top: 5px; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2.5em; font-weight: bold; margin: 0; color: var(--color-success);}
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Nested List Weight Sum II</h1>
+            <div class="controls">
+                <label>List:</label><textarea id="list_input">[[1,1],2,[1,1]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter list and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Nested List Input</h2>
+            <div id="nested_list_container"></div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Levels (Built by DFS)</h2>
+                <div id="levels_container" class="levels-container"></div>
+             </div>
+             <div class="panel calc-panel">
+                <span class="label">Total Sum</span>
+                <span id="sum-val" class="value">0</span>
+                 <div style="margin-top:15px;">
+                    <span class="label">Weight</span>
+                    <span id="weight-val" class="value">-</span>
+                </div>
+                <div style="margin-top:10px;">
+                    <span class="label">Calculation</span>
+                    <div id="calculation-string">&nbsp;</div>
+                </div>
+             </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Sum</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let listInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    nestedListContainer, levelsContainer, sumVal, weightVal, calculationString,
+    resultModal, finalResultText, modalCloseBtn;
+    
+// Mock NestedInteger for animation
+const NestedInteger = (value) => {
+    const isInt = typeof value === 'number';
+    return {
+        isInteger: () => isInt,
+        getInteger: () => isInt ? value : null,
+        getList: () => !isInt ? value.map(NestedInteger) : null,
+        _val: value, // for rendering
+        _id: Math.random().toString(36).substr(2, 9) // unique id for highlighting
+    };
+};
+
+class NestedListAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, nestedListContainer, levelsContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = "Enter list and click 'Start'.";
+        sumVal.textContent = '0';
+        weightVal.textContent = '-';
+        calculationString.innerHTML = '&nbsp;';
+    }
+    start() {
+        this.reset();
+        try {
+            const listArr = JSON.parse(listInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(listArr)) throw new Error("Invalid input format.");
+            
+            const nestedList = listArr.map(NestedInteger);
+            
+            this.initUI();
+            this.renderNestedList(nestedList);
+            animationSteps = this.generateSteps(nestedList);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use a valid JSON array.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const mainCode = [
+            "function depthSumInverse(nestedList):",
+            "  levels = []",
+            "  dfs(nestedList, 0, levels)",
+            "",
+            "  sum = 0",
+            "  max_depth = levels.size()",
+            "  for i from 0 to max_depth-1:",
+            "    weight = max_depth - i",
+            "    for val in levels[i]:",
+            "      sum += val * weight",
+            "  return sum"
+        ];
+        const dfsCode = [
+             "function dfs(list, depth, levels):",
+             "  if levels.size() == depth:",
+             "    levels.add(new list)",
+             "  for ni in list:",
+             "    if ni.isInteger():",
+             "      levels[depth].add(ni.getInteger())",
+             "    else:",
+             "      dfs(ni.getList(), depth + 1, ...)"
+        ];
+        codeContainer.innerHTML = `
+            <div class="code-block">${mainCode.map((line, i) => `<div class="code-line" id="code-line-main-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('')}</div>
+            <div class="code-block">${dfsCode.map((line, i) => `<div class="code-line" id="code-line-dfs-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('')}</div>
+        `;
+    }
+    
+    renderNestedList(list, depth = 0) {
+        if(depth === 0) nestedListContainer.innerHTML = '';
+        const container = document.createElement('div');
+        list.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'nested-item';
+            div.style.paddingLeft = `${depth * 20 + 8}px`;
+            div.id = `ni-${item._id}`;
+            if (item.isInteger()) {
+                div.textContent = item.getInteger();
+            } else {
+                div.textContent = '[';
+                nestedListContainer.appendChild(div);
+                this.renderNestedList(item.getList(), depth + 1);
+                const closeDiv = document.createElement('div');
+                closeDiv.className = 'nested-item';
+                closeDiv.style.paddingLeft = `${depth * 20 + 8}px`;
+                closeDiv.textContent = ']';
+                nestedListContainer.appendChild(closeDiv);
+                return;
+            }
+            nestedListContainer.appendChild(div);
+        });
+    }
+
+    generateSteps(nestedList) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            mainLine: null, dfsLine: null, msg: "",
+            levels: [], sum: 0, weight: null,
+            calcStr: "",
+            highlights: { currentId: null, levelIdx: null, value: null },
+            finalResult: null
+        };
+
+        // Phase 1: DFS
+        function traceDfs(list, depth) {
+            state.dfsLine = 0;
+            save({ ...state, msg: `Entering DFS at depth ${depth}.` });
+
+            state.dfsLine = 1;
+            save({ ...state, msg: `Check if level for depth ${depth} exists.` });
+            if (state.levels.length === depth) {
+                state.levels.push([]);
+                state.dfsLine = 2;
+                save({ ...state, msg: `Depth ${depth} is new. Adding a new list to levels.`});
+            }
+
+            state.dfsLine = 3;
+            save({ ...state, msg: "Looping through items at current level." });
+            for (const ni of list) {
+                state.highlights.currentId = ni._id;
+                state.dfsLine = 4;
+                save({ ...state, msg: `Processing item: ${JSON.stringify(ni._val)}` });
+
+                if (ni.isInteger()) {
+                    const val = ni.getInteger();
+                    state.dfsLine = 5;
+                    state.levels[depth].push(val);
+                    save({ ...state, msg: `It's an integer. Adding ${val} to levels[${depth}].` });
+                } else {
+                    state.dfsLine = 7;
+                    save({ ...state, msg: "It's a list. Recursing with depth+1." });
+                    traceDfs(ni.getList(), depth + 1);
+                    state.highlights.currentId = ni._id;
+                    state.dfsLine = 7;
+                    save({ ...state, msg: `Returned from recursive call for list.` });
+                }
+                 state.highlights.currentId = null;
+            }
+            state.dfsLine = null;
+        }
+        
+        state.mainLine = 1; save({ ...state, msg: "Initialize an empty list for levels." });
+        state.mainLine = 2; save({ ...state, msg: "Start DFS traversal to populate levels." });
+        traceDfs(nestedList, 0);
+
+        // Phase 2: Calculation
+        state.mainLine = 4; save({ ...state, msg: "DFS complete. Initialize sum to 0." });
+        
+        const max_depth = state.levels.length;
+        state.mainLine = 5; save({ ...state, msg: `Max depth is ${max_depth}.` });
+        
+        state.mainLine = 6; save({ ...state, msg: "Begin calculating weighted sum." });
+        for (let i = 0; i < max_depth; i++) {
+            state.highlights.levelIdx = i;
+            const weight = max_depth - i;
+            state.weight = weight;
+            state.mainLine = 7; save({ ...state, msg: `Processing Level ${i}. Weight = ${max_depth} - ${i} = ${weight}.`});
+            
+            state.mainLine = 8; save({...state, msg: `Looping through values in Level ${i}.`});
+            for (const val of state.levels[i]) {
+                state.highlights.value = val;
+                const oldSum = state.sum;
+                state.sum += val * weight;
+                state.calcStr = `${oldSum} + (${val} * ${weight}) = ${state.sum}`;
+                state.mainLine = 9; save({ ...state, msg: `Adding ${val} * ${weight} to sum.` });
+                state.highlights.value = null;
+                state.calcStr = "";
+            }
+            state.highlights.levelIdx = null;
+        }
+        
+        state.mainLine = 10;
+        state.finalResult = state.sum;
+        save({ ...state, msg: `Calculation finished. Final sum is ${state.sum}.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.mainLine !== null) document.getElementById(`code-line-main-${state.mainLine}`)?.classList.add('highlight');
+        if (state.dfsLine !== null) document.getElementById(`code-line-dfs-${state.dfsLine}`)?.classList.add('highlight');
+        
+        document.querySelectorAll('.nested-item').forEach(el => el.classList.remove('current'));
+        if (state.highlights.currentId) document.getElementById(`ni-${state.highlights.currentId}`)?.classList.add('current');
+        
+        levelsContainer.innerHTML = state.levels.map((level, i) => `
+            <div class="level-box ${i === state.highlights.levelIdx ? 'highlight' : ''}">
+                <div class="level-label">Level ${i} (Depth ${i+1})</div>
+                <div class="level-values">
+                    ${level.map(v => `<span class="level-val ${i === state.highlights.levelIdx && v === state.highlights.value ? 'highlight' : ''}">${v}</span>`).join('')}
+                </div>
+            </div>
+        `).join('');
+
+        const sumEl = document.getElementById('sum-val');
+        if(sumEl.textContent !== String(state.sum)) {
+            sumEl.classList.add('updated');
+            setTimeout(() => sumEl.classList.remove('updated'), 200);
+        }
+        sumEl.textContent = state.sum;
+        weightVal.textContent = state.weight !== null ? state.weight : '-';
+        calculationString.innerHTML = state.calcStr || '&nbsp;';
+
+        if(state.finalResult !== null) {
+            finalResultText.textContent = state.finalResult;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    listInput = document.getElementById('list_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    nestedListContainer = document.getElementById('nested_list_container');
+    levelsContainer = document.getElementById('levels_container');
+    sumVal = document.getElementById('sum-val');
+    weightVal = document.getElementById('weight-val');
+    calculationString = document.getElementById('calculation-string');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new NestedListAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

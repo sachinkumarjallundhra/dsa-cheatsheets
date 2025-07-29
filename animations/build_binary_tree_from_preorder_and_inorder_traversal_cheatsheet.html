@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Binary Tree from Traversal Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-node-default: #bdc3c7; --color-node-current: #9b59b6; --color-node-built: #2ecc71;
+            --color-pre-root: #e74c3c; --color-in-root: #e74c3c;
+            --color-in-left: #3498db; --color-in-right: #f1c40f;
+            --color-range: rgba(155, 89, 182, 0.15);
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(420px, 1.2fr) 2fr minmax(380px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls .input-group { display: flex; flex-direction: column; }
+        .controls label { font-weight: bold; margin-bottom: 3px; font-size: 0.9em;}
+        .controls input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 300px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; align-self: flex-end; margin-bottom: 1px; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; }
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.current .node-circle { stroke: var(--color-node-current); stroke-width: 4px; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 10px 5px; background: #fafafa; border-radius: 4px;}
+        .array-container { display: flex; flex-wrap: wrap; gap: 5px; padding: 5px; position: relative; }
+        .arr-element { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; background: #fff; position: relative; font-size: 1.1em; }
+        .arr-element .label { position: absolute; top: -18px; font-size: 0.7em; color: #666; }
+        .arr-range-highlight { position: absolute; top: 0; height: 100%; background: var(--color-range); border: 1px dashed var(--color-node-current); border-radius: 5px; z-index: 0; transition: all 0.3s ease; }
+        .arr-element.pre-root { background: var(--color-pre-root); color: white; border-color: var(--color-pre-root); }
+        .arr-element.in-root { background: var(--color-in-root); color: white; border-color: var(--color-in-root); }
+        .arr-element.in-left { background: var(--color-in-left); color: white; border-color: var(--color-in-left); }
+        .arr-element.in-right { background: var(--color-in-right); color: white; border-color: var(--color-in-right); }
+        
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; font-size: 0.9em; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2em; font-weight: bold; margin: 0; color: var(--color-success); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Build Binary Tree from Preorder & Inorder Traversal</h1>
+            <div class="controls">
+                <div class="input-group">
+                    <label>Preorder Traversal:</label>
+                    <input type="text" id="preorder_input" value="[3,9,20,15,7]">
+                </div>
+                 <div class="input-group">
+                    <label>Inorder Traversal:</label>
+                    <input type="text" id="inorder_input" value="[9,3,15,20,7]">
+                </div>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter traversal arrays and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Constructed Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Preorder</h2>
+                <div id="preorder_container" class="array-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Inorder</h2>
+                <div id="inorder_container" class="array-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="final_result_text">Tree Construction Complete!</h2>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let preorderInput, inorderInput, startButton, nextStepButton, codeContainer, 
+    actionDisplay, treeContainer, preorderContainer, inorderContainer, callStackContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+// Basic TreeNode for internal logic
+function TreeNode(val, left = null, right = null) {
+    this.val = val; this.left = left; this.right = right;
+}
+
+class BuildTreeAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, preorderContainer, inorderContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = 'Enter traversal arrays and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const preorderArr = JSON.parse(preorderInput.value.trim().replace(/'/g, '"'));
+            const inorderArr = JSON.parse(inorderInput.value.trim().replace(/'/g, '"'));
+
+            if (!Array.isArray(preorderArr) || !Array.isArray(inorderArr)) throw new Error("Invalid input format.");
+            if (preorderArr.length !== inorderArr.length) throw new Error("Traversal arrays must have the same length.");
+            const preSet = new Set(preorderArr);
+            const inSet = new Set(inorderArr);
+            if (preSet.size !== inSet.size || preSet.size !== preorderArr.length) throw new Error("Arrays must be a permutation of each other with unique elements.");
+
+
+            // 1. Build tree silently to determine final layout
+            const finalRoot = this.buildTreeForLayout(preorderArr, inorderArr);
+            if (!finalRoot) {
+                actionDisplay.textContent = "Empty tree.";
+                return;
+            }
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), finalRoot);
+
+            // 2. Generate animation steps
+            this.initUI();
+            animationSteps = this.generateSteps(preorderArr, inorderArr);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert(e.message || "Invalid input. Please use valid arrays.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function build(pre, preS, preE, in, inS, inE):",
+            "  if preS > preE or inS > inE: return null",
+            "",
+            "  rootVal = pre[preS]",
+            "  root = new TreeNode(rootVal)",
+            "",
+            "  inRootIdx = find(in, rootVal)",
+            "  leftSize = inRootIdx - inS",
+            "",
+            "  root.left = build(pre, preS+1, preS+leftSize, ...)",
+            "  root.right = build(pre, preS+leftSize+1, preE, ...)",
+            "",
+            "  return root"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    buildTreeForLayout(preorder, inorder) {
+        const inorderMap = new Map(inorder.map((val, i) => [val, i]));
+        function build(preStart, preEnd, inStart, inEnd) {
+            if (preStart > preEnd || inStart > inEnd) return null;
+            let rootVal = preorder[preStart];
+            let root = new TreeNode(rootVal);
+            let inRootIdx = inorderMap.get(rootVal);
+            let leftSize = inRootIdx - inStart;
+            root.left = build(preStart + 1, preStart + leftSize, inStart, inRootIdx - 1);
+            root.right = build(preStart + leftSize + 1, preEnd, inRootIdx + 1, inEnd);
+            return root;
+        }
+        return build(0, preorder.length - 1, 0, inorder.length - 1);
+    }
+    
+    generateSteps(preorder, inorder) {
+        const steps = [];
+        const inorderMap = new Map(inorder.map((val, i) => [val, i]));
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", callStack: [],
+            visibleNodes: [], visibleEdges: [],
+            highlights: {
+                pre: { start: -1, end: -1, root: -1 },
+                in: { start: -1, end: -1, root: -1, leftEnd: -1, rightStart: -1 },
+                treeNode: null
+            },
+            final: false
+        };
+
+        save({ ...state, msg: "Start building tree." });
+        
+        function traceBuild(preS, preE, inS, inE) {
+            const parentNodeVal = state.callStack.length > 0 ? state.callStack[state.callStack.length - 1].rootVal : null;
+            const stackEntry = { preS, preE, inS, inE, rootVal: null };
+            state.callStack.push(stackEntry);
+            state.highlights.pre.start = preS; state.highlights.pre.end = preE;
+            state.highlights.in.start = inS; state.highlights.in.end = inE;
+            state.highlights.pre.root = -1; state.highlights.in.root = -1;
+            state.highlights.in.leftEnd = -1; state.highlights.in.rightStart = -1;
+            
+            save({ ...state, line: 0, msg: `Calling build with Preorder range [${preS},${preE}] and Inorder range [${inS},${inE}].` });
+            
+            save({ ...state, line: 1, msg: "Checking base case: are ranges valid?" });
+            if (preS > preE || inS > inE) {
+                state.callStack.pop();
+                save({ ...state, line: 1, msg: "Base case met. Subarray is empty. Returning null." });
+                return null;
+            }
+
+            const rootVal = preorder[preS];
+            stackEntry.rootVal = rootVal;
+            state.highlights.pre.root = preS;
+            save({ ...state, line: 3, msg: `Root of this subtree is the first element of preorder range: ${rootVal}.` });
+
+            state.highlights.treeNode = rootVal;
+            state.visibleNodes.push(rootVal);
+            save({ ...state, line: 4, msg: `Creating node for ${rootVal}.` });
+            
+            const inRootIdx = inorderMap.get(rootVal);
+            state.highlights.in.root = inRootIdx;
+            save({ ...state, line: 6, msg: `Finding ${rootVal} in inorder array. It's at index ${inRootIdx}.` });
+            
+            const leftSize = inRootIdx - inS;
+            state.highlights.in.leftEnd = inRootIdx - 1;
+            state.highlights.in.rightStart = inRootIdx + 1;
+            save({ ...state, line: 7, msg: `Inorder is now partitioned. Left subtree size = ${leftSize}.` });
+
+            save({ ...state, line: 9, msg: `Recursively building left child of ${rootVal}.` });
+            const leftChild = traceBuild(preS + 1, preS + leftSize, inS, inRootIdx - 1);
+            
+            // Back from left call
+            state.highlights.treeNode = rootVal;
+            state.highlights.pre.start = preS; state.highlights.pre.end = preE; state.highlights.pre.root = preS;
+            state.highlights.in.start = inS; state.highlights.in.end = inE; state.highlights.in.root = inRootIdx;
+            state.highlights.in.leftEnd = inRootIdx - 1; state.highlights.in.rightStart = inRootIdx + 1;
+
+            if (leftChild) {
+                state.visibleEdges.push({ from: rootVal, to: leftChild.val });
+                save({ ...state, line: 9, msg: `Left child (${leftChild.val}) built. Attaching to ${rootVal}.` });
+            } else {
+                save({ ...state, line: 9, msg: `Left child of ${rootVal} is null.` });
+            }
+
+            save({ ...state, line: 10, msg: `Recursively building right child of ${rootVal}.` });
+            const rightChild = traceBuild(preS + leftSize + 1, preE, inRootIdx + 1, inE);
+            
+            // Back from right call
+            state.highlights.treeNode = rootVal;
+            state.highlights.pre.start = preS; state.highlights.pre.end = preE; state.highlights.pre.root = preS;
+            state.highlights.in.start = inS; state.highlights.in.end = inE; state.highlights.in.root = inRootIdx;
+            state.highlights.in.leftEnd = inRootIdx - 1; state.highlights.in.rightStart = inRootIdx + 1;
+
+            if (rightChild) {
+                state.visibleEdges.push({ from: rootVal, to: rightChild.val });
+                save({ ...state, line: 10, msg: `Right child (${rightChild.val}) built. Attaching to ${rootVal}.` });
+            } else {
+                 save({ ...state, line: 10, msg: `Right child of ${rootVal} is null.` });
+            }
+            
+            state.callStack.pop();
+            state.highlights.treeNode = parentNodeVal;
+            save({ ...state, line: 12, msg: `Subtree at ${rootVal} is complete. Returning node.` });
+            return new TreeNode(rootVal, leftChild, rightChild);
+        }
+
+        traceBuild(0, preorder.length - 1, 0, inorder.length - 1);
+        
+        state.final = true;
+        state.highlights = { pre: {}, in: {}, treeNode: null };
+        save({ ...state, line: null, msg: "Tree construction complete!" });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => `<div class="stack-item">build(${c.preS}, ${c.preE}, ${c.inS}, ${c.inE})</div>`).join('');
+        
+        this.renderArray(preorderContainer, preorderInput.value, state.highlights.pre);
+        this.renderArray(inorderContainer, inorderInput.value, state.highlights.in);
+        
+        treeDrawer.draw(state.visibleNodes, state.visibleEdges, state.highlights.treeNode);
+        
+        if (state.final) {
+            resultModal.style.display = 'flex';
+        }
+    }
+
+    renderArray(container, jsonString, h) {
+        const arr = JSON.parse(jsonString);
+        container.innerHTML = '';
+        const rangeHighlight = document.createElement('div');
+        rangeHighlight.className = 'arr-range-highlight';
+        
+        let hasRange = h.start !== -1 && h.start <= h.end;
+        if (hasRange) {
+            rangeHighlight.style.left = `${h.start * 40 + 5}px`;
+            rangeHighlight.style.width = `${(h.end - h.start + 1) * 40 - 5}px`;
+            container.appendChild(rangeHighlight);
+        }
+
+        container.innerHTML += arr.map((val, i) => {
+            let classes = 'arr-element';
+            if (i === h.root) classes += container.id.includes('pre') ? ' pre-root' : ' in-root';
+            else if (i >= h.start && i <= h.leftEnd) classes += ' in-left';
+            else if (i >= h.rightStart && i <= h.end) classes += ' in-right';
+            return `<div class="${classes}"><div class="label">${i}</div>${val}</div>`;
+        }).join('');
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.nodeMap = new Map();
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+        this.assignPositions(root, 0, this.width / 2, this.width);
+    }
+    
+    assignPositions(node, level, x, width) {
+        if (!node) return;
+        this.nodeMap.set(node.val, { val: node.val, x, y: level * 80 + 50 });
+        const childWidth = width / 2;
+        this.assignPositions(node.left, level + 1, x - childWidth / 2, childWidth);
+        this.assignPositions(node.right, level + 1, x + childWidth / 2, childWidth);
+    }
+
+    draw(visibleNodes, visibleEdges, currentNodeVal) {
+        this.svg.innerHTML = '';
+        
+        visibleEdges.forEach(edge => {
+            const fromPos = this.nodeMap.get(edge.from);
+            const toPos = this.nodeMap.get(edge.to);
+            if(fromPos && toPos) {
+                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                 line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+                 line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+                 line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                 this.svg.appendChild(line);
+            }
+        });
+        
+        visibleNodes.forEach(nodeVal => {
+            const node = this.nodeMap.get(nodeVal);
+            if (!node) return;
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${node.x},${node.y})`);
+            g.classList.add('node-group');
+            if(node.val === currentNodeVal) g.classList.add('current');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            circle.setAttribute('fill', 'var(--color-node-built)');
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    preorderInput = document.getElementById('preorder_input');
+    inorderInput = document.getElementById('inorder_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    preorderContainer = document.getElementById('preorder_container');
+    inorderContainer = document.getElementById('inorder_container');
+    callStackContainer = document.getElementById('call_stack_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new BuildTreeAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

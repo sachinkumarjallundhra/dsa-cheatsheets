@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Nodes and Return Forest Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-node-default: #bdc3c7;
+            --color-node-current: #9b59b6;
+            --color-node-todelete: #e74c3c;
+            --color-node-forest-root: #2ecc71;
+            --color-return: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: flex-end; justify-content: center;}
+        .controls .input-group { display: flex; flex-direction: column; }
+        .controls label { font-weight: bold; margin-bottom: 3px; font-size: 0.9em; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 450px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.85em; flex-shrink: 1; overflow-y: auto;}
+        .code-block { margin-bottom: 10px; border: 1px solid #444; border-radius: 4px; padding-bottom: 5px; }
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px;}
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-group text { font-family: 'Segoe UI', sans-serif; pointer-events: none; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: white; }
+        .node-group.forest-root .node-circle { fill: var(--color-node-forest-root) !important; transform: scale(1.1); }
+        .node-group.to-delete .node-circle { fill: var(--color-node-todelete) !important; }
+        .node-group.current .node-circle { fill: var(--color-node-current) !important; }
+        .edge.severed { stroke-dasharray: 4, 4; animation: dash 1s linear infinite; }
+        .return-val-anim { animation: travel-up 0.9s ease-in-out forwards; }
+        .return-val-anim text { fill: #333; font-size: 1em; font-weight: bold; }
+        
+        @keyframes travel-up {
+            from { transform: translate(var(--from-x), var(--from-y)) scale(0.8); opacity: 1; }
+            40% { opacity: 1; }
+            to { transform: translate(var(--to-x), var(--to-y)) scale(0.2); opacity: 0; }
+        }
+        @keyframes dash { to { stroke-dashoffset: -8; } }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .flex-container { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; padding: 5px; }
+        .data-item { padding: 8px 12px; border-radius: 5px; font-weight: bold; font-size: 1.1em; animation: item-add 0.4s ease; }
+        .todelete-item { background: var(--color-danger); color: white; }
+        .forest-item { background: var(--color-success); color: white; }
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; font-size: 0.9em; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 2em; font-weight: bold; margin: 0; color: var(--color-success); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Delete Nodes and Return Forest</h1>
+            <div class="controls">
+                <div class="input-group"><label>Tree:</label><textarea id="tree_input">[1,2,3,4,5,6,7]</textarea></div>
+                <div class="input-group"><label>To Delete:</label><textarea id="todelete_input">[3,5]</textarea></div>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter tree and nodes to delete, then click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%" id="tree_svg"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+            <div class="panel"><h2 style="font-size: 1em;">Nodes To Delete</h2><div id="todelete_container" class="flex-container"></div></div>
+            <div class="panel"><h2 style="font-size: 1em;">Forest (Result)</h2><div id="forest_container" class="flex-container"></div></div>
+            <div class="panel"><h2>Call Stack</h2><div id="call_stack_container" class="data-container"></div></div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Forest</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let treeInput, todeleteInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    treeContainer, todeleteContainer, forestContainer, callStackContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class DeleteNodesAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, todeleteContainer, forestContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('tree_svg').innerHTML = '';
+        actionDisplay.textContent = "Enter tree and nodes to delete, then click 'Start'.";
+    }
+    start() {
+        this.reset();
+        try {
+            const treeArr = JSON.parse(treeInput.value.trim().replace(/null/g, 'null').replace(/'/g, '"'));
+            const toDeleteArr = JSON.parse(todeleteInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(treeArr) || !Array.isArray(toDeleteArr)) throw new Error("Invalid input format.");
+            
+            const root = this.buildTree(treeArr);
+            this.initUI();
+            treeDrawer = new TreeGraph(document.getElementById('tree_svg'), root);
+            animationSteps = this.generateSteps(root, toDeleteArr);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert(e.message || "Invalid input.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const mainCode = [
+            "function delNodes(root, to_delete):",
+            "  toDeleteSet = new Set(to_delete)",
+            "  forest = []",
+            "  dfs(root, true, toDeleteSet, forest)",
+            "  return forest"
+        ];
+        const dfsCode = [
+             "function dfs(node, isRoot, toDeleteSet, forest):",
+             "  if node == null: return null",
+             "",
+             "  deleted = toDeleteSet.contains(node.val)",
+             "  if isRoot and !deleted:",
+             "    forest.add(node)",
+             "",
+             "  node.left = dfs(node.left, deleted, ...)",
+             "  node.right = dfs(node.right, deleted, ...)",
+             "",
+             "  return deleted ? null : node"
+        ];
+        codeContainer.innerHTML = `
+            <div class="code-block">${mainCode.map((line, i) => `<div class="code-line" id="code-line-main-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('')}</div>
+            <div class="code-block">${dfsCode.map((line, i) => `<div class="code-line" id="code-line-dfs-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('')}</div>
+        `;
+    }
+
+    buildTree(arr) {
+        if (!arr || arr.length === 0 || arr[0] === null) return null;
+        const nodes = arr.map(val => val !== null ? { val, left: null, right: null } : null);
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i]) {
+                const leftIdx = 2 * i + 1;
+                const rightIdx = 2 * i + 2;
+                if (leftIdx < nodes.length) nodes[i].left = nodes[leftIdx];
+                if (rightIdx < nodes.length) nodes[i].right = nodes[rightIdx];
+            }
+        }
+        return nodes[0];
+    }
+
+    generateSteps(root, toDeleteArr) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            mainLine: null, dfsLine: null, msg: "", callStack: [],
+            toDeleteSet: [], forest: [],
+            highlights: { currentNode: null, deletedNodes: [], severedLinks: [] },
+            returnAnimation: { isActive: false, from: null, to: null, value: null },
+            finalResult: null
+        };
+        const toDeleteSet = new Set(toDeleteArr);
+        state.toDeleteSet = toDeleteArr;
+
+        function traceDfs(node, isRoot) {
+            state.callStack.push({ val: node ? node.val : 'ø', isRoot });
+            state.highlights.currentNode = node ? node.val : null;
+            save({ ...state, dfsLine: 0, msg: `Calling dfs on ${node ? `node ${node.val}` : 'null'}, isRoot=${isRoot}.` });
+
+            save({ ...state, dfsLine: 1, msg: "Is node null?" });
+            if (node === null) {
+                save({ ...state, dfsLine: 1, msg: "Yes. Base case, returning null." });
+                state.callStack.pop();
+                return null;
+            }
+
+            const deleted = toDeleteSet.has(node.val);
+            save({ ...state, dfsLine: 3, msg: `Should node ${node.val} be deleted? ${deleted ? 'Yes' : 'No'}.` });
+
+            save({ ...state, dfsLine: 4, msg: `Is this a new root? (isRoot=${isRoot}, !deleted=${!deleted})` });
+            if (isRoot && !deleted) {
+                state.forest.push(node.val);
+                save({ ...state, dfsLine: 5, msg: `Yes. Node ${node.val} is a new root. Adding to forest.` });
+            }
+
+            save({ ...state, dfsLine: 7, msg: `Recursively calling for left child. Passing isRoot=${deleted}.` });
+            const leftResult = traceDfs(node.left, deleted);
+            
+            state.returnAnimation = { isActive: true, from: node.left ? node.left.val : 'null', to: node.val, value: leftResult ? leftResult.val : null };
+            save({ ...state, msg: `Returning from left child...`});
+            state.returnAnimation.isActive = false;
+
+            state.highlights.currentNode = node.val;
+            if (leftResult === null && node.left !== null) state.highlights.severedLinks.push({parent: node.val, child: node.left.val});
+            save({ ...state, dfsLine: 7, msg: `Left call returned ${leftResult ? leftResult.val : 'null'}. Updating left pointer.`});
+
+            save({ ...state, dfsLine: 8, msg: `Recursively calling for right child. Passing isRoot=${deleted}.` });
+            const rightResult = traceDfs(node.right, deleted);
+            
+            state.returnAnimation = { isActive: true, from: node.right ? node.right.val : 'null', to: node.val, value: rightResult ? rightResult.val : null };
+            save({ ...state, msg: `Returning from right child...`});
+            state.returnAnimation.isActive = false;
+            
+            state.highlights.currentNode = node.val;
+            if (rightResult === null && node.right !== null) state.highlights.severedLinks.push({parent: node.val, child: node.right.val});
+            save({ ...state, dfsLine: 8, msg: `Right call returned ${rightResult ? rightResult.val : 'null'}. Updating right pointer.` });
+            
+            save({ ...state, dfsLine: 10, msg: `Node ${node.val} is ${deleted ? 'deleted' : 'kept'}.` });
+            if (deleted) {
+                state.highlights.deletedNodes.push(node.val);
+                save({ ...state, dfsLine: 10, msg: `Returning null to sever link from parent.` });
+                state.callStack.pop();
+                return null;
+            } else {
+                save({ ...state, dfsLine: 10, msg: `Returning node ${node.val} to keep link from parent.` });
+                state.callStack.pop();
+                return node;
+            }
+        }
+        
+        state.mainLine = 1; save({ ...state, msg: "Create a Set for fast lookup of nodes to delete." });
+        state.mainLine = 2; save({ ...state, msg: "Initialize an empty list for the forest." });
+        state.mainLine = 3; save({ ...state, msg: "Start DFS from the root. isRoot is initially true." });
+        traceDfs(root, true);
+        
+        state.mainLine = 4;
+        state.finalResult = state.forest;
+        state.highlights.currentNode = null;
+        save({ ...state, msg: "DFS complete. Returning the final forest." });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.mainLine !== null) document.getElementById(`code-line-main-${state.mainLine}`)?.classList.add('highlight');
+        if (state.dfsLine !== null) document.getElementById(`code-line-dfs-${state.dfsLine}`)?.classList.add('highlight');
+        
+        todeleteContainer.innerHTML = state.toDeleteSet.map(v => `<div class="data-item todelete-item">${v}</div>`).join('');
+        forestContainer.innerHTML = state.forest.map(v => `<div class="data-item forest-item">${v}</div>`).join('');
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => `<div class="stack-item">dfs(${c.val}, ${c.isRoot})</div>`).join('');
+        
+        treeDrawer.draw(state);
+
+        if(state.finalResult !== null && currentStepIndex === animationSteps.length-1) {
+            finalResultText.innerHTML = state.finalResult.map(rootVal => {
+                const treeString = treeDrawer.getTreeString(rootVal, state.highlights.deletedNodes);
+                return `Tree rooted at ${rootVal}: <pre>${treeString}</pre>`;
+            }).join('<br>');
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class TreeGraph {
+    constructor(svg, root) {
+        this.svg = svg;
+        this.root = root;
+        this.nodeMap = new Map();
+        this._buildNodeMap(this.root);
+        this._layout();
+    }
+    
+    _buildNodeMap(node) {
+        if (!node) return;
+        this.nodeMap.set(node.val, { node, x: 0, y: 0 });
+        this._buildNodeMap(node.left);
+        this._buildNodeMap(node.right);
+    }
+
+    _layout() {
+        if (!this.root) return;
+        const width = this.svg.parentElement.clientWidth;
+        const height = this.svg.parentElement.clientHeight;
+        const inOrderNodes = [];
+        const getInOrder = (node) => {
+            if (!node) return;
+            getInOrder(node.left);
+            inOrderNodes.push(node);
+            getInOrder(node.right);
+        }
+        getInOrder(this.root);
+        
+        const hSpacing = Math.min(60, width / (inOrderNodes.length + 1));
+        const totalWidth = (inOrderNodes.length - 1) * hSpacing;
+        const startX = (width - totalWidth) / 2;
+
+        inOrderNodes.forEach((node, i) => {
+            this.nodeMap.get(node.val).x = startX + i * hSpacing;
+        });
+        
+        const setY = (node, depth) => {
+            if(!node) return;
+            this.nodeMap.get(node.val).y = depth * 85 + 60;
+            setY(node.left, depth + 1);
+            setY(node.right, depth + 1);
+        }
+        setY(this.root, 0);
+    }
+    
+    getTreeString(rootVal, deletedNodes) {
+        const rootNode = this.nodeMap.get(rootVal).node;
+        const arr = [];
+        const queue = [rootNode];
+        let count = 1;
+        
+        while(count > 0 && queue.length > 0) {
+             const node = queue.shift();
+             if (node && !deletedNodes.includes(node.val)) {
+                arr.push(node.val);
+                count--;
+                if(node.left) count++;
+                if(node.right) count++;
+                queue.push(node.left);
+                queue.push(node.right);
+             } else {
+                arr.push(null);
+                queue.push(null, null);
+             }
+        }
+        while(arr[arr.length - 1] === null) arr.pop();
+        return JSON.stringify(arr);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const h = state.highlights;
+        
+        const drawEdges = (node) => {
+            if (!node || h.deletedNodes.includes(node.val)) return;
+            const parentPos = this.nodeMap.get(node.val);
+            [node.left, node.right].forEach(child => {
+                if (child) {
+                    const isSevered = h.severedLinks.some(link => link.parent === node.val && link.child === child.val);
+                    if (isSevered || h.deletedNodes.includes(child.val)) return;
+                    
+                    const childPos = this.nodeMap.get(child.val);
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', parentPos.x); line.setAttribute('y1', parentPos.y);
+                    line.setAttribute('x2', childPos.x); line.setAttribute('y2', childPos.y);
+                    line.setAttribute('stroke', '#ccc'); line.setAttribute('stroke-width', 2);
+                    this.svg.appendChild(line);
+                    drawEdges(child);
+                }
+            });
+        };
+        drawEdges(this.root);
+
+        this.nodeMap.forEach(mapNode => {
+            const { node, x, y } = mapNode;
+            if (h.deletedNodes.includes(node.val)) return;
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${x},${y})`);
+            g.classList.add('node-group');
+
+            if(state.forest.includes(node.val)) g.classList.add('forest-root');
+            else if(state.toDeleteSet.includes(node.val)) g.classList.add('to-delete');
+            if(h.currentNode === node.val) g.classList.add('current');
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 25);
+            circle.classList.add('node-circle');
+            circle.setAttribute('fill', 'var(--color-node-default)');
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle'); valText.setAttribute('dy', '0.3em');
+            valText.classList.add('node-val'); valText.textContent = node.val;
+            g.appendChild(valText);
+            
+            this.svg.appendChild(g);
+        });
+        
+        if (state.returnAnimation.isActive) {
+            let fromPos;
+            const toPos = this.nodeMap.get(state.returnAnimation.to);
+            if (state.returnAnimation.from === 'null') {
+                 const parentNode = this.nodeMap.get(state.returnAnimation.to)?.node;
+                 const isLeftReturn = !state.callStack.at(-1)?.val === parentNode.right?.val;
+                 fromPos = { x: toPos.x + (isLeftReturn ? -40 : 40), y: toPos.y + 70 };
+            } else { fromPos = this.nodeMap.get(state.returnAnimation.from); }
+
+            if (fromPos && toPos) {
+                const animGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                animGroup.classList.add('return-val-anim');
+                animGroup.style.setProperty('--from-x', `${fromPos.x}px`); animGroup.style.setProperty('--from-y', `${fromPos.y}px`);
+                animGroup.style.setProperty('--to-x', `${toPos.x}px`); animGroup.style.setProperty('--to-y', `${toPos.y}px`);
+                const animCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                animCircle.setAttribute('r', 15); animCircle.setAttribute('fill', 'var(--color-return)'); animGroup.appendChild(animCircle);
+                const animText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                animText.setAttribute('text-anchor', 'middle'); animText.setAttribute('dy', '0.3em'); animText.textContent = state.returnAnimation.value ?? 'ø'; animGroup.appendChild(animText);
+                this.svg.appendChild(animGroup);
+            }
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    treeInput = document.getElementById('tree_input');
+    todeleteInput = document.getElementById('todelete_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    todeleteContainer = document.getElementById('todelete_container');
+    forestContainer = document.getElementById('forest_container');
+    callStackContainer = document.getElementById('call_stack_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new DeleteNodesAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Binary Tree from Preorder and Inorder Traversal Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌳 Build Binary Tree from Preorder and Inorder Traversal – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Build Binary Tree from Preorder and Inorder Traversal</b> problem (LeetCode 105) asks you to reconstruct a binary tree given its preorder and inorder traversal arrays.
+        </p>
+
+        <h2>🎯 Solution Pattern (Recursive Divide & Conquer)</h2>
+        <pre><code>class Solution {
+    private Map&lt;Integer, Integer&gt; inorderMap;
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+        inorderMap = new HashMap&lt;&gt;();
+        for (int i = 0; i &lt; inorder.length; i++)
+            inorderMap.put(inorder[i], i);
+        return build(preorder, 0, preorder.length - 1, 0, inorder.length - 1);
+    }
+    private TreeNode build(int[] preorder, int preStart, int preEnd, int inStart, int inEnd) {
+        if (preStart &gt; preEnd || inStart &gt; inEnd) return null;
+        int rootVal = preorder[preStart];
+        TreeNode root = new TreeNode(rootVal);
+        int inRootIdx = inorderMap.get(rootVal);
+        int leftSize = inRootIdx - inStart;
+        root.left = build(preorder, preStart + 1, preStart + leftSize, inStart, inRootIdx - 1);
+        root.right = build(preorder, preStart + leftSize + 1, preEnd, inRootIdx + 1, inEnd);
+        return root;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/build_binary_tree_from_preorder_and_inorder_traversal_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Tree reconstruction from traversal data</li>
+            <li>Parsing and rebuilding tree structures</li>
+            <li>Interview and coding test problems</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Map each value in inorder to its index for O(1) lookup</li>
+            <li>Use preorder to pick root nodes</li>
+            <li>Recursively build left and right subtrees using inorder indices</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty arrays (return null)</li>
+            <li>Single node tree</li>
+            <li>Skewed trees (all left or all right)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: preorder = [3,9,20,15,7], inorder = [9,3,15,20,7]
+Output: [3,9,20,null,null,15,7]
+Explanation: The tree is reconstructed as shown above.
+</code></pre>
+
+        <h2>💡 Pro Tips</h2>
+        <ul>
+            <li>HashMap for inorder index lookup speeds up recursion</li>
+            <li>Preorder always gives the root node for current subtree</li>
+            <li>Careful with index boundaries in recursion</li>
+        </ul>
+
+        <h2>🔗 Related Problems</h2>
+        <ul class="problems-list">
+            <li>
+                <a href="build_binary_tree_from_inorder_and_postorder_traversal_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Build Binary Tree from Inorder and Postorder Traversal
+                        <span class="badge badge-medium">Medium</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="tree_depth_first_search_cheatsheet.html" class="problem-link">
+                    <div class="problem-title">
+                        Tree Depth-First Search (DFS)
+                        <span class="badge badge-easy">Easy</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>
