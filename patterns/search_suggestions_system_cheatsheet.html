@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Suggestions System Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔎 Search Suggestions System – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Search Suggestions System</b> problem (LeetCode 1268) asks you to design a system that suggests up to three product names from a list after each character of a search word is typed. Suggestions must be lexicographically sorted and start with the current prefix.
+        </p>
+
+        <h2>🎯 Solution Pattern (Trie + DFS)</h2>
+        <pre><code>// Java Solution
+class TrieNode {
+    TrieNode[] children = new TrieNode[26];
+    List&lt;String&gt; words = new ArrayList&lt;&gt;();
+}
+
+class Trie {
+    TrieNode root = new TrieNode();
+
+    public void insert(String word) {
+        TrieNode node = root;
+        for (char c : word.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) node.children[idx] = new TrieNode();
+            node = node.children[idx];
+            node.words.add(word);
+        }
+    }
+
+    public List&lt;String&gt; getWordsWithPrefix(String prefix) {
+        TrieNode node = root;
+        for (char c : prefix.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) return new ArrayList&lt;&gt;();
+            node = node.children[idx];
+        }
+        List&lt;String&gt; result = new ArrayList&lt;&gt;(node.words);
+        Collections.sort(result);
+        return result.size() &gt; 3 ? result.subList(0, 3) : result;
+    }
+}
+
+class Solution {
+    public List&lt;List&lt;String&gt;&gt; suggestedProducts(String[] products, String searchWord) {
+        Trie trie = new Trie();
+        for (String product : products) trie.insert(product);
+        List&lt;List&lt;String&gt;&gt; res = new ArrayList&lt;&gt;();
+        String prefix = "";
+        for (char c : searchWord.toCharArray()) {
+            prefix += c;
+            res.add(trie.getWordsWithPrefix(prefix));
+        }
+        return res;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/search_suggestions_system_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Autocomplete systems</li>
+            <li>Search engines</li>
+            <li>Product or word suggestion features</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Insert all products into a Trie, storing words at each node</li>
+            <li>For each prefix of the search word, collect up to 3 lexicographically smallest suggestions</li>
+            <li>Return the list of suggestions for each prefix</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>No products match the prefix</li>
+            <li>Products with duplicate names</li>
+            <li>Empty product list or search word</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: products = ["mobile","mouse","moneypot","monitor","mousepad"], searchWord = "mouse"
+Output: [
+  ["mobile","moneypot","monitor"],
+  ["mobile","moneypot","monitor"],
+  ["mouse","mousepad"],
+  ["mouse","mousepad"],
+  ["mouse","mousepad"]
+]
+Explanation: Suggestions for each prefix of "mouse".
+</code></pre>
+    </div>
+    <style>
+    .animation-btn {
+        display: inline-block;
+        margin: 10px 0 18px 0;
+        padding: 8px 18px;
+        background: #007bff;
+        color: #fff !important;
+        font-weight: 500;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .animation-btn:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 16px rgba(44,62,80,0.15);
+    }
+    </style>

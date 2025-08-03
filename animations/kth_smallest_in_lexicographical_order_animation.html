@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-th Smallest in Lexicographical Order Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #8e44ad; --color-success: #2ecc71; --color-warning: #f39c12;
+            --color-info: #3498db;
+            --color-node-curr: var(--color-primary);
+            --color-node-next: var(--color-info);
+            --color-node-child: #95a5a6;
+            --color-node-invalid: #ecf0f1;
+            --color-node-invalid-text: #bdc3c7;
+            --color-node-answer: var(--color-success);
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(420px, 1.1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #f5eef8; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .tree-node text { font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.1em; pointer-events: none; }
+
+        .state-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .state-item { text-align: center; background-color: #f8f9f9; padding: 10px; border-radius: 5px; border: 1px solid #f0f1f1; }
+        .state-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; font-size: 0.9em; }
+        .state-item .value { font-size: 1.8em; font-weight: bold; color: var(--color-text-dark); }
+        
+        .steps-panel { background: #fdfefe; border: 1px solid #e5e8e8; border-radius: 5px; padding: 10px; font-family: 'Courier New', monospace; font-size: 0.9em; }
+        .steps-panel.highlight { box-shadow: 0 0 0 2px var(--color-info); }
+        .steps-panel-header { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 5px; }
+        .steps-calc-row { display: grid; grid-template-columns: 1fr 2fr; margin: 3px 0; }
+        .steps-calc-row .level-label { color: #777; }
+        .steps-total { font-weight: bold; margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 0; color: var(--color-success); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>K-th Smallest in Lexicographical Order</h1>
+            <div class="controls">
+                <label>n:</label><input id="n_input" type="number" value="13">
+                <label>k:</label><input id="k_input" type="number" value="10">
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter n and k, then click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Conceptual Denary Tree</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>State</h2>
+                <div class="state-container">
+                    <div class="state-item"><span class="label">n</span><span id="val-n" class="value">-</span></div>
+                    <div class="state-item"><span class="label">k</span><span id="val-k" class="value">-</span></div>
+                    <div class="state-item"><span class="label">Current</span><span id="val-curr" class="value">-</span></div>
+                </div>
+             </div>
+             <div id="steps-panel" class="panel steps-panel">
+                <div class="steps-panel-header">countSteps(n, curr, next)</div>
+                <div id="steps-calc-area"></div>
+             </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Found!</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let nInput, kInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    treeContainer, valN, valK, valCurr, stepsPanel, stepsCalcArea,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class KthLexicographicalAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        codeContainer.innerHTML = '';
+        document.querySelector('#tree_container svg').innerHTML = '';
+        actionDisplay.textContent = "Enter n and k, then click 'Start'.";
+        valN.textContent = '-'; valK.textContent = '-'; valCurr.textContent = '-';
+        stepsCalcArea.innerHTML = '';
+        stepsPanel.classList.remove('highlight');
+    }
+    start() {
+        this.reset();
+        try {
+            const n = parseInt(nInput.value);
+            const k = parseInt(kInput.value);
+            if (isNaN(n) || isNaN(k) || n < 1 || k < 1 || k > n) throw new Error("Invalid input.");
+            
+            this.initUI();
+            treeDrawer = new TreeVisualizer(document.querySelector('#tree_container svg'));
+            animationSteps = this.generateSteps(n, k);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) {
+                 this.renderState(animationSteps[0]);
+                 this.updateButtons();
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Ensure n > 0, k > 0, and k <= n.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            `function findKthNumber(n, k):`,
+            `  curr = 1`,
+            `  k--`,
+            `  while k > 0:`,
+            `    steps = countSteps(n, curr, curr + 1)`,
+            `    if steps <= k:`,
+            `      curr++`,
+            `      k -= steps`,
+            `    else:`,
+            `      curr *= 10`,
+            `      k--`,
+            `  return curr`,
+            ``,
+            `function countSteps(n, n1, n2):`,
+            `  steps = 0`,
+            `  while n1 <= n:`,
+            `    steps += min(n + 1, n2) - n1`,
+            `    n1 *= 10`,
+            `    n2 *= 10`,
+            `  return steps`
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(n, k_orig) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "Initializing...", n, k: k_orig, curr: null, finalResult: null,
+            countStepsState: null, // { active, n1, n2, calculations: [], total }
+            highlights: { answer: null },
+        };
+        save(state); // Initial state
+
+        let curr = 1;
+        state.line = 1; state.curr = curr; state.msg = "Start with `curr = 1`."; save(state);
+        
+        let k = k_orig - 1;
+        state.line = 2; state.k = k; state.msg = "Decrement k. We are now looking for the k-th step from the start."; save(state);
+
+        while (k > 0) {
+            state.line = 3; state.msg = `k (${k}) is > 0. Start loop.`; save(state);
+            
+            state.line = 4; state.msg = `Calculate steps in the gap between ${curr} and ${curr + 1}.`;
+            state.countStepsState = { active: true, n1: curr, n2: curr + 1, calculations: [], total: 0 };
+            save(state);
+
+            // Simulate countSteps
+            let stepCount = 0;
+            let n1 = curr, n2 = curr + 1;
+            while (n1 <= n) {
+                state.line = 16;
+                state.countStepsState.calculations.push({ n1, n2, step: 0 });
+                save(state);
+                
+                let s = Math.min(n + 1, n2) - n1;
+                stepCount += s;
+                state.line = 17;
+                state.countStepsState.calculations[state.countStepsState.calculations.length-1].step = s;
+                state.countStepsState.total = stepCount;
+                save(state);
+
+                n1 *= 10; n2 *= 10;
+                state.line = 18; save(state);
+                state.line = 19; save(state);
+                state.line = 16; save(state);
+            }
+            state.line = 20;
+            state.msg = `Total steps to jump to next sibling: ${stepCount}.`; save(state);
+            
+            state.countStepsState = null;
+            state.line = 5; state.msg = `Can we afford to jump ${stepCount} steps? (Is ${stepCount} <= ${k}?)`; save(state);
+
+            if (stepCount <= k) {
+                state.msg = `Yes. Jump over the subtree of ${curr}.`; save(state);
+                curr++;
+                k -= stepCount;
+                state.line = 6; state.curr = curr; state.msg = `Move sideways to the next sibling: curr = ${curr}.`; save(state);
+                state.line = 7; state.k = k; state.msg = `Update k by subtracting the steps: k = ${k}.`; save(state);
+            } else {
+                state.msg = `No. The answer is in the subtree of ${curr}.`; save(state);
+                curr *= 10;
+                k--;
+                state.line = 9; state.curr = curr; state.msg = `Go deeper into the tree: curr = ${curr}.`; save(state);
+                state.line = 10; state.k = k; state.msg = `Use one step to go down: k = ${k}.`; save(state);
+            }
+        }
+        
+        state.line = 3; state.msg = `k is now 0. The loop terminates.`; save(state);
+        state.finalResult = curr;
+        state.highlights.answer = curr;
+        state.line = 11; state.msg = `The k-th number is the current number: ${curr}.`; save(state);
+        
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        valN.textContent = state.n;
+        valK.textContent = state.k;
+        valCurr.textContent = state.curr !== null ? state.curr : '-';
+
+        if (state.countStepsState) {
+            stepsPanel.classList.add('highlight');
+            let html = `<div class="steps-panel-header">countSteps(${state.n}, ${state.countStepsState.n1}, ${state.countStepsState.n2})</div>`;
+            state.countStepsState.calculations.forEach(calc => {
+                html += `<div class="steps-calc-row">
+                            <span class="level-label">[${calc.n1}, ${calc.n2})</span>
+                            <span>+ ${calc.step}</span>
+                         </div>`;
+            });
+            html += `<div class="steps-total">Total: ${state.countStepsState.total}</div>`;
+            stepsCalcArea.innerHTML = html;
+        } else {
+            stepsPanel.classList.remove('highlight');
+            stepsCalcArea.innerHTML = '';
+        }
+
+        treeDrawer.draw(state.n, state.curr, state.highlights);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = `${k_orig.value}-th number is ${state.finalResult}`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+
+class TreeVisualizer {
+    constructor(svg) {
+        this.svg = svg;
+    }
+    
+    draw(n, curr, highlights) {
+        if (curr === null) return;
+        this.svg.innerHTML = '';
+        const width = this.svg.parentElement.clientWidth;
+        const height = this.svg.parentElement.clientHeight;
+
+        const parentPos = { x: width / 2, y: height * 0.2 };
+        const childY = height * 0.55;
+        const siblingPos = { x: width / 2 + 150, y: height * 0.2 };
+
+        // Draw parent (curr)
+        const isAnswer = highlights.answer === curr;
+        this.drawNode(curr, parentPos.x, parentPos.y, 'curr', isAnswer, n);
+
+        // Draw next sibling
+        if (curr + 1 <= n) {
+             this.drawNode(curr + 1, siblingPos.x, siblingPos.y, 'next', false, n);
+             this.drawLine(parentPos.x, parentPos.y, siblingPos.x, siblingPos.y, true);
+        }
+
+        // Draw children
+        for (let i = 0; i < 10; i++) {
+            const childVal = curr * 10 + i;
+            const childX = width * (0.1 + (i * 0.08));
+            this.drawNode(childVal, childX, childY, 'child', highlights.answer === childVal, n);
+            this.drawLine(parentPos.x, parentPos.y, childX, childY, false);
+        }
+    }
+
+    drawNode(val, x, y, type, isAnswer, n) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        g.classList.add('tree-node');
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 25);
+        
+        let fill, textColor = 'white';
+        if (val > n) {
+            fill = 'var(--color-node-invalid)';
+            textColor = 'var(--color-node-invalid-text)';
+        } else if (isAnswer) {
+            fill = 'var(--color-node-answer)';
+        } else if (type === 'curr') {
+            fill = 'var(--color-node-curr)';
+        } else if (type === 'next') {
+            fill = 'var(--color-node-next)';
+        } else {
+            fill = 'var(--color-node-child)';
+        }
+        
+        circle.style.fill = fill;
+        circle.style.stroke = '#333';
+        circle.style.strokeWidth = 2;
+        g.appendChild(circle);
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('text-anchor', 'middle'); text.setAttribute('dy', '0.35em');
+        text.style.fill = textColor;
+        text.textContent = val;
+        g.appendChild(text);
+        
+        this.svg.appendChild(g);
+    }
+    
+    drawLine(x1, y1, x2, y2, isDashed) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        line.style.stroke = '#bdc3c7';
+        line.style.strokeWidth = 2;
+        if (isDashed) line.style.strokeDasharray = '5 5';
+        this.svg.insertBefore(line, this.svg.firstChild);
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    nInput = document.getElementById('n_input');
+    kInput = document.getElementById('k_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    valN = document.getElementById('val-n');
+    valK = document.getElementById('val-k');
+    valCurr = document.getElementById('val-curr');
+    stepsPanel = document.getElementById('steps-panel');
+    stepsCalcArea = document.getElementById('steps-calc-area');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new KthLexicographicalAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

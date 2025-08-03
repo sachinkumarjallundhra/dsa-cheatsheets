@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index Pairs of a String Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Index Pairs of a String – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Index Pairs of a String</b> problem (LeetCode 1065) asks you to find all pairs of indices <code>(i, j)</code> such that the substring <code>s[i..j]</code> is a word in the given list of words. The pairs should be returned in lexicographical order.
+        </p>
+
+        <h2>🎯 Solution Pattern (Trie + Search)</h2>
+        <pre><code>// Java Solution (Trie)
+class TrieNode {
+    TrieNode[] children = new TrieNode[26];
+    boolean isWord = false;
+}
+
+class Solution {
+    public int[][] indexPairs(String text, String[] words) {
+        TrieNode root = new TrieNode();
+        for (String word : words) {
+            TrieNode node = root;
+            for (char c : word.toCharArray()) {
+                int idx = c - 'a';
+                if (node.children[idx] == null) node.children[idx] = new TrieNode();
+                node = node.children[idx];
+            }
+            node.isWord = true;
+        }
+
+        List<int[]> res = new ArrayList<>();
+        int n = text.length();
+        for (int i = 0; i < n; i++) {
+            TrieNode node = root;
+            for (int j = i; j < n; j++) {
+                int idx = text.charAt(j) - 'a';
+                if (node.children[idx] == null) break;
+                node = node.children[idx];
+                if (node.isWord) res.add(new int[]{i, j});
+            }
+        }
+        res.sort((a, b) -> a[0] == b[0] ? a[1] - b[1] : a[0] - b[0]);
+        int[][] ans = new int[res.size()][2];
+        for (int i = 0; i < res.size(); i++) ans[i] = res.get(i);
+        return ans;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/index_pairs_of_a_string_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Substring search with multiple patterns</li>
+            <li>Text highlighting and annotation</li>
+            <li>Efficient multi-pattern matching</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build a Trie from the list of words</li>
+            <li>For each index in the string, search for all words starting at that index using the Trie</li>
+            <li>Collect all valid (i, j) pairs</li>
+            <li>Sort the pairs lexicographically</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Build Trie:</b> <code>O(W * L)</code>, where <code>W</code> is the number of words and <code>L</code> is the average word length</li>
+            <li><b>Search:</b> <code>O(N * L)</code>, where <code>N</code> is the length of <code>text</code></li>
+            <li><b>Sort:</b> <code>O(P \log P)</code>, where <code>P</code> is the number of pairs found</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Overlapping matches</li>
+            <li>No matches (return empty array)</li>
+            <li>Empty text or words list</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: text = "thestoryofleetcodeandme", words = ["story","fleet","leetcode"]
+Output: [[3,7],[9,13],[10,13],[15,21]]
+Explanation: "story" at [3,7], "leetcode" at [9,13] and [10,13], "me" at [15,16]
+</code></pre>
+    </div>
+    <style>
+    .animation-btn {
+        display: inline-block;
+        margin: 10px 0 18px 0;
+        padding: 8px 18px;
+        background: #007bff;
+        color: #fff !important;
+        font-weight: 500;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .animation-btn:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 16px rgba(44,62,80,0.15);
+    }
+    </style>
+</body>
+</html>

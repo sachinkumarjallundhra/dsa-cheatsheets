@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Replace Words Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>📝 Replace Words – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Replace Words</b> problem (LeetCode 648) asks you to replace words in a sentence with their shortest root from a given dictionary. If a word has multiple matching roots, use the shortest one.
+        </p>
+
+        <h2>🎯 Solution Pattern (Trie + Greedy)</h2>
+        <pre><code>// Java Solution
+class TrieNode {
+    TrieNode[] children = new TrieNode[26];
+    boolean isEnd = false;
+}
+
+class Trie {
+    TrieNode root = new TrieNode();
+
+    public void insert(String word) {
+        TrieNode node = root;
+        for (char c : word.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) node.children[idx] = new TrieNode();
+            node = node.children[idx];
+        }
+        node.isEnd = true;
+    }
+
+    public String getRoot(String word) {
+        TrieNode node = root;
+        StringBuilder sb = new StringBuilder();
+        for (char c : word.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) break;
+            node = node.children[idx];
+            sb.append(c);
+            if (node.isEnd) return sb.toString();
+        }
+        return word;
+    }
+}
+
+class Solution {
+    public String replaceWords(List&lt;String&gt; dictionary, String sentence) {
+        Trie trie = new Trie();
+        for (String root : dictionary) trie.insert(root);
+        String[] words = sentence.split(" ");
+        for (int i = 0; i &lt; words.length; i++) {
+            words[i] = trie.getRoot(words[i]);
+        }
+        return String.join(" ", words);
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/replace_words_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Text normalization</li>
+            <li>Spell correction</li>
+            <li>Dictionary-based word replacement</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Insert all roots from the dictionary into a Trie</li>
+            <li>For each word in the sentence, find the shortest root using Trie traversal</li>
+            <li>Replace the word with its root if found</li>
+            <li>Join and return the modified sentence</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>No root matches a word (word remains unchanged)</li>
+            <li>Multiple roots match (choose shortest)</li>
+            <li>Empty dictionary or sentence</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: dictionary = ["cat","bat","rat"], sentence = "the cattle was rattled by the battery"
+Output: "the cat was rat by the bat"
+Explanation: "cattle" → "cat", "rattled" → "rat", "battery" → "bat"
+</code></pre>
+    </div>
+    <style>
+    .animation-btn {
+        display: inline-block;
+        margin: 10px 0 18px 0;
+        padding: 8px 18px;
+        background: #007bff;
+        color: #fff !important;
+        font-weight: 500;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .animation-btn:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 16px rgba(44,62,80,0.15);
+    }
+    </style>
+</body>

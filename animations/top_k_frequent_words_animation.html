@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top K Frequent Words Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2c3e50; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-info: #3498db;
+            --color-trie-node-stroke: #34495e;
+            --color-trie-node-fill: #ffffff;
+            --color-trie-node-end: var(--color-trie-node-stroke);
+            --color-trie-path: #8e44ad;
+            --color-highlight-bg: #fef9e7;
+            --color-highlight-border: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(380px, 0.9fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2, h3 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; } h3 { font-size: 1em; margin-bottom: 5px; border-bottom: none; text-align: left;}
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ecf0f1; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls input.words { width: 350px; }
+        .controls input.k { width: 50px; }
+        .controls .op-buttons button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; margin-left: 5px; color: white; font-weight: bold;}
+        .controls button.find { background-color: var(--color-success); }
+        .controls .step-buttons button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .left-column { grid-area: left; }
+        .main-column { grid-area: main; overflow-y: auto; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        /* Visualization styles */
+        .viz-container { display: flex; flex-direction: column; gap: 15px; }
+        .viz-panel { border: 1px solid #ddd; border-radius: 5px; padding: 10px; }
+        .viz-panel.highlight { background-color: var(--color-highlight-bg); border-color: var(--color-highlight-border); }
+        .freq-item, .result-item { font-family: 'Courier New', monospace; padding: 4px 8px; border-radius: 4px; background-color: #ecf0f1; margin-bottom: 5px;}
+        .freq-item.highlight, .result-item.highlight { background-color: var(--color-highlight-border); color: white; }
+        
+        .bucket-array { display: flex; flex-wrap: wrap; gap: 10px; }
+        .bucket { border: 2px solid #ccc; border-radius: 5px; padding: 5px; min-width: 120px; min-height: 100px;}
+        .bucket.highlight { border-color: var(--color-highlight-border); background-color: var(--color-highlight-bg); }
+        .bucket-index { font-weight: bold; font-size: 0.9em; color: #7f8c8d; }
+        .bucket svg { display: block; min-height: 80px; }
+
+        .trie-node text { font-family: 'Courier New', monospace; pointer-events: none; font-size: 0.8em; }
+
+        .data-container { overflow-y: auto; flex-grow: 1; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Top K Frequent Words (Trie + Bucket Sort)</h1>
+            <div class="controls">
+                <label>Words:</label> <input id="words_input" type="text" class="words" value="i,love,leetcode,i,love,coding">
+                <label>k:</label> <input id="k_input" type="number" class="k" value="2">
+                <div class="op-buttons">
+                    <button id="find_button" class="find">Find Top K</button>
+                </div>
+                <div class="step-buttons">
+                    <button id="next_step_button" disabled>Next Step</button>
+                    <button id="reset_button">Reset</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="left-column panel">
+             <h2>Java Implementation</h2>
+             <div id="code_container" class="data-container"></div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Algorithm Visualization</h2>
+            <div class="viz-container">
+                <div id="freq_viz" class="viz-panel"><h3>1. Word Frequencies</h3><div id="freq_container"></div></div>
+                <div id="bucket_viz" class="viz-panel"><h3>2. Bucket Tries (by Frequency)</h3><div id="bucket_container" class="bucket-array"></div></div>
+            </div>
+        </main>
+        
+        <div class="right-column">
+             <div class="panel">
+                <h2>State</h2>
+                <div id="k_container"></div>
+             </div>
+             <div class="panel" style="flex-grow:1;">
+                <h2>Result</h2>
+                <div id="result_container" class="data-container"></div>
+             </div>
+             <div class="panel" style="flex-grow:0; flex-shrink:0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter words and choose an operation.</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- Global State ---
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let wordsInput, kInput, findButton, nextStepButton, resetButton,
+    codeContainer, actionDisplay,
+    freqContainer, bucketContainer, kContainer, resultContainer,
+    freqViz, bucketViz;
+let trieDrawer;
+
+// --- Main Animation Controller ---
+class TopKAnimation {
+    constructor() { this.reset(); }
+    
+    reset() {
+        this.clearAnimation();
+        [freqContainer, bucketContainer, resultContainer, kContainer, actionDisplay].forEach(el => el.innerHTML = '');
+        actionDisplay.textContent = 'Enter words and choose an operation.';
+    }
+    
+    clearAnimation() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons();
+    }
+    
+    startOperation() {
+        this.clearAnimation();
+        const words = wordsInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        const k = parseInt(kInput.value, 10);
+        
+        if (words.length === 0 || isNaN(k) || k <= 0) {
+            alert("Please provide valid words and a positive integer for k.");
+            return;
+        }
+
+        animationSteps = this.generateSteps(words, k);
+        if (animationSteps.length > 0) {
+            simulationRunning = true;
+            this.renderState(animationSteps[0]);
+            this.updateButtons();
+        }
+    }
+
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+
+    updateButtons() {
+        findButton.disabled = simulationRunning;
+        resetButton.disabled = simulationRunning;
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+
+    generateSteps(words, k) {
+        const steps = [];
+        let state = {
+            line: null, msg: '',
+            k_initial: k, k_remaining: k,
+            frequencies: {},
+            buckets: [],
+            result: [],
+            highlight: {}
+        };
+        const save = () => steps.push(JSON.parse(JSON.stringify(state)));
+
+        // --- Stage 1: Frequency Counting ---
+        state.msg = 'Start counting word frequencies.'; state.line = 10; save();
+        const freqs = new Map();
+        for(const word of words) {
+            freqs.set(word, (freqs.get(word) || 0) + 1);
+            state.frequencies = Object.fromEntries(freqs);
+            state.msg = `Counted word: "${word}". Map updated.`; state.line = 13;
+            state.highlight = { freqWord: word };
+            save();
+        }
+        state.highlight = {};
+
+        // --- Stage 2: Bucketing ---
+        state.msg = 'Create buckets based on frequencies.'; state.line = 16; save();
+        const maxFreq = Math.max(0, ...freqs.values());
+        let buckets = new Array(maxFreq + 1).fill(null);
+        let nodeIdCounter = 0;
+
+        for(const [word, count] of freqs.entries()) {
+            state.highlight = { freqWord: word };
+            state.msg = `Processing "${word}" with frequency ${count}.`; state.line = 17; save();
+            if (buckets[count] === null) {
+                buckets[count] = { children: {}, isWord: false, id: nodeIdCounter++ };
+                state.msg = `Bucket [${count}] is empty. Creating a new Trie root.`; state.line = 18; save();
+            }
+            // Simulate adding the word
+            let curr = buckets[count];
+            for (const char of word) {
+                if (!curr.children[char]) {
+                    curr.children[char] = { children: {}, isWord: false, id: nodeIdCounter++ };
+                }
+                curr = curr.children[char];
+            }
+            curr.isWord = true;
+            state.buckets = buckets;
+            state.highlight.bucketIndex = count;
+            state.msg = `Added "${word}" to the Trie in bucket [${count}].`; state.line = 21; save();
+        }
+        state.highlight = {};
+
+        // --- Stage 3: Extraction ---
+        state.msg = 'Iterate buckets from highest frequency to find Top K.'; state.line = 24; save();
+        let resultFound = [];
+        for (let i = buckets.length - 1; i > 0 && state.k_remaining > 0; i--) {
+            state.highlight.bucketIndex = i;
+            state.msg = `Checking bucket [${i}].`; state.line = 25; save();
+
+            if (buckets[i] !== null) {
+                state.msg = `Bucket [${i}] contains words. Traversing its Trie.`; state.line = 26; save();
+                
+                // Generate traversal steps for this trie
+                const getWordsSteps = (node, prefix) => {
+                    if (state.k_remaining === 0) return;
+                    state.highlight.triePath = this.getPathToNode(buckets[i], prefix);
+
+                    if (node.isWord) {
+                        state.k_remaining--;
+                        resultFound.push(prefix);
+                        state.result = [...resultFound];
+                        state.msg = `Found word: "${prefix}". Added to result. k = ${state.k_remaining}.`;
+                        state.line = 39; save();
+                    }
+
+                    if (state.k_remaining === 0) return;
+                    state.line = 42; save();
+
+                    for (let cCode = 'a'.charCodeAt(0); cCode <= 'z'.charCodeAt(0); cCode++) {
+                        const char = String.fromCharCode(cCode);
+                        if (node.children[char]) {
+                            state.msg = `Traversing to child '${char}'.`; state.line = 43;
+                            getWordsSteps(node.children[char], prefix + char);
+                            if (state.k_remaining === 0) return;
+                             state.highlight.triePath = this.getPathToNode(buckets[i], prefix); // backtrack visual
+                        }
+                    }
+                }
+                getWordsSteps(buckets[i], "");
+            }
+            state.highlight = {};
+            if (state.k_remaining === 0) {
+                 state.msg = `Found all ${k} words. Stopping.`; state.line = 28; save();
+                 break;
+            }
+        }
+        
+        state.msg = 'Algorithm finished.'; state.line = 32; save();
+        return steps;
+    }
+
+    getPathToNode(root, prefix) {
+        const path = [root.id];
+        let curr = root;
+        for(const char of prefix) {
+            if(!curr.children[char]) return path;
+            curr = curr.children[char];
+            path.push(curr.id);
+        }
+        return path;
+    }
+    
+    renderState(state) {
+        // Highlight code
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        actionDisplay.textContent = state.msg;
+
+        // Render Frequencies
+        freqContainer.innerHTML = '';
+        for(const [word, count] of Object.entries(state.frequencies)) {
+            const div = document.createElement('div');
+            div.className = 'freq-item';
+            if (state.highlight.freqWord === word) div.classList.add('highlight');
+            div.textContent = `"${word}": ${count}`;
+            freqContainer.appendChild(div);
+        }
+
+        // Render Buckets
+        bucketContainer.innerHTML = '';
+        state.buckets.forEach((trie, i) => {
+            if(i === 0) return;
+            const bucketDiv = document.createElement('div');
+            bucketDiv.className = 'bucket';
+            if (state.highlight.bucketIndex === i) bucketDiv.classList.add('highlight');
+            
+            const indexSpan = document.createElement('div');
+            indexSpan.className = 'bucket-index';
+            indexSpan.textContent = `[ ${i} ]`;
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+
+            bucketDiv.append(indexSpan, svg);
+            bucketContainer.appendChild(bucketDiv);
+
+            if (trie) {
+                const drawer = new TrieGraph(svg);
+                const path = (state.highlight.bucketIndex === i) ? state.highlight.triePath : [];
+                drawer.draw(trie, path || []);
+            }
+        });
+
+        // Render K and Result
+        kContainer.innerHTML = `<h3>K Remaining: ${state.k_remaining} / ${state.k_initial}</h3>`;
+        resultContainer.innerHTML = '';
+        state.result.forEach(word => {
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            div.textContent = word;
+            resultContainer.appendChild(div);
+        });
+    }
+}
+
+// --- Trie Drawing Utility ---
+class TrieGraph {
+    constructor(svg) { this.svg = svg; }
+    draw(trieRoot, path) {
+        this.svg.innerHTML = '';
+        if (!trieRoot) return;
+        const pathSet = new Set(path);
+        const nodePositions = new Map();
+        const edges = [];
+        
+        const traverseAndPosition = (node, x, y, depth) => {
+            if (!node || node.id === undefined) return;
+            nodePositions.set(node.id, { x, y });
+            const children = Object.entries(node.children).sort((a,b) => a[0].localeCompare(b[0]));
+            const totalWidth = children.length * 30;
+            let currentX = x - totalWidth / 2;
+            
+            children.forEach(([char, childNode]) => {
+                const childX = currentX + 15;
+                const childY = y + 40;
+                edges.push({ from: node.id, to: childNode.id, char });
+                traverseAndPosition(childNode, childX, childY, depth + 1);
+                currentX += 30;
+            });
+        };
+        
+        traverseAndPosition(trieRoot, this.svg.clientWidth / 2, 20, 0);
+
+        edges.forEach(edge => {
+            const fromPos = nodePositions.get(edge.from);
+            const toPos = nodePositions.get(edge.to);
+            if (!fromPos || !toPos) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+            line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+            line.style.stroke = pathSet.has(edge.from) && pathSet.has(edge.to) ? 'var(--color-trie-path)' : '#ccc';
+            line.style.strokeWidth = pathSet.has(edge.from) && pathSet.has(edge.to) ? 2.5 : 1.5;
+            this.svg.appendChild(line);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (fromPos.x + toPos.x) / 2 - 3);
+            text.setAttribute('y', (fromPos.y + toPos.y) / 2 + 4);
+            text.textContent = edge.char;
+            this.svg.appendChild(text);
+        });
+
+        const drawNodeRecursive = (node) => {
+            if (!node || !nodePositions.has(node.id)) return;
+            const pos = nodePositions.get(node.id);
+            const g = this.createNodeElement(node, pos.x, pos.y, pathSet.has(node.id));
+            this.svg.appendChild(g);
+            Object.values(node.children).forEach(drawNodeRecursive);
+        };
+        drawNodeRecursive(trieRoot);
+    }
+    
+    createNodeElement(node, x, y, isOnPath) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`); g.classList.add('trie-node');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 10);
+        circle.style.fill = node.isWord ? 'var(--color-trie-node-end)' : 'var(--color-trie-node-fill)';
+        circle.style.stroke = isOnPath ? 'var(--color-trie-path)' : 'var(--color-trie-node-stroke)';
+        circle.style.strokeWidth = 2;
+        g.appendChild(circle);
+        return g;
+    }
+}
+
+
+// --- DOM Initialization ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Select elements
+    wordsInput = document.getElementById('words_input');
+    kInput = document.getElementById('k_input');
+    findButton = document.getElementById('find_button');
+    nextStepButton = document.getElementById('next_step_button');
+    resetButton = document.getElementById('reset_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    freqContainer = document.getElementById('freq_container');
+    bucketContainer = document.getElementById('bucket_container');
+    kContainer = document.getElementById('k_container');
+    resultContainer = document.getElementById('result_container');
+    freqViz = document.getElementById('freq_viz');
+    bucketViz = document.getElementById('bucket_viz');
+    
+    // Init code block
+    const code = [
+        `class Solution {`,
+        `    private int k;`,
+        `    private List<String> res;`,
+        ``,
+        `    class TrieNode { ... }`,
+        ``,
+        `    public List<String> topKFrequent(String[] words, int k) {`,
+        `7      this.k = k;`,
+        `8      res = new ArrayList<>();`,
+        `9      TrieNode[] bucket = new TrieNode[n + 1];`,
+        `10     Map<String, Integer> cnt = new HashMap<>();`,
+        ``,
+        `12     for (String word : words) {`,
+        `13         cnt.put(word, cnt.getOrDefault(word, 0) + 1);`,
+        `14     }`,
+        ``,
+        `16     for (var entry : cnt.entrySet()) {`,
+        `17         if (bucket[entry.getValue()] == null) {`,
+        `18             bucket[entry.getValue()] = new TrieNode();`,
+        `19         }`,
+        `20         // Add word to the trie in the correct bucket`,
+        `21         addWord(bucket[entry.getValue()], entry.getKey());`,
+        `22     }`,
+        ``,
+        `24     for (int i = n; i > 0; i--) {`,
+        `25         if (bucket[i] != null) {`,
+        `26             getWords(bucket[i], "");`,
+        `27         }`,
+        `28         if (this.k == 0) {`,
+        `29             break;`,
+        `30         }`,
+        `31     }`,
+        `32     return res;`,
+        `33 }`,
+        ``,
+        `35 private void getWords(TrieNode root, String prefix) {`,
+        `36     if (k == 0) { return; }`,
+        `37     `,
+        `38     if (root.isWord) {`,
+        `39         k--;`,
+        `40         res.add(prefix);`,
+        `41     }`,
+        `42     for (char c = 'a'; c <= 'z'; c++) {`,
+        `43         if (root.children[c - 'a'] != null) {`,
+        `44             getWords(root.children[c - 'a'], prefix + c);`,
+        `45         }`,
+        `46     }`,
+        `47 }`,
+        `}`
+    ];
+    codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    
+    // Init controller and bind events
+    const anim = new TopKAnimation();
+    findButton.addEventListener('click', () => anim.startOperation());
+    nextStepButton.addEventListener('click', () => anim.next());
+    resetButton.addEventListener('click', () => anim.reset());
+});
+
+</script>
+</body>
+</html>

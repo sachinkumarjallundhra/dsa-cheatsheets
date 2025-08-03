@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Suggestions System Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f7f9f9; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #34495e; --color-success: #2ecc71; --color-warning: #f1c40f;
+            --color-info: #3498db; --color-danger: #e74c3c;
+            --color-trie-node: #bdc3c7; --color-trie-path: #9b59b6;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(420px, 1.1fr);
+            grid-template-rows: auto 1fr;
+            grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ebedef; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 450px; height: 40px; resize: vertical; }
+        .controls input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 200px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.85em; flex-shrink: 1; overflow-y: auto; padding: 10px 0; }
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        #trie_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: auto; }
+        .trie-node text { font-family: 'Courier New', monospace; font-weight: bold; pointer-events: none; }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .item-list { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+        .item { padding: 5px 10px; border-radius: 4px; font-family: 'Courier New', monospace; border: 2px solid transparent; transition: all 0.2s; }
+        .item.product { background-color: #e5e8e8; }
+        .item.product.highlight { border-color: var(--color-primary); background-color: #d6dbdf; font-weight: bold; }
+        .item.suggestion { background-color: #e8f8f5; border-color: #a3e9a4; }
+
+        #search_word_container { font-family: 'Courier New', monospace; font-size: 1.4em; text-align: center; padding: 10px; background: #ebedef; border-radius: 4px; }
+        #search_word_container .highlight { color: var(--color-danger); font-weight: bold; }
+
+        #results_container .result-row { margin-bottom: 8px; }
+        #results_container .prefix { font-weight: bold; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Search Suggestions System</h1>
+            <div class="controls">
+                <label>Products:</label> <textarea id="products_input">["mobile","mouse","moneypot","monitor","mousepad"]</textarea>
+                <label>Search Word:</label> <input type="text" id="search_word_input" value="mouse">
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter data and click 'Start'.</div>
+            </div>
+             <div class="panel">
+                <h2>Current Node Suggestions</h2>
+                <div id="node_suggestions_container" class="data-container item-list"></div>
+             </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Trie of Products</h2>
+            <div id="trie_container">
+                 <svg width="100%" height="100%"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Input Products</h2>
+                <div id="products_container" class="data-container item-list"></div>
+             </div>
+             <div class="panel">
+                <h2>Search Word</h2>
+                <div id="search_word_container">-</div>
+             </div>
+             <div class="panel">
+                <h2>Final Suggestions</h2>
+                <div id="results_container" class="data-container"></div>
+             </div>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let productsInput, searchWordInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    trieContainer, productsContainer, resultsContainer, nodeSuggestionsContainer, searchWordContainer;
+let trieDrawer;
+
+class SuggestionsAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        simulationRunning = false;
+        animationSteps = []; currentStepIndex = 0;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, productsContainer, resultsContainer, nodeSuggestionsContainer, searchWordContainer].forEach(c => c.innerHTML = '');
+        const svg = document.querySelector('#trie_container svg');
+        if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = "Enter data and click 'Start'.";
+        searchWordContainer.textContent = '-';
+    }
+    start() {
+        this.reset();
+        try {
+            const products = JSON.parse(productsInput.value.trim().replace(/'/g, '"'));
+            const searchWord = searchWordInput.value.trim();
+            if (!Array.isArray(products) || typeof searchWord !== 'string') throw new Error("Invalid input.");
+            
+            this.initUI();
+            trieDrawer = new TrieGraph(document.querySelector('#trie_container svg'));
+            animationSteps = this.generateSteps(products, searchWord);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) {
+                 this.renderState(animationSteps[0]);
+            }
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please provide a valid JSON array of products and a search word.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning) return;
+        if (currentStepIndex >= animationSteps.length - 1) {
+            this.finish();
+            return;
+        }
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    finish() {
+        simulationRunning = false;
+        this.updateButtons();
+        actionDisplay.textContent = 'Animation Complete!';
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning;
+        if (simulationRunning && currentStepIndex >= animationSteps.length - 1) {
+            nextStepButton.textContent = "Finish";
+        } else {
+            nextStepButton.textContent = "Next Step";
+        }
+    }
+    
+    initUI() {
+        const code = [
+            `// Phase 1: Build Trie`,
+            `for product in products:`,
+            `  trie.insert(product)`,
+            `    // At each node in path, add product to suggestions`,
+            ``,
+            `// Phase 2: Generate Suggestions`,
+            `for char in searchWord:`,
+            `  prefix += char`,
+            `  suggestions = trie.getWords(prefix)`,
+            `    // Sort and trim to 3`,
+            `  results.add(suggestions)`,
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(products, searchWord) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        products.sort(); // Per problem spec, products are sorted lexicographically.
+        let trie = { children: {}, words: [], id: 0 };
+        let nodeIdCounter = 1;
+
+        let state = {
+            phase: 'build', line: null, msg: "Initializing...",
+            products: products, searchWord: searchWord, results: [],
+            trie: {}, triePath: [], activeProductIndex: null, prefixLength: 0,
+            currentNodeSuggestions: []
+        };
+        state.trie = JSON.parse(JSON.stringify(trie));
+        save(state);
+
+        // --- Phase 1: Build Trie ---
+        state.line = 0; save(state);
+        for (let i = 0; i < products.length; i++) {
+            const product = products[i];
+            state.activeProductIndex = i;
+            state.line = 1; state.msg = `Inserting product: "${product}"`; save(state);
+            let node = trie;
+            state.triePath = [node.id];
+
+            for (let j = 0; j < product.length; j++) {
+                const char = product[j];
+                state.line = 2; state.msg = `Traversing for char '${char}'...`; save(state);
+                if (!node.children[char]) {
+                    node.children[char] = { children: {}, words: [], id: nodeIdCounter++ };
+                }
+                node = node.children[char];
+                state.triePath.push(node.id);
+                
+                state.line = 3;
+                if (node.words.length < 3) {
+                    node.words.push(product);
+                    state.trie = JSON.parse(JSON.stringify(trie));
+                    state.currentNodeSuggestions = node.words;
+                    state.msg = `Adding "${product}" to suggestions for node '${char}'.`; save(state);
+                } else {
+                    state.currentNodeSuggestions = node.words;
+                    state.msg = `Suggestions for node '${char}' is already full (max 3).`; save(state);
+                }
+            }
+            state.triePath = [];
+            state.currentNodeSuggestions = [];
+        }
+
+        // --- Phase 2: Search for Suggestions ---
+        state.phase = 'search'; state.activeProductIndex = null;
+        state.line = 5; state.msg = `Trie build complete. Starting search phase.`; save(state);
+        
+        let prefix = "";
+        let node = trie;
+        let possible = true;
+        for (let i = 0; i < searchWord.length; i++) {
+            const char = searchWord[i];
+            prefix += char;
+            state.prefixLength = prefix.length;
+            
+            state.line = 6; state.msg = `Processing search character '${char}'.`; save(state);
+            state.line = 7; state.msg = `New prefix: "${prefix}"`; save(state);
+            
+            let currentSuggestions = [];
+            if (possible && node.children[char]) {
+                node = node.children[char];
+                state.triePath.push(node.id);
+                currentSuggestions = node.words;
+                state.line = 8;
+                state.msg = `Found node for prefix. Fetching suggestions.`;
+                state.currentNodeSuggestions = currentSuggestions;
+                save(state);
+            } else {
+                possible = false;
+                state.triePath = [];
+                state.msg = `No products with prefix "${prefix}".`;
+                state.currentNodeSuggestions = [];
+                save(state);
+            }
+            
+            state.line = 9; state.msg = `Suggestions for "${prefix}": [${currentSuggestions.join(', ')}]`; save(state);
+            state.results.push({prefix: prefix, suggestions: currentSuggestions});
+            state.line = 10; state.msg = `Adding suggestions to final result list.`; save(state);
+        }
+        
+        state.msg = "Search complete!";
+        state.triePath = []; state.prefixLength = 0; state.currentNodeSuggestions = []; state.line = null;
+        save(state);
+
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        productsContainer.innerHTML = state.products.map((p, i) =>
+            `<div class="item product ${i === state.activeProductIndex ? 'highlight' : ''}">"${p}"</div>`
+        ).join('');
+        
+        const searchPrefix = state.searchWord.substring(0, state.prefixLength);
+        const searchSuffix = state.searchWord.substring(state.prefixLength);
+        searchWordContainer.innerHTML = `<span class="highlight">${searchPrefix}</span><span>${searchSuffix}</span>`;
+        
+        nodeSuggestionsContainer.innerHTML = state.currentNodeSuggestions.map(s =>
+            `<div class="item suggestion">"${s}"</div>`
+        ).join('');
+
+        resultsContainer.innerHTML = state.results.map(res =>
+             `<div class="result-row">
+                <span class="prefix">"${res.prefix}": </span>
+                <span>[${res.suggestions.map(s => `"${s}"`).join(', ')}]</span>
+             </div>`
+        ).join('');
+        
+        trieDrawer.draw(state.trie, state.triePath);
+    }
+}
+
+
+class TrieGraph {
+    constructor(svg) { this.svg = svg; }
+    
+    draw(trieRoot, path) {
+        if (!trieRoot) return;
+        this.svg.innerHTML = '';
+        const pathSet = new Set(path);
+        const positions = new Map();
+        const edges = [];
+        const nodes = [];
+        const nodeWidth = 75; const nodeHeight = 90;
+
+        const setPositions = (node, x, y) => {
+            if (positions.has(node.id)) return;
+            positions.set(node.id, { x, y });
+            nodes.push({data: node, x, y});
+
+            const children = Object.entries(node.children).sort((a,b) => a[0].localeCompare(b[0]));
+            const totalWidth = children.length * nodeWidth;
+            let currentX = x - (totalWidth - nodeWidth) / 2;
+
+            children.forEach(([char, childNode]) => {
+                edges.push({ from: node.id, to: childNode.id, char });
+                setPositions(childNode, currentX, y + nodeHeight);
+                currentX += nodeWidth;
+            });
+        };
+        
+        setPositions(trieRoot, this.svg.parentElement.clientWidth / 2, 50);
+
+        const xCoords = Array.from(positions.values()).map(p => p.x);
+        const minX = Math.min(...xCoords) || 0;
+        const maxX = Math.max(...xCoords) || 0;
+        const xOffset = (this.svg.parentElement.clientWidth / 2) - ((minX + maxX) / 2);
+        positions.forEach(pos => { pos.x += xOffset; });
+
+        edges.forEach(edge => {
+            const fromPos = positions.get(edge.from);
+            const toPos = positions.get(edge.to);
+            if (!fromPos || !toPos) return;
+            const isOnPath = pathSet.has(edge.from) && pathSet.has(edge.to);
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+            line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+            line.style.stroke = isOnPath ? 'var(--color-trie-path)' : '#ccc';
+            line.style.strokeWidth = isOnPath ? 4 : 2;
+            g.appendChild(line);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (fromPos.x + toPos.x) / 2 );
+            text.setAttribute('y', (fromPos.y + toPos.y) / 2 + 5);
+            text.setAttribute('text-anchor', 'middle');
+            text.textContent = edge.char;
+            text.style.fill = isOnPath ? 'var(--color-trie-path)' : 'black';
+            text.style.fontWeight = 'bold';
+            g.appendChild(text);
+            this.svg.appendChild(g);
+        });
+
+        nodes.forEach(nodeInfo => {
+            const pos = positions.get(nodeInfo.data.id);
+            if(!pos) return;
+            const g = this.createNodeElement(nodeInfo.data, pos.x, pos.y, pathSet.has(nodeInfo.data.id));
+            this.svg.appendChild(g);
+        });
+    }
+    
+    createNodeElement(node, x, y, isOnPath) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        g.classList.add('trie-node');
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 18);
+        circle.style.fill = isOnPath ? 'var(--color-trie-path)' : (node.id === 0 ? 'var(--color-primary)' : 'var(--color-trie-node)');
+        circle.style.stroke = '#333';
+        circle.style.strokeWidth = 2;
+        g.appendChild(circle);
+
+        if (node.id === 0) {
+            const rootText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            rootText.setAttribute('text-anchor', 'middle');
+            rootText.setAttribute('y', 6);
+            rootText.style.fill = 'white';
+            rootText.textContent = 'R';
+            g.appendChild(rootText);
+        }
+        return g;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    productsInput = document.getElementById('products_input');
+    searchWordInput = document.getElementById('search_word_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    trieContainer = document.getElementById('trie_container');
+    productsContainer = document.getElementById('products_container');
+    resultsContainer = document.getElementById('results_container');
+    nodeSuggestionsContainer = document.getElementById('node_suggestions_container');
+    searchWordContainer = document.getElementById('search_word_container');
+    
+    const anim = new SuggestionsAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+});
+</script>
+</body>
+</html>

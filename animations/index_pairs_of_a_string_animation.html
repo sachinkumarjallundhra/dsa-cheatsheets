@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index Pairs of a String Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2c3e50; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-info: #3498db;
+            --color-trie-node-stroke: #34495e; --color-trie-node-fill: #ffffff;
+            --color-trie-node-end: var(--color-trie-node-stroke);
+            --color-trie-path: #8e44ad;
+            --color-text-highlight: rgba(52, 152, 219, 0.3);
+            --color-pointer: #e74c3c;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+
+        /* --- THE DEFINITIVE LAYOUT FIX --- */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(380px, 0.9fr);
+            grid-template-rows: auto 1fr; /* Header gets its own space, the main row fills the rest */
+            grid-template-areas:
+                "header header header"
+                "left main right";
+            gap: 15px;
+            padding: 15px;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .panel {
+            background-color: var(--color-bg-panel); border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px;
+            display: flex; flex-direction: column;
+            min-height: 0; /* Crucial for flex/grid children to prevent overflow */
+        }
+        .left-column, .main-column, .right-column {
+            min-height: 0; /* Prevents grid items from expanding beyond their row definition */
+            display: flex; /* Use flexbox for children panels */
+            flex-direction: column;
+            gap: 15px;
+        }
+        /* --- END OF FIX --- */
+
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; flex-shrink: 0; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ecf0f1; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls input.text { width: 300px; } .controls input.words { width: 300px; }
+        .controls .op-buttons button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; color: white; font-weight: bold;}
+        .controls button.find { background-color: var(--color-success); }
+        .controls .step-buttons button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .left-column .panel { flex-grow: 1; } /* Allow panels in left column to grow */
+        .left-column .panel.fixed-height { flex-grow: 0; flex-shrink: 0; } /* Except the action panel */
+        
+        #code_container, #result_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        #trie_container, #text_scan_container { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .text-display { display: flex; margin-bottom: 40px; position: relative; }
+        .char-box { width: 40px; height: 40px; border: 1px solid #ccc; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2em; font-family: 'Courier New', monospace; margin: 0 2px; }
+        .char-index { position: absolute; top: 45px; font-size: 0.8em; color: #7f8c8d; text-align: center; width: 100%; }
+        .char-container { position: relative; }
+        .pointer { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-weight: bold; font-size: 1.2em; color: var(--color-pointer); }
+        .text-highlight-box { position: absolute; top: 0; height: 100%; background: var(--color-text-highlight); border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Index Pairs of a String</h1>
+            <div class="controls">
+                <label>Text:</label> <input id="text_input" type="text" class="text" value="thestoryofleetcodeandme">
+                <label>Words:</label> <input id="words_input" type="text" class="words" value="story,fleet,leetcode">
+                <div class="op-buttons"> <button id="find_button" class="find">Find Pairs</button> </div>
+                <div class="step-buttons"> <button id="next_step_button" disabled>Next Step</button> <button id="reset_button">Reset</button> </div>
+            </div>
+        </header>
+
+        <div class="left-column">
+             <div class="panel">
+                 <h2>Java Implementation</h2>
+                 <div id="code_container"></div>
+             </div>
+             <div class="panel fixed-height">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter text and words, then find pairs.</div>
+             </div>
+        </div>
+
+        <main class="main-column">
+            <div class="panel" style="height: 100%;">
+                <h2 id="main_viz_title">Visualization</h2>
+                <div id="trie_container"></div>
+                <div id="text_scan_container" style="display:none;"></div>
+            </div>
+        </main>
+        
+        <div class="right-column">
+            <div class="panel" style="height: 100%;">
+                <h2>Found Pairs</h2>
+                <div id="result_container"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let textInput, wordsInput, findButton, nextStepButton, resetButton,
+    codeContainer, actionDisplay, mainVizTitle,
+    trieContainer, textScanContainer, resultContainer;
+
+class IndexPairsAnimation {
+    constructor() { this.reset(); }
+    
+    reset() {
+        this.clearAnimation();
+        [trieContainer, textScanContainer, resultContainer].forEach(el => el.innerHTML = '');
+        actionDisplay.textContent = 'Enter text and words, then find pairs.';
+        mainVizTitle.textContent = 'Visualization';
+    }
+    
+    clearAnimation() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons();
+    }
+    
+    startOperation() {
+        this.clearAnimation();
+        const text = textInput.value;
+        const words = wordsInput.value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        if (!text || words.length === 0) {
+            alert("Please provide valid text and words.");
+            return;
+        }
+
+        animationSteps = this.generateSteps(text, words);
+        if (animationSteps.length > 0) {
+            simulationRunning = true;
+            this.renderState(animationSteps[0]);
+            this.updateButtons();
+        }
+    }
+
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+
+    updateButtons() {
+        findButton.disabled = simulationRunning;
+        resetButton.disabled = simulationRunning;
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+
+    generateSteps(text, words) {
+        const steps = [];
+        let state = {
+            phase: 'build', line: null, msg: '', trie: { children: {}, isWord: false, id: 0 },
+            nodeIdCounter: 1, currentTriePath: [], foundPairs: [],
+            text: text, i: null, j: null, highlightedTextRange: null
+        };
+        const save = () => steps.push(JSON.parse(JSON.stringify(state)));
+
+        state.line = 2; state.msg = 'Create a new Trie root.'; save();
+        for (const word of words) {
+            let node = state.trie;
+            state.currentTriePath = [node.id];
+            state.line = 4; state.msg = `Adding word "${word}" to the Trie.`; save();
+            for (const char of word) {
+                state.line = 6; state.msg = `Processing char '${char}'.`;
+                if (!node.children[char]) {
+                    node.children[char] = { children: {}, isWord: false, id: state.nodeIdCounter++ };
+                    state.line = 7; state.msg = `Node for '${char}' doesn't exist. Creating it.`;
+                } else {
+                    state.msg = `Node for '${char}' already exists.`;
+                }
+                node = node.children[char];
+                state.currentTriePath.push(node.id);
+                state.line = 9; state.msg = `Moving to node for '${char}'.`; save();
+            }
+            node.isWord = true;
+            state.line = 11; state.msg = `Marking end of word "${word}".`; save();
+        }
+        state.currentTriePath = [];
+        
+        state.phase = 'scan'; state.line = 14; state.msg = 'Begin scanning the text.'; save();
+        let foundPairs = [];
+        for (let i = 0; i < text.length; i++) {
+            state.i = i; state.j = null; state.currentTriePath = [state.trie.id];
+            state.line = 15; state.msg = `Starting search from index i = ${i}.`; save();
+            
+            let node = state.trie;
+            for (let j = i; j < text.length; j++) {
+                state.j = j;
+                const char = text[j].toLowerCase();
+                state.line = 17; state.msg = `Checking char '${char}' at index j = ${j}.`; save();
+                
+                if (!node.children[char]) {
+                    state.line = 18; state.msg = `Path for '${char}' broken. Breaking inner loop.`; save();
+                    break;
+                }
+                node = node.children[char];
+                state.currentTriePath.push(node.id);
+                state.line = 19; state.msg = `Path exists. Moving to next Trie node.`; save();
+
+                if (node.isWord) {
+                    foundPairs.push([i, j]);
+                    state.foundPairs = [...foundPairs];
+                    state.highlightedTextRange = [i, j];
+                    state.line = 20; state.msg = `Found word! Added pair [${i}, ${j}].`; save();
+                    state.highlightedTextRange = null; 
+                }
+            }
+        }
+        state.i = null; state.j = null; state.currentTriePath = [];
+        state.line = 23; state.msg = 'Algorithm finished. Sorting results.'; save();
+        return steps;
+    }
+    
+    renderState(state) {
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        actionDisplay.textContent = state.msg;
+
+        resultContainer.innerHTML = state.foundPairs.map(p => `<div>[${p[0]}, ${p[1]}]</div>`).join('');
+
+        if (state.phase === 'build') {
+            mainVizTitle.textContent = 'Phase 1: Building Trie from Words';
+            trieContainer.style.display = 'flex';
+            textScanContainer.style.display = 'none';
+            trieContainer.innerHTML = '<svg width="90%" height="90%"></svg>';
+            const drawer = new TrieGraph(trieContainer.querySelector('svg'));
+            drawer.draw(state.trie, state.currentTriePath);
+        } else {
+            mainVizTitle.textContent = `Phase 2: Scanning Text (i=${state.i ?? ''})`;
+            trieContainer.style.display = 'none';
+            textScanContainer.style.display = 'flex';
+            this.renderTextScan(state);
+        }
+    }
+
+    renderTextScan(state) {
+        let textHTML = `<div class="text-display">`;
+        for (let k = 0; k < state.text.length; k++) {
+            textHTML += `
+                <div class="char-container">
+                    <div class="char-box">${state.text[k]}</div>
+                    <div class="char-index">${k}</div>
+                    ${state.i === k ? '<div class="pointer">i</div>' : ''}
+                    ${state.j === k ? '<div class="pointer" style="bottom: -45px;">j</div>' : ''}
+                </div>
+            `;
+        }
+        if (state.highlightedTextRange) {
+            const [start, end] = state.highlightedTextRange;
+            const width = (end - start + 1) * 44;
+            const left = start * 44;
+            textHTML += `<div class="text-highlight-box" style="width: ${width}px; left: ${left}px;"></div>`;
+        }
+        textHTML += `</div>`;
+
+        const trieHTML = '<svg width="80%" height="250px"></svg>';
+        textScanContainer.innerHTML = `<div>${textHTML}</div><div style="width:100%; text-align:center;"><h4>Trie Traversal</h4>${trieHTML}</div>`;
+        
+        const drawer = new TrieGraph(textScanContainer.querySelector('svg'));
+        drawer.draw(state.trie, state.currentTriePath);
+    }
+}
+
+class TrieGraph {
+    constructor(svg) { this.svg = svg; }
+    draw(trieRoot, path) {
+        this.svg.innerHTML = ''; if (!trieRoot) return;
+        const pathSet = new Set(path); const nodePositions = new Map(); const edges = [];
+        const traverseAndPosition = (node, x, y, depth) => {
+            if (!node || node.id === undefined) return;
+            nodePositions.set(node.id, { x, y });
+            const children = Object.entries(node.children).sort((a,b) => a[0].localeCompare(b[0]));
+            const totalWidth = children.length * 50; let currentX = x - totalWidth / 2;
+            children.forEach(([char, childNode]) => {
+                const childX = currentX + 25; const childY = y + 60;
+                edges.push({ from: node.id, to: childNode.id, char });
+                traverseAndPosition(childNode, childX, childY, depth + 1);
+                currentX += 50;
+            });
+        };
+        const clientWidth = this.svg.parentElement.clientWidth || 600;
+        traverseAndPosition(trieRoot, clientWidth / 2, 40, 0);
+        edges.forEach(edge => {
+            const fromPos = nodePositions.get(edge.from); const toPos = nodePositions.get(edge.to);
+            if (!fromPos || !toPos) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+            line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+            line.style.stroke = pathSet.has(edge.from) && pathSet.has(edge.to) ? 'var(--color-trie-path)' : '#ccc';
+            line.style.strokeWidth = pathSet.has(edge.from) && pathSet.has(edge.to) ? 3 : 2;
+            this.svg.appendChild(line);
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (fromPos.x + toPos.x) / 2 - 4); text.setAttribute('y', (fromPos.y + toPos.y) / 2 + 5);
+            text.textContent = edge.char; this.svg.appendChild(text);
+        });
+        const drawNodeRecursive = (node) => {
+            if (!node || !nodePositions.has(node.id)) return;
+            const pos = nodePositions.get(node.id);
+            const g = this.createNodeElement(node, pos.x, pos.y, pathSet.has(node.id));
+            this.svg.appendChild(g); Object.values(node.children).forEach(drawNodeRecursive);
+        };
+        drawNodeRecursive(trieRoot);
+    }
+    createNodeElement(node, x, y, isOnPath) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 15);
+        circle.style.fill = node.isWord ? 'var(--color-trie-node-end)' : 'var(--color-trie-node-fill)';
+        circle.style.stroke = isOnPath ? 'var(--color-trie-path)' : 'var(--color-trie-node-stroke)';
+        circle.style.strokeWidth = 3; g.appendChild(circle); return g;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    textInput = document.getElementById('text_input'); wordsInput = document.getElementById('words_input');
+    findButton = document.getElementById('find_button'); nextStepButton = document.getElementById('next_step_button');
+    resetButton = document.getElementById('reset_button'); codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display'); mainVizTitle = document.getElementById('main_viz_title');
+    trieContainer = document.getElementById('trie_container'); textScanContainer = document.getElementById('text_scan_container');
+    resultContainer = document.getElementById('result_container');
+
+    const code = [
+        `class Solution {`,
+        `  public int[][] indexPairs(...) {`,
+        `2   TrieNode root = new TrieNode();`,
+        `3   // Phase 1: Build the Trie`,
+        `4   for (String word : words) {`,
+        `5     TrieNode node = root;`,
+        `6     for (char c : word.toCharArray()) {`,
+        `7       if (node.children[c-'a'] == null) {`,
+        `8         node.children[c-'a'] = new TrieNode();`,
+        `9       }`,
+        `10      node = node.children[c-'a'];`,
+        `11    }`,
+        `12    node.isWord = true;`,
+        `13  }`,
+        ``,
+        `14  // Phase 2: Scan the text`,
+        `15  for (int i = 0; i < n; i++) {`,
+        `16    TrieNode node = root;`,
+        `17    for (int j = i; j < n; j++) {`,
+        `18      if (node.children[c-'a'] == null) break;`,
+        `19      node = node.children[c-'a'];`,
+        `20      if (node.isWord) {`,
+        `21        res.add(new int[]{i, j});`,
+        `22      }`,
+        `23    }`,
+        `24  }`,
+        `25  return ...; // format and return result`,
+        `26}`,
+    ];
+    codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+
+    const anim = new IndexPairsAnimation();
+    findButton.addEventListener('click', () => anim.startOperation());
+    nextStepButton.addEventListener('click', () => anim.next());
+    resetButton.addEventListener('click', () => anim.reset());
+});
+
+</script>
+</body>
+</html>

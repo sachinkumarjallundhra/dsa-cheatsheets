@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Dictionary Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2c3e50; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-info: #3498db;
+            --color-trie-node-stroke: #34495e;
+            --color-trie-node-fill: #ffffff;
+            --color-trie-node-end: var(--color-trie-node-stroke);
+            --color-trie-path: #8e44ad;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(380px, 0.9fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ecf0f1; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 200px; }
+        .controls .op-buttons button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; margin-left: 5px; color: white; font-weight: bold; }
+        .controls button.add { background-color: var(--color-info); }
+        .controls button.search { background-color: var(--color-success); }
+        .controls .step-buttons button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_panel { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-block { display: none; }
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        #trie_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: auto; }
+        .trie-node text { font-family: 'Courier New', monospace; pointer-events: none; }
+        
+        #log_container { font-size: 0.9em; overflow-y: auto; flex-grow: 1; }
+        #log_container div { margin-bottom: 5px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Word Dictionary (Add and Search)</h1>
+            <div class="controls">
+                <label>Word:</label> <input id="word_input" type="text" value=".ad" placeholder="Use '.' for wildcard search">
+                <div class="op-buttons">
+                    <button id="add_word_button" class="add">Add Word</button>
+                    <button id="search_button" class="search">Search</button>
+                </div>
+                <div class="step-buttons">
+                    <button id="next_step_button" disabled>Next Step</button>
+                    <button id="reset_button">Reset</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div id="code_panel" class="panel">
+                <h2>Java Implementation</h2>
+                <div id="code_container_add" class="code-block"></div>
+                <div id="code_container_search" class="code-block"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter a word and choose an operation.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Trie Visualization</h2>
+            <div id="trie_container">
+                 <svg width="100%" height="100%"></svg>
+            </div>
+        </main>
+        
+        <div class="right-column">
+             <div class="panel">
+                <h2>Operation Log</h2>
+                <div id="log_container" class="data-container"></div>
+             </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="final_result_title"></h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button step-buttons">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let wordInput, addWordButton, searchButton, nextStepButton, resetButton,
+    codeContainerAdd, codeContainerSearch, actionDisplay, trieContainer, logContainer,
+    resultModal, finalResultTitle, finalResultText, modalCloseBtn;
+let trieState = { children: {}, isEnd: false, id: 0 };
+let nodeIdCounter = 1;
+
+class TrieAnimation {
+    constructor(trieDrawer) {
+        this.trieDrawer = trieDrawer;
+        this.reset();
+    }
+    
+    reset() {
+        this.clearAnimation();
+        trieState = { children: {}, isEnd: false, id: 0 };
+        nodeIdCounter = 1;
+        logContainer.innerHTML = '';
+        this.renderState({ msg: "Trie has been reset.", line: null, op: 'reset' });
+    }
+    
+    clearAnimation() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        codeContainerAdd.style.display = 'none';
+        codeContainerSearch.style.display = 'none';
+        this.updateButtons();
+    }
+    
+    startOperation(opType) {
+        this.clearAnimation();
+        const rawWord = wordInput.value.toLowerCase();
+        let word;
+
+        if (opType === 'addWord') {
+            word = rawWord.replace(/[^a-z]/g, '');
+            if (!word) { alert("Please enter a valid word to add (letters only)."); return; }
+            codeContainerAdd.style.display = 'block';
+            animationSteps = this.generateAddWordSteps(word);
+        } else if (opType === 'search') {
+            word = rawWord.replace(/[^a-z.]/g, '');
+            if (!word) { alert("Please enter a valid search term (letters and '.' only)."); return; }
+            codeContainerSearch.style.display = 'block';
+            animationSteps = this.generateSearchSteps(word);
+        }
+        
+        if (animationSteps && animationSteps.length > 0) {
+            simulationRunning = true;
+            this.renderState(animationSteps[0]);
+            this.updateButtons();
+        }
+    }
+
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        const state = animationSteps[currentStepIndex];
+
+        if (state.trie) { trieState = JSON.parse(JSON.stringify(state.trie)); }
+        
+        this.renderState(state);
+        this.updateButtons();
+
+        if (state.finalResult) {
+            this.showResultModal(state.finalResult);
+        }
+    }
+
+    updateButtons() {
+        [addWordButton, searchButton].forEach(btn => btn.disabled = simulationRunning);
+        resetButton.disabled = simulationRunning;
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+
+    generateAddWordSteps(word) {
+        const steps = [];
+        let state = {
+            op: 'addWord', line: null, msg: '',
+            trie: JSON.parse(JSON.stringify(trieState)),
+            nodeIdCounter: nodeIdCounter,
+            triePath: [trieState.id]
+        };
+        const save = () => steps.push(JSON.parse(JSON.stringify(state)));
+
+        state.line = 1; state.msg = `Start addWord from root.`; save();
+        
+        let node = state.trie;
+        for (const char of word) {
+            state.line = 2; state.msg = `Processing char '${char}'.`; save();
+            state.line = 3; state.msg = `Checking if node for '${char}' exists.`; save();
+            if (!node.children[char]) {
+                node.children[char] = { children: {}, isEnd: false, id: state.nodeIdCounter++ };
+                state.line = 4; state.msg = `Node for '${char}' does not exist. Creating it.`; save();
+            } else {
+                state.msg = `Node for '${char}' already exists.`; save();
+            }
+            node = node.children[char];
+            state.triePath.push(node.id);
+            state.line = 6; state.msg = `Moving to node for '${char}'.`; save();
+        }
+        node.isEnd = true;
+        state.line = 8; state.msg = `Word finished. Marking final node as end of word.`; save();
+        
+        state.msg = `"${word}" added successfully.`;
+        state.line = null; state.triePath = [];
+        state.finalResult = {op: `addWord("${word}")`, result: true};
+        save();
+        
+        return steps;
+    }
+    
+    generateSearchSteps(word) {
+        const steps = [];
+        const op = 'search';
+
+        const generateRecursive = (currentWord, pos, node, path) => {
+            const localSteps = [];
+            localSteps.push({ op, line: 1, msg: `searchFrom(..., pos=${pos}, node=${node.id})`, triePath: path, subproblem: currentWord.substring(pos) });
+            
+            localSteps.push({ op, line: 2, msg: `Check if end of word: ${pos} == ${currentWord.length}?`, triePath: path });
+            if (pos === currentWord.length) {
+                localSteps.push({ op, line: 3, msg: `Base case: End of word. Returning node.isEnd (${node.isEnd}).`, triePath: path });
+                return { found: node.isEnd, steps: localSteps };
+            }
+
+            const char = currentWord.charAt(pos);
+            localSteps.push({ op, line: 5, msg: `Processing char '${char}' at pos ${pos}.`, triePath: path });
+            localSteps.push({ op, line: 6, msg: `Is character a wildcard '.'?`, triePath: path });
+
+            if (char === '.') {
+                localSteps.push({ op, line: 7, msg: `Yes. Exploring all children.`, triePath: path });
+                const children = Object.keys(node.children).sort();
+                
+                for (const childChar of children) {
+                    const childNode = node.children[childChar];
+                    localSteps.push({ op, line: 8, msg: `Trying branch '${childChar}'. Recursive call.`, triePath: [...path, childNode.id] });
+                    
+                    const result = generateRecursive(currentWord, pos + 1, childNode, [...path, childNode.id]);
+                    localSteps.push(...result.steps);
+
+                    if (result.found) {
+                        localSteps.push({ op, line: 9, msg: `Path through '${childChar}' succeeded. Returning true.`, triePath: path });
+                        return { found: true, steps: localSteps };
+                    }
+                }
+                
+                localSteps.push({ op, line: 12, msg: `No wildcard path succeeded. Returning false.`, triePath: path });
+                return { found: false, steps: localSteps };
+
+            } else {
+                localSteps.push({ op, line: 14, msg: `No. Checking if child '${char}' exists.`, triePath: path });
+                const childNode = node.children[char];
+
+                if (!childNode) {
+                    localSteps.push({ op, line: 15, msg: `Child '${char}' not found. Returning false.`, triePath: path });
+                    return { found: false, steps: localSteps };
+                }
+
+                localSteps.push({ op, line: 17, msg: `Child '${char}' found. Making recursive call.`, triePath: [...path, childNode.id] });
+                const result = generateRecursive(currentWord, pos + 1, childNode, [...path, childNode.id]);
+                localSteps.push(...result.steps);
+                return { found: result.found, steps: localSteps };
+            }
+        };
+
+        steps.push({ op, line: 0, msg: `Starting search for "${word}".` });
+        const result = generateRecursive(word, 0, trieState, [trieState.id]);
+        steps.push(...result.steps);
+        
+        steps.push({
+            op, line: null, msg: `Search for "${word}" completed. Result: ${result.found}.`,
+            triePath: [], finalResult: { op: `search("${word}")`, result: result.found }
+        });
+        return steps;
+    }
+    
+    renderState(state) {
+        let msg = state.msg;
+        if(state.subproblem !== undefined) {
+             msg = `[subproblem: "${state.subproblem}"] ${msg}`;
+        }
+        actionDisplay.innerHTML = msg;
+
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) {
+            const opPrefix = state.op === 'addWord' ? 'add' : 'search';
+            document.getElementById(`code-line-${opPrefix}-${state.line}`)?.classList.add('highlight');
+        }
+        
+        const trieToDraw = state.trie ? state.trie : trieState;
+        this.trieDrawer.draw(trieToDraw, state.triePath || []);
+    }
+
+    showResultModal(result) {
+        finalResultTitle.textContent = result.op;
+        finalResultText.textContent = result.result;
+        finalResultText.style.color = result.result ? 'var(--color-success)' : 'var(--color-danger)';
+        
+        const logEntry = document.createElement('div');
+        const resultColor = result.result ? 'var(--color-success)' : 'var(--color-danger)';
+        logEntry.innerHTML = `${result.op} &rarr; <strong style="color: ${resultColor}">${result.result}</strong>`;
+        logContainer.appendChild(logEntry);
+        
+        if (result.op.startsWith('addWord')) {
+             this.clearAnimation();
+             this.renderState({ msg: "Ready for new operations.", op: 'reset' });
+        } else {
+             resultModal.style.display = 'flex';
+        }
+    }
+}
+
+
+class TrieGraph {
+    constructor(svg) { this.svg = svg; }
+    
+    draw(trieRoot, path) {
+        this.svg.innerHTML = '';
+        if (!trieRoot) return;
+        const pathSet = new Set(path);
+        const nodePositions = new Map();
+        const edges = [];
+        
+        // This is a stable, top-down layout algorithm. It might cause overlaps on very
+        // wide tries, but it is guaranteed not to crash.
+        const traverseAndPosition = (node, x, y, depth) => {
+            if (!node || node.id === undefined) return;
+            nodePositions.set(node.id, { x, y });
+            const children = Object.entries(node.children).sort((a,b) => a[0].localeCompare(b[0]));
+            const totalWidth = children.length * 70; // Approx width needed for children
+            let currentX = x - totalWidth / 2;
+            
+            children.forEach(([char, childNode]) => {
+                const childX = currentX + 35; // Center of the 70px slot
+                const childY = y + 90;
+                edges.push({ from: node.id, to: childNode.id, char });
+                traverseAndPosition(childNode, childX, childY, depth + 1);
+                currentX += 70;
+            });
+        };
+        
+        traverseAndPosition(trieRoot, this.svg.parentElement.clientWidth / 2, 60, 0);
+
+        // Draw edges first
+        edges.forEach(edge => {
+            const fromPos = nodePositions.get(edge.from);
+            const toPos = nodePositions.get(edge.to);
+            if (!fromPos || !toPos) return;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+            line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+            line.style.stroke = pathSet.has(edge.from) && pathSet.has(edge.to) ? 'var(--color-trie-path)' : '#ccc';
+            line.style.strokeWidth = pathSet.has(edge.from) && pathSet.has(edge.to) ? 3 : 2;
+            this.svg.appendChild(line);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (fromPos.x + toPos.x) / 2 - 4);
+            text.setAttribute('y', (fromPos.y + toPos.y) / 2 + 5);
+            text.textContent = edge.char;
+            this.svg.appendChild(text);
+        });
+
+        // Draw nodes on top of edges
+        const drawNodeRecursive = (node) => {
+            if (!node || !nodePositions.has(node.id)) return;
+            const pos = nodePositions.get(node.id);
+            const g = this.createNodeElement(node, pos.x, pos.y, pathSet.has(node.id));
+            this.svg.appendChild(g);
+            Object.values(node.children).forEach(drawNodeRecursive);
+        };
+        drawNodeRecursive(trieRoot);
+    }
+    
+    createNodeElement(node, x, y, isOnPath) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        g.classList.add('trie-node');
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 18);
+        circle.style.fill = node.isEnd ? 'var(--color-trie-node-end)' : 'var(--color-trie-node-fill)';
+        circle.style.stroke = isOnPath ? 'var(--color-trie-path)' : 'var(--color-trie-node-stroke)';
+        if (node.id === 0) circle.style.stroke = 'var(--color-primary)';
+        circle.style.strokeWidth = 3;
+        g.appendChild(circle);
+        return g;
+    }
+}
+
+// This function initializes the UI code blocks
+function initCodeBlocks() {
+    const addCode = [
+        `// addWord(word)`, `1  TrieNode node = root;`, `2  for (char c : word.toCharArray()) {`,
+        `3    if (node.children[c] == null) {`, `4      node.children[c] = new TrieNode();`, `5    }`,
+        `6    node = node.children[c];`, `7  }`, `8  node.isEnd = true;`,
+    ];
+    const searchCode = [
+        `// search(word) -> searchFrom(word, 0, root)`, `1  private boolean searchFrom(word, pos, node) {`,
+        `2    if (pos == word.length()) {`, `3      return node.isEnd;`, `4    }`,
+        `5    char c = word.charAt(pos);`, `6    if (c == '.') {`,
+        `7      for (each child of current node) {`, `8        if (searchFrom(word, pos + 1, child)) {`,
+        `9          return true;`, `10       }`, `11     }`, `12     return false;`, `13   } else {`,
+        `14     if (node.children[c] == null) {`, `15       return false;`, `16     }`,
+        `17     return searchFrom(pos + 1, ...);`, `18   }`, `19 }`,
+    ];
+
+    codeContainerAdd.innerHTML = addCode.map((line, i) => `<div class="code-line" id="code-line-add-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    codeContainerSearch.innerHTML = searchCode.map((line, i) => `<div class="code-line" id="code-line-search-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Select all DOM elements
+    wordInput = document.getElementById('word_input');
+    addWordButton = document.getElementById('add_word_button');
+    searchButton = document.getElementById('search_button');
+    nextStepButton = document.getElementById('next_step_button');
+    resetButton = document.getElementById('reset_button');
+    codeContainerAdd = document.getElementById('code_container_add');
+    codeContainerSearch = document.getElementById('code_container_search');
+    actionDisplay = document.getElementById('action_display');
+    trieContainer = document.getElementById('trie_container');
+    logContainer = document.getElementById('log_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultTitle = document.getElementById('final_result_title');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    // 2. Initialize UI and Core Classes
+    initCodeBlocks();
+    const trieDrawer = new TrieGraph(document.querySelector('#trie_container svg'));
+    const anim = new TrieAnimation(trieDrawer);
+    
+    // 3. Set up the initial trie state
+    const addWordToGlobalState = (word) => {
+        let node = trieState;
+        for (const char of word) {
+            if (!node.children[char]) {
+                node.children[char] = { children: {}, isEnd: false, id: nodeIdCounter++ };
+            }
+            node = node.children[char];
+        }
+        node.isEnd = true;
+    };
+    const initialWords = ["bad", "dad", "mad", "pad"];
+    initialWords.forEach(addWordToGlobalState);
+    
+    // 4. Perform an initial render
+    anim.renderState({ msg: `Added: ${initialWords.join(', ')}. Ready for new operations.`, op: 'init', line: null, triePath: [] });
+    
+    // 5. Attach all event listeners
+    addWordButton.addEventListener('click', () => anim.startOperation('addWord'));
+    searchButton.addEventListener('click', () => anim.startOperation('search'));
+    nextStepButton.addEventListener('click', () => anim.next());
+    resetButton.addEventListener('click', () => anim.reset());
+    modalCloseBtn.addEventListener('click', () => {
+        resultModal.style.display = 'none';
+        anim.clearAnimation();
+        anim.renderState({ msg: "Ready for new operations.", op: 'reset' });
+    });
+});
+</script>
+</body>
+</html>

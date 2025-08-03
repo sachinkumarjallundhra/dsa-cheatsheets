@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-th Smallest in Lexicographical Order Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔢 K-th Smallest in Lexicographical Order – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>K-th Smallest in Lexicographical Order</b> problem (LeetCode 440) asks you to find the k-th smallest integer in lexicographical order from 1 to n.
+        </p>
+
+        <h2>🎯 Solution Pattern (Prefix Counting / Trie Traversal)</h2>
+        <pre><code>// Java Solution (Prefix Counting)
+class Solution {
+    public int findKthNumber(int n, int k) {
+        int curr = 1;
+        k--;
+        while (k > 0) {
+            long steps = countSteps(n, curr, curr + 1);
+            if (steps <= k) {
+                curr++;
+                k -= steps;
+            } else {
+                curr *= 10;
+                k--;
+            }
+        }
+        return curr;
+    }
+
+    private long countSteps(int n, long curr, long next) {
+        long steps = 0;
+        while (curr <= n) {
+            steps += Math.min(n + 1, next) - curr;
+            curr *= 10;
+            next *= 10;
+        }
+        return steps;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/kth_smallest_in_lexicographical_order_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+<p>
+    <a href="https://www.youtube.com/watch?v=wRubz1zhVqk&ab_channel=NeetCodeIO" target="_blank">
+        ▶️ Watch Video Explanation on YouTube (NeetCodeIO)
+    </a>
+</p>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Lexicographical enumeration</li>
+            <li>Trie-based number traversal</li>
+            <li>Efficient k-th element search in large ranges</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Start from 1 (the smallest prefix)</li>
+            <li>At each step, count how many numbers are under the current prefix</li>
+            <li>If k is larger than the count, move to the next prefix (curr++)</li>
+            <li>Otherwise, go deeper (curr *= 10) and decrease k</li>
+            <li>Repeat until k becomes 0</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(log n * log n)</code> (each prefix step and depth)</li>
+            <li><b>Space:</b> <code>O(1)</code></li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>k = 1 (should return 1)</li>
+            <li>n is a single digit</li>
+            <li>k equals n</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: n = 13, k = 2
+Output: 10
+Explanation: The lexicographical order is [1,10,11,12,13,2,3,4,5,6,7,8,9], so the 2nd is 10.
+</code></pre>
+    </div>
+    <style>
+    .animation-btn {
+        display: inline-block;
+        margin: 10px 0 18px 0;
+        padding: 8px 18px;
+        background: #007bff;
+        color: #fff !important;
+        font-weight: 500;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .animation-btn:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 16px rgba(44,62,80,0.15);
+    }
+    </style>
+</body>
+</html>

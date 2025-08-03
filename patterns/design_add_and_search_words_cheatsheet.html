@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Add and Search Words Data Structure Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔍 Design Add and Search Words Data Structure – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Design Add and Search Words Data Structure</b> problem (LeetCode 211) asks you to implement a data structure that supports adding words and searching for words, where the search word may contain the '.' wildcard character that can match any letter.
+        </p>
+
+        <h2>🎯 Solution Pattern (Trie + DFS for Wildcard)</h2>
+        <pre><code>// Java Solution
+class TrieNode {
+    TrieNode[] children = new TrieNode[26];
+    boolean isEnd = false;
+}
+
+class WordDictionary {
+    TrieNode root = new TrieNode();
+
+    public void addWord(String word) {
+        TrieNode node = root;
+        for (char c : word.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) node.children[idx] = new TrieNode();
+            node = node.children[idx];
+        }
+        node.isEnd = true;
+    }
+
+    public boolean search(String word) {
+        return searchHelper(word, 0, root);
+    }
+
+    private boolean searchHelper(String word, int pos, TrieNode node) {
+        if (pos == word.length()) return node.isEnd;
+        char c = word.charAt(pos);
+        if (c == '.') {
+            for (TrieNode child : node.children) {
+                if (child != null && searchHelper(word, pos + 1, child)) return true;
+            }
+            return false;
+        } else {
+            int idx = c - 'a';
+            if (node.children[idx] == null) return false;
+            return searchHelper(word, pos + 1, node.children[idx]);
+        }
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/design_add_and_search_words_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Word dictionary with wildcard search</li>
+            <li>Autocomplete with flexible matching</li>
+            <li>Pattern-based string search</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Insert words into Trie as usual</li>
+            <li>For search, use DFS to handle '.' wildcard at any position</li>
+            <li>Return true if any path matches the search pattern</li>
+        </ol>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty word or pattern</li>
+            <li>Multiple wildcards in pattern</li>
+            <li>No matching words</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>WordDictionary dict = new WordDictionary();
+dict.addWord("bad");
+dict.addWord("dad");
+dict.addWord("mad");
+dict.search("pad"); // false
+dict.search("bad"); // true
+dict.search(".ad"); // true
+dict.search("b.."); // true
+</code></pre>
+    </div>
+    <style>
+    .animation-btn {
+        display: inline-block;
+        margin: 10px 0 18px 0;
+        padding: 8px 18px;
+        background: #007bff;
+        color: #fff !important;
+        font-weight: 500;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .animation-btn:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 16px rgba(44,62,80,0.15);
+    }
+    </style>
+</body>
+</html>

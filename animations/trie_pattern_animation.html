@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trie (Prefix Tree) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2c3e50; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-info: #2980b9;
+            --color-trie-node-stroke: #34495e;
+            --color-trie-node-fill: #ffffff;
+            --color-trie-node-end: var(--color-trie-node-stroke);
+            --color-trie-path: #8e44ad;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(380px, 0.9fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ecf0f1; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 200px; }
+        .controls .op-buttons button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; margin-left: 5px; color: white; }
+        .controls button.insert { background-color: var(--color-info); }
+        .controls button.search { background-color: var(--color-success); }
+        .controls button.startswith { background-color: #f39c12; }
+        .controls .step-buttons button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        #trie_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: auto; }
+        .trie-node text { font-family: 'Courier New', monospace; pointer-events: none; }
+        
+        #log_container { font-size: 0.9em; }
+        #log_container div { margin-bottom: 5px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Trie (Prefix Tree)</h1>
+            <div class="controls">
+                <label>Word:</label> <input id="word_input" type="text" value="apple">
+                <div class="op-buttons">
+                    <button id="insert_button" class="insert">Insert</button>
+                    <button id="search_button" class="search">Search</button>
+                    <button id="startswith_button" class="startswith">StartsWith</button>
+                </div>
+                <div class="step-buttons">
+                    <button id="next_step_button" disabled>Next Step</button>
+                    <button id="reset_button">Reset</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Operations</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter a word and choose an operation.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Trie Visualization</h2>
+            <div id="trie_container">
+                 <svg width="100%" height="100%"></svg>
+            </div>
+        </main>
+        
+        <div class="right-column">
+             <div class="panel">
+                <h2>Operation Log</h2>
+                <div id="log_container" class="data-container"></div>
+             </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="final_result_title"></h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button step-buttons">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let wordInput, insertButton, searchButton, startsWithButton, nextStepButton, resetButton,
+    codeContainer, actionDisplay, trieContainer, logContainer,
+    resultModal, finalResultTitle, finalResultText, modalCloseBtn;
+let trieDrawer;
+let trieState = { children: {}, isEnd: false, id: 0 };
+let nodeIdCounter = 1;
+
+class TrieAnimation {
+    constructor() { this.reset(); }
+    
+    reset() {
+        this.clearAnimation();
+        trieState = { children: {}, isEnd: false, id: 0 };
+        nodeIdCounter = 1;
+        logContainer.innerHTML = '';
+        this.renderState({ msg: "Trie has been reset.", line: null, triePath: [] });
+    }
+    
+    clearAnimation() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons();
+    }
+    
+    startOperation(opType) {
+        this.clearAnimation();
+        const word = wordInput.value.toLowerCase().replace(/[^a-z]/g, '');
+        if (!word && opType !== 'insert' && wordInput.value.length > 0) {
+             alert("Please enter a valid word (letters only).");
+             return;
+        }
+
+        if (opType === 'insert') {
+            animationSteps = this.generateInsertSteps(word);
+        } else if (opType === 'search') {
+            animationSteps = this.generateSearchSteps(word);
+        } else if (opType === 'startsWith') {
+            animationSteps = this.generateStartsWithSteps(word);
+        }
+        
+        simulationRunning = true;
+        if (animationSteps.length > 0) {
+            this.renderState(animationSteps[0]);
+            this.updateButtons();
+        }
+    }
+
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        const state = animationSteps[currentStepIndex];
+
+        if (state.trie) { trieState = JSON.parse(JSON.stringify(state.trie)); }
+        if (state.nodeIdCounter) { nodeIdCounter = state.nodeIdCounter; }
+        
+        this.renderState(state);
+        this.updateButtons();
+
+        if (state.finalResult) {
+            this.showResultModal(state.finalResult);
+        }
+    }
+
+    updateButtons() {
+        const opButtons = [insertButton, searchButton, startsWithButton];
+        opButtons.forEach(btn => btn.disabled = simulationRunning);
+        resetButton.disabled = simulationRunning;
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            `// insert(word)`,
+            `1  node = root`,
+            `2  for char in word:`,
+            `3    if !node.children[char]:`,
+            `4      node.children[char] = new Node()`,
+            `5    node = node.children[char]`,
+            `6  node.isEnd = true`,
+            ``,
+            `// search(word)`,
+            `7  node = root`,
+            `8  for char in word:`,
+            `9    if !node.children[char]: return false`,
+            `10   node = node.children[char]`,
+            `11 return node.isEnd`,
+            ``,
+            `// startsWith(prefix)`,
+            `12 node = root`,
+            `13 for char in prefix:`,
+            `14   if !node.children[char]: return false`,
+            `15   node = node.children[char]`,
+            `16 return true`,
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateInsertSteps(word) {
+        const steps = [];
+        let state = {
+            op: `insert("${word}")`, line: null, msg: '',
+            trie: JSON.parse(JSON.stringify(trieState)),
+            nodeIdCounter: nodeIdCounter,
+            triePath: [trieState.id]
+        };
+        const save = () => steps.push(JSON.parse(JSON.stringify(state)));
+
+        state.line = 1; state.msg = `Start insert from root.`; save();
+        
+        let node = state.trie;
+        for (const char of word) {
+            state.line = 2; state.msg = `Processing char '${char}'.`; save();
+            
+            state.line = 3; state.msg = `Checking if node for '${char}' exists.`; save();
+            if (!node.children[char]) {
+                node.children[char] = { children: {}, isEnd: false, id: state.nodeIdCounter++ };
+                state.line = 4; state.msg = `Node for '${char}' does not exist. Creating it.`; save();
+            } else {
+                state.msg = `Node for '${char}' already exists.`; save();
+            }
+            
+            node = node.children[char];
+            state.triePath.push(node.id);
+            state.line = 5; state.msg = `Moving to node for '${char}'.`; save();
+        }
+        
+        node.isEnd = true;
+        state.line = 6; state.msg = `Word finished. Marking final node as end of word.`; save();
+        
+        state.msg = `"${word}" inserted successfully.`;
+        state.line = null; state.triePath = []; save();
+        
+        return steps;
+    }
+    
+    generateSearchSteps(word) {
+        const steps = [];
+        let state = {
+            op: `search("${word}")`, line: null, msg: '',
+            trie: trieState, triePath: [trieState.id]
+        };
+        const save = () => steps.push(JSON.parse(JSON.stringify(state)));
+        
+        state.line = 7; state.msg = `Start search from root.`; save();
+        
+        let node = state.trie;
+        for (const char of word) {
+            state.line = 8; state.msg = `Looking for char '${char}'.`; save();
+
+            state.line = 9; state.msg = `Checking for path '${char}'.`; save();
+            if (!node.children[char]) {
+                state.msg = `Path for '${char}' does not exist. Search failed.`;
+                state.finalResult = {op: state.op, result: false};
+                state.triePath = []; save();
+                return steps;
+            }
+
+            node = node.children[char];
+            state.triePath.push(node.id);
+            state.line = 10; state.msg = `Path for '${char}' exists. Moving to node.`; save();
+        }
+
+        state.line = 11; state.msg = `Path for "${word}" found. Checking 'isEnd' property.`; save();
+        state.triePath = [];
+        if (node.isEnd) {
+             state.msg = `'isEnd' is true. Search successful!`;
+             state.finalResult = {op: state.op, result: true};
+        } else {
+            state.msg = `'isEnd' is false. "${word}" is a prefix, but not a completed word. Search failed.`;
+            state.finalResult = {op: state.op, result: false};
+        }
+        save();
+        return steps;
+    }
+    
+    generateStartsWithSteps(prefix) {
+        const steps = [];
+        let state = {
+            op: `startsWith("${prefix}")`, line: null, msg: '',
+            trie: trieState, triePath: [trieState.id]
+        };
+        const save = () => steps.push(JSON.parse(JSON.stringify(state)));
+
+        state.line = 12; state.msg = `Start prefix search from root.`; save();
+        
+        let node = state.trie;
+        for (const char of prefix) {
+            state.line = 13; state.msg = `Looking for char '${char}'.`; save();
+
+            state.line = 14; state.msg = `Checking for path '${char}'.`; save();
+            if (!node.children[char]) {
+                state.msg = `Path for '${char}' does not exist. Prefix not found.`;
+                state.finalResult = {op: state.op, result: false};
+                state.triePath = []; save();
+                return steps;
+            }
+
+            node = node.children[char];
+            state.triePath.push(node.id);
+            state.line = 15; state.msg = `Path for '${char}' exists. Moving to node.`; save();
+        }
+        
+        state.line = 16; state.msg = `Path for prefix "${prefix}" found. Success!`;
+        state.finalResult = {op: state.op, result: true};
+        state.triePath = [];
+        save();
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        // ** THE FIX IS HERE **
+        // Always draw the trie from the current step's snapshot, not the global state.
+        const trieToDraw = state.trie ? state.trie : trieState;
+        trieDrawer.draw(trieToDraw, state.triePath || []);
+    }
+
+    showResultModal(result) {
+        finalResultTitle.textContent = result.op;
+        finalResultText.textContent = result.result;
+        finalResultText.style.color = result.result ? 'var(--color-success)' : 'var(--color-danger)';
+        
+        const logEntry = document.createElement('div');
+        logEntry.innerHTML = `${result.op} &rarr; <strong style="color: ${result.result ? 'var(--color-success)' : 'var(--color-danger)'}">${result.result}</strong>`;
+        logContainer.appendChild(logEntry);
+        
+        resultModal.style.display = 'flex';
+    }
+}
+
+
+class TrieGraph {
+    constructor(svg) { this.svg = svg; }
+    
+    draw(trieRoot, path) {
+        this.svg.innerHTML = '';
+        const pathSet = new Set(path);
+        const nodePositions = new Map();
+        const edges = [];
+        
+        const traverse = (node, x, y, depth) => {
+            nodePositions.set(node.id, { x, y });
+            const children = Object.entries(node.children).sort((a,b) => a[0].localeCompare(b[0]));
+            const totalWidth = children.length * 70;
+            let currentX = x - totalWidth / 2;
+            
+            children.forEach(([char, childNode]) => {
+                const childX = currentX + 35;
+                const childY = y + 90;
+                edges.push({ from: node.id, to: childNode.id, char });
+                traverse(childNode, childX, childY, depth + 1);
+                currentX += 70;
+            });
+        };
+        
+        traverse(trieRoot, this.svg.parentElement.clientWidth / 2, 60, 0);
+
+        // Draw edges
+        edges.forEach(edge => {
+            const fromPos = nodePositions.get(edge.from);
+            const toPos = nodePositions.get(edge.to);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+            line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+            line.style.stroke = pathSet.has(edge.from) && pathSet.has(edge.to) ? 'var(--color-trie-path)' : '#ccc';
+            line.style.strokeWidth = pathSet.has(edge.from) && pathSet.has(edge.to) ? 3 : 2;
+            this.svg.appendChild(line);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (fromPos.x + toPos.x) / 2 - 4);
+            text.setAttribute('y', (fromPos.y + toPos.y) / 2 + 5);
+            text.textContent = edge.char;
+            this.svg.appendChild(text);
+        });
+
+        // Draw nodes
+        const drawNodeRecursive = (node) => {
+            const pos = nodePositions.get(node.id);
+            const g = this.createNodeElement(node, pos.x, pos.y, pathSet.has(node.id));
+            this.svg.appendChild(g);
+            Object.values(node.children).forEach(drawNodeRecursive);
+        };
+        drawNodeRecursive(trieRoot);
+    }
+    
+    createNodeElement(node, x, y, isOnPath) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        g.classList.add('trie-node');
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 18);
+        circle.style.fill = node.isEnd ? 'var(--color-trie-node-end)' : 'var(--color-trie-node-fill)';
+        circle.style.stroke = isOnPath ? 'var(--color-trie-path)' : 'var(--color-trie-node-stroke)';
+        if (node.id === 0) circle.style.stroke = 'var(--color-primary)';
+        circle.style.strokeWidth = 3;
+        g.appendChild(circle);
+        return g;
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    wordInput = document.getElementById('word_input');
+    insertButton = document.getElementById('insert_button');
+    searchButton = document.getElementById('search_button');
+    startsWithButton = document.getElementById('startswith_button');
+    nextStepButton = document.getElementById('next_step_button');
+    resetButton = document.getElementById('reset_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    trieContainer = document.getElementById('trie_container');
+    logContainer = document.getElementById('log_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultTitle = document.getElementById('final_result_title');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new TrieAnimation();
+    anim.initUI();
+    trieDrawer = new TrieGraph(document.querySelector('#trie_container svg'));
+    anim.reset();
+    
+    insertButton.addEventListener('click', () => anim.startOperation('insert'));
+    searchButton.addEventListener('click', () => anim.startOperation('search'));
+    startsWithButton.addEventListener('click', () => anim.startOperation('startsWith'));
+    nextStepButton.addEventListener('click', () => anim.next());
+    resetButton.addEventListener('click', () => anim.reset());
+    modalCloseBtn.addEventListener('click', () => {
+        resultModal.style.display = 'none';
+        anim.clearAnimation();
+    });
+});
+</script>
+</body>
+</html>

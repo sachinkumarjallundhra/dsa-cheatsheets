@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexicographical Numbers Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔢 Lexicographical Numbers – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Lexicographical Numbers</b> problem (LeetCode 386) asks you to return the numbers from 1 to n in lexicographical (dictionary) order.
+        </p>
+
+        <h2>🎯 Solution Pattern (DFS Traversal)</h2>
+        <pre><code>// Java Solution (DFS)
+class Solution {
+    public List&lt;Integer&gt; lexicalOrder(int n) {
+        List&lt;Integer&gt; res = new ArrayList&lt;&gt;();
+        for (int i = 1; i &lt;= 9; i++) {
+            dfs(i, n, res);
+        }
+        return res;
+    }
+
+    private void dfs(int curr, int n, List&lt;Integer&gt; res) {
+        if (curr &gt; n) return;
+        res.add(curr);
+        for (int i = 0; i &lt;= 9; i++) {
+            int next = curr * 10 + i;
+            if (next &gt; n) break;
+            dfs(next, n, res);
+        }
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/lexicographical_numbers_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Lexicographical enumeration of numbers</li>
+            <li>Trie-based number traversal</li>
+            <li>Efficient sorting without converting to strings</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Start DFS from 1 to 9</li>
+            <li>For each number, add it to the result list</li>
+            <li>Recursively visit next numbers by multiplying by 10 and adding 0-9</li>
+            <li>Stop recursion if the number exceeds n</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(n)</code> (each number is visited once)</li>
+            <li><b>Space:</b> <code>O(n)</code> (for the result list and recursion stack)</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>n is a single digit</li>
+            <li>n = 0 (should return empty list)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: n = 13
+Output: [1,10,11,12,13,2,3,4,5,6,7,8,9]
+Explanation: Numbers from 1 to 13 in lexicographical order.
+</code></pre>
+    </div>
+    <style>
+    .animation-btn {
+        display: inline-block;
+        margin: 10px 0 18px 0;
+        padding: 8px 18px;
+        background: #007bff;
+        color: #fff !important;
+        font-weight: 500;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .animation-btn:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 16px rgba(44,62,80,0.15);
+    }
+    </style>
+</body>
+</html>

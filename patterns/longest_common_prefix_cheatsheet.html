@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Common Prefix Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Longest Common Prefix – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Longest Common Prefix</b> problem (LeetCode 14) asks you to find the longest common prefix string amongst an array of strings. If there is no common prefix, return an empty string.
+        </p>
+
+        <h2>🎯 Solution Pattern (Trie Approach)</h2>
+<pre><code>// Java Solution (Trie)
+class TrieNode {
+    TrieNode[] children = new TrieNode[26];
+    int count = 0;
+}
+
+class Solution {
+    public String longestCommonPrefix(String[] strs) {
+        if (strs == null || strs.length == 0) return "";
+        TrieNode root = new TrieNode();
+        int n = strs.length;
+
+        // Build Trie
+        for (String word : strs) {
+            TrieNode node = root;
+            for (char c : word.toCharArray()) {
+                int idx = c - 'a';
+                if (node.children[idx] == null) node.children[idx] = new TrieNode();
+                node = node.children[idx];
+                node.count++;
+            }
+        }
+
+        // Find prefix
+        StringBuilder prefix = new StringBuilder();
+        TrieNode node = root;
+        outer:
+        for (char c : strs[0].toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null || node.children[idx].count != n) break;
+            prefix.append(c);
+            node = node.children[idx];
+        }
+        return prefix.toString();
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/longest_common_prefix_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>🎯 Solution Pattern (Horizontal Scanning)</h2>
+        <pre><code>// Java Solution (Horizontal Scanning)
+class Solution {
+    public String longestCommonPrefix(String[] strs) {
+        if (strs == null || strs.length == 0) return "";
+        String prefix = strs[0];
+        for (int i = 1; i < strs.length; i++) {
+            while (strs[i].indexOf(prefix) != 0) {
+                prefix = prefix.substring(0, prefix.length() - 1);
+                if (prefix.isEmpty()) return "";
+            }
+        }
+        return prefix;
+    }
+}
+</code></pre>
+
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Autocomplete systems</li>
+            <li>DNA sequence analysis</li>
+            <li>Finding common patterns in strings</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Start with the first string as the prefix</li>
+            <li>Iterate through the rest of the strings</li>
+            <li>Reduce the prefix until it matches the start of each string</li>
+            <li>If prefix becomes empty, return ""</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(S)</code>, where <code>S</code> is the sum of all characters in all strings</li>
+            <li><b>Space:</b> <code>O(1)</code> (ignoring output)</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty input array</li>
+            <li>Array contains empty string(s)</li>
+            <li>No common prefix</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: strs = ["flower","flow","flight"]
+Output: "fl"
+Explanation: "fl" is the longest common prefix among the input strings.
+</code></pre>
+    </div>
+    <style>
+    .animation-btn {
+        display: inline-block;
+        margin: 10px 0 18px 0;
+        padding: 8px 18px;
+        background: #007bff;
+        color: #fff !important;
+        font-weight: 500;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .animation-btn:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 16px rgba(44,62,80,0.15);
+    }
+    </style>
+</body>
+</html>

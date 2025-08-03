@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trie Pattern Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔤 Trie Pattern – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Trie</b> (Prefix Tree) is a tree-like data structure used to efficiently store and retrieve keys in a dataset of strings. It is commonly used for autocomplete, spell checking, and prefix-based queries.
+        </p>
+
+        <h2>🎯 Solution Pattern (Basic Trie Implementation)</h2>
+        <pre><code>// Java Trie Implementation
+class TrieNode {
+    TrieNode[] children = new TrieNode[26];
+    boolean isEnd = false;
+}
+
+class Trie {
+    TrieNode root = new TrieNode();
+
+    public void insert(String word) {
+        TrieNode node = root;
+        for (char c : word.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) node.children[idx] = new TrieNode();
+            node = node.children[idx];
+        }
+        node.isEnd = true;
+    }
+
+    public boolean search(String word) {
+        TrieNode node = root;
+        for (char c : word.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) return false;
+            node = node.children[idx];
+        }
+        return node.isEnd;
+    }
+
+    public boolean startsWith(String prefix) {
+        TrieNode node = root;
+        for (char c : prefix.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) return false;
+            node = node.children[idx];
+        }
+        return true;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/trie_pattern_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Autocomplete and prefix search</li>
+            <li>Spell checker</li>
+            <li>Word dictionary problems</li>
+            <li>Efficient string matching</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize the root node</li>
+            <li>For <b>insert</b>, traverse or create nodes for each character</li>
+            <li>For <b>search</b>, traverse nodes and check <code>isEnd</code></li>
+            <li>For <b>startsWith</b>, traverse nodes for the prefix</li>
+        </ol>
+
+        <h2>📘 Common LeetCode Trie Problems</h2>
+        <div class="problems-section">
+            <h3 class="problems-header easy">🟢 Easy Problems</h3>
+            <ul class="problems-list">
+                <li>
+                    <div class="problem-card easy">
+                        <div class="problem-title">
+                            Longest Common Prefix
+                            <span class="badge badge-easy">Easy</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/longest-common-prefix/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="longest_common_prefix_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find the longest common prefix among strings.
+                        </div>
+                    </div>
+                </li>
+            </ul>
+
+            <h3 class="problems-header medium">🟡 Medium Problems</h3>
+            <ul class="problems-list">
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Implement Trie (Prefix Tree)
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/implement-trie-prefix-tree/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="trie_pattern_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Classic Trie implementation for insert, search, and prefix.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Search Suggestions System
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/search-suggestions-system/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="search_suggestions_system_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Suggest up to 3 products for each prefix typed.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Replace Words
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/replace-words/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="replace_words_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Replace words in a sentence with shortest root in dictionary.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Design Add and Search Words Data Structure
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/design-add-and-search-words-data-structure/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="design_add_and_search_words_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Trie with support for '.' wildcard in search.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Top K Frequent Words
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/top-k-frequent-words/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="top_k_frequent_words_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find k most frequent words, sorted lexicographically.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Index Pairs of a String
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/index-pairs-of-a-string/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="index_pairs_of_a_string_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find all substring index pairs matching dictionary words.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Lexicographical Numbers
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/lexicographical-numbers/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="lexicographical_numbers_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Return numbers from 1 to n in lexicographical order.
+                        </div>
+                    </div>
+                </li>
+            </ul>
+
+            <h3 class="problems-header hard">🔴 Hard Problems</h3>
+            <ul class="problems-list">
+                <li>
+                    <div class="problem-card hard">
+                        <div class="problem-title">
+                            Word Search II
+                            <span class="badge badge-hard">Hard</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/word-search-ii/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="word_search_ii_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find all words in a board using Trie and DFS.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card hard">
+                        <div class="problem-title">
+                            K-th Smallest in Lexicographical Order
+                            <span class="badge badge-hard">Hard</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/k-th-smallest-in-lexicographical-order/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="kth_smallest_in_lexicographical_order_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find the k-th smallest number in lexicographical order.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card hard">
+                        <div class="problem-title">
+                            Palindrome Pairs
+                            <span class="badge badge-hard">Hard</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/palindrome-pairs/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="palindrome_pairs_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find all pairs of words that form a palindrome.
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+                    <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty string input</li>
+            <li>Non-lowercase characters (extend implementation)</li>
+            <li>Duplicate words</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Trie trie = new Trie();
+trie.insert("apple");
+trie.search("apple");   // returns true
+trie.search("app");     // returns false
+trie.startsWith("app"); // returns true
+trie.insert("app");
+trie.search("app");     // returns true
+</code></pre>
+    </div>
+
+    <style>
+.problems-section {
+    margin-bottom: 32px;
+}
+.problems-header {
+    font-size: 1.2em;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+.problems-header.easy { color: #28a745; }
+.problems-header.medium { color: #ffc107; }
+.problems-header.hard { color: #dc3545; }
+.problems-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.problem-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    padding: 16px 18px 10px 18px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+    border-left: 6px solid #dee2e6;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.problem-card.easy { border-color: #28a745; }
+.problem-card.medium { border-color: #ffc107; }
+.problem-card.hard { border-color: #dc3545; }
+.problem-card:hover {
+    box-shadow: 0 4px 16px rgba(44,62,80,0.10);
+    border-left-width: 10px;
+}
+.problem-title {
+    font-weight: bold;
+    font-size: 1.08em;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+.badge-easy { background: #28a745; color: white; }
+.badge-medium { background: #ffc107; color: black; }
+.badge-hard { background: #dc3545; color: white; }
+.problem-actions {
+    margin-bottom: 6px;
+}
+.problem-actions a {
+    display: inline-block;
+    margin-right: 12px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.97em;
+    border: 1px solid #dee2e6;
+    transition: background 0.2s, color 0.2s;
+}
+.problem-actions a:hover {
+    background: #007bff;
+    color: #fff;
+}
+.problem-notes {
+    font-size: 0.93em;
+    color: #6c757d;
+    margin-bottom: 2px;
+    margin-top: 2px;
+}
+</style>
+
+</body>
+</html>

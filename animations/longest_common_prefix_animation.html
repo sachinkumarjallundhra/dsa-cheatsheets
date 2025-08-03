@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Common Prefix (Trie) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-warning: #f1c40f;
+            --color-info: #9b59b6;
+            --color-trie-node: #bdc3c7;
+            --color-trie-path: var(--color-info);
+            --color-count-match: var(--color-success);
+            --color-count-mismatch: #e74c3c;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(420px, 1.1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ebf5fb; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        #trie_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: auto; }
+        .trie-node text { font-family: 'Courier New', monospace; font-weight: bold; pointer-events: none; }
+        .trie-node .node-count { font-size: 1.2em; fill: white; }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .item-list { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+        .item { padding: 5px 10px; border-radius: 4px; font-family: 'Courier New', monospace; animation: item-add 0.4s ease; border: 2px solid transparent; transition: all 0.2s; }
+        .item.word { background-color: #e5e8e8; }
+        .item.word.highlight { border-color: var(--color-primary); background-color: #d6dbdf; font-weight: bold; }
+        
+        .analysis-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center; }
+        .analysis-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; font-size: 0.9em; }
+        .analysis-item .value { font-size: 1.8em; font-weight: bold; color: var(--color-text-dark); }
+        .analysis-item.full-width { grid-column: 1 / 3; }
+        #val-prefix { font-family: 'Courier New', monospace; font-size: 1.5em; background: #e8f8f7; padding: 5px 10px; border-radius: 4px; min-height: 28px; }
+        #val-check-count { transition: color 0.3s; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Longest Common Prefix (Trie)</h1>
+            <div class="controls">
+                <label>Words:</label> <textarea id="words_input">["flower","flow","flight"]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (Trie)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter words and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Trie Visualization</h2>
+            <div id="trie_container">
+                 <svg width="100%" height="100%"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Input Words</h2>
+                <div id="words_container" class="data-container item-list"></div>
+             </div>
+             <div class="panel">
+                <h2>Analysis</h2>
+                <div class="analysis-container">
+                    <div class="analysis-item"><span class="label">Total Words (n)</span><span id="val-n" class="value">-</span></div>
+                    <div class="analysis-item"><span class="label">Node Count</span><span id="val-check-count" class="value">-</span></div>
+                    <div class="analysis-item full-width"><span class="label">Current Prefix</span><div id="val-prefix"></div></div>
+                </div>
+             </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Complete!</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let wordsInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    trieContainer, wordsContainer, valN, valCheckCount, valPrefix,
+    resultModal, finalResultText, modalCloseBtn;
+let trieDrawer;
+
+class LCPAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, wordsContainer].forEach(c => c.innerHTML = '');
+        document.querySelector('#trie_container svg').innerHTML = '';
+        actionDisplay.textContent = "Enter words and click 'Start'.";
+        valN.textContent = '-';
+        valCheckCount.textContent = '-';
+        valCheckCount.style.color = 'var(--color-text-dark)';
+        valPrefix.textContent = '';
+    }
+    start() {
+        this.reset();
+        try {
+            const words = JSON.parse(wordsInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(words)) throw new Error("Invalid input.");
+            
+            this.initUI();
+            trieDrawer = new TrieGraph(document.querySelector('#trie_container svg'));
+            animationSteps = this.generateSteps(words);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) {
+                 this.renderState(animationSteps[0]);
+                 this.updateButtons();
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Words must be a valid JSON array of strings.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            `// Phase 1: Build Trie`,
+            `for word in strs:`,
+            `  node = root`,
+            `  for char in word:`,
+            `    // create child if needed`,
+            `    node = node.children[char]`,
+            `    node.count++`,
+            ``,
+            `// Phase 2: Find Prefix`,
+            `prefix = ""`,
+            `node = root`,
+            `for char in strs[0]:`,
+            `  node = node.children[char]`,
+            `  if node.count != n:`,
+            `    break`,
+            `  prefix += char`,
+            ``,
+            `return prefix`,
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(words) {
+        if (!words || words.length === 0) return [];
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        const n = words.length;
+        // CORRECTED: Root count starts at 0. It's just a placeholder.
+        let trie = { children: {}, count: 0, id: 0 };
+        let nodeIdCounter = 1;
+
+        let state = {
+            phase: 'build', line: null, msg: "Initializing...",
+            words, n, trie: {}, prefix: "", checkCount: null,
+            activeWordIndex: null, activeCharIndex: null, triePath: [],
+            finalResult: null
+        };
+        state.trie = JSON.parse(JSON.stringify(trie));
+        save(state);
+
+        // --- Build Phase ---
+        state.line = 1;
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            state.activeWordIndex = i;
+            state.msg = `Building Trie for word[${i}]: "${word}".`; save(state);
+            let node = trie;
+            state.triePath = [node.id];
+
+            for (let j = 0; j < word.length; j++) {
+                const char = word[j];
+                state.activeCharIndex = j;
+                state.line = 3; state.msg = `Processing char '${char}'.`; save(state);
+
+                if (!node.children[char]) {
+                    node.children[char] = { children: {}, count: 0, id: nodeIdCounter++ };
+                    state.trie = JSON.parse(JSON.stringify(trie));
+                    state.line = 4; state.msg = `Adding new node for '${char}'.`; save(state);
+                }
+                
+                state.line = 5; state.msg = `Moving to node for '${char}'.`; save(state);
+                node = node.children[char];
+                state.triePath.push(node.id);
+                
+                node.count++;
+                state.trie = JSON.parse(JSON.stringify(trie));
+                state.line = 6; state.msg = `Incrementing count for node '${char}' to ${node.count}.`; save(state);
+            }
+        }
+
+        // --- Search Phase ---
+        state.phase = 'search';
+        state.activeWordIndex = 0; // Search using the first word
+        state.activeCharIndex = null;
+        state.triePath = [trie.id];
+        state.line = 9; state.msg = `Trie build complete. Initializing prefix.`; save(state);
+
+        state.line = 10; state.msg = `Starting search from the root.`; save(state);
+        
+        let node = trie;
+        let prefix = "";
+        
+        state.line = 11; state.msg = `Searching along the first word: "${words[0]}".`; save(state);
+        for (let i = 0; i < words[0].length; i++) {
+            const char = words[0][i];
+            state.activeCharIndex = i;
+            state.msg = `Checking path for char '${char}'.`; save(state);
+            
+            const childNode = node.children[char];
+            if (!childNode) {
+                state.msg = `No path for '${char}', prefix search ends.`;
+                save(state);
+                break;
+            }
+            
+            node = childNode;
+            state.triePath.push(node.id);
+            state.line = 12; state.msg = `Moving to node '${char}'.`; save(state);
+            
+            state.checkCount = node.count;
+            state.line = 13; state.msg = `Check: Is node count (${node.count}) equal to total words (${n})?`; save(state);
+            
+            if (node.count !== n) {
+                state.msg = `No, count is ${node.count}. Not all words share this path. Prefix search ends.`;
+                state.line = 14; save(state);
+                break;
+            }
+            
+            state.msg = `Yes, count is ${n}. All words share this path so far.`;
+            prefix += char;
+            state.prefix = prefix;
+            state.line = 15; state.msg = `Appending '${char}' to prefix. Prefix is now "${prefix}".`; save(state);
+            state.checkCount = null;
+        }
+
+        state.finalResult = prefix;
+        state.line = 17; state.msg = `Search complete. Longest common prefix is "${prefix}".`;
+        state.activeWordIndex = null; state.activeCharIndex = null; state.triePath = [];
+        save(state);
+
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        wordsContainer.innerHTML = state.words.map((word, i) =>
+            `<div class="item word ${i === state.activeWordIndex ? 'highlight' : ''}">"${word}"</div>`
+        ).join('');
+        
+        valN.textContent = state.n;
+        valPrefix.textContent = `"${state.prefix}"`;
+        
+        if (state.checkCount !== null) {
+            valCheckCount.textContent = state.checkCount;
+            valCheckCount.style.color = state.checkCount === state.n ? 'var(--color-count-match)' : 'var(--color-count-mismatch)';
+        } else {
+            valCheckCount.textContent = '-';
+            valCheckCount.style.color = 'var(--color-text-dark)';
+        }
+
+        trieDrawer.draw(state.trie, state.triePath);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = `LCP is "${state.finalResult}"`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+
+class TrieGraph {
+    constructor(svg) { this.svg = svg; }
+    
+    draw(trieRoot, path) {
+        this.svg.innerHTML = '';
+        const pathSet = new Set(path);
+        const nodePositions = new Map();
+        const edges = [];
+        
+        const traverse = (node, x, y, depth) => {
+            nodePositions.set(node.id, { x, y });
+            const children = Object.entries(node.children).sort((a,b) => a[0].localeCompare(b[0]));
+            const totalWidth = children.length * 80;
+            let currentX = x - totalWidth / 2;
+            
+            children.forEach(([char, childNode]) => {
+                const childX = currentX + 40;
+                const childY = y + 100;
+                edges.push({ from: node.id, to: childNode.id, char });
+                traverse(childNode, childX, childY, depth + 1);
+                currentX += 80;
+            });
+        };
+        
+        traverse(trieRoot, this.svg.parentElement.clientWidth / 2, 80, 0);
+
+        // Draw edges
+        edges.forEach(edge => {
+            const fromPos = nodePositions.get(edge.from);
+            const toPos = nodePositions.get(edge.to);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+            line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+            line.style.stroke = pathSet.has(edge.from) && pathSet.has(edge.to) ? 'var(--color-trie-path)' : '#ccc';
+            line.style.strokeWidth = pathSet.has(edge.from) && pathSet.has(edge.to) ? 3 : 2;
+            this.svg.appendChild(line);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (fromPos.x + toPos.x) / 2 - 4);
+            text.setAttribute('y', (fromPos.y + toPos.y) / 2 + 5);
+            text.textContent = edge.char;
+            this.svg.appendChild(text);
+        });
+
+        // Draw nodes
+        const drawNodeRecursive = (node) => {
+            const pos = nodePositions.get(node.id);
+            const g = this.createNodeElement(node, pos.x, pos.y, pathSet.has(node.id));
+            this.svg.appendChild(g);
+            Object.values(node.children).forEach(drawNodeRecursive);
+        };
+        drawNodeRecursive(trieRoot);
+    }
+    
+    createNodeElement(node, x, y, isOnPath) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        g.classList.add('trie-node');
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 22);
+        circle.style.fill = isOnPath ? 'var(--color-trie-path)' : 'var(--color-trie-node)';
+        if (node.id === 0) {
+            circle.style.stroke = 'var(--color-primary)';
+            circle.style.fill = 'white'; // Make root distinct
+        } else {
+             circle.style.stroke = '#333';
+        }
+        circle.style.strokeWidth = 2;
+        g.appendChild(circle);
+
+        const countText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        countText.setAttribute('text-anchor', 'middle');
+        countText.setAttribute('dy', '0.35em');
+        countText.textContent = node.count;
+        countText.classList.add('node-count');
+        if (node.id === 0) {
+            countText.style.fill = 'var(--color-text-dark)';
+            countText.textContent = 'root'; // Label root node clearly
+        }
+        g.appendChild(countText);
+        
+        return g;
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    wordsInput = document.getElementById('words_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    trieContainer = document.getElementById('trie_container');
+    wordsContainer = document.getElementById('words_container');
+    valN = document.getElementById('val-n');
+    valCheckCount = document.getElementById('val-check-count');
+    valPrefix = document.getElementById('val-prefix');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new LCPAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

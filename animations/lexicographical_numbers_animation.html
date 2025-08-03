@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexicographical Numbers Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2980b9; --color-success: #2ecc71; --color-info: #8e44ad;
+            --color-node-current: var(--color-info);
+            --color-node-parent: #7f8c8d;
+            --color-node-child: #bdc3c7;
+            --color-node-invalid: #ecf0f1;
+            --color-node-invalid-text: #bdc3c7;
+            --color-node-result: var(--color-success);
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(420px, 1.1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ebf5fb; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        #tree_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .tree-node text { font-family: 'Courier New', monospace; font-weight: bold; font-size: 1.1em; pointer-events: none; }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .item-list { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+        .item { padding: 5px 10px; border-radius: 4px; font-family: 'Courier New', monospace; animation: item-add 0.4s ease; transition: all 0.2s; background-color: var(--color-node-result); color: white; }
+        
+        .state-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .state-item { text-align: center; background-color: #f8f9f9; padding: 10px; border-radius: 5px; border: 1px solid #f0f1f1; }
+        .state-item .label { font-weight: bold; color: #666; display: block; margin-bottom: 3px; font-size: 0.9em; }
+        .state-item .value { font-size: 1.8em; font-weight: bold; color: var(--color-text-dark); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.5em; font-weight: bold; margin: 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Lexicographical Numbers</h1>
+            <div class="controls">
+                <label>n:</label><input id="n_input" type="number" value="13">
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (DFS)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter n and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Conceptual Denary Tree View</h2>
+            <div id="tree_container">
+                 <svg width="100%" height="100%"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>State</h2>
+                <div class="state-container">
+                    <div class="state-item"><span class="label">n</span><span id="val-n" class="value">-</span></div>
+                    <div class="state-item"><span class="label">Current</span><span id="val-curr" class="value">-</span></div>
+                </div>
+             </div>
+             <div class="panel">
+                <h2>Result List</h2>
+                <div id="results_container" class="data-container item-list"></div>
+             </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Complete!</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let nInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    treeContainer, valN, valCurr, resultsContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let treeDrawer;
+
+class LexicalOrderAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        codeContainer.innerHTML = '';
+        document.querySelector('#tree_container svg').innerHTML = '';
+        actionDisplay.textContent = "Enter n and click 'Start'.";
+        valN.textContent = '-'; valCurr.textContent = '-';
+        resultsContainer.innerHTML = '';
+    }
+    start() {
+        this.reset();
+        try {
+            const n = parseInt(nInput.value);
+            if (isNaN(n) || n < 1) throw new Error("Invalid input.");
+            
+            this.initUI();
+            treeDrawer = new TreeVisualizer(document.querySelector('#tree_container svg'));
+            animationSteps = this.generateSteps(n);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) {
+                 this.renderState(animationSteps[0]);
+                 this.updateButtons();
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please enter a positive integer for n.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            `function lexicalOrder(n):`,
+            `  res = []`,
+            `  for i from 1 to 9:`,
+            `    dfs(i, n, res)`,
+            `  return res`,
+            ``,
+            `function dfs(curr, n, res):`,
+            `  if curr > n: return`,
+            `  res.add(curr)`,
+            `  for i from 0 to 9:`,
+            `    next = curr * 10 + i`,
+            `    if next > n: break`,
+            `    dfs(next, n, res)`,
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(n) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "Initializing...", n, curr: null, result: [],
+            finalResult: null,
+            highlights: { parent: null }
+        };
+        save(state);
+        
+        state.line = 1; state.msg = `Initialize an empty result list.`; save(state);
+
+        const generateDfsSteps = (curr, parent) => {
+            state.curr = curr;
+            state.highlights.parent = parent;
+            state.line = 7; state.msg = `DFS call with curr = ${curr}. Check if ${curr} > n.`; save(state);
+            
+            if (curr > n) {
+                state.msg = `Yes, ${curr} > ${n}. Pruning this branch. Return.`; save(state);
+                return;
+            }
+            state.msg = `No, ${curr} <= ${n}.`; save(state);
+
+            state.result.push(curr);
+            state.line = 8; state.msg = `Adding ${curr} to the result list.`; save(state);
+            
+            state.line = 9;
+            for (let i = 0; i <= 9; i++) {
+                state.msg = `Looping through children: trying to form next number with suffix ${i}.`; save(state);
+                const next = curr * 10 + i;
+                state.line = 10; state.msg = `Calculated next = ${next}.`; save(state);
+                
+                state.line = 11; state.msg = `Check if ${next} > n.`; save(state);
+                if (next > n) {
+                    state.msg = `Yes, ${next} > ${n}. All subsequent children will also be > n. Break loop.`;
+                    save(state);
+                    break;
+                }
+                
+                state.msg = `No, ${next} <= ${n}. Making recursive call.`;
+                state.line = 12; save(state);
+                generateDfsSteps(next, curr);
+                
+                state.curr = curr;
+                state.highlights.parent = parent;
+                state.line = 12; state.msg = `Returned from subtree of ${next}. Continuing loop for ${curr}.`;
+                save(state);
+                state.line = 9;
+            }
+            state.msg = `Finished exploring children of ${curr}. Returning.`; save(state);
+        };
+        
+        state.line = 2;
+        for (let i = 1; i <= 9; i++) {
+            if (i > n) break;
+            state.msg = `Starting DFS from root-level number ${i}.`;
+            state.line = 3; save(state);
+            generateDfsSteps(i, null);
+            state.curr = null;
+            state.highlights.parent = null;
+            state.msg = `DFS from ${i} complete. Moving to next root-level number.`;
+            state.line = 2; save(state);
+        }
+
+        state.finalResult = state.result;
+        state.line = 4; state.msg = "All starting digits processed. Algorithm complete.";
+        save(state);
+        
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        valN.textContent = state.n;
+        valCurr.textContent = state.curr !== null ? state.curr : '-';
+        resultsContainer.innerHTML = state.result.map(item => `<div class="item">${item}</div>`).join('');
+
+        treeDrawer.draw(state.n, state.curr, state.highlights.parent);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = `Result: [${state.finalResult.join(', ')}]`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+
+class TreeVisualizer {
+    constructor(svg) {
+        this.svg = svg;
+    }
+    
+    draw(n, curr, parent) {
+        this.svg.innerHTML = '';
+        if (curr === null && parent === null) {
+            // Initial state, show roots 1-9
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', '50%'); text.setAttribute('y', '50%');
+            text.setAttribute('text-anchor', 'middle'); text.setAttribute('font-size', '1.5em');
+            text.textContent = 'Starting DFS from roots 1 to 9...';
+            this.svg.appendChild(text);
+            return;
+        }
+
+        const width = this.svg.parentElement.clientWidth;
+        const height = this.svg.parentElement.clientHeight;
+
+        const parentPos = { x: width / 2, y: height * 0.2 };
+        const currPos = { x: width / 2, y: height * 0.5 };
+        const childY = height * 0.85;
+
+        // Draw parent
+        if (parent !== null) {
+            this.drawNode(parent, parentPos.x, parentPos.y, 'parent', n);
+            this.drawLine(parentPos.x, parentPos.y, currPos.x, currPos.y);
+        }
+        
+        // Draw current
+        if (curr !== null) {
+            this.drawNode(curr, currPos.x, currPos.y, 'current', n);
+
+            // Draw children
+            for (let i = 0; i < 10; i++) {
+                const childVal = curr * 10 + i;
+                const childX = width * (0.08 + (i * 0.085));
+                this.drawNode(childVal, childX, childY, 'child', n);
+                this.drawLine(currPos.x, currPos.y, childX, childY);
+            }
+        }
+    }
+
+    drawNode(val, x, y, type, n) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        g.classList.add('tree-node');
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 22);
+        
+        let fill, textColor = 'white';
+        if (val > n) {
+            fill = 'var(--color-node-invalid)';
+            textColor = 'var(--color-node-invalid-text)';
+        } else if (type === 'current') {
+            fill = 'var(--color-node-current)';
+        } else if (type === 'parent') {
+            fill = 'var(--color-node-parent)';
+        } else {
+            fill = 'var(--color-node-child)';
+        }
+        
+        circle.style.fill = fill;
+        circle.style.stroke = '#333';
+        circle.style.strokeWidth = 2;
+        g.appendChild(circle);
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('text-anchor', 'middle'); text.setAttribute('dy', '0.35em');
+        text.style.fill = textColor;
+        text.textContent = val;
+        g.appendChild(text);
+        
+        this.svg.appendChild(g);
+    }
+    
+    drawLine(x1, y1, x2, y2) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        line.style.stroke = '#bdc3c7';
+        line.style.strokeWidth = 2;
+        this.svg.insertBefore(line, this.svg.firstChild);
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    nInput = document.getElementById('n_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    treeContainer = document.getElementById('tree_container');
+    valN = document.getElementById('val-n');
+    valCurr = document.getElementById('val-curr');
+    resultsContainer = document.getElementById('results_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new LexicalOrderAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

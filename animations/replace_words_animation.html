@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Replace Words Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f7f9f9; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #34495e; --color-success: #2ecc71; --color-warning: #f1c40f;
+            --color-info: #3498db; --color-danger: #e74c3c;
+            --color-trie-node: #bdc3c7; --color-trie-path: #9b59b6;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(420px, 1.1fr);
+            grid-template-rows: auto 1fr;
+            grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ebedef; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 450px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.85em; flex-shrink: 1; overflow-y: auto; padding: 10px 0; }
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        #trie_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: auto; }
+        .trie-node text { font-family: 'Courier New', monospace; font-weight: bold; pointer-events: none; }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .item-list { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+        .item { padding: 5px 10px; border-radius: 4px; font-family: 'Courier New', monospace; border: 2px solid transparent; transition: all 0.2s; }
+        .item.dict-word { background-color: #e5e8e8; }
+        .item.dict-word.highlight { border-color: var(--color-primary); background-color: #d6dbdf; font-weight: bold; }
+        
+        #sentence_container { font-family: 'Courier New', monospace; font-size: 1.2em; line-height: 1.6; padding: 10px; background: #ebedef; border-radius: 4px; }
+        #sentence_container .word-span { padding: 2px 4px; border-radius: 3px; transition: all 0.3s; }
+        #sentence_container .word-span.highlight-process { background-color: var(--color-warning); }
+        #sentence_container .word-span.highlight-replace { background-color: var(--color-success); color: white; font-weight: bold; }
+        #sentence_container .word-span.highlight-keep { background-color: var(--color-info); color: white; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Replace Words</h1>
+            <div class="controls">
+                <label>Dictionary:</label> <textarea id="dict_input">["cat", "bat", "rat", "cattle"]</textarea>
+                <label>Sentence:</label> <textarea id="sentence_input">the cattle was rattled by the battery</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter data and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Dictionary Trie</h2>
+            <div id="trie_container">
+                 <svg width="100%" height="100%"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Dictionary Roots</h2>
+                <div id="dict_container" class="data-container item-list"></div>
+             </div>
+             <div class="panel">
+                <h2>Sentence Processing</h2>
+                <div id="sentence_container">-</div>
+             </div>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let dictInput, sentenceInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    trieContainer, dictContainer, sentenceContainer;
+let trieDrawer;
+
+class ReplaceWordsAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        simulationRunning = false;
+        animationSteps = []; currentStepIndex = 0;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, dictContainer, sentenceContainer].forEach(c => c.innerHTML = '');
+        const svg = document.querySelector('#trie_container svg');
+        if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = "Enter data and click 'Start'.";
+        sentenceContainer.textContent = '-';
+    }
+    start() {
+        this.reset();
+        try {
+            const dictionary = JSON.parse(dictInput.value.trim().replace(/'/g, '"'));
+            const sentence = sentenceInput.value.trim();
+            if (!Array.isArray(dictionary) || typeof sentence !== 'string') throw new Error("Invalid input.");
+            
+            this.initUI();
+            trieDrawer = new TrieGraph(document.querySelector('#trie_container svg'));
+            animationSteps = this.generateSteps(dictionary, sentence);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) {
+                 this.renderState(animationSteps[0]);
+            }
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please provide a valid JSON array for the dictionary and a sentence string.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning) return;
+        if (currentStepIndex >= animationSteps.length - 1) {
+            this.finish();
+            return;
+        }
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    finish() {
+        simulationRunning = false;
+        const lastState = animationSteps[animationSteps.length - 1];
+        if (lastState) this.renderState(lastState);
+        actionDisplay.textContent = 'Animation Complete!';
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning;
+        if (simulationRunning && currentStepIndex >= animationSteps.length - 1) {
+            nextStepButton.textContent = "Finish";
+        } else {
+            nextStepButton.textContent = "Next Step";
+        }
+    }
+    
+    initUI() {
+        const code = [
+            `// Phase 1: Build Trie`,
+            `for root in dictionary:`,
+            `  trie.insert(root)`,
+            ``,
+            `// Phase 2: Replace Words`,
+            `for word in sentence.split():`,
+            `  replacement = trie.getRoot(word)`,
+            `    // Search prefix char by char`,
+            `    // If a root is found, return it`,
+            `  result.add(replacement)`,
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(dictionary, sentence) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let trie = { children: {}, isEnd: false, id: 0 };
+        let nodeIdCounter = 1;
+        const sentenceWords = sentence.split(" ").filter(w => w.length > 0);
+
+        let state = {
+            phase: 'build', line: null, msg: "Initializing...",
+            dictionary: dictionary, sentenceWords: sentenceWords, resultWords: [...sentenceWords],
+            trie: {}, triePath: [], activeDictIndex: null, activeSentenceIndex: null
+        };
+        state.trie = JSON.parse(JSON.stringify(trie));
+        save(state);
+
+        // --- Phase 1: Build Trie ---
+        state.line = 0; save(state);
+        for (let i = 0; i < dictionary.length; i++) {
+            const rootWord = dictionary[i];
+            state.activeDictIndex = i;
+            state.line = 1; state.msg = `Inserting root: "${rootWord}"`; save(state);
+            let node = trie;
+            state.triePath = [node.id];
+
+            for (const char of rootWord) {
+                state.line = 2; state.msg = `Traversing for char '${char}'...`; save(state);
+                if (!node.children[char]) {
+                    node.children[char] = { children: {}, isEnd: false, id: nodeIdCounter++ };
+                }
+                node = node.children[char];
+                state.triePath.push(node.id);
+            }
+            node.isEnd = true;
+            state.trie = JSON.parse(JSON.stringify(trie));
+            state.msg = `Marking end of root "${rootWord}".`; save(state);
+        }
+
+        // --- Phase 2: Replace Words ---
+        state.phase = 'replace'; state.activeDictIndex = null; state.triePath = [];
+        state.line = 4; state.msg = `Trie build complete. Starting sentence processing.`; save(state);
+
+        for (let i = 0; i < sentenceWords.length; i++) {
+            const word = sentenceWords[i];
+            state.activeSentenceIndex = i;
+            state.line = 5; state.msg = `Processing word: "${word}"`; save(state);
+            state.line = 6; state.msg = `Searching for shortest root of "${word}" in Trie.`; save(state);
+            
+            let node = trie;
+            let currentPrefix = "";
+            let rootFound = false;
+            state.triePath = [node.id];
+            
+            for (const char of word) {
+                state.line = 7; state.msg = `Checking path for char '${char}'...`; save(state);
+                if (!node.children[char]) {
+                    state.msg = `Path broken at '${char}'. No root found for "${word}".`; save(state);
+                    break;
+                }
+                node = node.children[char];
+                state.triePath.push(node.id);
+                currentPrefix += char;
+                save(state); // Show traversal
+                
+                state.line = 8;
+                if (node.isEnd) {
+                    state.resultWords[i] = currentPrefix;
+                    state.msg = `Shortest root found: "${currentPrefix}". Replacing word.`; save(state);
+                    rootFound = true;
+                    break;
+                }
+            }
+
+            if (!rootFound) {
+                 state.msg = `Finished word "${word}" but no root was found. Keeping original.`;
+            }
+            
+            state.line = 9; state.msg = `Adding "${state.resultWords[i]}" to the final sentence.`; save(state);
+            state.triePath = [];
+        }
+        
+        state.msg = "Replacement complete!";
+        state.activeSentenceIndex = null; state.line = null;
+        save(state);
+
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        dictContainer.innerHTML = state.dictionary.map((w, i) =>
+            `<div class="item dict-word ${i === state.activeDictIndex ? 'highlight' : ''}">"${w}"</div>`
+        ).join('');
+        
+        sentenceContainer.innerHTML = state.resultWords.map((word, i) => {
+            let className = 'word-span';
+            if (i === state.activeSentenceIndex) {
+                className += ' highlight-process';
+            } else if (i < state.activeSentenceIndex) {
+                 className += state.resultWords[i] !== state.sentenceWords[i] ? ' highlight-replace' : ' highlight-keep';
+            }
+            return `<span class="${className}">${word}</span>`;
+        }).join(' ');
+
+        trieDrawer.draw(state.trie, state.triePath);
+    }
+}
+
+class TrieGraph {
+    constructor(svg) { this.svg = svg; }
+    
+    draw(trieRoot, path) {
+        if (!trieRoot) return;
+        this.svg.innerHTML = '';
+        const pathSet = new Set(path);
+        const positions = new Map();
+        const edges = [];
+        const nodes = [];
+        const nodeWidth = 75; const nodeHeight = 90;
+
+        const setPositions = (node, x, y) => {
+            if (positions.has(node.id)) return;
+            positions.set(node.id, { x, y });
+            nodes.push({data: node, x, y});
+
+            const children = Object.entries(node.children).sort((a,b) => a[0].localeCompare(b[0]));
+            const totalWidth = children.length * nodeWidth;
+            let currentX = x - (totalWidth - nodeWidth) / 2;
+
+            children.forEach(([char, childNode]) => {
+                edges.push({ from: node.id, to: childNode.id, char });
+                setPositions(childNode, currentX, y + nodeHeight);
+                currentX += nodeWidth;
+            });
+        };
+        
+        setPositions(trieRoot, this.svg.parentElement.clientWidth / 2, 50);
+
+        const xCoords = Array.from(positions.values()).map(p => p.x);
+        const minX = Math.min(...xCoords) || 0;
+        const maxX = Math.max(...xCoords) || 0;
+        const xOffset = (this.svg.parentElement.clientWidth / 2) - ((minX + maxX) / 2);
+        positions.forEach(pos => { pos.x += xOffset; });
+
+        edges.forEach(edge => {
+            const fromPos = positions.get(edge.from);
+            const toPos = positions.get(edge.to);
+            if (!fromPos || !toPos) return;
+            const isOnPath = pathSet.has(edge.from) && pathSet.has(edge.to);
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+            line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+            line.style.stroke = isOnPath ? 'var(--color-trie-path)' : '#ccc';
+            line.style.strokeWidth = isOnPath ? 4 : 2;
+            g.appendChild(line);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (fromPos.x + toPos.x) / 2 );
+            text.setAttribute('y', (fromPos.y + toPos.y) / 2 + 5);
+            text.setAttribute('text-anchor', 'middle');
+            text.textContent = edge.char;
+            text.style.fill = isOnPath ? 'var(--color-trie-path)' : 'black';
+            text.style.fontWeight = 'bold';
+            g.appendChild(text);
+            this.svg.appendChild(g);
+        });
+
+        nodes.forEach(nodeInfo => {
+            const pos = positions.get(nodeInfo.data.id);
+            if(!pos) return;
+            const g = this.createNodeElement(nodeInfo.data, pos.x, pos.y, pathSet.has(nodeInfo.data.id));
+            this.svg.appendChild(g);
+        });
+    }
+    
+    createNodeElement(node, x, y, isOnPath) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        g.classList.add('trie-node');
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 18);
+        circle.style.fill = isOnPath ? 'var(--color-trie-path)' : (node.id === 0 ? 'var(--color-primary)' : 'var(--color-trie-node)');
+        circle.style.stroke = node.isEnd ? 'var(--color-success)' : '#333';
+        circle.style.strokeWidth = node.isEnd ? 4 : 2;
+        g.appendChild(circle);
+
+        if (node.id === 0) {
+            const rootText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            rootText.setAttribute('text-anchor', 'middle');
+            rootText.setAttribute('y', 6);
+            rootText.style.fill = 'white';
+            rootText.textContent = 'R';
+            g.appendChild(rootText);
+        }
+        return g;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    dictInput = document.getElementById('dict_input');
+    sentenceInput = document.getElementById('sentence_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    trieContainer = document.getElementById('trie_container');
+    dictContainer = document.getElementById('dict_container');
+    sentenceContainer = document.getElementById('sentence_container');
+    
+    const anim = new ReplaceWordsAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+});
+</script>
+</body>
+</html>

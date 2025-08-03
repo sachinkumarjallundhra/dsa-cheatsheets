@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palindrome Pairs Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Palindrome Pairs – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Palindrome Pairs</b> problem (LeetCode 336) asks you to find all unique pairs of indices <code>(i, j)</code> such that the concatenation of <code>words[i] + words[j]</code> is a palindrome.
+        </p>
+
+        <h2>🎯 Solution Pattern (Trie + HashMap)</h2>
+        <pre><code>// Java Solution (Trie + HashMap)
+class TrieNode {
+    TrieNode[] children = new TrieNode[26];
+    int index = -1;
+    List&lt;Integer&gt; palinSuffix = new ArrayList&lt;&gt;();
+}
+
+class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; palindromePairs(String[] words) {
+        List&lt;List&lt;Integer&gt;&gt; res = new ArrayList&lt;&gt;();
+        TrieNode root = new TrieNode();
+
+        // Build Trie with reversed words
+        for (int i = 0; i &lt; words.length; i++) {
+            String word = words[i];
+            TrieNode node = root;
+            for (int j = word.length() - 1; j &gt;= 0; j--) {
+                if (isPalindrome(word, 0, j)) node.palinSuffix.add(i);
+                int idx = word.charAt(j) - 'a';
+                if (node.children[idx] == null) node.children[idx] = new TrieNode();
+                node = node.children[idx];
+            }
+            node.index = i;
+            node.palinSuffix.add(i);
+        }
+
+        // Search for pairs
+        for (int i = 0; i &lt; words.length; i++) {
+            TrieNode node = root;
+            String word = words[i];
+            int j = 0;
+            for (; j &lt; word.length(); j++) {
+                if (node.index &gt;= 0 && node.index != i && isPalindrome(word, j, word.length() - 1)) {
+                    res.add(Arrays.asList(i, node.index));
+                }
+                int idx = word.charAt(j) - 'a';
+                if (node.children[idx] == null) break;
+                node = node.children[idx];
+            }
+            if (j == word.length()) {
+                for (int idx : node.palinSuffix) {
+                    if (i != idx) res.add(Arrays.asList(i, idx));
+                }
+            }
+        }
+        return res;
+    }
+
+    private boolean isPalindrome(String s, int l, int r) {
+        while (l &lt; r) {
+            if (s.charAt(l++) != s.charAt(r--)) return false;
+        }
+        return true;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/palindrome_pairs_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+<p>
+    <a href="https://leetcode.com/problems/palindrome-pairs/editorial/" target="_blank">
+        📖 Read Official Editorial on LeetCode
+    </a>
+</p>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding palindrome pairs in a list of words</li>
+            <li>Efficient multi-word palindrome search</li>
+            <li>String manipulation and pattern matching</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build a Trie with reversed words, storing indices and palindromic suffixes</li>
+            <li>For each word, traverse the Trie to find valid pairs</li>
+            <li>Check for palindromic substrings during traversal</li>
+            <li>Collect all valid (i, j) pairs</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Build Trie:</b> <code>O(N * L^2)</code>, where <code>N</code> is the number of words and <code>L</code> is the average word length</li>
+            <li><b>Search:</b> <code>O(N * L^2)</code></li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty string in words</li>
+            <li>Duplicate words</li>
+            <li>No palindrome pairs</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: words = ["abcd","dcba","lls","s","sssll"]
+Output: [[0,1],[1,0],[3,2],[2,4]]
+Explanation: "abcd" + "dcba" = "abcddcba", "lls" + "s" = "llss", etc.
+</code></pre>
+    </div>
+    <style>
+    .animation-btn {
+        display: inline-block;
+        margin: 10px 0 18px 0;
+        padding: 8px 18px;
+        background: #007bff;
+        color: #fff !important;
+        font-weight: 500;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .animation-btn:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 16px rgba(44,62,80,0.15);
+    }
+    </style>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palindrome Pairs Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f7f9f9; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #34495e; --color-success: #2ecc71; --color-warning: #f1c40f;
+            --color-info: #3498db; --color-danger: #e74c3c;
+            --color-trie-node: #bdc3c7;
+            --color-trie-path: #9b59b6;
+            --color-trie-index: #e67e22;
+            --color-trie-palin: #1abc9c;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(480px, 1.2fr) 2fr minmax(420px, 1.1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ebedef; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.85em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        #trie_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: auto; }
+        .trie-node text { font-family: 'Courier New', monospace; font-weight: bold; pointer-events: none; }
+        .trie-node .node-char { font-size: 1.2em; }
+        .trie-node .node-index { font-size: 0.9em; fill: var(--color-trie-index); }
+        .trie-node .node-palin { font-size: 0.8em; fill: var(--color-trie-palin); }
+
+        .data-container { overflow-y: auto; flex-grow: 1; padding: 5px; background: #fafafa; border-radius: 4px; }
+        .item-list { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+        .item { padding: 5px 10px; border-radius: 4px; font-family: 'Courier New', monospace; animation: item-add 0.4s ease; border: 2px solid transparent; transition: all 0.2s; }
+        .item.word { background-color: #e5e8e8; }
+        .item.word.highlight { border-color: var(--color-primary); background-color: #d6dbdf; font-weight: bold; }
+        .item.result { background-color: #d5f5e3; font-weight: bold; border-color: #a3e9a4; }
+        
+        .palindrome-panel { text-align: center; font-family: 'Courier New', monospace; font-size: 1.2em; padding: 10px; background: #fef9e7; border: 1px solid #f8e1a7; border-radius: 4px; }
+        .palindrome-check { letter-spacing: 0.1em; font-weight: bold; }
+        .palindrome-check .l-ptr { text-decoration: underline; text-decoration-color: var(--color-info); }
+        .palindrome-check .r-ptr { text-decoration: underline; text-decoration-color: var(--color-danger); }
+        .palindrome-result { font-weight: bold; margin-top: 8px; font-size: 1em; }
+        .palindrome-result.yes { color: var(--color-success); }
+        .palindrome-result.no { color: var(--color-danger); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.5em; font-weight: bold; margin: 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Palindrome Pairs</h1>
+            <div class="controls">
+                <label>Words:</label> <textarea id="words_input">["abcd","dcba","lls","s",""]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm (Trie)</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter words and click 'Start'.</div>
+            </div>
+             <div class="panel">
+                <h2>Palindrome Check</h2>
+                <div class="palindrome-panel">
+                    <div id="palindrome-check-str" class="palindrome-check">-</div>
+                    <div id="palindrome-check-res" class="palindrome-result"></div>
+                </div>
+             </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Trie of Reversed Words</h2>
+            <div id="trie_container">
+                 <svg width="100%" height="100%"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Input Words</h2>
+                <div id="words_container" class="data-container item-list"></div>
+             </div>
+             <div class="panel">
+                <h2>Result Pairs [i, j]</h2>
+                <div id="results_container" class="data-container item-list"></div>
+             </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Complete!</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let wordsInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    trieContainer, wordsContainer, resultsContainer,
+    palindromeCheckStr, palindromeCheckRes,
+    resultModal, finalResultText, modalCloseBtn;
+let trieDrawer;
+
+class PalindromePairsAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, wordsContainer, resultsContainer].forEach(c => c.innerHTML = '');
+        document.querySelector('#trie_container svg').innerHTML = '';
+        actionDisplay.textContent = "Enter words and click 'Start'.";
+        palindromeCheckStr.textContent = '-';
+        palindromeCheckRes.textContent = '';
+    }
+    start() {
+        this.reset();
+        try {
+            const words = JSON.parse(wordsInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(words)) throw new Error("Invalid input.");
+            
+            this.initUI();
+            trieDrawer = new TrieGraph(document.querySelector('#trie_container svg'));
+            animationSteps = this.generateSteps(words);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) {
+                 this.renderState(animationSteps[0]);
+                 this.updateButtons();
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Words must be a valid JSON array of strings.");
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            `// Phase 1: Build Trie with reversed words`,
+            `for i from 0 to words.length-1:`,
+            `  word = words[i]`,
+            `  node = root`,
+            `  for j from word.length-1 down to 0:`,
+            `    if isPalindrome(word, 0, j):`,
+            `      node.palinSuffix.add(i)`,
+            `    // ... move to child node`,
+            `  node.index = i`,
+            `  node.palinSuffix.add(i)`,
+            ``,
+            `// Phase 2: Search for pairs`,
+            `for i from 0 to words.length-1:`,
+            `  word = words[i]`,
+            `  node = root`,
+            `  for j from 0 to word.length-1:`,
+            `    if node.index >= 0 and isPalindrome(word, j, ...):`,
+            `      res.add([i, node.index])`,
+            `    // ... move to child node`,
+            `  if j == word.length:`,
+            `    for idx in node.palinSuffix:`,
+            `      res.add([i, idx])`,
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(words) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        const isPalindrome = (s, l, r) => { while(l<r) if(s[l++]!=s[r--]) return false; return true; };
+
+        let trie = { children: {}, index: -1, palinSuffix: [], id: 0 };
+        let nodeIdCounter = 1;
+
+        let state = {
+            phase: 'build', line: null, msg: "Initializing...",
+            words: words, results: [], trie: {},
+            activeWordIdx: null, activeCharIdx: null, triePath: [],
+            palindromeCheck: null, // { str, l, r, result }
+            finalResult: null
+        };
+        state.trie = JSON.parse(JSON.stringify(trie));
+        save(state);
+
+        // --- Build Phase ---
+        state.line = 1;
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            state.activeWordIdx = i;
+            state.msg = `Building Trie for word[${i}]: "${word}" (reversed).`; save(state);
+            let node = trie;
+            state.triePath = [node.id];
+
+            for (let j = word.length - 1; j >= 0; j--) {
+                const char = word[j];
+                state.activeCharIdx = j;
+                state.msg = `Checking if prefix "${word.substring(0, j + 1)}" is a palindrome.`;
+                state.line = 5; save(state);
+
+                if (isPalindrome(word, 0, j)) {
+                    node.palinSuffix.push(i);
+                    state.trie = JSON.parse(JSON.stringify(trie));
+                    state.msg = `It is! Add index ${i} to palinSuffix list of current Trie node.`;
+                    state.line = 6; save(state);
+                }
+                
+                state.line = 7;
+                if (!node.children[char]) {
+                    node.children[char] = { children: {}, index: -1, palinSuffix: [], id: nodeIdCounter++ };
+                    state.trie = JSON.parse(JSON.stringify(trie));
+                    state.msg = `Adding char '${char}' to Trie.`; save(state);
+                }
+                node = node.children[char];
+                state.triePath.push(node.id);
+                state.msg = `Moving to node for '${char}'.`; save(state);
+            }
+            node.index = i;
+            node.palinSuffix.push(i); // Empty string suffix is a palindrome
+            state.trie = JSON.parse(JSON.stringify(trie));
+            state.line = 8; state.msg = `Word finished. Set index=${i}.`; save(state);
+            state.line = 9; save(state);
+        }
+
+        // --- Search Phase ---
+        state.phase = 'search';
+        state.activeWordIdx = null; state.activeCharIdx = null; state.triePath = [];
+        state.msg = `Trie build complete. Starting search phase.`; save(state);
+
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            let node = trie;
+            state.activeWordIdx = i;
+            state.triePath = [node.id];
+            state.line = 12;
+            state.msg = `Searching with word[${i}]: "${word}".`; save(state);
+            
+            let j = 0;
+            for (; j < word.length; j++) {
+                const char = word[j];
+                state.activeCharIdx = j;
+                state.line = 16;
+                state.msg = `Checking node for index and palindrome suffix.`; save(state);
+
+                // Case 1 & 2
+                if (node.index >= 0 && node.index !== i) {
+                    if (isPalindrome(word, j, word.length - 1)) {
+                         state.palindromeCheck = { str: word, l: j, r: word.length - 1, result: 'yes' };
+                         state.msg = `Found word index ${node.index}. Remaining part of "${word}" is a palindrome.`; save(state);
+                         state.results.push([i, node.index]);
+                         state.line = 17;
+                         state.msg = `Pair found: [${i}, ${node.index}]. Added to results.`; save(state);
+                         state.palindromeCheck = null;
+                    } else {
+                         state.palindromeCheck = { str: word, l: j, r: word.length - 1, result: 'no' };
+                         state.msg = `Found word index ${node.index}, but remaining part is NOT a palindrome.`; save(state);
+                         state.palindromeCheck = null;
+                    }
+                }
+                
+                if (!node.children[char]) { j = -1; break; }
+                node = node.children[char];
+                state.triePath.push(node.id);
+                state.line = 18;
+                state.msg = `Moving down the trie with char '${char}'.`; save(state);
+            }
+
+            // Case 1 & 3
+            if (j !== -1 && j === word.length) {
+                state.line = 19;
+                state.msg = `Finished word. Checking palinSuffix list: [${node.palinSuffix.join(', ')}]`; save(state);
+                for (const idx of node.palinSuffix) {
+                    if (i !== idx) {
+                        state.results.push([i, idx]);
+                        state.line = 21;
+                        state.msg = `Pair found from palinSuffix: [${i}, ${idx}]. Added to results.`; save(state);
+                    }
+                }
+            }
+        }
+        
+        state.finalResult = state.results;
+        state.msg = "All words processed. Search complete.";
+        state.activeWordIdx = null; state.activeCharIdx = null; state.triePath = [];
+        save(state);
+
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        wordsContainer.innerHTML = state.words.map((word, i) =>
+            `<div class="item word ${i === state.activeWordIdx ? 'highlight' : ''}">"${word}" <sub>${i}</sub></div>`
+        ).join('');
+        
+        resultsContainer.innerHTML = state.results.map(pair =>
+            `<div class="item result">[${pair[0]}, ${pair[1]}]</div>`
+        ).join('');
+
+        if (state.palindromeCheck) {
+            const { str, l, r, result } = state.palindromeCheck;
+            const pre = str.substring(0, l);
+            const lChar = str.substring(l, l + 1);
+            const mid = str.substring(l + 1, r);
+            const rChar = str.substring(r, r + 1);
+            const post = str.substring(r + 1);
+            palindromeCheckStr.innerHTML = `${pre}<span class="l-ptr">${lChar}</span>${mid}<span class="r-ptr">${rChar}</span>${post}`;
+            palindromeCheckRes.textContent = `Is Palindrome: ${result.toUpperCase()}`;
+            palindromeCheckRes.className = `palindrome-result ${result}`;
+        } else {
+            palindromeCheckStr.textContent = '-';
+            palindromeCheckRes.textContent = '';
+        }
+
+        trieDrawer.draw(state.trie, state.triePath);
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = `Found ${state.finalResult.length} pairs.`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+
+class TrieGraph {
+    constructor(svg) { this.svg = svg; }
+    
+    draw(trieRoot, path) {
+        this.svg.innerHTML = '';
+        const pathSet = new Set(path);
+        const nodePositions = new Map();
+        const edges = [];
+        
+        const traverse = (node, x, y, depth) => {
+            nodePositions.set(node.id, { x, y });
+            const children = Object.entries(node.children);
+            const totalWidth = children.length * 70;
+            let currentX = x - totalWidth / 2;
+            
+            children.forEach(([char, childNode]) => {
+                const childX = currentX + 35;
+                const childY = y + 100;
+                edges.push({ from: node.id, to: childNode.id, char });
+                traverse(childNode, childX, childY, depth + 1);
+                currentX += 70;
+            });
+        };
+        
+        traverse(trieRoot, this.svg.parentElement.clientWidth / 2, 60, 0);
+
+        // Draw edges
+        edges.forEach(edge => {
+            const fromPos = nodePositions.get(edge.from);
+            const toPos = nodePositions.get(edge.to);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', fromPos.x); line.setAttribute('y1', fromPos.y);
+            line.setAttribute('x2', toPos.x); line.setAttribute('y2', toPos.y);
+            line.style.stroke = pathSet.has(edge.from) && pathSet.has(edge.to) ? 'var(--color-trie-path)' : '#ccc';
+            line.style.strokeWidth = pathSet.has(edge.from) && pathSet.has(edge.to) ? 3 : 2;
+            this.svg.appendChild(line);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (fromPos.x + toPos.x) / 2 - 4);
+            text.setAttribute('y', (fromPos.y + toPos.y) / 2 + 5);
+            text.textContent = edge.char;
+            this.svg.appendChild(text);
+        });
+
+        // Draw nodes
+        const drawNodeRecursive = (node) => {
+            const pos = nodePositions.get(node.id);
+            const g = this.createNodeElement(node, pos.x, pos.y, pathSet.has(node.id));
+            this.svg.appendChild(g);
+            Object.values(node.children).forEach(drawNodeRecursive);
+        };
+        drawNodeRecursive(trieRoot);
+    }
+    
+    createNodeElement(node, x, y, isOnPath) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${x},${y})`);
+        g.classList.add('trie-node');
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', 18);
+        circle.style.fill = isOnPath ? 'var(--color-trie-path)' : 'var(--color-trie-node)';
+        if (node.id === 0) circle.style.stroke = 'var(--color-primary)'; else circle.style.stroke = '#333';
+        circle.style.strokeWidth = 2;
+        g.appendChild(circle);
+
+        if (node.index !== -1) {
+            const indexText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            indexText.setAttribute('y', 30);
+            indexText.setAttribute('text-anchor', 'middle');
+            indexText.textContent = `idx: ${node.index}`;
+            indexText.classList.add('node-index');
+            g.appendChild(indexText);
+        }
+        if (node.palinSuffix.length > 0) {
+             const palinText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+             palinText.setAttribute('y', -25);
+             palinText.setAttribute('text-anchor', 'middle');
+             palinText.textContent = `P: [${node.palinSuffix.join(',')}]`;
+             palinText.classList.add('node-palin');
+             g.appendChild(palinText);
+        }
+
+        return g;
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    wordsInput = document.getElementById('words_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    trieContainer = document.getElementById('trie_container');
+    wordsContainer = document.getElementById('words_container');
+    resultsContainer = document.getElementById('results_container');
+    palindromeCheckStr = document.getElementById('palindrome-check-str');
+    palindromeCheckRes = document.getElementById('palindrome-check-res');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new PalindromePairsAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

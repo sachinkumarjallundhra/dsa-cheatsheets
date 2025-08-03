@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top K Frequent Words Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔝 Top K Frequent Words – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Top K Frequent Words</b> problem (LeetCode 692) asks you to find the k most frequent words from a list. Words with the same frequency should be sorted lexicographically.
+        </p>
+
+        <h2>🎯 Solution Pattern (Trie + Bucket Sort)</h2>
+        <pre><code>// Java Solution (Trie + Bucket Sort)
+class Solution {
+    private int k;
+    private List&lt;String&gt; res;
+
+    class TrieNode {
+        TrieNode[] children;
+        boolean isWord;
+
+        public TrieNode() {
+            children = new TrieNode[26];
+            isWord = false;
+        }
+    }
+
+    public List&lt;String&gt; topKFrequent(String[] words, int k) {
+        this.k = k;
+        res = new ArrayList&lt;&gt;();
+        int n = words.length;
+        TrieNode[] bucket = new TrieNode[n + 1];
+        Map&lt;String, Integer&gt; cnt = new HashMap&lt;&gt;();
+
+        for (String word : words) {
+            cnt.put(word, cnt.getOrDefault(word, 0) + 1);
+        }
+
+        for (var entry : cnt.entrySet()) {
+            if (bucket[entry.getValue()] == null) {
+                bucket[entry.getValue()] = new TrieNode();
+            }
+            addWord(bucket[entry.getValue()], entry.getKey());
+        }
+
+        for (int i = n; i &gt; 0; i--) {
+            if (bucket[i] != null) {
+                getWords(bucket[i], "");
+            }
+            if (this.k == 0) {
+                break;
+            }
+        }
+        return res;
+    }
+
+    private void addWord(TrieNode root, String word) {
+        TrieNode cur = root;
+        for (char c : word.toCharArray()) {
+            if (cur.children[c - 'a'] == null) {
+                cur.children[c - 'a'] = new TrieNode();
+            }
+            cur = cur.children[c - 'a'];
+        }
+        cur.isWord = true;
+    }
+
+    private void getWords(TrieNode root, String prefix) {
+        if (k == 0) {
+            return;
+        }
+        if (root.isWord) {
+            k--;
+            res.add(prefix);
+        }
+        for (char c = 'a'; c <= 'z'; c++) {
+            if (root.children[c - 'a'] != null) {
+                getWords(root.children[c - 'a'], prefix + c);
+            }
+        }
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/top_k_frequent_words_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding most common words in a document</li>
+            <li>Keyword extraction</li>
+            <li>Search and recommendation systems</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Count frequency of each word using a HashMap</li>
+            <li>Use a PriorityQueue to sort by frequency and lexicographical order</li>
+            <li>Extract the top k words from the heap</li>
+        </ol>
+        <h2>⏱️ Time Complexity</h2>
+<ul>
+    <li>Counting frequencies: <code>O(N)</code>, where <code>N</code> is the number of words</li>
+    <li>Building buckets and tries: <code>O(U * L)</code>, where <code>U</code> is the number of unique words and <code>L</code> is the average word length</li>
+    <li>Collecting top K words: <code>O(K * 26 * L)</code> in worst case (trie traversal)</li>
+    <li><b>Overall:</b> <code>O(N + U * L + K * L)</code></li>
+</ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Words with same frequency (sort lexicographically)</li>
+            <li>k greater than number of unique words</li>
+            <li>Empty input list</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: words = ["i","love","leetcode","i","love","coding"], k = 2
+Output: ["i","love"]
+Explanation: "i" and "love" are the most frequent words.
+</code></pre>
+    </div>
+    <style>
+    .animation-btn {
+        display: inline-block;
+        margin: 10px 0 18px 0;
+        padding: 8px 18px;
+        background: #007bff;
+        color: #fff !important;
+        font-weight: 500;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 1em;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .animation-btn:hover {
+        background: #0056b3;
+        box-shadow: 0 4px 16px rgba(44,62,80,0.15);
+    }
+    </style>
+</body>
+</html>
