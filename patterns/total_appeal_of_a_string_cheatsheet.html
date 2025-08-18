@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total Appeal of a String Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌟 Total Appeal of a String – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Total Appeal of a String</b> problem (LeetCode 2262) asks you to find the sum of the appeal of all substrings of a string. The appeal of a substring is the number of distinct characters in it.
+        </p>
+
+        <h2>🎯 Solution Pattern (Last Occurrence Tracking)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public long appealSum(String s) {
+        long res = 0, cur = 0;
+        int[] last = new int[26];
+        Arrays.fill(last, -1);
+        for (int i = 0; i < s.length(); i++) {
+            cur += i - last[s.charAt(i) - 'a'];
+            res += cur;
+            last[s.charAt(i) - 'a'] = i;
+        }
+        return res;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Counting distinct characters in all substrings</li>
+            <li>Efficient substring property aggregation</li>
+            <li>Interview questions on string and array manipulation</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize an array to track the last occurrence of each character</li>
+            <li>For each character, update the current appeal by adding the distance from its last occurrence</li>
+            <li>Add the current appeal to the result</li>
+            <li>Update the last occurrence of the character</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> where N is the length of the string</li>
+            <li><b>Space:</b> <code>O(1)</code> (fixed alphabet size)</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty string (should return 0)</li>
+            <li>All characters the same</li>
+            <li>String with all distinct characters</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: s = "abbca"
+Output: 28
+Explanation: The total appeal is 28 for all substrings.
+</code></pre>
+    </div>
+</body>
+</html>

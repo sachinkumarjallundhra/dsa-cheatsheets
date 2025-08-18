@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design HashMap Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🛠️ Design HashMap – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Design HashMap</b> problem (LeetCode 706) asks you to implement a basic HashMap without using any built-in hash table libraries. You need to support <code>put</code>, <code>get</code>, and <code>remove</code> operations.
+        </p>
+
+        <h2>🎯 Solution Pattern (Separate Chaining)</h2>
+        <pre><code>// Java Solution (Separate Chaining)
+class MyHashMap {
+    private static class Node {
+        int key, value;
+        Node next;
+        Node(int k, int v) { key = k; value = v; }
+    }
+    private final int SIZE = 1009; // A prime number for better distribution
+    private Node[] buckets = new Node[SIZE];
+
+    public void put(int key, int value) {
+        int idx = key % SIZE;
+        if (buckets[idx] == null) {
+            buckets[idx] = new Node(-1, -1); // Dummy head
+        }
+        Node prev = find(buckets[idx], key);
+        if (prev.next == null) prev.next = new Node(key, value);
+        else prev.next.value = value;
+    }
+
+    public int get(int key) {
+        int idx = key % SIZE;
+        if (buckets[idx] == null) return -1;
+        Node prev = find(buckets[idx], key);
+        return prev.next == null ? -1 : prev.next.value;
+    }
+
+    public void remove(int key) {
+        int idx = key % SIZE;
+        if (buckets[idx] == null) return;
+        Node prev = find(buckets[idx], key);
+        if (prev.next != null) prev.next = prev.next.next;
+    }
+
+    // Find previous node of the node with given key
+    private Node find(Node head, int key) {
+        Node node = head, prev = null;
+        while (node.next != null && node.next.key != key) {
+            node = node.next;
+        }
+        return node;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Implementing custom hash tables</li>
+            <li>Understanding hash collisions and chaining</li>
+            <li>Learning low-level data structure design</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Choose a bucket size (preferably a prime number)</li>
+            <li>For each operation, compute the bucket index using <code>key % SIZE</code></li>
+            <li>Use a linked list (separate chaining) to handle collisions</li>
+            <li>For <code>put</code>, insert or update the value</li>
+            <li>For <code>get</code>, search for the key and return its value or -1</li>
+            <li>For <code>remove</code>, delete the node with the given key if it exists</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Average:</b> <code>O(1)</code> for put, get, remove (with good hash distribution)</li>
+            <li><b>Worst-case:</b> <code>O(N)</code> if all keys hash to the same bucket</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Duplicate keys (should update value)</li>
+            <li>Removing non-existent keys</li>
+            <li>Negative or large keys</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>MyHashMap map = new MyHashMap();
+map.put(1, 1); // map = {1=1}
+map.put(2, 2); // map = {1=1, 2=2}
+map.get(1);    // returns 1
+map.get(3);    // returns -1 (not found)
+map.put(2, 1); // update value, map = {1=1, 2=1}
+map.get(2);    // returns 1
+map.remove(2); // remove key 2, map = {1=1}
+map.get(2);    // returns -1 (not found)
+</code></pre>
+
+        <h2>📘 Common LeetCode HashMap Design Problems</h2>
+        <div class="problems-section">
+            <ul class="problems-list">
+                <li>
+                    <div class="problem-card easy">
+                        <div class="problem-title">
+                            Design HashMap
+                            <span class="badge badge-easy">Easy</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/design-hashmap/" target="_blank" class="leetcode-link">LeetCode</a>
+                        </div>
+                        <div class="problem-notes">
+                            Implement a basic hash map with put, get, and remove.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Design HashSet
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/design-hashset/" target="_blank" class="leetcode-link">LeetCode</a>
+                        </div>
+                        <div class="problem-notes">
+                            Implement a basic hash set with add, remove, and contains.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card hard">
+                        <div class="problem-title">
+                            LRU Cache
+                            <span class="badge badge-hard">Hard</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/lru-cache/" target="_blank" class="leetcode-link">LeetCode</a>
+                        </div>
+                        <div class="problem-notes">
+                            Design a cache with O(1) get and put using HashMap and Doubly Linked List.
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</body>

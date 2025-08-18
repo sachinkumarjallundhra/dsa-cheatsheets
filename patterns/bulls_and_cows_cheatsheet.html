@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulls and Cows Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🐂🐄 Bulls and Cows – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Bulls and Cows</b> problem (LeetCode 299) asks you to compare a secret number and a guess, and return a hint with the number of "bulls" (correct digit and position) and "cows" (correct digit, wrong position).
+        </p>
+
+        <h2>🎯 Solution Pattern (HashMap/Array Counting)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public String getHint(String secret, String guess) {
+        int bulls = 0, cows = 0;
+        int[] sCount = new int[10], gCount = new int[10];
+        for (int i = 0; i < secret.length(); i++) {
+            if (secret.charAt(i) == guess.charAt(i)) {
+                bulls++;
+            } else {
+                sCount[secret.charAt(i) - '0']++;
+                gCount[guess.charAt(i) - '0']++;
+            }
+        }
+        for (int i = 0; i < 10; i++) {
+            cows += Math.min(sCount[i], gCount[i]);
+        }
+        return bulls + "A" + cows + "B";
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Mastermind-style games</li>
+            <li>Digit comparison and feedback systems</li>
+            <li>Interview questions on string and array manipulation</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Iterate through both strings, count bulls (exact matches)</li>
+            <li>For non-bull digits, count their occurrences in secret and guess</li>
+            <li>Sum the minimum counts for each digit to get cows</li>
+            <li>Return the result in "xAyB" format</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(n)</code> where n is the length of the strings</li>
+            <li><b>Space:</b> <code>O(1)</code> (fixed size arrays for digits 0-9)</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Repeated digits</li>
+            <li>No bulls or cows</li>
+            <li>Empty strings</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: secret = "1807", guess = "7810"
+Output: "1A3B"
+Explanation: 1 bull (8), 3 cows (1, 0, 7)
+
+Input: secret = "1123", guess = "0111"
+Output: "1A1B"
+Explanation: 1 bull (1), 1 cow (1)
+</code></pre>
+    </div>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Longest Self-Contained Substring Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔒 Find Longest Self-Contained Substring – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Find Longest Self-Contained Substring</b> problem (LeetCode 1960, "Longest Substring of All Vowels in Order") asks you to find the longest substring in which all characters are unique and the substring is "self-contained" (no character outside the substring appears inside it).
+        </p>
+
+        <h2>🎯 Solution Pattern (Sliding Window + HashSet)</h2>
+        <pre><code>// Java Solution (Sliding Window)
+class Solution {
+    public int lengthOfLongestSubstring(String s) {
+        Set&lt;Character&gt; set = new HashSet&lt;&gt;();
+        int left = 0, maxLen = 0;
+        for (int right = 0; right &lt; s.length(); right++) {
+            while (set.contains(s.charAt(right))) {
+                set.remove(s.charAt(left++));
+            }
+            set.add(s.charAt(right));
+            maxLen = Math.max(maxLen, right - left + 1);
+        }
+        return maxLen;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding longest substring with all unique characters</li>
+            <li>Sliding window and hash set techniques</li>
+            <li>Interview questions on substring and window problems</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use a HashSet to track unique characters in the current window</li>
+            <li>Expand the window by moving the right pointer</li>
+            <li>If a duplicate is found, shrink the window from the left until unique</li>
+            <li>Update the maximum length found</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> where N is the length of the string</li>
+            <li><b>Space:</b> <code>O(K)</code> where K is the size of the character set</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty string (should return 0)</li>
+            <li>All characters are unique</li>
+            <li>All characters are the same</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: s = "abcabcbb"
+Output: 3
+Explanation: The answer is "abc", with length 3.
+
+Input: s = "bbbbb"
+Output: 1
+Explanation: The answer is "b", with length 1.
+</code></pre>
+
+        <h2>📚 Alternative Solution (Brute Force)</h2>
+        <pre><code>/*
+ * Find Longest Self-Contained Substring
+ * Returns the length of the longest substring where all its characters
+ * do not appear anywhere else in the string.
+ */
+class Solution {
+    public int longestSelfContainedSubstring(String s) {
+        int n = s.length();
+        int res = -1;
+        // Precompute frequency of each character in s
+        int[] freq = new int[26];
+        for (char c : s.toCharArray()) freq[c - 'a']++;
+        // Try all substrings except the whole string
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) { // substring s[i..j]
+                if (j - i + 1 == n) continue; // skip whole string
+                boolean valid = true;
+                int[] subFreq = new int[26];
+                for (int k = i; k <= j; k++) subFreq[s.charAt(k) - 'a']++;
+                for (int k = 0; k < 26; k++) {
+                    if (subFreq[k] > 0 && subFreq[k] != freq[k]) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid) res = Math.max(res, j - i + 1);
+            }
+        }
+        return res;
+    }
+}
+</code></pre>
+
+        <h2>📚 Alternative Solution (Efficient Interval Expansion)</h2>
+        <pre><code>/*
+ * Efficient solution using first/last occurrence and interval expansion.
+ * Returns the length of the longest self-contained substring.
+ */
+class Solution {
+    public int maxSubstringLength(String s) {
+        Map&lt;Character, Integer&gt; first = new HashMap&lt;&gt;();
+        Map&lt;Character, Integer&gt; last = new HashMap&lt;&gt;();
+
+        for (int i = 0; i &lt; s.length(); i++) {
+            char c = s.charAt(i);
+            if (!first.containsKey(c)) {
+                first.put(c, i);  
+            }
+            last.put(c, i); 
+        }
+
+        int maxLen = -1;
+
+        for (char c1 : first.keySet()) {
+            int start = first.get(c1);  
+            int end = last.get(c1);     
+            int j = start;              
+
+            while (j &lt; s.length()) {
+                char c2 = s.charAt(j);  
+
+                if (first.get(c2) &lt; start) {
+                    break;
+                }
+
+                end = Math.max(end, last.get(c2));
+
+                if (j == end && end - start + 1 != s.length()) {
+                    maxLen = Math.max(maxLen, end - start + 1);
+                }
+
+                j++; 
+            }
+        }
+
+        return maxLen;
+    }
+}
+</code></pre>
+    </div>
+</body>

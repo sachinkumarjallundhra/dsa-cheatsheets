@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logger Rate Limiter Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🕒 Logger Rate Limiter – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Logger Rate Limiter</b> problem (LeetCode 359) asks you to design a logger system that receives a stream of messages along with their timestamps, and returns <code>true</code> if the message should be printed (not printed in the last 10 seconds), otherwise returns <code>false</code>.
+        </p>
+
+        <h2>🎯 Solution Pattern (HashMap for Timestamp Tracking)</h2>
+        <pre><code>// Java Solution
+class Logger {
+    private Map&lt;String, Integer&gt; map;
+
+    public Logger() {
+        map = new HashMap&lt;&gt;();
+    }
+
+    public boolean shouldPrintMessage(int timestamp, String message) {
+        if (!map.containsKey(message) || timestamp - map.get(message) >= 10) {
+            map.put(message, timestamp);
+            return true;
+        }
+        return false;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Rate limiting log messages</li>
+            <li>Spam prevention in chat or notification systems</li>
+            <li>Throttling repeated events</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize a <code>HashMap</code> to store the last printed timestamp for each message</li>
+            <li>For each incoming message, check if it was printed in the last 10 seconds</li>
+            <li>If not, update the timestamp and return <code>true</code></li>
+            <li>If yes, return <code>false</code></li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(1)</code> per operation</li>
+            <li><b>Space:</b> <code>O(N)</code> for N unique messages</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Multiple messages with the same content</li>
+            <li>Messages arriving out of order (problem assumes timestamps are non-decreasing)</li>
+            <li>Very frequent or rare messages</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Logger logger = new Logger();
+logger.shouldPrintMessage(1, "foo"); // returns true
+logger.shouldPrintMessage(2, "bar"); // returns true
+logger.shouldPrintMessage(3, "foo"); // returns false
+logger.shouldPrintMessage(8, "bar"); // returns false
+logger.shouldPrintMessage(10, "foo"); // returns false
+logger.shouldPrintMessage(11, "foo"); // returns true
+</code></pre>
+    </div>
+</body>
+</html>

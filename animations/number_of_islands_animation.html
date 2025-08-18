@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number of Islands (Union-Find Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-warning: #f1c40f;
+            --color-cell-water: #aed6f1; --color-cell-land: #a9dfbf;
+            --color-cell-current: #f39c12; --color-cell-neighbor: #f1c40f;
+            --color-cell-read: #fff3cd; --color-cell-write: #e8f5e9; --color-cell-find: #e9d8fd;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(400px, 1fr) 2fr minmax(450px, 1.2fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 450px; height: 60px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #grid_container { display: flex; justify-content: center; align-items: center; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; padding: 10px;}
+        .grid { display: grid; gap: 4px; }
+        .grid-cell { width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; border-radius: 4px; font-size: 0.7em; font-family: 'Courier New', monospace; color: var(--color-text-dark); transition: all 0.3s ease; border: 2px solid transparent; }
+        .grid-cell.water { background-color: var(--color-cell-water); }
+        .grid-cell.land { background-color: var(--color-cell-land); }
+        .grid-cell.current { border-color: var(--color-cell-current); transform: scale(1.1); box-shadow: 0 0 10px var(--color-cell-current); z-index: 10;}
+        .grid-cell.neighbor { border-color: var(--color-cell-neighbor); }
+        .grid-cell.find-path { box-shadow: inset 0 0 0 3px var(--color-node-find); }
+
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .right-grid { display: grid; grid-template-rows: auto 1fr; gap: 10px; flex-grow: 1; }
+
+        #island_count_display { text-align: center; font-size: 3em; font-weight: bold; color: var(--color-primary); padding: 10px 0; transition: transform 0.2s ease-in-out; }
+        #island_count_display.updated { transform: scale(1.3); }
+
+        .uf-array { display: flex; flex-wrap: wrap; gap: 4px; padding: 5px; }
+        .uf-cell { border: 1px solid #ccc; border-radius: 4px; text-align: center; flex-grow: 1; min-width: 35px; }
+        .uf-cell .idx { background: #f2f2f2; font-weight: bold; padding: 2px; border-bottom: 1px solid #ccc; font-size: 0.7em; }
+        .uf-cell .val { padding: 5px 2px; font-family: 'Courier New', monospace; font-size: 0.9em; transition: background-color 0.3s ease; }
+        .uf-cell .val.read { background-color: var(--color-cell-read); }
+        .uf-cell .val.write { background-color: var(--color-cell-update); }
+        .uf-cell .val.find { background-color: var(--color-cell-find); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 0; color: var(--color-primary); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Number of Islands (Union-Find Animation)</h1>
+            <div class="controls">
+                <label>Grid:</label><textarea id="grid_input">[["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter grid and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Grid</h2>
+            <div id="grid_container"></div>
+        </div>
+
+        <div class="right-column">
+            <div class="panel" style="flex-grow: 0.5;">
+                 <h2>Island Count</h2>
+                 <div id="island_count_display">0</div>
+            </div>
+            <div class="panel right-grid">
+                <h2>Parent Array</h2>
+                <div id="parent_array_container" class="data-container"></div>
+            </div>
+             <div class="panel right-grid">
+                <h2>Rank Array</h2>
+                <div id="rank_array_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p>Total number of islands:</p>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let gridInput, startButton, nextStepButton, codeContainer, actionDisplay, gridContainer,
+    parentArrayContainer, rankArrayContainer, islandCountDisplay,
+    resultModal, finalResultText, modalCloseBtn;
+
+class IslandsAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, gridContainer, parentArrayContainer, rankArrayContainer].forEach(c => c.innerHTML = '');
+        islandCountDisplay.textContent = '0';
+        actionDisplay.textContent = 'Enter grid and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const grid = JSON.parse(gridInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(grid) || !Array.isArray(grid[0])) throw new Error("Invalid grid format.");
+            
+            this.initUI();
+            animationSteps = this.generateSteps(grid);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function countIslands(grid):",
+            "  rows, cols = grid dimensions",
+            "  uf = new UnionFind(rows * cols)",
+            "  islandCount = 0",
+            "  for r = 0 to rows-1:",
+            "    for c = 0 to cols-1:",
+            "      if grid[r][c] == '1':",
+            "        islandCount++",
+            "        idx1 = r * cols + c",
+            "        // Check neighbors & union",
+            "        if r+1 < rows and grid[r+1][c] == '1':",
+            "          if uf.union(idx1, (r+1)*cols+c): islandCount--",
+            "        if c+1 < cols and grid[r][c+1] == '1':",
+            "          if uf.union(idx1, r*cols+(c+1)): islandCount--",
+            "  return islandCount",
+            "",
+            "function find(x):",
+            "  if parent[x] == x: return x",
+            "  parent[x] = find(parent[x])",
+            "  return parent[x]",
+            "",
+            "function union(x, y):",
+            "  rootX = find(x), rootY = find(y)",
+            "  if rootX == rootY: return false",
+            "  // union by rank...",
+            "  return true"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(grid) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        if (!grid || grid.length === 0) return [];
+        const rows = grid.length, cols = grid[0].length;
+        const N = rows * cols;
+        
+        let state = {
+            line: null, msg: "", grid: grid, islandCount: 0,
+            parent: [], rank: [],
+            highlights: { current: null, neighbor: null, findPath: [], parentRead: null, parentWrite: null, rankRead: null, rankWrite: null, countUpdated: false },
+            finalResult: null
+        };
+
+        state.parent = Array.from({length: N}, (_, i) => i);
+        state.rank = Array(N).fill(0);
+        save({ ...state, line: 2, msg: `Initializing UnionFind for ${N} cells.` });
+
+        save({ ...state, line: 3, msg: `Initializing island count to 0.` });
+
+        // --- Traced find function ---
+        function traceFind(x, callStack=[]) {
+            callStack.push(x);
+            state.highlights.findPath.push(x);
+            state.highlights.parentRead = x;
+            save({ ...state, line: 17, msg: `find(${x}): Is parent[${x}] (${state.parent[x]}) == ${x}?` });
+            
+            if (state.parent[x] === x) {
+                state.highlights.parentRead = null;
+                save({ ...state, line: 17, msg: `find(${x}): Yes. Root is ${x}.` });
+                const root = x;
+                // Path compression
+                for(const nodeOnPath of callStack) {
+                    if (state.parent[nodeOnPath] !== root) {
+                        state.parent[nodeOnPath] = root;
+                        state.highlights.parentWrite = nodeOnPath;
+                        save({ ...state, line: 18, msg: `Path compression: set parent[${nodeOnPath}] = ${root}.`});
+                        state.highlights.parentWrite = null;
+                    }
+                }
+                state.highlights.findPath = [];
+                return root;
+            } else {
+                save({ ...state, line: 18, msg: `find(${x}): No. Recursing on parent: find(${state.parent[x]}).`});
+                return traceFind(state.parent[x], callStack);
+            }
+        }
+        
+        // --- Traced union function ---
+        function traceUnion(x, y) {
+            save({ ...state, line: 21, msg: `union(${x}, ${y}): Finding roots.`});
+            const rootX = traceFind(x, []);
+            save({ ...state, line: 22, msg: `Root of ${x} is ${rootX}. Finding root of ${y}.`});
+            const rootY = traceFind(y, []);
+            save({ ...state, line: 22, msg: `Root of ${y} is ${rootY}.`});
+            
+            state.highlights.findPath = [];
+            save({ ...state, line: 23, msg: `Comparing roots: Is ${rootX} == ${rootY}?`});
+
+            if (rootX === rootY) {
+                save({ ...state, line: 23, msg: `Yes. Cells are already in the same set. Union fails.`});
+                return false;
+            }
+            save({ ...state, line: 24, msg: `No. Proceeding with union by rank.`});
+
+            state.highlights.rankRead = [rootX, rootY];
+            if (state.rank[rootX] < state.rank[rootY]) {
+                state.parent[rootX] = rootY;
+                state.highlights.parentWrite = rootX;
+                save({ ...state, msg: `rank[${rootX}] < rank[${rootY}]. Set parent[${rootX}] = ${rootY}.`});
+            } else if (state.rank[rootX] > state.rank[rootY]) {
+                state.parent[rootY] = rootX;
+                state.highlights.parentWrite = rootY;
+                save({ ...state, msg: `rank[${rootX}] > rank[${rootY}]. Set parent[${rootY}] = ${rootX}.`});
+            } else {
+                state.parent[rootY] = rootX;
+                state.rank[rootX]++;
+                state.highlights.parentWrite = rootY;
+                state.highlights.rankWrite = rootX;
+                save({ ...state, msg: `Ranks are equal. Set parent[${rootY}] = ${rootX} and increment rank[${rootX}].`});
+            }
+            state.highlights.rankRead = state.highlights.parentWrite = state.highlights.rankWrite = null;
+            return true;
+        }
+
+        for (let r = 0; r < rows; r++) {
+            save({ ...state, line: 4, msg: `Scanning row ${r}.` });
+            for (let c = 0; c < cols; c++) {
+                state.highlights.current = { r, c };
+                save({ ...state, line: 5, msg: `Processing cell (${r}, ${c}).` });
+
+                if (grid[r][c] === '1') {
+                    save({ ...state, line: 6, msg: `Cell (${r}, ${c}) is land. Found a potential island.` });
+                    state.islandCount++;
+                    state.highlights.countUpdated = true;
+                    save({ ...state, line: 7, msg: `Increment island count to ${state.islandCount}.` });
+                    state.highlights.countUpdated = false;
+
+                    const idx1 = r * cols + c;
+                    
+                    // Check down
+                    if (r + 1 < rows) {
+                        state.highlights.neighbor = { r: r + 1, c: c };
+                        save({ ...state, line: 10, msg: `Checking Down neighbor (${r+1}, ${c}).` });
+                        if (grid[r + 1][c] === '1') {
+                            const idx2 = (r + 1) * cols + c;
+                            if (traceUnion(idx1, idx2)) {
+                                state.islandCount--;
+                                state.highlights.countUpdated = true;
+                                save({ ...state, line: 11, msg: `Union successful. Merged sets. Decrement count to ${state.islandCount}.` });
+                                state.highlights.countUpdated = false;
+                            }
+                        }
+                    }
+
+                    // Check right
+                    if (c + 1 < cols) {
+                        state.highlights.neighbor = { r: r, c: c + 1 };
+                        save({ ...state, line: 12, msg: `Checking Right neighbor (${r}, ${c+1}).` });
+                         if (grid[r][c + 1] === '1') {
+                             const idx2 = r * cols + (c + 1);
+                            if (traceUnion(idx1, idx2)) {
+                                state.islandCount--;
+                                state.highlights.countUpdated = true;
+                                save({ ...state, line: 13, msg: `Union successful. Merged sets. Decrement count to ${state.islandCount}.` });
+                                state.highlights.countUpdated = false;
+                            }
+                        }
+                    }
+                    state.highlights.neighbor = null;
+                } else {
+                    save({ ...state, msg: `Cell (${r}, ${c}) is water. Skipping.`});
+                }
+            }
+        }
+        state.highlights.current = null;
+        state.finalResult = state.islandCount;
+        save({ ...state, line: 14, msg: `Grid traversal complete. Final count: ${state.islandCount}.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        // Render grid
+        const { grid, highlights } = state;
+        const rows = grid.length, cols = grid[0].length;
+        let gridHTML = `<div class="grid" style="grid-template-columns: repeat(${cols}, 1fr);">`;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const idx = r * cols + c;
+                let classes = 'grid-cell ';
+                classes += grid[r][c] === '1' ? 'land' : 'water';
+                if (highlights.current && highlights.current.r === r && highlights.current.c === c) classes += ' current';
+                if (highlights.neighbor && highlights.neighbor.r === r && highlights.neighbor.c === c) classes += ' neighbor';
+                if (highlights.findPath.includes(idx)) classes += ' find-path';
+                gridHTML += `<div class="${classes}">(${r},${c})<br>${idx}</div>`;
+            }
+        }
+        gridContainer.innerHTML = gridHTML + '</div>';
+
+        // Render UF arrays
+        const renderUFArray = (arr, container, readH, writeH, findH) => {
+            let html = '<div class="uf-array">';
+            for (let i = 0; i < arr.length; i++) {
+                let valClass = '';
+                if (readH && readH.includes(i)) valClass = 'read';
+                if (writeH === i) valClass = 'write';
+                if (findH && findH.includes(i)) valClass = 'find';
+                html += `<div class="uf-cell"><div class="idx">${i}</div><div class="val ${valClass}">${arr[i]}</div></div>`;
+            }
+            container.innerHTML = html + '</div>';
+        };
+        renderUFArray(state.parent, parentArrayContainer, [state.highlights.parentRead], state.highlights.parentWrite, state.highlights.findPath);
+        renderUFArray(state.rank, rankArrayContainer, state.highlights.rankRead, state.highlights.rankWrite, []);
+
+        // Render island count
+        islandCountDisplay.textContent = state.islandCount;
+        islandCountDisplay.classList.toggle('updated', state.highlights.countUpdated);
+
+        if (state.finalResult !== null) {
+            finalResultText.textContent = state.finalResult;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    gridInput = document.getElementById('grid_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    gridContainer = document.getElementById('grid_container');
+    parentArrayContainer = document.getElementById('parent_array_container');
+    rankArrayContainer = document.getElementById('rank_array_container');
+    islandCountDisplay = document.getElementById('island_count_display');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new IslandsAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

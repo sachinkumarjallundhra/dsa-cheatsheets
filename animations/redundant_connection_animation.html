@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redundant Connection (Union-Find Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-node-default: #bdc3c7; --color-node-find: #9b59b6;
+            --color-edge-default: #ccc; --color-edge-current: #3498db; --color-edge-redundant: #e74c3c;
+            --color-cell-update: #e8f5e9; --color-cell-read: #fff3cd; --color-cell-find: #e9d8fd;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(400px, 1fr) 2fr minmax(450px, 1.2fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 400px; height: 40px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node-val { font-size: 1.2em; font-weight: bold; fill: #2c3e50; }
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .data-grid { display: grid; grid-template-rows: auto 1fr; gap: 10px; }
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; font-size: 0.9em;}
+        
+        .parent-array { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px; }
+        .parent-cell { border: 1px solid #ccc; border-radius: 4px; text-align: center; flex-grow: 1; }
+        .parent-cell .idx { background: #f2f2f2; font-weight: bold; padding: 4px; border-bottom: 1px solid #ccc; font-size: 0.8em; }
+        .parent-cell .val { padding: 8px 4px; font-family: 'Courier New', monospace; font-size: 1.1em; transition: background-color 0.3s ease; }
+        .parent-cell .val.read { background-color: var(--color-cell-read); }
+        .parent-cell .val.write { background-color: var(--color-cell-update); }
+        .parent-cell .val.find { background-color: var(--color-cell-find); }
+
+        #current_edge_display { text-align: center; font-size: 1.5em; font-weight: bold; font-family: 'Courier New', monospace; padding: 20px 0;}
+        #current_edge_display .redundant { color: var(--color-danger); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 0; color: var(--color-danger); font-family: 'Courier New', monospace;}
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Redundant Connection (Union-Find Animation)</h1>
+            <div class="controls">
+                <label>Edges:</label><textarea id="edges_input">[[1,2], [1,3], [2,3]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter edges and click 'Start'.</div>
+            </div>
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Graph</h2>
+            <div id="graph_container">
+                 <svg width="100%" height="100%" id="graph_svg"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="panel data-grid">
+                <h2>Parent Array</h2>
+                <div id="parent_array_container" class="data-container"></div>
+            </div>
+            <div class="panel data-grid">
+                <h2>Processing Edge</h2>
+                <div id="current_edge_display"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Redundant Connection Found!</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let edgesInput, startButton, nextStepButton, codeContainer, actionDisplay,
+    graphContainer, parentArrayContainer, currentEdgeDisplay, callStackContainer,
+    resultModal, finalResultText, modalCloseBtn;
+let graphDrawer;
+
+class RedundantConnectionAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, parentArrayContainer, currentEdgeDisplay, callStackContainer].forEach(c => c.innerHTML = '');
+        document.getElementById('graph_svg').innerHTML = '';
+        actionDisplay.textContent = 'Enter edges and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const edges = JSON.parse(edgesInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(edges)) throw new Error("Invalid input format.");
+            
+            const n = edges.reduce((max, edge) => Math.max(max, edge[0], edge[1]), 0);
+            if (n === 0) throw new Error("No nodes found in edges.");
+
+            this.initUI();
+            graphDrawer = new GraphDrawer(document.getElementById('graph_svg'), n);
+            animationSteps = this.generateSteps(edges, n);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function findRedundantConnection(edges):",
+            "  n = number of nodes",
+            "  parent = new array of size n+1",
+            "  for i = 1 to n: parent[i] = i",
+            "",
+            "  for each edge [u, v] in edges:",
+            "    rootU = find(u)",
+            "    rootV = find(v)",
+            "    if rootU == rootV:",
+            "      return edge // Cycle detected",
+            "    else:",
+            "      parent[rootU] = rootV // Union",
+            "",
+            "function find(x):",
+            "  if parent[x] == x: return x",
+            "  parent[x] = find(parent[x]) // Path Comp.",
+            "  return parent[x]",
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(edges, n) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", callStack: [], parent: [], drawnEdges: [],
+            highlights: { currentEdge: null, findPath: [], parentRead: null, parentWrite: null, redundantEdge: null },
+            finalResult: null
+        };
+
+        // Init phase
+        state.parent = Array(n + 1).fill(0);
+        save({ ...state, line: 1, msg: `Graph has ${n} nodes.` });
+        save({ ...state, line: 2, msg: "Initializing parent array." });
+        for (let i = 1; i <= n; i++) {
+            state.parent[i] = i;
+            state.highlights.parentWrite = i;
+            save({ ...state, line: 3, msg: `Set parent[${i}] = ${i}. Each node is its own root.` });
+        }
+        state.highlights.parentWrite = null;
+
+        // Traced find function
+        function traceFind(x, u_or_v) {
+            const findPath = [];
+            state.callStack.push({ func: `find(${x})` });
+            state.msg = `Finding root for node ${u_or_v} (starting from ${x}).`;
+            save({ ...state, line: 13 });
+            
+            let current = x;
+            while (true) {
+                state.highlights.parentRead = current;
+                state.highlights.findPath = [...findPath, current];
+                state.msg = `Checking parent of ${current}. Is parent[${current}] == ${current}?`;
+                save({ ...state, line: 14 });
+                
+                if (state.parent[current] === current) {
+                    state.msg = `Yes, ${current} is the root.`;
+                    save({ ...state, line: 14 });
+                    break;
+                }
+                findPath.push(current);
+                state.msg = `No, parent is ${state.parent[current]}. Moving up.`;
+                save({ ...state, line: 15 });
+                current = state.parent[current];
+            }
+            state.highlights.parentRead = null;
+            const root = current;
+
+            // Path compression
+            if (findPath.length > 0) {
+                 save({ ...state, line: 15, msg: `Performing path compression for path [${findPath.join(' -> ')}] to root ${root}.` });
+                 for (const nodeOnPath of findPath) {
+                    if (state.parent[nodeOnPath] !== root) {
+                        state.parent[nodeOnPath] = root;
+                        state.highlights.parentWrite = nodeOnPath;
+                        state.msg = `Updating parent[${nodeOnPath}] to root ${root}.`;
+                        save({ ...state, line: 15 });
+                    }
+                 }
+                 state.highlights.parentWrite = null;
+            }
+            
+            state.callStack.pop();
+            state.highlights.findPath = [];
+            return root;
+        }
+
+        // Edge processing
+        for (const edge of edges) {
+            const [u, v] = edge;
+            state.highlights.currentEdge = edge;
+            save({ ...state, line: 5, msg: `Processing edge [${u}, ${v}].` });
+            
+            save({ ...state, line: 6, msg: `Find root of ${u}.`});
+            const rootU = traceFind(u, u);
+            save({ ...state, msg: `Root of ${u} is ${rootU}.` });
+
+            save({ ...state, line: 7, msg: `Find root of ${v}.`});
+            const rootV = traceFind(v, v);
+            save({ ...state, msg: `Root of ${v} is ${rootV}.` });
+
+            save({ ...state, line: 8, msg: `Comparing roots: Is ${rootU} == ${rootV}?` });
+
+            if (rootU === rootV) {
+                state.highlights.redundantEdge = edge;
+                state.finalResult = edge;
+                save({ ...state, line: 9, msg: `Yes. Cycle detected! Edge [${u}, ${v}] is redundant.` });
+                return steps;
+            } else {
+                save({ ...state, line: 10, msg: `No. Unioning sets by setting parent of ${rootU} to ${rootV}.` });
+                state.parent[rootU] = rootV;
+                state.drawnEdges.push(edge);
+                state.highlights.parentWrite = rootU;
+                save({ ...state, line: 11, msg: `Union complete. Added edge [${u}, ${v}].` });
+                state.highlights.parentWrite = null;
+            }
+            state.highlights.currentEdge = null;
+        }
+        
+        save({ ...state, msg: "All edges processed. No redundant connection found (invalid input?)." });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => 
+            `<div class="stack-item">${c.func}</div>`
+        ).join('');
+        
+        let parentHTML = '<div class="parent-array">';
+        for (let i = 1; i < state.parent.length; i++) {
+            let valClass = '';
+            if (state.highlights.parentRead === i) valClass = 'read';
+            if (state.highlights.parentWrite === i) valClass = 'write';
+            if (state.highlights.findPath.includes(i)) valClass = 'find';
+            parentHTML += `<div class="parent-cell"><div class="idx">Node ${i}</div><div class="val ${valClass}">${state.parent[i]}</div></div>`;
+        }
+        parentArrayContainer.innerHTML = parentHTML + '</div>';
+
+        if (state.highlights.currentEdge) {
+            const [u, v] = state.highlights.currentEdge;
+            const redundantClass = state.highlights.redundantEdge ? 'redundant' : '';
+            currentEdgeDisplay.innerHTML = `[<span class="${redundantClass}">${u}</span>, <span class="${redundantClass}">${v}</span>]`;
+        } else {
+            currentEdgeDisplay.innerHTML = '-';
+        }
+
+        graphDrawer.draw(state);
+        
+        if (state.finalResult) {
+            finalResultText.textContent = `[${state.finalResult.join(', ')}]`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class GraphDrawer {
+    constructor(svg, n) {
+        this.svg = svg;
+        this.n = n;
+        this.nodes = [];
+        
+        const width = svg.parentElement.clientWidth;
+        const height = svg.parentElement.clientHeight;
+        const cx = width / 2;
+        const cy = height / 2;
+        const radius = Math.min(width, height) / 2 - 40;
+
+        for (let i = 1; i <= n; i++) {
+            const angle = (i - 1) / n * 2 * Math.PI - Math.PI / 2;
+            this.nodes[i] = {
+                val: i,
+                x: cx + radius * Math.cos(angle),
+                y: cy + radius * Math.sin(angle)
+            };
+        }
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const { drawnEdges, highlights } = state;
+
+        // Draw edges
+        drawnEdges.forEach(edge => {
+            this.drawEdge(edge, 'var(--color-edge-default)', 2);
+        });
+
+        // Highlight current edge
+        if (highlights.currentEdge && !highlights.redundantEdge) {
+            this.drawEdge(highlights.currentEdge, 'var(--color-edge-current)', 4);
+        }
+        
+        // Highlight redundant edge
+        if (highlights.redundantEdge) {
+             this.drawEdge(highlights.redundantEdge, 'var(--color-edge-redundant)', 5, '5,5');
+        }
+
+        // Draw nodes
+        this.nodes.forEach(node => {
+            if (!node) return;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${node.x},${node.y})`);
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', 20);
+            let color = 'var(--color-node-default)';
+            if (highlights.findPath.includes(node.val)) color = 'var(--color-node-find)';
+            circle.setAttribute('fill', color);
+            circle.setAttribute('stroke', '#333');
+            circle.setAttribute('stroke-width', 2);
+            g.appendChild(circle);
+
+            const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valText.setAttribute('text-anchor', 'middle');
+            valText.setAttribute('dy', '0.35em');
+            valText.classList.add('node-val');
+            valText.textContent = node.val;
+            g.appendChild(valText);
+            this.svg.appendChild(g);
+        });
+    }
+
+    drawEdge(edge, color, strokeWidth, strokeDasharray = '') {
+        const [u, v] = edge;
+        const node1 = this.nodes[u];
+        const node2 = this.nodes[v];
+        if (!node1 || !node2) return;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', node1.x); line.setAttribute('y1', node1.y);
+        line.setAttribute('x2', node2.x); line.setAttribute('y2', node2.y);
+        line.setAttribute('stroke', color);
+        line.setAttribute('stroke-width', strokeWidth);
+        if (strokeDasharray) line.setAttribute('stroke-dasharray', strokeDasharray);
+        this.svg.insertBefore(line, this.svg.firstChild); // Insert behind nodes
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    edgesInput = document.getElementById('edges_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    graphContainer = document.getElementById('graph_container');
+    parentArrayContainer = document.getElementById('parent_array_container');
+    currentEdgeDisplay = document.getElementById('current_edge_display');
+    callStackContainer = document.getElementById('call_stack_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new RedundantConnectionAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

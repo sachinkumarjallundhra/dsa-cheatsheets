@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number of Wonderful Substrings Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>✨ Number of Wonderful Substrings – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Number of Wonderful Substrings</b> problem (LeetCode 1915) asks you to count the number of substrings in a string where at most one character appears an odd number of times. The string consists of lowercase English letters.
+        </p>
+
+        <h2>🎯 Solution Pattern (Bitmask + HashMap)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public long wonderfulSubstrings(String word) {
+        long res = 0;
+        int mask = 0;
+        Map&lt;Integer, Integer&gt; count = new HashMap&lt;&gt;();
+        count.put(0, 1);
+        for (char c : word.toCharArray()) {
+            mask ^= 1 &lt;&lt; (c - 'a');
+            res += count.getOrDefault(mask, 0);
+            for (int i = 0; i &lt; 10; i++) {
+                res += count.getOrDefault(mask ^ (1 &lt;&lt; i), 0);
+            }
+            count.put(mask, count.getOrDefault(mask, 0) + 1);
+        }
+        return res;
+    }
+}
+</code></pre>
+ <div style="margin-bottom:18px;">
+        <b>🎥 Video Explanation:</b>
+        <a href="https://www.youtube.com/watch?v=1DdmbJj4xLE&ab_channel=codestorywithMIK" target="_blank">
+            Watch on YouTube
+        </a>
+    </div>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Counting substrings with specific character frequency properties</li>
+            <li>Bitmasking and prefix sum techniques</li>
+            <li>Efficient substring counting in strings</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use a bitmask to track the parity (odd/even) of each character's count</li>
+            <li>For each character, update the mask and count wonderful substrings ending at current position</li>
+            <li>Count substrings where all characters have even counts (mask matches previous)</li>
+            <li>Count substrings where exactly one character has odd count (flip each bit in mask and check previous)</li>
+            <li>Update the count map for the current mask</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N * 10)</code> where N is the length of the string</li>
+            <li><b>Space:</b> <code>O(2^10)</code> for the mask map</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty string (should return 0)</li>
+            <li>All characters the same</li>
+            <li>String with no wonderful substrings</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: word = "aba"
+Output: 4
+Explanation: The wonderful substrings are "a", "b", "a", "aba"
+</code></pre>
+    </div>
+</body>
+</html>

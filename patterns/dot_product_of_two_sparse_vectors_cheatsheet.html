@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dot Product of Two Sparse Vectors Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>✳️ Dot Product of Two Sparse Vectors – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Dot Product of Two Sparse Vectors</b> problem (LeetCode 1570) asks you to efficiently compute the dot product of two sparse vectors. A sparse vector is a vector in which most elements are zero, so storing only non-zero elements saves space and time.
+        </p>
+
+        <h2>🎯 Solution Pattern (HashMap or Two Pointers)</h2>
+        <pre><code>// Java Solution (HashMap)
+class SparseVector {
+    Map&lt;Integer, Integer&gt; map = new HashMap&lt;&gt;();
+    SparseVector(int[] nums) {
+        for (int i = 0; i &lt; nums.length; i++) {
+            if (nums[i] != 0) map.put(i, nums[i]);
+        }
+    }
+    public int dotProduct(SparseVector vec) {
+        int res = 0;
+        for (int idx : map.keySet()) {
+            if (vec.map.containsKey(idx)) {
+                res += map.get(idx) * vec.map.get(idx);
+            }
+        }
+        return res;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Efficient computation with large, sparse data</li>
+            <li>Machine learning and information retrieval</li>
+            <li>Memory-efficient vector operations</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Store non-zero elements and their indices in a HashMap</li>
+            <li>For dot product, iterate through one map and multiply with matching indices in the other</li>
+            <li>Sum the products to get the result</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(L)</code> where L is the number of non-zero elements in the smaller vector</li>
+            <li><b>Space:</b> <code>O(L)</code> for storing non-zero elements</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Vectors of different lengths (problem guarantees same length)</li>
+            <li>All elements are zero (should return 0)</li>
+            <li>One or both vectors are empty</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: nums1 = [1,0,0,2,3], nums2 = [0,3,0,4,0]
+SparseVector v1 = new SparseVector(nums1);
+SparseVector v2 = new SparseVector(nums2);
+v1.dotProduct(v2); // Output: 8
+Explanation: Only indices 3 and 0 are non-zero, so 2*4 + 1*0 = 8
+</code></pre>
+    </div>
+</body>

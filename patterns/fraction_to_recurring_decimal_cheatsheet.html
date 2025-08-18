@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraction to Recurring Decimal Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>➗ Fraction to Recurring Decimal – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Fraction to Recurring Decimal</b> problem (LeetCode 166) asks you to convert a fraction given by numerator and denominator to its decimal representation as a string. If the fractional part is recurring, enclose the recurring part in parentheses.
+        </p>
+
+        <h2>🎯 Solution Pattern (HashMap for Remainder Tracking)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public String fractionToDecimal(int numerator, int denominator) {
+        if (numerator == 0) return "0";
+        StringBuilder sb = new StringBuilder();
+        // Handle sign
+        if ((numerator < 0) ^ (denominator < 0)) sb.append("-");
+        long num = Math.abs((long) numerator);
+        long den = Math.abs((long) denominator);
+
+        sb.append(num / den);
+        long rem = num % den;
+        if (rem == 0) return sb.toString();
+
+        sb.append(".");
+        Map<Long, Integer> map = new HashMap<>();
+        while (rem != 0) {
+            if (map.containsKey(rem)) {
+                sb.insert(map.get(rem), "(");
+                sb.append(")");
+                break;
+            }
+            map.put(rem, sb.length());
+            rem *= 10;
+            sb.append(rem / den);
+            rem %= den;
+        }
+        return sb.toString();
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Converting fractions to decimal strings</li>
+            <li>Detecting recurring cycles in division</li>
+            <li>Financial and scientific calculations</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Handle sign and convert numerator/denominator to positive long</li>
+            <li>Append the integer part to the result</li>
+            <li>For the fractional part, use a HashMap to track remainders and their positions</li>
+            <li>If a remainder repeats, insert '(' at its first occurrence and append ')'</li>
+            <li>Return the result string</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(n)</code> where n is the length of the recurring cycle (at most denominator size)</li>
+            <li><b>Space:</b> <code>O(n)</code> for the HashMap</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Negative numbers and zero</li>
+            <li>Non-recurring decimals</li>
+            <li>Large numerators/denominators (use long to avoid overflow)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: numerator = 1, denominator = 3
+Output: "0.(3)"
+Explanation: 1/3 =

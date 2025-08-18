@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Similar String Groups (Union-Find Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2980b9; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ebf5fb; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 70px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node circle { stroke-width: 2; transition: all 0.3s ease; }
+        .node text { font-size: 12px; fill: #333; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+        .node.highlight-i circle { stroke: var(--color-warning); stroke-width: 4px; }
+        .node.highlight-j circle { stroke: var(--color-info); stroke-width: 4px; }
+        .edge { stroke: #95a5a6; stroke-width: 2; transition: stroke 0.3s ease; }
+        .edge.temp { stroke-dasharray: 5,5; }
+        .edge.temp.similar { stroke: var(--color-success); }
+        .edge.temp.dissimilar { stroke: var(--color-danger); }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        .state-table { width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: center; }
+        .state-table th, .state-table td { padding: 5px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table tr.highlight-i { background-color: #fef3cd; }
+        .state-table tr.highlight-j { background-color: #d6eaf8; }
+
+        #groups_count_display { text-align: center; font-size: 1.5em; font-weight: bold; color: var(--color-primary); padding: 10px; }
+        #groups_count_display span { font-size: 0.7em; color: var(--color-text-dark); display: block; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Similar String Groups</h1>
+            <div class="controls">
+                <label>Strings ["a", "b", ...]:</label><textarea id="strings_input">["tars","rats","arts","star"]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter strings and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Graph Visualization</h2>
+            <div id="graph_container">
+                 <svg id="graph_svg" width="100%" height="100%"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Group Count</h2>
+                <div id="groups_count_display"><span style="font-size: 1em; font-weight: normal;">-</span><span></span></div>
+             </div>
+             <div class="panel">
+                <h2>Strings & Union-Find State</h2>
+                <div id="state_table_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let stringsInput, startButton, nextStepButton, codeContainer, actionDisplay, graphContainer,
+    stateTableContainer, groupsCountDisplay, resultModal, finalResultText, modalCloseBtn, graphDrawer;
+
+class GraphDrawer {
+    constructor(svg, strings) {
+        this.svg = svg;
+        this.strings = strings;
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+        this.nodeRadius = 25;
+        this.positions = this.calculateNodePositions();
+        this.groupColors = ["#1abc9c", "#3498db", "#9b59b6", "#e74c3c", "#f1c40f", "#2ecc71", "#e67e22", "#34495e"];
+    }
+
+    calculateNodePositions() {
+        const positions = [];
+        const n = this.strings.length;
+        const centerX = this.width / 2;
+        const centerY = this.height / 2;
+        const radius = Math.min(centerX, centerY) * 0.75;
+
+        for (let i = 0; i < n; i++) {
+            const angle = (i / n) * 2 * Math.PI;
+            positions.push({
+                x: centerX + radius * Math.cos(angle),
+                y: centerY + radius * Math.sin(angle)
+            });
+        }
+        return positions;
+    }
+
+    getColor(i) { return this.groupColors[i % this.groupColors.length]; }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const { highlights, unions, uf_parent } = state;
+
+        const findRoot = (i, parent) => {
+            if (parent[i] === i) return i;
+            return findRoot(parent[i], parent);
+        };
+        
+        const edgesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        unions.forEach(edge => {
+            const p1 = this.positions[edge[0]];
+            const p2 = this.positions[edge[1]];
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+            line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+            line.classList.add('edge');
+            edgesGroup.appendChild(line);
+        });
+
+        if (highlights.i !== null && highlights.j !== null && highlights.tempEdge) {
+             const p1 = this.positions[highlights.i];
+             const p2 = this.positions[highlights.j];
+             const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+             tempLine.setAttribute('x1', p1.x); tempLine.setAttribute('y1', p1.y);
+             tempLine.setAttribute('x2', p2.x); tempLine.setAttribute('y2', p2.y);
+             tempLine.classList.add('edge', 'temp', highlights.tempEdge);
+             edgesGroup.appendChild(tempLine);
+        }
+        this.svg.appendChild(edgesGroup);
+        
+        const nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        this.strings.forEach((str, i) => {
+            const root = findRoot(i, uf_parent);
+            const pos = this.positions[i];
+            const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            group.classList.add('node');
+            if (i === highlights.i) group.classList.add('highlight-i');
+            if (i === highlights.j) group.classList.add('highlight-j');
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', pos.x); circle.setAttribute('cy', pos.y);
+            circle.setAttribute('r', this.nodeRadius);
+            circle.setAttribute('fill', this.getColor(root));
+            circle.setAttribute('stroke', '#34495e');
+            
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', pos.x); text.setAttribute('y', pos.y);
+            text.textContent = str;
+            
+            group.appendChild(circle);
+            group.appendChild(text);
+            nodesGroup.appendChild(group);
+        });
+        this.svg.appendChild(nodesGroup);
+    }
+}
+
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, stateTableContainer].forEach(c => c.innerHTML = '');
+        groupsCountDisplay.innerHTML = `<span style="font-size: 1em; font-weight: normal;">-</span><span></span>`;
+        const svg = document.getElementById('graph_svg');
+        if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = 'Enter strings and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const strings = JSON.parse(stringsInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(strings)) throw new Error("Invalid input format.");
+            
+            this.initUI();
+            graphDrawer = new GraphDrawer(document.getElementById('graph_svg'), strings);
+            animationSteps = this.generateSteps(strings);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Please use JSON array format. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "uf = UnionFind(n)",
+            "for i in 0..n-1:",
+            "  for j in i+1..n-1:",
+            "    if isSimilar(strs[i], strs[j]):",
+            "      uf.union(i, j)",
+            "return uf.count()",
+            "",
+            "isSimilar(a, b):",
+            "  diff = 0",
+            "  for c in a:",
+            "    ... // count differences",
+            "  return diff <= 2"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    _isSimilar(a, b) {
+        if (a.length !== b.length) return false;
+        let diff = 0;
+        for (let i = 0; i < a.length; i++) {
+            if (a.charAt(i) !== b.charAt(i)) diff++;
+        }
+        return diff === 2 || diff === 0;
+    }
+
+    generateSteps(strings) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        const n = strings.length;
+        
+        let state = {
+            line: null, msg: "", strings: strings, uf_parent: Array.from({length:n}, (_,i)=>i), 
+            groups: n, unions: [],
+            highlights: { i: null, j: null, tempEdge: null },
+            finalResult: null
+        };
+
+        save({ ...state, line: 0, msg: `Initialize Union-Find for ${n} strings. Groups = ${n}.` });
+
+        for (let i = 0; i < n; i++) {
+            state.highlights.i = i;
+            save({ ...state, line: 1, msg: `Outer loop: i = ${i} ('${strings[i]}').` });
+
+            for (let j = i + 1; j < n; j++) {
+                state.highlights.j = j;
+                state.highlights.tempEdge = 'pending';
+                save({ ...state, line: 2, msg: `Inner loop: j = ${j}. Comparing '${strings[i]}' and '${strings[j]}'.` });
+
+                const similar = this._isSimilar(strings[i], strings[j]);
+                if (similar) {
+                    state.highlights.tempEdge = 'similar';
+                    save({ ...state, line: 3, msg: `'${strings[i]}' and '${strings[j]}' are similar.` });
+
+                    // Find roots
+                    let px = i, py = j;
+                    while(state.uf_parent[px] !== px) px = state.uf_parent[px];
+                    while(state.uf_parent[py] !== py) py = state.uf_parent[py];
+                    
+                    if (px !== py) {
+                        save({ ...state, line: 4, msg: `Roots are different (${px} != ${py}). Uniting groups.` });
+                        state.uf_parent[px] = py;
+                        state.groups--;
+                        state.unions.push([i, j]);
+                        save({ ...state, line: 4, msg: `Union successful. Groups now: ${state.groups}.` });
+                    } else {
+                        save({ ...state, line: 4, msg: `Already in the same group (root ${px}). No change.` });
+                    }
+
+                } else {
+                    state.highlights.tempEdge = 'dissimilar';
+                    save({ ...state, line: 3, msg: `'${strings[i]}' and '${strings[j]}' are not similar.` });
+                }
+                state.highlights.tempEdge = null;
+            }
+            state.highlights.j = null;
+        }
+        state.highlights.i = null;
+        
+        state.finalResult = state.groups;
+        save({ ...state, line: 5, msg: `All pairs checked. Final group count is ${state.groups}.` });
+
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        if(graphDrawer) graphDrawer.draw(state);
+
+        groupsCountDisplay.innerHTML = `${state.groups} <span>Groups</span>`;
+
+        let tableHTML = `<table class="state-table"><thead><tr><th>Idx</th><th>String</th><th>Parent</th></tr></thead><tbody>`;
+        for (let i = 0; i < state.strings.length; i++) {
+            let classes = '';
+            if (i === state.highlights.i) classes += 'highlight-i';
+            if (i === state.highlights.j) classes += ' highlight-j';
+
+            tableHTML += `<tr class="${classes.trim()}">
+                <td>${i}</td>
+                <td>${state.strings[i]}</td>
+                <td>${state.uf_parent[i]}</td>
+            </tr>`;
+        }
+        tableHTML += `</tbody></table>`;
+        stateTableContainer.innerHTML = tableHTML;
+        
+        if (state.finalResult !== null) {
+            finalResultText.textContent = `Found ${state.finalResult} Similar String Groups`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    stringsInput = document.getElementById('strings_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    graphContainer = document.getElementById('graph_container');
+    stateTableContainer = document.getElementById('state_table_container');
+    groupsCountDisplay = document.getElementById('groups_count_display');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

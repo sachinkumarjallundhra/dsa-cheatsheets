@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number of Islands (DFS Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-cell-water: #aed6f1; --color-cell-land: #a9dfbf; --color-cell-sunk: #b2bec3;
+            --color-cell-scanner: #f1c40f; --color-cell-dfs: #e74c3c;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(400px, 1fr) 2fr minmax(350px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 450px; height: 60px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #grid_container { display: flex; justify-content: center; align-items: center; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; padding: 10px;}
+        .grid { display: grid; gap: 4px; }
+        .grid-cell { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border-radius: 4px; font-size: 1em; font-weight: bold; color: var(--color-text-dark); transition: all 0.3s ease; border: 3px solid transparent; }
+        .grid-cell.water { background-color: var(--color-cell-water); }
+        .grid-cell.land { background-color: var(--color-cell-land); }
+        .grid-cell.sunk { background-color: var(--color-cell-sunk); color: #7f8c8d; }
+        .grid-cell.scanner { border-color: var(--color-cell-scanner); box-shadow: 0 0 10px var(--color-cell-scanner); z-index: 5;}
+        .grid-cell.dfs-active { border-color: var(--color-cell-dfs); transform: scale(1.1); box-shadow: 0 0 15px var(--color-cell-dfs); z-index: 10;}
+
+        .data-container { flex-grow: 1; overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px;}
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; font-size: 0.9em;}
+        
+        #island_count_display { text-align: center; font-size: 4em; font-weight: bold; color: var(--color-primary); padding: 20px 0; transition: transform 0.2s ease-in-out; }
+        #island_count_display.updated { transform: scale(1.3); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 0; color: var(--color-primary); }
+        .modal-close-btn { margin-top: 25px; padding: 10px 20px; font-size: 1em; }
+
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Number of Islands (DFS Animation)</h1>
+            <div class="controls">
+                <label>Grid:</label><textarea id="grid_input">[["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter grid and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Grid</h2>
+            <div id="grid_container"></div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0.5;">
+                 <h2>Island Count</h2>
+                 <div id="island_count_display">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p>Total number of islands:</p>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let gridInput, startButton, nextStepButton, codeContainer, actionDisplay, gridContainer,
+    callStackContainer, islandCountDisplay,
+    resultModal, finalResultText, modalCloseBtn;
+
+class IslandsDfsAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, gridContainer, callStackContainer].forEach(c => c.innerHTML = '');
+        islandCountDisplay.textContent = '0';
+        actionDisplay.textContent = 'Enter grid and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const grid = JSON.parse(gridInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(grid) || !Array.isArray(grid[0])) throw new Error("Invalid grid format.");
+            
+            this.initUI();
+            animationSteps = this.generateSteps(grid);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "function numIslands(grid):",
+            "  count = 0",
+            "  for r = 0 to rows-1:",
+            "    for c = 0 to cols-1:",
+            "      if grid[r][c] == '1':",
+            "        dfs(grid, r, c)",
+            "        count++",
+            "  return count",
+            "",
+            "function dfs(grid, r, c):",
+            "  if (out of bounds) return",
+            "  if (grid[r][c] != '1') return",
+            "  grid[r][c] = '0' // Sink island",
+            "  dfs(grid, r+1, c) // Down",
+            "  dfs(grid, r-1, c) // Up",
+            "  dfs(grid, r, c+1) // Right",
+            "  dfs(grid, r, c-1) // Left",
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(grid) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        if (!grid || grid.length === 0) return [];
+        const rows = grid.length, cols = grid[0].length;
+        
+        let state = {
+            line: null, msg: "", callStack: [],
+            grid: JSON.parse(JSON.stringify(grid)), // Deep copy
+            islandCount: 0,
+            highlights: { scanner: null, dfsActive: null, countUpdated: false },
+            finalResult: null
+        };
+
+        save({ ...state, line: 0, msg: "Starting island count." });
+        state.islandCount = 0;
+        save({ ...state, line: 1, msg: "Island count initialized to 0." });
+
+        // Traced DFS function
+        function traceDfs(r, c) {
+            state.callStack.push({ r, c });
+            state.highlights.dfsActive = { r, c };
+            save({ ...state, line: 9, msg: `DFS called for cell (${r}, ${c}).` });
+            
+            if (r < 0 || c < 0 || r >= rows || c >= cols) {
+                save({ ...state, line: 10, msg: `Base case: Out of bounds. Returning.` });
+                state.callStack.pop();
+                return;
+            }
+            save({ ...state, line: 10, msg: `Cell (${r}, ${c}) is within bounds.` });
+
+            if (state.grid[r][c] !== '1') {
+                save({ ...state, line: 11, msg: `Base case: Cell is water or already sunk. Returning.` });
+                state.callStack.pop();
+                return;
+            }
+            save({ ...state, line: 11, msg: `Cell (${r}, ${c}) is land.` });
+
+            state.grid[r][c] = '0';
+            save({ ...state, line: 12, msg: `Sinking island at (${r}, ${c}).` });
+
+            const neighbors = [
+                { dr: 1, dc: 0, dir: 'Down', line: 13 },
+                { dr: -1, dc: 0, dir: 'Up', line: 14 },
+                { dr: 0, dc: 1, dir: 'Right', line: 15 },
+                { dr: 0, dc: -1, dir: 'Left', line: 16 }
+            ];
+
+            for (const {dr, dc, dir, line} of neighbors) {
+                save({ ...state, line: line, msg: `Recursive call for ${dir} neighbor (${r+dr}, ${c+dc}).` });
+                traceDfs(r + dr, c + dc);
+                state.highlights.dfsActive = { r, c };
+                save({ ...state, msg: `Returned to (${r}, ${c}) from ${dir} call.`});
+            }
+            
+            state.callStack.pop();
+        }
+
+        for (let r = 0; r < rows; r++) {
+            save({ ...state, line: 2, msg: `Scanning row ${r}.` });
+            for (let c = 0; c < cols; c++) {
+                state.highlights.scanner = { r, c };
+                save({ ...state, line: 3, msg: `Scanning cell (${r}, ${c}).` });
+
+                if (state.grid[r][c] === '1') {
+                    save({ ...state, line: 4, msg: `Found land at (${r}, ${c}). Starting DFS.` });
+                    state.highlights.scanner = null;
+
+                    traceDfs(r, c);
+                    
+                    state.highlights.dfsActive = null;
+                    state.islandCount++;
+                    state.highlights.countUpdated = true;
+                    save({ ...state, line: 6, msg: `DFS complete. Increment island count to ${state.islandCount}.` });
+                    state.highlights.countUpdated = false;
+                }
+            }
+        }
+        
+        state.highlights.scanner = null;
+        state.finalResult = state.islandCount;
+        save({ ...state, line: 7, msg: `Grid traversal complete. Final count: ${state.islandCount}.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        // Render grid
+        const { grid, highlights } = state;
+        let gridHTML = `<div class="grid" style="grid-template-columns: repeat(${grid[0].length}, 1fr);">`;
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < grid[0].length; c++) {
+                const originalValue = grid[r][c];
+                let classes = 'grid-cell ';
+                if (originalValue === '1') classes += 'land';
+                else if (originalValue === '0' && animationSteps[0].grid[r][c] === '1') classes += 'sunk';
+                else classes += 'water';
+                
+                if (highlights.scanner && highlights.scanner.r === r && highlights.scanner.c === c) classes += ' scanner';
+                if (highlights.dfsActive && highlights.dfsActive.r === r && highlights.dfsActive.c === c) classes += ' dfs-active';
+
+                gridHTML += `<div class="${classes}">${originalValue === 'sunk' ? 'X' : originalValue}</div>`;
+            }
+        }
+        gridContainer.innerHTML = gridHTML + '</div>';
+        
+        // Render Call Stack
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => 
+            `<div class="stack-item">dfs(${c.r}, ${c.c})</div>`
+        ).join('');
+
+        // Render island count
+        islandCountDisplay.textContent = state.islandCount;
+        islandCountDisplay.classList.toggle('updated', state.highlights.countUpdated);
+
+        if (state.finalResult !== null) {
+            finalResultText.textContent = state.finalResult;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    gridInput = document.getElementById('grid_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    gridContainer = document.getElementById('grid_container');
+    callStackContainer = document.getElementById('call_stack_container');
+    islandCountDisplay = document.getElementById('island_count_display');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new IslandsDfsAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

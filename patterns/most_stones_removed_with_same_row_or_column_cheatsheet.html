@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Most Stones Removed with Same Row or Column Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🪨 Most Stones Removed with Same Row or Column – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Most Stones Removed with Same Row or Column</b> problem (LeetCode 947) asks you to remove as many stones as possible from a 2D grid, given that a stone can be removed if there is another stone in the same row or column. Return the maximum number of stones that can be removed.
+        </p>
+
+        <h2>🎯 Solution Pattern (Union Find / DSU)</h2>
+        <pre><code>// Java Solution (Union Find)
+class Solution {
+    public int removeStones(int[][] stones) {
+        int n = stones.length;
+        UnionFind uf = new UnionFind(20000); // Enough for all rows/cols
+        for (int[] stone : stones) {
+            uf.union(stone[0], stone[1] + 10000); // Offset columns
+        }
+        Set&lt;Integer&gt; uniqueRoots = new HashSet&lt;&gt;();
+        for (int[] stone : stones) {
+            uniqueRoots.add(uf.find(stone[0]));
+        }
+        return n - uniqueRoots.size();
+    }
+
+    // Alternative Union Find Solution (handles isolated stones correctly)
+    class Solution {
+
+        public int removeStones(int[][] stones) {
+            int n = stones.length;
+            UnionFind uf = new UnionFind(20002); // Large enough for all coordinates
+
+            // Union stones that share the same row or column
+            for (int i = 0; i < n; i++) {
+                uf.union(stones[i][0], stones[i][1] + 10001); // Offset y-coordinates
+            }
+
+            return n - uf.componentCount;
+        }
+
+        // Union-Find with component counting and unique node tracking
+        class UnionFind {
+
+            int[] parent;
+            int componentCount;
+            Set<Integer> uniqueNodes;
+
+            UnionFind(int n) {
+                parent = new int[n];
+                Arrays.fill(parent, -1);
+                componentCount = 0;
+                uniqueNodes = new HashSet<>();
+            }
+
+            int find(int node) {
+                if (!uniqueNodes.contains(node)) {
+                    componentCount++;
+                    uniqueNodes.add(node);
+                }
+                if (parent[node] == -1) {
+                    return node;
+                }
+                return parent[node] = find(parent[node]);
+            }
+
+            void union(int node1, int node2) {
+                int root1 = find(node1);
+                int root2 = find(node2);
+                if (root1 != root2) {
+                    parent[root1] = root2;
+                    componentCount--;
+                }
+            }
+        }
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/most_stones_removed_with_same_row_or_column_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+<div style="margin-bottom:18px;">
+    <b>🎥 Video Explanation:</b>
+    <a href="https://www.youtube.com/watch?v=OwMNX8SPavM&ab_channel=takeUforward" target="_blank">
+        Watch on YouTube
+    </a>
+</div>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Connected components in grids</li>
+            <li>Union Find applications</li>
+            <li>Graph problems with grid constraints</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Union each stone's row and column (offset columns for uniqueness)</li>
+            <li>Count unique connected components (roots)</li>
+            <li>Maximum stones removed = total stones - number of components</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N * α(N))</code> where N is number of stones</li>
+            <li><b>Space:</b> <code>O(N)</code> for parent array</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>All stones isolated (no removal possible)</li>
+            <li>All stones in one row or column</li>
+            <li>Multiple disconnected groups</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: stones = [[0,0],[0,1],[1,0],[1,2],[2,1],[2,2]]
+Output: 5
+Explanation: Remove all stones except one from each connected group.
+
+Input: stones = [[0,0],[0,2],[1,1],[2,0],[2,2]]
+Output: 3
+</code></pre>
+    </div>

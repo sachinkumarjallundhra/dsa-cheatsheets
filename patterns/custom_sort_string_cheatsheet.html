@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Sort String Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔤 Custom Sort String – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Custom Sort String</b> problem (LeetCode 791) asks you to sort the characters of a string <code>S</code> based on the order defined by another string <code>order</code>. Characters not present in <code>order</code> can appear in any order at the end.
+        </p>
+
+        <h2>🎯 Solution Pattern (Counting + StringBuilder)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public String customSortString(String order, String s) {
+        int[] count = new int[26];
+        for (char c : s.toCharArray()) count[c - 'a']++;
+        StringBuilder sb = new StringBuilder();
+        for (char c : order.toCharArray()) {
+            while (count[c - 'a']-- > 0) sb.append(c);
+        }
+        for (char c = 'a'; c <= 'z'; c++) {
+            while (count[c - 'a']-- > 0) sb.append(c);
+        }
+        return sb.toString();
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Sorting strings with custom character priorities</li>
+            <li>Problems involving custom lexicographical order</li>
+            <li>Interview questions on string manipulation</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Count occurrences of each character in <code>s</code></li>
+            <li>Append characters to result in the order specified by <code>order</code></li>
+            <li>Append remaining characters not in <code>order</code></li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N + M)</code> where N is length of <code>s</code>, M is length of <code>order</code></li>
+            <li><b>Space:</b> <code>O(1)</code> (fixed alphabet size)</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Characters in <code>s</code> not present in <code>order</code></li>
+            <li>Empty <code>order</code> or <code>s</code></li>
+            <li>Duplicate characters</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: order = "cba", s = "abcd"
+Output: "cbad"
+Explanation: 'c', 'b', 'a' appear first in order, then 'd' (not in order).
+</code></pre>
+    </div>
+</body>
+</html>

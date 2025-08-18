@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Continuous Subarray Sum Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Continuous Subarray Sum – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Continuous Subarray Sum</b> problem (LeetCode 523) asks you to determine if the array has a continuous subarray of at least size 2 whose elements sum up to a multiple of <code>k</code>.
+        </p>
+
+        <h2>🎯 Solution Pattern (Prefix Sum + HashMap)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public boolean checkSubarraySum(int[] nums, int k) {
+        Map&lt;Integer, Integer&gt; map = new HashMap&lt;&gt;();
+        map.put(0, -1);
+        int sum = 0;
+        for (int i = 0; i &lt; nums.length; i++) {
+            sum += nums[i];
+            int mod = k == 0 ? sum : sum % k;
+            if (map.containsKey(mod)) {
+                if (i - map.get(mod) &gt; 1) return true;
+            } else {
+                map.put(mod, i);
+            }
+        }
+        return false;
+    }
+}
+</code></pre>
+<div style="margin-bottom:18px;">
+            <b>🎥 Video Explanation:</b>
+            <a href="https://www.youtube.com/watch?v=OKcrLfR-8mE&ab_channel=NeetCode" target="_blank">
+                Watch on YouTube
+            </a>
+        </div>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding subarrays with sum divisible by k</li>
+            <li>Prefix sum and modular arithmetic problems</li>
+            <li>Interview questions on subarray and hash map techniques</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize a HashMap to store mod value and its earliest index</li>
+            <li>Iterate through the array, compute prefix sum and mod with k</li>
+            <li>If mod value seen before and subarray length &gt; 1, return true</li>
+            <li>Otherwise, store mod value and index</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> where N is the length of the array</li>
+            <li><b>Space:</b> <code>O(k)</code> for the map</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>k = 0 (check for consecutive zeros)</li>
+            <li>Negative numbers in array</li>
+            <li>No valid subarray exists</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: nums = [23,2,4,6,7], k = 6
+Output: true
+Explanation: [2,4] and [23,2,4,6,7] both sum to multiples of 6.
+</code></pre>
+    </div>
+</body>
+</html>

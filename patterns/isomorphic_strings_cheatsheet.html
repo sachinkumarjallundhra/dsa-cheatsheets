@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isomorphic Strings Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔄 Isomorphic Strings – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Isomorphic Strings</b> problem (LeetCode 205) asks you to determine if two strings <code>s</code> and <code>t</code> are isomorphic. Two strings are isomorphic if the characters in <code>s</code> can be replaced to get <code>t</code>, with each character mapping to another character uniquely.
+        </p>
+
+        <h2>🎯 Solution Pattern (HashMap for Character Mapping)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public boolean isIsomorphic(String s, String t) {
+        if (s.length() != t.length()) return false;
+        Map&lt;Character, Character&gt; mapST = new HashMap&lt;&gt;();
+        Map&lt;Character, Character&gt; mapTS = new HashMap&lt;&gt;();
+        for (int i = 0; i &lt; s.length(); i++) {
+            char c1 = s.charAt(i), c2 = t.charAt(i);
+            if ((mapST.containsKey(c1) &amp;&amp; mapST.get(c1) != c2) ||
+                (mapTS.containsKey(c2) &amp;&amp; mapTS.get(c2) != c1)) {
+                return false;
+            }
+            mapST.put(c1, c2);
+            mapTS.put(c2, c1);
+        }
+        return true;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Checking if two strings have a one-to-one character mapping</li>
+            <li>Pattern matching and transformation</li>
+            <li>Problems involving unique character substitutions</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>If the strings have different lengths, return false</li>
+            <li>Use two hash maps to track mappings from <code>s</code> to <code>t</code> and <code>t</code> to <code>s</code></li>
+            <li>For each character, check if the mapping is consistent in both directions</li>
+            <li>If any inconsistency is found, return false</li>
+            <li>If all mappings are consistent, return true</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(n)</code> where n is the length of the strings</li>
+            <li><b>Space:</b> <code>O(1)</code> (since the alphabet size is fixed, otherwise <code>O(n)</code>)</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Strings of different lengths</li>
+            <li>Repeated characters mapping to different characters</li>
+            <li>Empty strings (should return true)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: s = "egg", t = "add"
+Output: true
+
+Input: s = "foo", t = "bar"
+Output: false
+
+Input: s = "paper", t = "title"
+Output: true
+</code></pre>
+    </div>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Union Find (Disjoint Set) Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Union Find (Disjoint Set) – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            <b>Union Find</b> (Disjoint Set Union, DSU) is a data structure that keeps track of a set of elements partitioned into disjoint (non-overlapping) subsets. It supports two main operations efficiently: <b>find</b> (which subset an element is in) and <b>union</b> (merge two subsets).
+        </p>
+
+        <h2>🎯 Solution Pattern (Path Compression & Union by Rank)</h2>
+        <pre><code>// Java Solution
+class UnionFind {
+    int[] parent, rank;
+    public UnionFind(int n) {
+        parent = new int[n];
+        rank = new int[n];
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+    public int find(int x) {
+        if (parent[x] != x)
+            parent[x] = find(parent[x]); // Path compression
+        return parent[x];
+    }
+    public void union(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px == py) return;
+        if (rank[px] < rank[py]) parent[px] = py;
+        else if (rank[px] > rank[py]) parent[py] = px;
+        else {
+            parent[py] = px;
+            rank[px]++;
+        }
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Cycle detection in graphs</li>
+            <li>Connected components</li>
+            <li>Kruskal's Minimum Spanning Tree</li>
+            <li>Network connectivity</li>
+            <li>Dynamic connectivity queries</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize parent and rank arrays</li>
+            <li>For <code>find(x)</code>, recursively find root and compress path</li>
+            <li>For <code>union(x, y)</code>, merge sets by rank</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(α(N))</code> per operation (α is inverse Ackermann function, nearly constant)</li>
+            <li><b>Space:</b> <code>O(N)</code> for parent and rank arrays</li>
+        </ul>
+
+        <h2>📘 Common LeetCode DSU/Union Find Problems</h2>
+
+<div class="problems-section">
+    <h3 class="problems-header easy">🟢 Easy Problems</h3>
+    <ul class="problems-list">
+        <li>
+            <div class="problem-card easy">
+                <div class="problem-title">
+                    Find if Path Exists in Graph
+                    <span class="badge badge-easy">Easy</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/find-if-path-exists-in-graph/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="find_if_path_exists_in_graph_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Check if two nodes are connected in an undirected graph.
+                </div>
+            </div>
+        </li>
+    </ul>
+
+    <h3 class="problems-header medium">🟡 Medium Problems</h3>
+    <ul class="problems-list">
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Redundant Connection
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/redundant-connection/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="redundant_connection_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Find the edge that can be removed to make the graph a tree.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Number of Islands
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/number-of-islands/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="number_of_islands_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Count the number of islands in a grid using DFS or Union Find.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Most Stones Removed with Same Row or Column
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/most-stones-removed-with-same-row-or-column/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="most_stones_removed_with_same_row_or_column_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Remove as many stones as possible by grouping with Union Find.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Regions Cut by Slashes
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/regions-cut-by-slashes/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="regions_cut_by_slashes_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Count regions in a grid divided by slashes using DSU.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Accounts Merge
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/accounts-merge/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="accounts_merge_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Merge user accounts by shared emails using Union Find.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card medium">
+                <div class="problem-title">
+                    Evaluate Division
+                    <span class="badge badge-medium">Medium</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/evaluate-division/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="evaluate_division_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Evaluate division queries using Union Find with weights.
+                </div>
+            </div>
+        </li>
+    </ul>
+
+    <h3 class="problems-header hard">🔴 Hard Problems</h3>
+    <ul class="problems-list">
+        <li>
+            <div class="problem-card hard">
+                <div class="problem-title">
+                    Longest Consecutive Sequence
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/longest-consecutive-sequence/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="longest_consecutive_sequence_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Find the length of the longest consecutive elements sequence.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card hard">
+                <div class="problem-title">
+                    Last Day Where You Can Still Cross
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/last-day-where-you-can-still-cross/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="last_day_where_you_can_still_cross_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Binary search + Union Find to find the last day to cross a grid.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card hard">
+                <div class="problem-title">
+                    Minimize Malware Spread
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/minimize-malware-spread/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="minimize_malware_spread_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Remove one node to minimize malware spread in a network.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card hard">
+                <div class="problem-title">
+                    The Skyline Problem
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/the-skyline-problem/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="the_skyline_problem_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Compute the silhouette formed by a list of buildings.
+                </div>
+            </div>
+        </li>
+        <li>
+            <div class="problem-card hard">
+                <div class="problem-title">
+                    Similar String Groups
+                    <span class="badge badge-hard">Hard</span>
+                </div>
+                <div class="problem-actions">
+                    <a href="https://leetcode.com/problems/similar-string-groups/" target="_blank" class="leetcode-link">LeetCode</a>
+                    <a href="similar_string_groups_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                </div>
+                <div class="problem-notes">
+                    Count groups of similar strings using Union Find.
+                </div>
+            </div>
+        </li>
+    </ul>
+</div>
+<h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Repeated union operations</li>
+            <li>Disconnected elements</li>
+            <li>Self-union (should be ignored)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>UnionFind uf = new UnionFind(5);
+uf.union(0, 1);
+uf.union(1, 2);
+uf.find(2); // Output: 0 (root of set containing 2)
+</code></pre>
+<style>
+.problems-section {
+    margin-bottom: 32px;
+}
+.problems-header {
+    font-size: 1.2em;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+.problems-header.easy { color: #28a745; }
+.problems-header.medium { color: #ffc107; }
+.problems-header.hard { color: #dc3545; }
+.problems-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.problem-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    padding: 16px 18px 10px 18px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+    border-left: 6px solid #dee2e6;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.problem-card.easy { border-color: #28a745; }
+.problem-card.medium { border-color: #ffc107; }
+.problem-card.hard { border-color: #dc3545; }
+.problem-card:hover {
+    box-shadow: 0 4px 16px rgba(44,62,80,0.10);
+    border-left-width: 10px;
+}
+.problem-title {
+    font-weight: bold;
+    font-size: 1.08em;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+.badge-easy { background: #28a745; color: white; }
+.badge-medium { background: #ffc107; color: black; }
+.badge-hard { background: #dc3545; color: white; }
+.problem-actions {
+    margin-bottom: 6px;
+}
+.problem-actions a {
+    display: inline-block;
+    margin-right: 12px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.97em;
+    border: 1px solid #dee2e6;
+    transition: background 0.2s, color 0.2s;
+}
+.problem-actions a:hover {
+    background: #007bff;
+    color: #fff;
+}
+.problem-notes {
+    font-size: 0.93em;
+    color: #6c757d;
+    margin-bottom: 2px;
+    margin-top: 2px;
+}
+</style>
+    </div>
+</body>
+</html>

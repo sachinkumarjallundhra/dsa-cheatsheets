@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Skyline Problem (Sweep-Line Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-warning: #f1c40f;
+            --color-building: rgba(149, 165, 166, 0.5);
+            --color-skyline: #e74c3c;
+            --color-sweep-line: #9b59b6;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.2fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 50px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: 1fr auto 1fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #skyline_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .building-rect { fill: var(--color-building); stroke: #7f8c8d; stroke-width: 1; }
+        .skyline-path { fill: none; stroke: var(--color-skyline); stroke-width: 3; stroke-linejoin: bevel; }
+        .sweep-line { stroke: var(--color-sweep-line); stroke-width: 2; stroke-dasharray: 5,5; }
+        .height-line { stroke: var(--color-sweep-line); stroke-width: 1.5; stroke-dasharray: 4,4; }
+        .prev-height-line { stroke: #aaa; stroke-width: 1; stroke-dasharray: 2,2; }
+        .axis { stroke: #333; stroke-width: 1; }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        .event-list, .result-list { list-style: none; padding: 0; margin: 0; }
+        .event-item, .result-item { background: #eee; padding: 5px; margin: 2px 5px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.85em; transition: all 0.3s; }
+        .event-item.entering { border-left: 4px solid var(--color-success); }
+        .event-item.leaving { border-left: 4px solid var(--color-danger); }
+        .event-item.current { background-color: var(--color-warning); font-weight: bold; }
+        .result-item.new { background-color: var(--color-success); color: white; transform: scale(1.05); }
+
+        .pq-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 auto 5px auto; width: 80%; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; font-family: 'Courier New',monospace; }
+        .pq-item:first-child { background: var(--color-sweep-line); color: white; border-color: #6a1b9a;}
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.2em; font-weight: bold; margin: 0; color: var(--color-primary); white-space: pre-wrap; text-align: left;}
+        
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>The Skyline Problem</h1>
+            <div class="controls">
+                <label>Buildings [[L,R,H],...]:</label><textarea id="buildings_input">[[2,9,10],[3,7,15],[5,12,12],[15,20,10],[19,24,8]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter buildings and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Skyline Visualization</h2>
+            <div id="skyline_container">
+                 <svg id="skyline_svg" width="100%" height="100%"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Events</h2>
+                <div id="events_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Result Points</h2>
+                <div id="result_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Max Heap (Active Heights)</h2>
+                <div id="pq_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Skyline Points</h2>
+            <pre id="final_result_text"></pre>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let buildingsInput, startButton, nextStepButton, codeContainer, actionDisplay, skylineContainer,
+    eventsContainer, pqContainer, resultContainer, resultModal, finalResultText, modalCloseBtn;
+let skylineDrawer;
+
+class SkylineDrawer {
+    constructor(svg, buildings) {
+        this.svg = svg;
+        this.buildings = buildings;
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+        this.padding = { top: 20, right: 20, bottom: 30, left: 30 };
+        
+        this.maxX = 0;
+        this.maxY = 0;
+        buildings.forEach(b => {
+            this.maxX = Math.max(this.maxX, b[1]);
+            this.maxY = Math.max(this.maxY, b[2]);
+        });
+        this.maxX *= 1.05;
+        this.maxY *= 1.05;
+
+        this.xScale = (x) => this.padding.left + (x / this.maxX) * (this.width - this.padding.left - this.padding.right);
+        this.yScale = (y) => (this.height - this.padding.bottom) - (y / this.maxY) * (this.height - this.padding.top - this.padding.bottom);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const { sweepLineX, resultPoints, prevHeight, currentHeight } = state;
+        
+        const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        xAxis.setAttribute('x1', this.padding.left);
+        xAxis.setAttribute('y1', this.height - this.padding.bottom);
+        xAxis.setAttribute('x2', this.width - this.padding.right);
+        xAxis.setAttribute('y2', this.height - this.padding.bottom);
+        xAxis.classList.add('axis');
+        this.svg.appendChild(xAxis);
+
+        this.buildings.forEach(b => {
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', this.xScale(b[0]));
+            rect.setAttribute('y', this.yScale(b[2]));
+            rect.setAttribute('width', this.xScale(b[1]) - this.xScale(b[0]));
+            rect.setAttribute('height', this.yScale(0) - this.yScale(b[2]));
+            rect.classList.add('building-rect');
+            this.svg.appendChild(rect);
+        });
+
+        if (resultPoints && resultPoints.length > 0) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            let d = `M ${this.xScale(0)} ${this.yScale(0)}`;
+            let lastPoint = [0, 0];
+            resultPoints.forEach(p => {
+                d += ` L ${this.xScale(p[0])} ${this.yScale(lastPoint[1])}`;
+                d += ` L ${this.xScale(p[0])} ${this.yScale(p[1])}`;
+                lastPoint = p;
+            });
+            path.setAttribute('d', d);
+            path.classList.add('skyline-path');
+            this.svg.appendChild(path);
+        }
+        
+        if (sweepLineX !== null) {
+            // Draw previous height line
+            const prevLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            prevLine.setAttribute('x1', this.padding.left);
+            prevLine.setAttribute('y1', this.yScale(prevHeight));
+            prevLine.setAttribute('x2', this.width - this.padding.right);
+            prevLine.setAttribute('y2', this.yScale(prevHeight));
+            prevLine.classList.add('prev-height-line');
+            this.svg.appendChild(prevLine);
+
+            // Draw current height line
+            const currLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            currLine.setAttribute('x1', this.padding.left);
+            currLine.setAttribute('y1', this.yScale(currentHeight));
+            currLine.setAttribute('x2', this.width - this.padding.right);
+            currLine.setAttribute('y2', this.yScale(currentHeight));
+            currLine.classList.add('height-line');
+            this.svg.appendChild(currLine);
+            
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            const xPos = this.xScale(sweepLineX);
+            line.setAttribute('x1', xPos);
+            line.setAttribute('y1', this.padding.top);
+            line.setAttribute('x2', xPos);
+            line.setAttribute('y2', this.height - this.padding.bottom);
+            line.classList.add('sweep-line');
+            this.svg.appendChild(line);
+        }
+    }
+}
+
+
+class SkylineAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, eventsContainer, pqContainer, resultContainer].forEach(c => c.innerHTML = '');
+        const svg = document.getElementById('skyline_svg');
+        if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = 'Enter buildings and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const buildings = JSON.parse(buildingsInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(buildings)) throw new Error("Invalid input format.");
+            
+            this.initUI();
+            skylineDrawer = new SkylineDrawer(document.getElementById('skyline_svg'), buildings);
+            animationSteps = this.generateSteps(buildings);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// 1. Create events from buildings",
+            "events.sort(...)",
+            "pq = new PriorityQueue()",
+            "pq.add(0); prev = 0;",
+            "",
+            "// 2. Sweep through events",
+            "for e in events:",
+            "  if (e is entering): pq.add(height)",
+            "  else: pq.remove(height)",
+            "  curr = pq.peek()",
+            "  if curr != prev:",
+            "    res.add([x, curr])",
+            "    prev = curr",
+            "return res"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(buildings) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", events: [], pq: [], resultPoints: [],
+            prevHeight: 0, currentHeight: 0, sweepLineX: null,
+            highlights: { eventIdx: null, newResult: false },
+            finalResult: null
+        };
+
+        save({ ...state, line: 0, msg: "Step 1: Create 'entering' and 'leaving' events from buildings." });
+        let events = [];
+        for (const b of buildings) {
+            events.push([b[0], -b[2]]);
+            events.push([b[1], b[2]]);
+        }
+        state.events = [...events];
+        save({ ...state, msg: "All events created." });
+
+        events.sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]);
+        state.events = [...events];
+        save({ ...state, line: 1, msg: "Events sorted by x-coordinate, then by type (entering before leaving)." });
+
+        let pq = [0];
+        state.pq = [...pq];
+        save({ ...state, line: 2, msg: "Initialize Max Heap with baseline height 0." });
+        
+        let prev = 0;
+        state.prevHeight = prev;
+        state.currentHeight = prev;
+        save({ ...state, line: 3, msg: "Set 'previous height' to 0." });
+
+        save({ ...state, line: 5, msg: "Step 2: Sweep line through sorted events." });
+
+        for (let i = 0; i < events.length; i++) {
+            const e = events[i];
+            state.sweepLineX = e[0];
+            state.highlights = { eventIdx: i, newResult: false };
+            save({ ...state, line: 6, msg: `Sweep line at x=${e[0]}. Processing event.` });
+            
+            if (e[1] < 0) { // Entering
+                pq.push(-e[1]);
+                pq.sort((a,b) => b-a);
+                state.pq = [...pq];
+                save({ ...state, line: 7, msg: `Entering building. Add height ${-e[1]} to heap.` });
+            } else { // Leaving
+                const index = pq.indexOf(e[1]);
+                if (index > -1) pq.splice(index, 1);
+                pq.sort((a,b) => b-a);
+                state.pq = [...pq];
+                save({ ...state, line: 8, msg: `Leaving building. Remove height ${e[1]} from heap.` });
+            }
+            
+            const curr = pq[0];
+            state.currentHeight = curr;
+            save({ ...state, line: 9, msg: `Current max height from heap is ${curr}.` });
+
+            if (curr !== prev) {
+                save({ ...state, line: 10, msg: `Height changed! (from ${prev} to ${curr}). This is a critical point.` });
+                
+                // Merge points at the same x-coordinate
+                const lastPoint = state.resultPoints[state.resultPoints.length - 1];
+                if(lastPoint && lastPoint[0] === e[0]) {
+                    lastPoint[1] = curr;
+                } else {
+                    state.resultPoints.push([e[0], curr]);
+                }
+
+                state.highlights.newResult = true;
+                save({ ...state, line: 11, msg: `Add point [${e[0]}, ${curr}] to result list.` });
+                
+                prev = curr;
+                state.prevHeight = prev;
+                state.highlights.newResult = false;
+                save({ ...state, line: 12, msg: `Update 'previous height' to ${curr}.` });
+            } else {
+                 save({ ...state, line: 10, msg: `Height has not changed from ${prev}. This is not a critical point.` });
+            }
+        }
+
+        state.finalResult = state.resultPoints;
+        save({ ...state, line: 13, msg: "Sweep complete. Final skyline generated." });
+
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        if(skylineDrawer) skylineDrawer.draw(state);
+
+        eventsContainer.innerHTML = state.events.map((e, i) => {
+            const type = e[1] < 0 ? 'entering' : 'leaving';
+            const currentClass = i === state.highlights.eventIdx ? 'current' : '';
+            return `<li class="event-item ${type} ${currentClass}">[x: ${e[0]}, h: ${Math.abs(e[1])}]</li>`;
+        }).join('');
+        
+        resultContainer.innerHTML = `<ul class="result-list">${state.resultPoints.map((p, i, arr) => {
+            const newClass = (i === arr.length - 1 && state.highlights.newResult) ? 'new' : '';
+            return `<li class="result-item ${newClass}">[${p[0]}, ${p[1]}]</li>`;
+        }).join('')}</ul>`;
+
+        pqContainer.innerHTML = state.pq.map(h => `<div class="pq-item">${h}</div>`).join('');
+        
+        if (state.finalResult) {
+            finalResultText.textContent = JSON.stringify(state.finalResult, null, 2);
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    buildingsInput = document.getElementById('buildings_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    skylineContainer = document.getElementById('skyline_container');
+    eventsContainer = document.getElementById('events_container');
+    pqContainer = document.getElementById('pq_container');
+    resultContainer = document.getElementById('result_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new SkylineAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

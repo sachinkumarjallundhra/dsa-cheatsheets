@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find if Path Exists in Graph Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Find if Path Exists in Graph – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Find if Path Exists in Graph</b> problem (LeetCode 1971) asks you to determine if there is a valid path between two given nodes in an undirected graph.
+        </p>
+
+        <h2>🎯 Solution Pattern (Union Find / DFS / BFS)</h2>
+        <pre><code>// Java Solution (Union Find)
+class Solution {
+    public boolean validPath(int n, int[][] edges, int source, int destination) {
+        UnionFind uf = new UnionFind(n);
+        for (int[] edge : edges) {
+            uf.union(edge[0], edge[1]);
+        }
+        return uf.find(source) == uf.find(destination);
+    }
+}
+
+class UnionFind {
+    int[] parent;
+    public UnionFind(int n) {
+        parent = new int[n];
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+    public int find(int x) {
+        if (parent[x] != x)
+            parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    public void union(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px != py) parent[px] = py;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/find_if_path_exists_in_graph_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Checking connectivity in undirected graphs</li>
+            <li>Union Find applications</li>
+            <li>Graph traversal problems</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize Union Find for all nodes</li>
+            <li>Union all connected nodes via edges</li>
+            <li>Check if source and destination are in the same component</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(E + V)</code> where E is number of edges, V is number of nodes</li>
+            <li><b>Space:</b> <code>O(V)</code> for Union Find structure</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Disconnected graph</li>
+            <li>Source and destination are the same</li>
+            <li>No edges</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: n = 3, edges = [[0,1],[1,2],[2,0]], source = 0, destination = 2
+Output: true
+
+Input: n = 6, edges = [[0,1],[0,2],[3,5],[5,4],[4,3]], source = 0, destination = 5
+Output: false
+</code></pre>
+    </div>
+</body>
+</html>

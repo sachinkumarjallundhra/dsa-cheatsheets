@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluate Division Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>➗ Evaluate Division – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Evaluate Division</b> problem (LeetCode 399) asks you to evaluate division queries given equations like <code>a / b = 2.0</code>. For each query, return the result of the division or <code>-1.0</code> if it cannot be determined.
+        </p>
+
+        <h2>🎯 Solution Pattern (Union Find with Weights)</h2>
+        <pre><code>// Java Solution (Union Find with Weights)
+class Solution {
+    public double[] calcEquation(List&lt;List&lt;String&gt;&gt; equations, double[] values, List&lt;List&lt;String&gt;&gt; queries) {
+        UnionFind uf = new UnionFind();
+        for (int i = 0; i &lt; equations.size(); i++) {
+            List&lt;String&gt; eq = equations.get(i);
+            uf.union(eq.get(0), eq.get(1), values[i]);
+        }
+        double[] res = new double[queries.size()];
+        for (int i = 0; i &lt; queries.size(); i++) {
+            String a = queries.get(i).get(0), b = queries.get(i).get(1);
+            if (!uf.parent.containsKey(a) || !uf.parent.containsKey(b) || uf.find(a) != uf.find(b)) {
+                res[i] = -1.0;
+            } else {
+                res[i] = uf.weight.get(a) / uf.weight.get(b);
+            }
+        }
+        return res;
+    }
+
+    class UnionFind {
+        Map&lt;String, String&gt; parent = new HashMap&lt;&gt;();
+        Map&lt;String, Double&gt; weight = new HashMap&lt;&gt;();
+
+        public String find(String x) {
+            if (!parent.containsKey(x)) {
+                parent.put(x, x);
+                weight.put(x, 1.0);
+                return x;
+            }
+            if (!parent.get(x).equals(x)) {
+                String origParent = parent.get(x);
+                String root = find(origParent);
+                parent.put(x, root);
+                weight.put(x, weight.get(x) * weight.get(origParent));
+            }
+            return parent.get(x);
+        }
+
+        public void union(String x, String y, double value) {
+            String rootX = find(x), rootY = find(y);
+            if (!rootX.equals(rootY)) {
+                parent.put(rootX, rootY);
+                weight.put(rootX, value * weight.get(y) / weight.get(x));
+            }
+        }
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/evaluate_division_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+<div style="margin-bottom:18px;">
+    <b>🎥 Video Explanation:</b>
+    <a href="https://www.youtube.com/watch?v=Uei1fwDoyKk&ab_channel=NeetCodeIO" target="_blank">
+        Watch on YouTube
+    </a>
+</div>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Evaluating equations with variables</li>
+            <li>Union Find with weights for ratio problems</li>
+            <li>Graph-based division queries</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>For each equation, union the variables with the given ratio</li>
+            <li>For each query, check if both variables are connected</li>
+            <li>If connected, return the ratio using stored weights; else, return -1.0</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N + Q)</code> where N is number of equations, Q is number of queries</li>
+            <li><b>Space:</b> <code>O(N)</code> for Union Find maps</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Disconnected variables</li>
+            <li>Self-division (e.g., a / a)</li>
+            <li>Unknown variables in queries</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: equations = [["a","b"],["b","c"]], values = [2.0,3.0], queries = [["a","c"],["b","a"],["a","e"],["a","a"],["x","x"]]
+Output: [6.0,0.5,-1.0,1.0,-1.0]
+</code></pre>
+    </div

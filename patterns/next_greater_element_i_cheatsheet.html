@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Next Greater Element I Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>➡️ Next Greater Element I – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Next Greater Element I</b> problem (LeetCode 496) asks you to find the next greater element for each element in one array (<code>nums1</code>) as it appears in another array (<code>nums2</code>). The next greater element for an element x is the first greater element to its right in <code>nums2</code>; if it does not exist, return -1.
+        </p>
+
+        <h2>🎯 Solution Pattern (Monotonic Stack + HashMap)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public int[] nextGreaterElement(int[] nums1, int[] nums2) {
+        Map&lt;Integer, Integer&gt; map = new HashMap&lt;&gt;();
+        Deque&lt;Integer&gt; stack = new ArrayDeque&lt;&gt;();
+        for (int num : nums2) {
+            while (!stack.isEmpty() &amp;&amp; num > stack.peek()) {
+                map.put(stack.pop(), num);
+            }
+            stack.push(num);
+        }
+        int[] res = new int[nums1.length];
+        for (int i = 0; i &lt; nums1.length; i++) {
+            res[i] = map.getOrDefault(nums1[i], -1);
+        }
+        return res;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding next greater/smaller elements in arrays</li>
+            <li>Stock span, temperature, and similar problems</li>
+            <li>Stack-based array processing</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Iterate through <code>nums2</code> and use a stack to keep track of decreasing elements</li>
+            <li>For each element, pop from the stack until you find a greater element, mapping each popped element to the current one</li>
+            <li>Build the result for <code>nums1</code> using the map</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N + M)</code> where N = nums1.length, M = nums2.length</li>
+            <li><b>Space:</b> <code>O(M)</code> for the stack and map</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Elements in <code>nums1</code> not present in <code>nums2</code> (problem guarantees all are present)</li>
+            <li>No greater element exists (should return -1)</li>
+            <li>Duplicate elements (problem guarantees unique elements)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: nums1 = [4,1,2], nums2 = [1,3,4,2]
+Output: [-1,3,-1]
+Explanation: For 4, no greater element; for 1, next greater is 3; for 2, no greater element.
+</code></pre>
+    </div>
+</body>
+</html>

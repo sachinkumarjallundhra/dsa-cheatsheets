@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Happy Prefix Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>😊 Longest Happy Prefix – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Longest Happy Prefix</b> problem (LeetCode 1392) asks you to find the longest prefix of a string which is also a suffix (excluding the whole string itself).
+        </p>
+
+        <h2>🎯 Solution Pattern (KMP Failure Function)</h2>
+        <pre><code>// Java Solution (KMP Algorithm)
+class Solution {
+    public String longestPrefix(String s) {
+        int n = s.length();
+        int[] lps = new int[n];
+        int len = 0;
+        for (int i = 1; i < n; i++) {
+            while (len > 0 && s.charAt(i) != s.charAt(len)) {
+                len = lps[len - 1];
+            }
+            if (s.charAt(i) == s.charAt(len)) {
+                len++;
+                lps[i] = len;
+            }
+        }
+        return s.substring(0, lps[n - 1]);
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding repeated patterns in strings</li>
+            <li>Prefix-suffix matching problems</li>
+            <li>Efficient string processing (KMP algorithm)</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Build the LPS (Longest Prefix Suffix) array using KMP preprocessing</li>
+            <li>The last value in LPS gives the length of the longest happy prefix</li>
+            <li>Return the substring from 0 to that length</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> where N is the length of the string</li>
+            <li><b>Space:</b> <code>O(N)</code> for the LPS array</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>No happy prefix (should return empty string)</li>
+            <li>Whole string is a prefix and suffix (exclude whole string)</li>
+            <li>Single character string</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: s = "level"
+Output: "l"
+Explanation: "l" is the longest prefix which is also a suffix.
+
+Input: s = "ababab"
+Output: "abab"
+Explanation: "abab" is the longest happy prefix.
+</code></pre>
+    </

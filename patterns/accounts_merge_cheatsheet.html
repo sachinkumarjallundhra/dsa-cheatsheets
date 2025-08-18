@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accounts Merge Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>👤 Accounts Merge – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Accounts Merge</b> problem (LeetCode 721) asks you to merge accounts that have at least one common email. Each account contains a name and a list of emails. Return the merged accounts in any order.
+        </p>
+
+        <h2>🎯 Solution Pattern (Union Find / DSU)</h2>
+        <pre><code>// Java Solution (Union Find)
+class Solution {
+    public List&lt;List&lt;String&gt;&gt; accountsMerge(List&lt;List&lt;String&gt;&gt; accounts) {
+        Map&lt;String, String&gt; emailToName = new HashMap&lt;&gt;();
+        Map&lt;String, String&gt; parent = new HashMap&lt;&gt;();
+
+        // 1. Initialize parent and emailToName
+        for (List&lt;String&gt; acc : accounts) {
+            String name = acc.get(0);
+            for (int i = 1; i &lt; acc.size(); i++) {
+                String email = acc.get(i);
+                parent.putIfAbsent(email, email);
+                emailToName.put(email, name);
+            }
+        }
+
+        // 2. Union emails in the same account
+        for (List&lt;String&gt; acc : accounts) {
+            String firstEmail = acc.get(1);
+            for (int i = 2; i &lt; acc.size(); i++) {
+                union(parent, firstEmail, acc.get(i));
+            }
+        }
+
+        // 3. Group emails by root parent
+        Map&lt;String, TreeSet&lt;String&gt;&gt; unions = new HashMap&lt;&gt;();
+        for (String email : parent.keySet()) {
+            String root = find(parent, email);
+            unions.computeIfAbsent(root, x -&gt; new TreeSet&lt;&gt;()).add(email);
+        }
+
+        // 4. Build result
+        List&lt;List&lt;String&gt;&gt; res = new ArrayList&lt;&gt;();
+        for (String root : unions.keySet()) {
+            List&lt;String&gt; merged = new ArrayList&lt;&gt;();
+            merged.add(emailToName.get(root));
+            merged.addAll(unions.get(root));
+            res.add(merged);
+        }
+        return res;
+    }
+
+    private String find(Map&lt;String, String&gt; parent, String s) {
+        if (!parent.get(s).equals(s))
+            parent.put(s, find(parent, parent.get(s)));
+        return parent.get(s);
+    }
+
+    private void union(Map&lt;String, String&gt; parent, String s1, String s2) {
+        parent.put(find(parent, s1), find(parent, s2));
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/accounts_merge_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Merging user accounts by shared emails</li>
+            <li>Union Find on string keys</li>
+            <li>Connected components in graphs</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Map each email to its owner and itself as parent</li>
+            <li>Union all emails in the same account</li>
+            <li>Group emails by their root parent</li>
+            <li>Build the merged account lists</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(NK log K)</code> where N is number of accounts, K is max emails per account</li>
+            <li><b>Space:</b> <code>O(NK)</code> for maps and result</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Accounts with no shared emails</li>
+            <li>Multiple accounts with the same name but no shared emails</li>
+            <li>Emails appearing in multiple accounts</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: 
+[
+  ["John","johnsmith@mail.com","john00@mail.com"],
+  ["John","johnnybravo@mail.com"],
+  ["John","johnsmith@mail.com","john_newyork@mail.com"],
+  ["Mary","mary@mail.com"]
+]
+Output: 
+[
+  ["John","john00@mail.com","john_newyork@mail.com","johnsmith@mail.com"],
+  ["John","johnnybravo@mail.com"],
+  ["Mary","mary@mail.com"]
+]
+</code></pre>
+    </div>

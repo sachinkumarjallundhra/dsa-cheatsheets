@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Skyline Problem (Union-Find Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #8e44ad; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12;
+            --color-building: rgba(149, 165, 166, 0.4);
+            --color-skyline-fill: rgba(142, 68, 173, 0.2);
+            --color-skyline-stroke: #8e44ad;
+            --color-highlight-fill: rgba(243, 156, 18, 0.7);
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(450px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #f4eef7; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 50px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: 1.1fr 2fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #skyline_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .building-rect { fill: var(--color-building); stroke: #7f8c8d; stroke-width: 1; }
+        .skyline-segment { fill: var(--color-skyline-fill); }
+        .skyline-segment.highlight { fill: var(--color-highlight-fill); }
+        .skyline-path { fill: none; stroke: var(--color-skyline-stroke); stroke-width: 3; stroke-linejoin: round; }
+        .axis { stroke: #333; stroke-width: 1; }
+        
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        .building-list { list-style: none; padding: 0; margin: 0; }
+        .building-item { background: #eee; padding: 5px; margin: 2px 5px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.85em; transition: background-color 0.3s; }
+        .building-item.current { background-color: var(--color-warning); font-weight: bold; }
+
+        .state-table { width: 100%; border-collapse: collapse; font-size: 0.8em; text-align: center; }
+        .state-table th, .state-table td { padding: 4px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table tr.highlight { background-color: var(--color-warning); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.2em; font-weight: bold; margin: 0; color: var(--color-primary); white-space: pre-wrap; text-align: left;}
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>The Skyline Problem (Union-Find)</h1>
+            <div class="controls">
+                <label>Buildings [[L,R,H],...]:</label><textarea id="buildings_input">[[2,9,10],[3,7,15],[5,12,12],[15,20,10],[19,24,8]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter buildings and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Skyline Visualization</h2>
+            <div id="skyline_container">
+                 <svg id="skyline_svg" width="100%" height="100%"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Buildings (Sorted by Height)</h2>
+                <div id="buildings_list_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Coordinates & State</h2>
+                <div id="state_table_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Skyline Points</h2>
+            <pre id="final_result_text"></pre>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let buildingsInput, startButton, nextStepButton, codeContainer, actionDisplay, skylineContainer,
+    buildingsListContainer, stateTableContainer, resultModal, finalResultText, modalCloseBtn;
+let skylineDrawer, originalBuildings;
+
+// --- Union-Find Data Structure ---
+class UnionFind {
+    constructor(n) { this.parent = Array.from({ length: n }, (_, i) => i); }
+    find(i) {
+        if (this.parent[i] === i) return i;
+        return this.parent[i] = this.find(this.parent[i]);
+    }
+    union(i, j) {
+        const rootI = this.find(i);
+        const rootJ = this.find(j);
+        if (rootI !== rootJ) this.parent[rootI] = rootJ;
+    }
+}
+
+class SkylineDrawer {
+    constructor(svg, buildings) {
+        this.svg = svg;
+        this.originalBuildings = buildings;
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+        this.padding = { top: 20, right: 20, bottom: 30, left: 30 };
+        
+        this.maxX = 0; this.maxY = 0;
+        buildings.forEach(b => {
+            this.maxX = Math.max(this.maxX, b[1]);
+            this.maxY = Math.max(this.maxY, b[2]);
+        });
+        this.maxX *= 1.05; this.maxY *= 1.05;
+
+        this.xScale = (x) => this.padding.left + (x / this.maxX) * (this.width - this.padding.left - this.padding.right);
+        this.yScale = (y) => (this.height - this.padding.bottom) - (y / this.maxY) * (this.height - this.padding.top - this.padding.bottom);
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const { coordinates, heights, resultPoints, highlights } = state;
+        
+        this.svg.appendChild(this.createAxis());
+        this.originalBuildings.forEach(b => this.svg.appendChild(this.createBuildingRect(b)));
+
+        if (coordinates && heights) {
+            for (let i = 0; i < heights.length; i++) {
+                if (heights[i] > 0 && i + 1 < coordinates.length) {
+                    const segment = this.createSkylineSegment(coordinates[i], coordinates[i+1], heights[i], i === highlights.stateIdx);
+                    this.svg.appendChild(segment);
+                }
+            }
+        }
+        
+        if (resultPoints && resultPoints.length > 0) {
+            this.svg.appendChild(this.createSkylinePath(resultPoints));
+        }
+    }
+
+    createAxis() {
+        const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        xAxis.setAttribute('x1', this.padding.left);
+        xAxis.setAttribute('y1', this.height - this.padding.bottom);
+        xAxis.setAttribute('x2', this.width - this.padding.right);
+        xAxis.setAttribute('y2', this.height - this.padding.bottom);
+        xAxis.classList.add('axis');
+        return xAxis;
+    }
+    
+    createBuildingRect(b) {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', this.xScale(b[0]));
+        rect.setAttribute('y', this.yScale(b[2]));
+        rect.setAttribute('width', this.xScale(b[1]) - this.xScale(b[0]));
+        rect.setAttribute('height', this.yScale(0) - this.yScale(b[2]));
+        rect.classList.add('building-rect');
+        return rect;
+    }
+
+    createSkylineSegment(x1, x2, h, isHighlight) {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', this.xScale(x1));
+        rect.setAttribute('y', this.yScale(h));
+        rect.setAttribute('width', this.xScale(x2) - this.xScale(x1));
+        rect.setAttribute('height', this.yScale(0) - this.yScale(h));
+        rect.classList.add('skyline-segment');
+        if (isHighlight) rect.classList.add('highlight');
+        return rect;
+    }
+
+    createSkylinePath(points) {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        let pointsStr = '';
+        let lastY = this.yScale(0);
+        points.forEach((p, i) => {
+            if (i > 0) { pointsStr += `${this.xScale(p[0])},${lastY} `; }
+            pointsStr += `${this.xScale(p[0])},${this.yScale(p[1])} `;
+            lastY = this.yScale(p[1]);
+        });
+        path.setAttribute('points', pointsStr);
+        path.classList.add('skyline-path');
+        return path;
+    }
+}
+
+
+class SkylineAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, buildingsListContainer, stateTableContainer].forEach(c => c.innerHTML = '');
+        const svg = document.getElementById('skyline_svg');
+        if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = 'Enter buildings and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const buildings = JSON.parse(buildingsInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(buildings)) throw new Error("Invalid input format.");
+            originalBuildings = JSON.parse(JSON.stringify(buildings));
+            
+            this.initUI();
+            skylineDrawer = new SkylineDrawer(document.getElementById('skyline_svg'), buildings);
+            animationSteps = this.generateSteps(buildings);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// 1. Collect & sort all unique coordinates",
+            "coords = sorted(unique(all L and R))",
+            "n = len(coords)",
+            "indexMap = {coord: i for i, coord in enumerate(coords)}",
+            "heights = array of n zeros",
+            "uf = UnionFind(n)",
+            "",
+            "// 2. Sort buildings by height (desc)",
+            "buildings.sort(key=lambda b: -b.height)",
+            "",
+            "// 3. Process buildings",
+            "for building in buildings:",
+            "  left_idx = indexMap[building.L]",
+            "  right_idx = indexMap[building.R]",
+            "  i = uf.find(left_idx)",
+            "  while i < right_idx:",
+            "    heights[i] = building.height",
+            "    uf.union(i, i + 1)",
+            "    i = uf.find(i)",
+            "",
+            "// 4. Construct final skyline",
+            "for i in 0..n-1:",
+            "  if i == 0 or heights[i] != heights[i-1]:",
+            "    result.add([coords[i], heights[i]])"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(buildings) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let state = {
+            line: null, msg: "", buildings: buildings, coordinates: [], heights: [], uf_parent: [],
+            resultPoints: [], highlights: { buildingIdx: null, stateIdx: null }, finalResult: null
+        };
+        save({...state, msg: "Start of algorithm."});
+
+        // 1. Coordinates
+        const coordsSet = new Set();
+        buildings.forEach(b => { coordsSet.add(b[0]); coordsSet.add(b[1]); });
+        const coordinates = Array.from(coordsSet).sort((a,b) => a-b);
+        state.coordinates = coordinates;
+        save({...state, line: 1, msg: "Collected and sorted all unique coordinates."});
+
+        const n = coordinates.length;
+        const indexMap = new Map(coordinates.map((c, i) => [c, i]));
+        state.heights = Array(n).fill(0);
+        const uf = new UnionFind(n);
+        state.uf_parent = [...uf.parent];
+        save({...state, line: 3, msg: `Created coordinate map and initialized heights/UF for ${n} segments.`});
+
+        // 2. Sort buildings
+        buildings.sort((a,b) => b[2] - a[2]);
+        state.buildings = [...buildings];
+        save({...state, line: 8, msg: "Sorted buildings by height in descending order."});
+
+        // 3. Process buildings
+        save({...state, line: 10, msg: "Begin processing buildings."});
+        for (let b_idx = 0; b_idx < buildings.length; b_idx++) {
+            const building = buildings[b_idx];
+            state.highlights.buildingIdx = b_idx;
+            save({...state, line: 11, msg: `Processing building [${building.join(', ')}].`});
+
+            const left_idx = indexMap.get(building[0]);
+            const right_idx = indexMap.get(building[1]);
+            save({...state, line: 12, msg: `Mapped L=${building[0]} to index ${left_idx}.`});
+            save({...state, line: 13, msg: `Mapped R=${building[1]} to index ${right_idx}.`});
+
+            let i = uf.find(left_idx);
+            state.highlights.stateIdx = i;
+            save({...state, line: 14, msg: `Start processing from index ${i} (root of ${left_idx}).`});
+
+            while (i < right_idx) {
+                save({...state, line: 15, msg: `Current segment index: ${i}. Loop condition ${i} < ${right_idx} is true.`});
+
+                state.heights[i] = building[2];
+                save({...state, line: 16, msg: `Set height of segment ${i} to ${building[2]}.`});
+
+                uf.union(i, i + 1);
+                state.uf_parent = [...uf.parent];
+                save({...state, line: 17, msg: `Union segment ${i} with ${i+1}.`});
+
+                i = uf.find(i);
+                state.highlights.stateIdx = i;
+                save({...state, line: 18, msg: `Find next unprocessed segment. New index is ${i}.`});
+            }
+            save({...state, line: 15, msg: `Loop finished for this building. Condition ${i} < ${right_idx} is false.`});
+            state.highlights.stateIdx = null;
+        }
+        state.highlights.buildingIdx = null;
+        save({...state, msg: "All buildings processed."});
+        
+        // 4. Construct final result
+        save({...state, line: 20, msg: "Constructing final skyline from heights array."});
+        const result = [];
+        for (let i = 0; i < n; i++) {
+            state.highlights.stateIdx = i;
+            const currentHeight = state.heights[i] || 0;
+            const prevHeight = i === 0 ? 0 : (state.heights[i-1] || 0);
+             save({...state, line: 21, msg: `Checking segment ${i}. Height is ${currentHeight}. Previous was ${prevHeight}.`});
+            if (currentHeight !== prevHeight) {
+                result.push([coordinates[i], currentHeight]);
+                state.resultPoints = [...result];
+                save({...state, line: 22, msg: `Height changed. Added point [${coordinates[i]}, ${currentHeight}].`});
+            }
+        }
+        state.highlights.stateIdx = null;
+        
+        // Final result cleanup - remove redundant vertical points
+        const finalResult = [];
+        if (result.length > 0) {
+            finalResult.push(result[0]);
+            for (let i = 1; i < result.length; i++) {
+                if (result[i][0] === result[i-1][0]) {
+                    finalResult[finalResult.length - 1] = result[i];
+                } else if (result[i][1] === finalResult[finalResult.length-1][1]) {
+                    // horizontal line, skip
+                } else {
+                    finalResult.push(result[i]);
+                }
+            }
+        }
+
+        state.finalResult = finalResult;
+        state.resultPoints = [...finalResult];
+        save({...state, msg: "Sweep complete. Final skyline generated."});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        if(skylineDrawer) skylineDrawer.draw(state);
+
+        buildingsListContainer.innerHTML = state.buildings.map((b, i) => {
+            const currentClass = i === state.highlights.buildingIdx ? 'current' : '';
+            return `<li class="building-item ${currentClass}">[L:${b[0]}, R:${b[1]}, H:${b[2]}]</li>`;
+        }).join('');
+
+        let tableHTML = `<table class="state-table"><thead><tr><th>Idx</th><th>Coord</th><th>Height</th><th>UF Parent</th></tr></thead><tbody>`;
+        for (let i = 0; i < state.coordinates.length; i++) {
+            const currentClass = i === state.highlights.stateIdx ? 'highlight' : '';
+            tableHTML += `<tr class="${currentClass}">
+                <td>${i}</td>
+                <td>${state.coordinates[i]}</td>
+                <td>${state.heights[i] || 0}</td>
+                <td>${state.uf_parent[i] || i}</td>
+            </tr>`;
+        }
+        tableHTML += `</tbody></table>`;
+        stateTableContainer.innerHTML = tableHTML;
+        
+        if (state.finalResult) {
+            finalResultText.textContent = JSON.stringify(state.finalResult, null, 2);
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    buildingsInput = document.getElementById('buildings_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    skylineContainer = document.getElementById('skyline_container');
+    buildingsListContainer = document.getElementById('buildings_list_container');
+    stateTableContainer = document.getElementById('state_table_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new SkylineAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

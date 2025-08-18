@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regions Cut by Slashes Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>✂️ Regions Cut by Slashes – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Regions Cut by Slashes</b> problem (LeetCode 959) asks you to count the number of regions formed in an n x n grid filled with '/' and '\' slashes. Each slash divides a cell into regions, and you need to count the total number of distinct regions.
+        </p>
+
+        <h2>🎯 Solution Pattern (Union Find / DSU)</h2>
+        <pre><code>// Java Solution (Union Find)
+class Solution {
+    public int regionsBySlashes(String[] grid) {
+        int n = grid.length;
+        UnionFind uf = new UnionFind(n * n * 4);
+        for (int r = 0; r < n; r++) {
+            for (int c = 0; c < n; c++) {
+                int root = 4 * (r * n + c);
+                char val = grid[r].charAt(c);
+                // Connect internal triangles
+                if (val == '/') {
+                    uf.union(root + 0, root + 3);
+                    uf.union(root + 1, root + 2);
+                } else if (val == '\\') {
+                    uf.union(root + 0, root + 1);
+                    uf.union(root + 2, root + 3);
+                } else {
+                    uf.union(root + 0, root + 1);
+                    uf.union(root + 1, root + 2);
+                    uf.union(root + 2, root + 3);
+                }
+                // Connect to neighboring cells
+                if (r + 1 < n) uf.union(root + 2, (root + 4 * n) + 0); // down
+                if (c + 1 < n) uf.union(root + 1, (root + 4) + 3);     // right
+            }
+        }
+        int regions = 0;
+        for (int i = 0; i < n * n * 4; i++) {
+            if (uf.find(i) == i) regions++;
+        }
+        return regions;
+    }
+}
+
+class UnionFind {
+    int[] parent;
+    public UnionFind(int n) {
+        parent = new int[n];
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+    public int find(int x) {
+        if (parent[x] != x)
+            parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    public void union(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px != py) parent[px] = py;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/regions_cut_by_slashes_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+<div style="margin-bottom:18px;">
+    <b>🎥 Video Explanation:</b>
+    <a href="https://www.youtube.com/watch?v=j8KrBYIxHK8&ab_channel=NeetCodeIO" target="_blank">
+        Watch on YouTube
+    </a>
+</div>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Counting regions in a grid with slashes</li>
+            <li>Union Find applications in 2D grids</li>
+            <li>Graph partitioning and connected components</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Divide each cell into 4 triangles (0: top, 1: right, 2: bottom, 3: left)</li>
+            <li>Union triangles within a cell based on the slash</li>
+            <li>Union triangles with adjacent cells (down and right neighbors)</li>
+            <li>Count the number of unique parents (regions)</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N^2)</code> where N is the grid size</li>
+            <li><b>Space:</b> <code>O(N^2)</code> for the Union Find structure</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty grid</li>
+            <li>All slashes are the same</li>
+            <li>No slashes (all spaces)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: grid = [
+  " /",
+  "/ "
+]
+Output: 2
+
+Input: grid = [
+  " /",
+  "  "
+]
+Output: 1
+</code></

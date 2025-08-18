@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accounts Merge (Union-Find Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #3498db; --color-success: #2ecc71;
+            --color-highlight-union: #f1c40f;
+            --color-highlight-scanner: rgba(46, 204, 113, 0.3);
+            --color-cell-read: #fff3cd; --color-cell-write: #e8f5e9; --color-cell-find: #e9d8fd;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(450px, 1.2fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f0fe; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 70px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: repeat(2, 1fr); gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; }
+        
+        #parent_graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .graph-node text { font-family: 'Courier New', monospace; font-size: 10px; pointer-events: none; fill: var(--color-text-dark); }
+        .graph-edge { stroke: #ccc; stroke-width: 1.5; marker-end: url(#arrow); }
+        .graph-edge.highlight { stroke: var(--color-highlight-union); stroke-width: 3; }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        .stack-item { background: #e9d8fd; border: 1px solid #c3a1e1; padding: 5px; margin: 0 5px 5px 5px; border-radius: 4px; text-align: center; font-weight: bold; animation: item-add 0.4s ease; flex-shrink: 0; font-size: 0.8em; word-break: break-all;}
+        
+        .map-table { width: 100%; border-collapse: collapse; }
+        .map-table th, .map-table td { border: 1px solid #ddd; padding: 4px; text-align: left; font-size: 0.8em; font-family: 'Courier New',monospace; word-break: break-all;}
+        .map-table th { background-color: #f2f2f2; }
+        .map-table tr.write { background-color: var(--color-cell-write); }
+        .map-table tr.read { background-color: var(--color-cell-read); }
+        .map-table tr.find-path { background-color: var(--color-cell-find); }
+        
+        .account-list { list-style: none; padding-left: 10px; margin: 0; }
+        .account-list li { background: #eef; padding: 5px; margin-bottom: 5px; border-radius: 4px; font-size: 0.8em; font-family: 'Courier New',monospace;}
+        .account-list li.current { border: 2px solid var(--color-highlight-union); }
+        .account-list li.final-result { background: var(--color-success); color: white; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #final_result_text { font-size: 1.2em; font-weight: bold; margin: 0; color: var(--color-primary); white-space: pre-wrap; text-align: left;}
+
+        @keyframes item-add { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Accounts Merge</h1>
+            <div class="controls">
+                <label>Accounts:</label><textarea id="accounts_input">[["John","johnsmith@mail.com","john_newyork@mail.com"],["John","johnsmith@mail.com","john00@mail.com"],["Mary","mary@mail.com"],["John","johnnybravo@mail.com"]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+             <div class="panel">
+                <h2>Call Stack</h2>
+                <div id="call_stack_container" class="data-container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter accounts and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2 id="main_panel_title">Parent Graph</h2>
+            <div id="parent_graph_container">
+                <svg id="parent_graph_svg" width="100%" height="100%"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <div class="panel">
+                <h2 id="right_panel_1_title">Data Structures</h2>
+                <div id="data_container_1" class="data-container"></div>
+            </div>
+            <div class="panel">
+                 <h2 id="right_panel_2_title"></h2>
+                <div id="data_container_2" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Merged Accounts</h2>
+            <pre id="final_result_text"></pre>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let accountsInput, startButton, nextStepButton, codeContainer, actionDisplay, callStackContainer,
+    parentGraphContainer, dataContainer1, dataContainer2, mainPanelTitle, rightPanel1Title, rightPanel2Title,
+    resultModal, finalResultText, modalCloseBtn;
+let graphDrawer;
+
+class AccountsMergeAnimation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+        resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, callStackContainer, dataContainer1, dataContainer2].forEach(c => c.innerHTML = '');
+        const svg = document.getElementById('parent_graph_svg');
+        if (svg) svg.innerHTML = '';
+        mainPanelTitle.textContent = "Parent Graph";
+        rightPanel1Title.textContent = "Data Structures";
+        rightPanel2Title.textContent = "";
+        actionDisplay.textContent = 'Enter accounts and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const accounts = JSON.parse(accountsInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(accounts)) throw new Error("Invalid input format.");
+            
+            this.initUI();
+            const allEmails = [...new Set(accounts.flat().filter(item => item.includes('@')))];
+            graphDrawer = new ParentGraphDrawer(document.getElementById('parent_graph_svg'), allEmails);
+            animationSteps = this.generateSteps(accounts);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) {
+            console.error(e);
+            alert("Invalid input. Error: " + e.message);
+            this.reset();
+        }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// Phase 1: Initialize Maps",
+            "for acc in accounts:",
+            "  name = acc[0]",
+            "  for email in acc (from 2nd):",
+            "    parent[email] = email",
+            "    emailToName[email] = name",
+            "",
+            "// Phase 2: Union emails",
+            "for acc in accounts:",
+            "  firstEmail = acc[1]",
+            "  for email in acc (from 3rd):",
+            "    union(firstEmail, email)",
+            "",
+            "// Phase 3: Group emails by root",
+            "for email in parent.keySet():",
+            "  root = find(email)",
+            "  unions[root].add(email)",
+            "",
+            "// Phase 4: Build final result",
+            "for root in unions.keySet():",
+            "  name = emailToName[root]",
+            "  mergedAccount = [name, ...unions[root]]",
+            "  result.add(mergedAccount)"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(accounts) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        
+        let state = {
+            line: null, msg: "", phase: 'init', callStack: [],
+            accounts: accounts, emailToName: {}, parent: {}, unions: {}, mergedResult: [],
+            highlights: { accountIdx: null, email: null, mapKey: null, mapOp: null, unionPair: null, findPath: [] },
+            finalResult: null
+        };
+        
+        // --- Traced UF Functions ---
+        function find(parentMap, s, path=[]) {
+            const parentOfS = parentMap[s];
+            state.callStack.push({func: 'find', email: s});
+            state.highlights.findPath.push(s);
+            state.highlights.mapKey = s; state.highlights.mapOp = 'read';
+            save({...state, msg: `find(${s}): parent is ${parentOfS}.`});
+
+            if (parentOfS !== s) {
+                const root = find(parentMap, parentOfS, [...path, s]);
+                state.callStack.pop();
+                if(parentMap[s] !== root) { // Path compression
+                    parentMap[s] = root;
+                    state.highlights.mapKey = s; state.highlights.mapOp = 'write';
+                    save({...state, msg: `Path compression: parent[${s}] = ${root}.`});
+                }
+                return root;
+            } else {
+                state.highlights.mapKey = null;
+                save({...state, msg: `${s} is the root.`});
+                state.callStack.pop();
+                return s;
+            }
+        }
+        function union(parentMap, s1, s2) {
+            state.callStack.push({func: 'union', emails: [s1, s2]});
+            state.highlights.unionPair = [s1, s2];
+            save({...state, msg: `union(${s1}, ${s2})`});
+            
+            state.highlights.findPath = [];
+            const root1 = find(parentMap, s1);
+            state.highlights.findPath = [];
+            const root2 = find(parentMap, s2);
+            state.highlights.findPath = [];
+
+            if (root1 !== root2) {
+                parentMap[root1] = root2;
+                state.highlights.mapKey = root1; state.highlights.mapOp = 'write';
+                save({...state, msg: `Unioning sets. parent[${root1}] = ${root2}.`});
+            } else {
+                 save({...state, msg: `${s1} and ${s2} are already in the same set.`});
+            }
+            state.callStack.pop();
+            state.highlights.unionPair = null;
+        }
+
+        // Phase 1: Init
+        save({ ...state, line: 0, msg: "Phase 1: Initializing data structures." });
+        accounts.forEach((acc, i) => {
+            state.highlights = { accountIdx: i };
+            save({ ...state, line: 1, msg: `Processing account ${i}.` });
+            const name = acc[0];
+            for (let j = 1; j < acc.length; j++) {
+                const email = acc[j];
+                state.highlights.email = email;
+                
+                if (!state.parent.hasOwnProperty(email)) {
+                    state.parent[email] = email;
+                    state.highlights.mapKey = email; state.highlights.mapOp = 'write';
+                    save({ ...state, line: 4, msg: `Initializing parent for new email: ${email}.` });
+                }
+                
+                state.emailToName[email] = name;
+                state.highlights.mapKey = email; state.highlights.mapOp = 'write';
+                save({ ...state, line: 5, msg: `Mapping email '${email}' to name '${name}'.` });
+            }
+        });
+
+        // Phase 2: Union
+        state.phase = 'union'; state.highlights = {};
+        save({ ...state, line: 7, msg: "Phase 2: Unioning emails within each account." });
+        accounts.forEach((acc, i) => {
+            if (acc.length < 2) return;
+            state.highlights = { accountIdx: i };
+            save({ ...state, line: 8, msg: `Processing account ${i} for unions.` });
+            const firstEmail = acc[1];
+            for (let j = 2; j < acc.length; j++) {
+                const email = acc[j];
+                state.highlights.email = email;
+                save({ ...state, line: 10, msg: `Unioning ${firstEmail} with ${email}.` });
+                union(state.parent, firstEmail, email);
+            }
+        });
+        
+        // Phase 3: Group
+        state.phase = 'group'; state.highlights = {};
+        save({ ...state, line: 13, msg: "Phase 3: Grouping emails by their root parent." });
+        for(const email of Object.keys(state.parent)) {
+            state.highlights = { email: email };
+            save({ ...state, line: 14, msg: `Processing email: ${email}` });
+            
+            state.highlights.findPath = [];
+            const root = find(state.parent, email);
+            state.highlights.findPath = [];
+            
+            if(!state.unions[root]) state.unions[root] = [];
+            state.unions[root].push(email);
+            state.unions[root].sort(); // Keep it sorted like TreeSet
+            state.highlights.mapKey = root; state.highlights.mapOp = 'write';
+            save({ ...state, line: 16, msg: `Email ${email} belongs to root ${root}. Adding to group.` });
+        }
+
+        // Phase 4: Result
+        state.phase = 'result'; state.highlights = {};
+        save({ ...state, line: 18, msg: "Phase 4: Formatting the final merged accounts list." });
+        for(const root of Object.keys(state.unions)) {
+            state.highlights = { mapKey: root, mapOp: 'read' };
+            save({ ...state, line: 19, msg: `Building account for root ${root}.` });
+            
+            const name = state.emailToName[root];
+            save({ ...state, line: 20, msg: `Name for this group is '${name}'.` });
+            
+            const merged = [name, ...state.unions[root]];
+            state.mergedResult.push(merged);
+            save({ ...state, line: 21, msg: `Adding merged account to final result.` });
+        }
+
+        state.finalResult = state.mergedResult;
+        save({ ...state, msg: "All accounts merged." });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        callStackContainer.innerHTML = state.callStack.slice().reverse().map(c => 
+            `<div class="stack-item">${c.func}(${c.email || c.emails.join(', ')})</div>`
+        ).join('');
+        
+        const { highlights, phase } = state;
+        
+        const createTable = (map, headers) => {
+            let html = `<table class="map-table"><thead><tr><th>${headers[0]}</th><th>${headers[1]}</th></tr></thead><tbody>`;
+            const sortedKeys = Object.keys(map).sort();
+            for (const key of sortedKeys) {
+                let rowClass = '';
+                if(highlights.mapKey === key) rowClass = highlights.mapOp;
+                if(highlights.findPath && highlights.findPath.includes(key)) rowClass = 'find-path';
+                const val = Array.isArray(map[key]) ? `[${map[key].join(',<br>')}]` : map[key];
+                html += `<tr class="${rowClass}"><td>${key}</td><td>${val}</td></tr>`;
+            }
+            return html + '</tbody></table>';
+        };
+        
+        if (phase === 'init' || phase === 'union') {
+            mainPanelTitle.textContent = "Input Accounts";
+            parentGraphContainer.style.display = 'none';
+            dataContainer1.style.display = 'block';
+            let accountsHTML = '<ul class="account-list">';
+            state.accounts.forEach((acc, i) => {
+                accountsHTML += `<li class="${highlights.accountIdx === i ? 'current': ''}">${JSON.stringify(acc)}</li>`
+            });
+            dataContainer1.innerHTML = accountsHTML + '</ul>';
+            
+            rightPanel1Title.textContent = "Parent Map";
+            dataContainer2.innerHTML = createTable(state.parent, ["Email", "Parent"]);
+        }
+        
+        if (phase === 'union') {
+            mainPanelTitle.textContent = "Parent Graph";
+            parentGraphContainer.style.display = 'block';
+            dataContainer1.style.display = 'none';
+            if(graphDrawer) graphDrawer.draw(state);
+        }
+
+        if (phase === 'group') {
+            mainPanelTitle.textContent = "Parent Graph";
+            parentGraphContainer.style.display = 'block';
+            dataContainer1.style.display = 'none';
+            if(graphDrawer) graphDrawer.draw(state);
+            rightPanel1Title.textContent = "Grouped Unions";
+            dataContainer2.innerHTML = createTable(state.unions, ["Root", "Emails"]);
+        }
+
+        if (phase === 'result') {
+            mainPanelTitle.textContent = "Merged Accounts";
+            parentGraphContainer.style.display = 'none';
+            dataContainer1.style.display = 'block';
+            let accountsHTML = '<ul class="account-list">';
+            state.mergedResult.forEach((acc, i) => {
+                accountsHTML += `<li class="final-result">${JSON.stringify(acc)}</li>`
+            });
+            dataContainer1.innerHTML = accountsHTML + '</ul>';
+            rightPanel1Title.textContent = "Grouped Unions";
+            dataContainer2.innerHTML = createTable(state.unions, ["Root", "Emails"]);
+        }
+
+        if (state.finalResult) {
+            finalResultText.textContent = JSON.stringify(state.finalResult, null, 2);
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+class ParentGraphDrawer {
+    constructor(svg, allEmails) {
+        this.svg = svg;
+        this.nodeMap = new Map();
+        
+        const numNodes = allEmails.length;
+        const nodeRadius = Math.max(8, 15 - Math.floor(numNodes / 6));
+        
+        const width = svg.parentElement.clientWidth;
+        const height = svg.parentElement.clientHeight;
+        const cx = width / 2;
+        const cy = height / 2;
+        const circleRadius = Math.min(width, height) / 2 - (nodeRadius + 40);
+
+        allEmails.forEach((email, i) => {
+            const angle = (i / numNodes) * 2 * Math.PI - Math.PI / 2;
+            this.nodeMap.set(email, {
+                id: email,
+                x: cx + circleRadius * Math.cos(angle),
+                y: cy + circleRadius * Math.sin(angle),
+                radius: nodeRadius
+            });
+        });
+        this.svg.innerHTML = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ccc" /></marker></defs>`;
+    }
+    
+    draw(state) {
+        while (this.svg.lastChild && this.svg.lastChild.nodeName !== 'defs') this.svg.removeChild(this.svg.lastChild);
+
+        const { parent, highlights } = state;
+
+        for(const email in parent) {
+            if(parent[email] !== email) {
+                const source = this.nodeMap.get(email);
+                const target = this.nodeMap.get(parent[email]);
+                if (!source || !target) continue;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', source.x); line.setAttribute('y1', source.y);
+                line.setAttribute('x2', target.x); line.setAttribute('y2', target.y);
+                line.classList.add('graph-edge');
+                line.setAttribute('marker-end', 'url(#arrow)');
+                this.svg.appendChild(line);
+            }
+        }
+        
+        this.nodeMap.forEach(node => {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.classList.add('graph-node');
+            g.setAttribute('transform', `translate(${node.x},${node.y})`);
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('r', node.radius);
+            circle.setAttribute('fill', '#e0e0e0');
+            let stroke = '#333', strokeWidth = 1.5;
+            if (highlights.unionPair && highlights.unionPair.includes(node.id)) { stroke = 'var(--color-highlight-union)'; strokeWidth = 3; }
+            if (highlights.findPath && highlights.findPath.includes(node.id)) { stroke = 'var(--color-cell-find)'; strokeWidth = 3; }
+            circle.setAttribute('stroke', stroke);
+            circle.setAttribute('stroke-width', strokeWidth);
+            g.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('y', node.radius + 12);
+            text.textContent = node.id;
+            g.appendChild(text);
+            this.svg.appendChild(g);
+        });
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    accountsInput = document.getElementById('accounts_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    callStackContainer = document.getElementById('call_stack_container');
+    parentGraphContainer = document.getElementById('parent_graph_container');
+    mainPanelTitle = document.getElementById('main_panel_title');
+    rightPanel1Title = document.getElementById('right_panel_1_title');
+    rightPanel2Title = document.getElementById('right_panel_2_title');
+    dataContainer1 = document.getElementById('data_container_1');
+    dataContainer2 = document.getElementById('data_container_2');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new AccountsMergeAnimation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

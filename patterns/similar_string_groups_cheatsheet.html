@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Similar String Groups Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Similar String Groups – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Similar String Groups</b> problem (LeetCode 839) asks you to count the number of groups of similar strings. Two strings are similar if you can swap two letters (in different positions) to make them equal, and similarity is transitive. Each string contains only lowercase letters and all strings are of the same length.
+        </p>
+
+        <h2>🎯 Solution Pattern (Union Find / DSU)</h2>
+        <pre><code>// Java Solution (Union Find)
+class Solution {
+    public int numSimilarGroups(String[] strs) {
+        int n = strs.length;
+        UnionFind uf = new UnionFind(n);
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                if (isSimilar(strs[i], strs[j])) {
+                    uf.union(i, j);
+                }
+            }
+        }
+        return uf.count();
+    }
+
+    private boolean isSimilar(String a, String b) {
+        int diff = 0;
+        for (int i = 0; i < a.length(); i++) {
+            if (a.charAt(i) != b.charAt(i)) diff++;
+            if (diff > 2) return false;
+        }
+        return diff == 2 || diff == 0;
+    }
+
+    class UnionFind {
+        int[] parent;
+        int groups;
+        public UnionFind(int n) {
+            parent = new int[n];
+            groups = n;
+            for (int i = 0; i < n; i++) parent[i] = i;
+        }
+        public int find(int x) {
+            if (parent[x] != x)
+                parent[x] = find(parent[x]);
+            return parent[x];
+        }
+        public void union(int x, int y) {
+            int px = find(x), py = find(y);
+            if (px != py) {
+                parent[px] = py;
+                groups--;
+            }
+        }
+        public int count() {
+            return groups;
+        }
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/similar_string_groups_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Grouping similar words or objects</li>
+            <li>Connected components in string graphs</li>
+            <li>Union Find applications</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize Union Find for all strings</li>
+            <li>For each pair of strings, check if they are similar</li>
+            <li>If similar, union their indices</li>
+            <li>Return the number of groups</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N^2 * L)</code> where N is number of strings, L is string length</li>
+            <li><b>Space:</b> <code>O(N)</code> for Union Find structure</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>All strings are the same</li>
+            <li>No strings are similar</li>
+            <li>Strings with repeated characters</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: strs = ["tars","rats","arts","star"]
+Output: 2
+
+Input: strs = ["omv","ovm"]
+Output: 1
+</code></pre>
+    </div>
+</body>
+</html>

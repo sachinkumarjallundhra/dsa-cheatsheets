@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Happy Prefix (KMP) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2c3e50; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-info: #3498db;
+            --color-pointer-i: #e74c3c;
+            --color-pointer-len: #8e44ad;
+            --color-match: rgba(39, 174, 96, 0.2);
+            --color-mismatch: rgba(192, 57, 43, 0.2);
+            --color-prefix: rgba(52, 152, 219, 0.3);
+            --color-suffix: rgba(241, 196, 15, 0.4);
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: minmax(480px, 1.2fr) 2.2fr minmax(380px, 0.9fr);
+            grid-template-rows: auto 1fr;
+            grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel {
+            background-color: var(--color-bg-panel); border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px;
+            display: flex; flex-direction: column; min-height: 0;
+        }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ecf0f1; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls label { font-weight: bold; }
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 300px; }
+        .controls .op-buttons button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold;}
+        .controls button.start { background-color: var(--color-success); }
+        .controls .step-buttons button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .controls button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .left-column, .main-column, .right-column { min-height: 0; display: flex; flex-direction: column; gap: 15px;}
+        .left-column .panel.fixed-height { flex-shrink: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex: 1; overflow-y: auto;}
+        .code-line { padding: 2px 10px; border-radius: 3px; transition: background-color 0.3s; white-space: pre; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 10px; border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+        
+        .viz-container { text-align: center; margin-top: 40px; }
+        .string-row, .lps-row { display: flex; position: relative; justify-content: center; }
+        .char-box, .lps-box { width: 40px; height: 40px; border: 1px solid #ccc; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2em; font-family: 'Courier New', monospace; margin: 2px; position: relative; }
+        .char-box { margin-bottom: 50px; }
+        .lps-box { background-color: #f8f9fa; color: var(--color-info); font-weight: bold; }
+        .char-index { position: absolute; top: 45px; font-size: 0.8em; color: #7f8c8d; text-align: center; width: 100%; }
+        .pointer { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); font-weight: bold; font-size: 1.2em; }
+        .pointer.i-ptr { color: var(--color-pointer-i); }
+        .pointer.len-ptr { color: var(--color-pointer-len); }
+        
+        .highlight-box { position: absolute; top: 0; height: 100%; border-radius: 4px; z-index: -1; }
+        .prefix-highlight { background-color: var(--color-prefix); }
+        .suffix-highlight { background-color: var(--color-suffix); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Longest Happy Prefix (KMP)</h1>
+            <div class="controls">
+                <label>String:</label> <input id="string_input" type="text" value="level">
+                <div class="op-buttons"> <button id="start_button" class="start">Start</button> </div>
+                <div class="step-buttons"> <button id="next_step_button" disabled>Next Step</button> <button id="reset_button">Reset</button> </div>
+            </div>
+        </header>
+
+        <div class="left-column">
+             <div class="panel">
+                 <h2>Java Implementation</h2>
+                 <div id="code_container"></div>
+             </div>
+             <div class="panel fixed-height">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter a string to begin.</div>
+             </div>
+        </div>
+
+        <main class="main-column">
+             <div class="panel" style="height: 100%;">
+                <h2>LPS Array Computation</h2>
+                <div class="viz-container">
+                    <div id="string_container"></div>
+                    <div id="lps_container"></div>
+                </div>
+             </div>
+        </main>
+        
+        <div class="right-column">
+             <div class="panel" style="height: 100%;">
+                <h2>State Variables</h2>
+                <div id="state_container" style="font-size: 1.5em; text-align: center; margin-top: 20px;"></div>
+             </div>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let stringInput, startButton, nextStepButton, resetButton,
+    codeContainer, actionDisplay,
+    stringContainer, lpsContainer, stateContainer;
+
+class LhpAnimation {
+    constructor() { this.reset(); }
+    
+    reset() {
+        this.clearAnimation();
+        [stringContainer, lpsContainer, stateContainer, actionDisplay].forEach(el => el.innerHTML = '');
+        actionDisplay.textContent = 'Enter a string to begin.';
+    }
+    
+    clearAnimation() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons();
+    }
+    
+    startOperation() {
+        this.clearAnimation();
+        const s = stringInput.value;
+        if (!s) { alert("Please provide a valid string."); return; }
+
+        animationSteps = this.generateSteps(s);
+        if (animationSteps.length > 0) {
+            simulationRunning = true;
+            this.renderState(animationSteps[0]);
+            this.updateButtons();
+        }
+    }
+
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        this.updateButtons();
+    }
+
+    updateButtons() {
+        startButton.disabled = simulationRunning;
+        resetButton.disabled = simulationRunning;
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+
+    generateSteps(s) {
+        const n = s.length;
+        if (n === 0) return [];
+        const steps = [];
+        let state = {
+            s, lps: new Array(n).fill(0), len: 0, i: 1,
+            line: null, msg: '', highlight: {}
+        };
+        const save = () => steps.push(JSON.parse(JSON.stringify(state)));
+
+        state.line = 3; state.msg = 'Create LPS array of size n, initialized to 0.'; save();
+        state.line = 4; state.msg = 'Initialize `len` (length of previous longest prefix suffix) to 0.'; save();
+
+        for (let i = 1; i < n; ) {
+            state.i = i;
+            state.line = 5; state.msg = `Start loop for i = ${i}.`;
+            state.highlight = { compare: [i, state.len] };
+            save();
+            
+            state.line = 6;
+            state.msg = `Comparing s[i] ('${s[i]}') and s[len] ('${s[state.len]}')...`;
+            save();
+
+            if (s.charAt(i) === s.charAt(state.len)) {
+                state.highlight.compareStatus = 'match';
+                state.line = 10; state.msg = `Match found! Increment len.`; save();
+                state.len++;
+                state.lps[i] = state.len;
+                state.line = 11; state.msg = `Set lps[${i}] = ${state.len}.`; save();
+                i++;
+                state.line = 5; state.msg = `Increment i to continue.`; save();
+            } else {
+                state.highlight.compareStatus = 'mismatch';
+                state.msg = `Mismatch.`; save();
+                if (state.len !== 0) {
+                    state.line = 7; state.msg = `Since len > 0, we need to fall back.`; save();
+                    state.highlight.fallback = state.len - 1;
+                    state.line = 8; state.msg = `Update len = lps[len - 1] = lps[${state.len - 1}] = ${state.lps[state.len-1]}.`; save();
+                    state.len = state.lps[state.len - 1];
+                    state.highlight.fallback = null;
+                    state.msg = `New len is ${state.len}. Re-evaluating while loop.`; save();
+                } else {
+                    state.line = 7; state.msg = `len is 0, so no prefix to fall back to.`; save();
+                    state.lps[i] = 0;
+                    state.line = 11; state.msg = `Set lps[${i}] = 0.`; save();
+                    i++;
+                    state.line = 5; state.msg = `Increment i to continue.`; save();
+                }
+            }
+            state.highlight = {};
+        }
+
+        state.i = null; state.len = null;
+        const finalLen = state.lps[n-1];
+        state.line = 14; state.msg = `LPS array construction complete.`; save();
+        state.msg = `The longest happy prefix length is lps[n-1] = ${finalLen}.`; save();
+        state.msg = `Result is the substring from 0 to ${finalLen}.`;
+        state.highlight.final = finalLen > 0 ? [0, finalLen - 1] : null;
+        save();
+
+        return steps;
+    }
+    
+    renderState(state) {
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        actionDisplay.textContent = state.msg;
+
+        // Render String and Pointers
+        let stringHTML = `<div class="string-row">`;
+        for (let k = 0; k < state.s.length; k++) {
+            let pointerHTML = '';
+            if(state.i === k) pointerHTML += `<div class="pointer i-ptr">i</div>`;
+            if(state.len === k) pointerHTML += `<div class="pointer len-ptr">len</div>`;
+
+            stringHTML += `
+                <div class="char-box" id="char-box-${k}">
+                    ${state.s[k]}
+                    <div class="char-index">${k}</div>
+                    ${pointerHTML}
+                </div>`;
+        }
+        stringHTML += `</div>`;
+        stringContainer.innerHTML = stringHTML;
+        
+        // Render LPS Array
+        let lpsHTML = `<div class="lps-row">`;
+        for (let k = 0; k < state.s.length; k++) {
+            lpsHTML += `<div class="lps-box" id="lps-box-${k}">${state.lps[k] !== undefined ? state.lps[k] : ''}</div>`;
+        }
+        lpsHTML += `</div>`;
+        lpsContainer.innerHTML = lpsHTML;
+        
+        // Render State
+        stateContainer.innerHTML = `
+            <div>i: <span style="color:var(--color-pointer-i)">${state.i ?? 'end'}</span></div>
+            <div>len: <span style="color:var(--color-pointer-len)">${state.len ?? 'end'}</span></div>
+        `;
+        
+        // Render Highlights
+        if(state.highlight.compare) {
+            const [i, len] = state.highlight.compare;
+            const status = state.highlight.compareStatus;
+            document.getElementById(`char-box-${i}`).style.backgroundColor = status === 'match' ? 'var(--color-match)' : 'var(--color-mismatch)';
+            document.getElementById(`char-box-${len}`).style.backgroundColor = status === 'match' ? 'var(--color-match)' : 'var(--color-mismatch)';
+        }
+
+        if(state.highlight.fallback !== undefined && state.highlight.fallback !== null) {
+            document.getElementById(`lps-box-${state.highlight.fallback}`).style.backgroundColor = 'var(--color-highlight-border)';
+        }
+
+        if(state.len > 0) {
+            const prefixDiv = document.createElement('div');
+            prefixDiv.className = 'highlight-box prefix-highlight';
+            prefixDiv.style.width = `${state.len * 44}px`;
+            prefixDiv.style.left = `2px`;
+            stringContainer.querySelector('.string-row').appendChild(prefixDiv);
+
+            const suffixDiv = document.createElement('div');
+            suffixDiv.className = 'highlight-box suffix-highlight';
+            suffixDiv.style.width = `${state.len * 44}px`;
+            suffixDiv.style.left = `${(state.i - state.len + 1) * 44 + 2}px`;
+            stringContainer.querySelector('.string-row').appendChild(suffixDiv);
+        }
+
+        if(state.highlight.final) {
+             const [start, end] = state.highlight.final;
+             for(let k=start; k<=end; k++) {
+                 document.getElementById(`char-box-${k}`).style.backgroundColor = 'var(--color-success)';
+                 document.getElementById(`char-box-${k}`).style.color = 'white';
+             }
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    stringInput = document.getElementById('string_input');
+    startButton = document.getElementById('start_button');
+    nextStepButton = document.getElementById('next_step_button');
+    resetButton = document.getElementById('reset_button');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    stringContainer = document.getElementById('string_container');
+    lpsContainer = document.getElementById('lps_container');
+    stateContainer = document.getElementById('state_container');
+
+    const code = [
+        `class Solution {`,
+        `  public String longestPrefix(String s) {`,
+        `2     int n = s.length();`,
+        `3     int[] lps = new int[n];`,
+        `4     int len = 0;`,
+        `5     for (int i = 1; i < n; ) {`,
+        `6         if (s.charAt(i) == s.charAt(len)) {`,
+        `7             len++;`,
+        `8             lps[i] = len;`,
+        `9             i++;`,
+        `10        } else {`,
+        `11            if (len != 0) {`,
+        `12                len = lps[len - 1];`,
+        `13            } else {`,
+        `14                lps[i] = 0;`,
+        `15                i++;`,
+        `16            }`,
+        `17        }`,
+        `18    }`,
+        `19    return s.substring(0, lps[n - 1]);`,
+        `20  }`,
+        `}`
+    ].map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`);
+    
+    // Remap KMP code to match the slightly different but equivalent structure in the solution
+    const solutionCode = [
+        `class Solution {`,
+        `  public String longestPrefix(String s) {`,
+        `2     int n = s.length();`,
+        `3     int[] lps = new int[n];`,
+        `4     int len = 0;`,
+        `5     for (int i = 1; i < n; i++) {`,
+        `6         while (len > 0 && s.charAt(i) != s.charAt(len)) {`,
+        `7             // Mismatch and we have a prefix to fall back on`,
+        `8             len = lps[len - 1];`,
+        `9         }`,
+        `10        if (s.charAt(i) == s.charAt(len)) {`,
+        `11            len++;`,
+        `12            lps[i] = len;`,
+        `13        }`,
+        `14    }`,
+        `15    return s.substring(0, lps[n - 1]);`,
+        `16  }`,
+        `}`
+    ].map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+
+    codeContainer.innerHTML = solutionCode;
+    
+    const anim = new LhpAnimation();
+    startButton.addEventListener('click', () => anim.startOperation());
+    nextStepButton.addEventListener('click', () => anim.next());
+    resetButton.addEventListener('click', () => anim.reset());
+});
+</script>
+</body>
+</html>

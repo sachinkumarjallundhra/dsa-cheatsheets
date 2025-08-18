@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number of Distinct Islands Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🏝️ Number of Distinct Islands – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Number of Distinct Islands</b> problem (LeetCode 694) asks you to count the number of distinct islands in a 2D grid. Two islands are considered distinct if their shapes are different (translation only, not rotation or reflection).
+        </p>
+
+        <h2>🎯 Solution Pattern (DFS + Shape Encoding)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public int numDistinctIslands(int[][] grid) {
+        Set&lt;String&gt; shapes = new HashSet&lt;&gt;();
+        int rows = grid.length, cols = grid[0].length;
+        for (int r = 0; r &lt; rows; r++) {
+            for (int c = 0; c &lt; cols; c++) {
+                if (grid[r][c] == 1) {
+                    StringBuilder sb = new StringBuilder();
+                    dfs(grid, r, c, sb, "o"); // origin
+                    shapes.add(sb.toString());
+                }
+            }
+        }
+        return shapes.size();
+    }
+    private void dfs(int[][] grid, int r, int c, StringBuilder sb, String dir) {
+        if (r &lt; 0 || c &lt; 0 || r &gt;= grid.length || c &gt;= grid[0].length || grid[r][c] == 0) return;
+        grid[r][c] = 0;
+        sb.append(dir);
+        dfs(grid, r+1, c, sb, "d"); // down
+        dfs(grid, r-1, c, sb, "u"); // up
+        dfs(grid, r, c+1, sb, "r"); // right
+        dfs(grid, r, c-1, sb, "l"); // left
+        sb.append("b"); // backtrack
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Counting unique shapes in a grid</li>
+            <li>Flood fill and connected component problems</li>
+            <li>Pattern recognition in 2D arrays</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Iterate through the grid, start DFS for each unvisited land cell</li>
+            <li>Encode the shape using the path of DFS (directions and backtracking)</li>
+            <li>Add the encoded shape to a set to ensure uniqueness</li>
+            <li>Return the size of the set</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(R * C)</code> where R is rows and C is columns</li>
+            <li><b>Space:</b> <code>O(R * C)</code> for recursion and storing shapes</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>No islands (all water)</li>
+            <li>All islands have the same shape</li>
+            <li>Single cell islands</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: grid = [
+  [1,1,0,0,0],
+  [1,0,0,0,1],
+  [0,0,0,1,1],
+  [0,0,0,0,0]
+]
+Output: 2
+Explanation: There are two distinct islands: one vertical and one L-shaped.
+</code></pre>
+    </div>
+</body>
+</html>

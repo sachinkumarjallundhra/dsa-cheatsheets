@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last Day Where You Can Still Cross Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🌊 Last Day Where You Can Still Cross – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Last Day Where You Can Still Cross</b> problem (LeetCode 1970) asks you to find the latest day when it is possible to cross from the top row to the bottom row of a grid, given that each day certain cells become blocked (watered). You can move only up, down, left, or right through unblocked cells.
+        </p>
+
+        <h2>🎯 Solution Pattern (Binary Search + BFS/DFS or Union Find)</h2>
+        <pre><code>// Java Solution (Binary Search + Union Find)
+class Solution {
+    public int latestDayToCross(int row, int col, int[][] cells) {
+        int left = 1, right = cells.length, ans = 0;
+        while (left &lt;= right) {
+            int mid = left + (right - left) / 2;
+            if (canCross(row, col, cells, mid)) {
+                ans = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return ans;
+    }
+
+    // Union Find approach for canCross
+    private boolean canCross(int row, int col, int[][] cells, int day) {
+        int[][] grid = new int[row][col];
+        for (int i = 0; i &lt; day; i++) {
+            grid[cells[i][0] - 1][cells[i][1] - 1] = 1; // Blocked
+        }
+        int total = row * col;
+        int top = total, bottom = total + 1;
+        UnionFind uf = new UnionFind(total + 2);
+
+        int[][] dirs = {{1,0},{-1,0},{0,1},{0,-1}};
+        for (int r = 0; r &lt; row; r++) {
+            for (int c = 0; c &lt; col; c++) {
+                if (grid[r][c] == 0) {
+                    int idx = r * col + c;
+                    if (r == 0) uf.union(idx, top);
+                    if (r == row - 1) uf.union(idx, bottom);
+                    for (int[] d : dirs) {
+                        int nr = r + d[0], nc = c + d[1];
+                        if (nr &gt;= 0 &amp;&amp; nr &lt; row &amp;&amp; nc &gt;= 0 &amp;&amp; nc &lt; col &amp;&amp; grid[nr][nc] == 0) {
+                            int nidx = nr * col + nc;
+                            uf.union(idx, nidx);
+                        }
+                    }
+                }
+            }
+        }
+        return uf.find(top) == uf.find(bottom);
+    }
+
+    static class UnionFind {
+        int[] parent;
+        public UnionFind(int n) {
+            parent = new int[n];
+            for (int i = 0; i &lt; n; i++) parent[i] = i;
+        }
+        public int find(int x) {
+            if (parent[x] != x)
+                parent[x] = find(parent[x]);
+            return parent[x];
+        }
+        public void union(int x, int y) {
+            int px = find(x), py = find(y);
+            if (px != py) parent[px] = py;
+        }
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/last_day_where_you_can_still_cross_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Grid traversal with dynamic obstacles</li>
+            <li>Binary search on answer technique</li>
+            <li>Union Find for connectivity in grids</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use binary search to guess the latest day you can cross</li>
+            <li>For each guess, simulate the grid and check if a path exists (BFS/DFS/Union Find)</li>
+            <li>Return the last possible day</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(R*C*log(R*C))</code> (binary search + BFS/DFS per guess)</li>
+            <li><b>Space:</b> <code>O(R*C)</code> for grid and visited arrays</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>All cells blocked on first day</li>
+            <li>Only one row or column</li>
+            <li>Multiple possible paths</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: row = 2, col = 2, cells = [[1,1],[2,1],[1,2],[2,2]]
+Output: 2
+Explanation: You can cross on day 2, but not after.
+
+Input: row = 2, col = 2, cells = [[1,1],[1,2],[2,1],[2,2]]
+Output: 1
+</code></pre>
+    </div>
+</body>
+</html>

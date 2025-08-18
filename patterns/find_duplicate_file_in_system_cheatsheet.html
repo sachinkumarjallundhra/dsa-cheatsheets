@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Duplicate File in System Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🗂️ Find Duplicate File in System – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Find Duplicate File in System</b> problem (LeetCode 609) asks you to find all groups of duplicate files in a file system. Each file is represented by a directory path and file content. Return lists of file paths that have duplicate content.
+        </p>
+
+        <h2>🎯 Solution Pattern (HashMap for Content Grouping)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public List&lt;List&lt;String&gt;&gt; findDuplicate(String[] paths) {
+        Map&lt;String, List&lt;String&gt;&gt; map = new HashMap&lt;&gt;();
+        for (String path : paths) {
+            String[] parts = path.split(" ");
+            String dir = parts[0];
+            for (int i = 1; i &lt; parts.length; i++) {
+                String file = parts[i];
+                int idx = file.indexOf('(');
+                String name = file.substring(0, idx);
+                String content = file.substring(idx + 1, file.length() - 1);
+                String fullPath = dir + "/" + name;
+                map.computeIfAbsent(content, k -&gt; new ArrayList&lt;&gt;()).add(fullPath);
+            }
+        }
+        List&lt;List&lt;String&gt;&gt; res = new ArrayList&lt;&gt;();
+        for (List&lt;String&gt; group : map.values()) {
+            if (group.size() &gt; 1) res.add(group);
+        }
+        return res;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding duplicate files by content</li>
+            <li>Data deduplication in storage systems</li>
+            <li>Grouping items by value or property</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Iterate through each path string</li>
+            <li>For each file, extract the file name and content</li>
+            <li>Use a HashMap to group file paths by their content</li>
+            <li>Collect groups with more than one file path</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N * L)</code> where N is the number of files and L is the average length of each path</li>
+            <li><b>Space:</b> <code>O(N * L)</code> for storing file paths in the map</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>No duplicate files (should return empty list)</li>
+            <li>Multiple files with the same content in different directories</li>
+            <li>Empty input array</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: 
+["root/a 1.txt(abcd) 2.txt(efgh)", "root/c 3.txt(abcd)", "root/c/d 4.txt(efgh)", "root 4.txt(efgh)"]
+Output: 
+[
+  ["root/a/2.txt","root/c/d/4.txt","root

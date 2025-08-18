@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Palindrome Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🧩 Longest Palindrome – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Longest Palindrome</b> problem (LeetCode 409) asks you to find the length of the longest palindrome that can be built with the letters of a given string.
+        </p>
+
+        <h2>🎯 Solution Pattern (HashSet for Pair Counting)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public int longestPalindrome(String s) {
+        Set&lt;Character&gt; set = new HashSet&lt;&gt;();
+        int pairs = 0;
+        for (char c : s.toCharArray()) {
+            if (set.contains(c)) {
+                pairs += 2;
+                set.remove(c);
+            } else {
+                set.add(c);
+            }
+        }
+        return set.isEmpty() ? pairs : pairs + 1;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Building the longest palindrome from a set of characters</li>
+            <li>String manipulation and frequency analysis</li>
+            <li>Interview questions on palindromes and hash sets</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Iterate through the string, track characters in a HashSet</li>
+            <li>For each pair, add 2 to the result and remove from set</li>
+            <li>If any characters remain, you can add one to the center</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> where N is the length of the string</li>
+            <li><b>Space:</b> <code>O(K)</code> where K is the number of unique characters</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>All characters are unique (can use only one)</li>
+            <li>All characters are paired</li>
+            <li>Empty string (should return 0)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: s = "abccccdd"
+Output: 7
+Explanation: One longest palindrome is "dccaccd", length 7.
+
+Input: s = "a"
+Output: 1
+</code></pre>
+    </div>
+</body>

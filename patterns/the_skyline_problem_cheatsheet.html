@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Skyline Problem Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🏙️ The Skyline Problem – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Skyline Problem</b> (LeetCode 218) asks you to compute the silhouette (skyline) formed by a list of buildings. Each building is represented as a triplet <code>[left, right, height]</code>. Return the key points of the skyline in order.
+        </p>
+
+        <h2>🎯 Solution Pattern (Sweep Line + Max Heap)</h2>
+        <pre><code>// Java Solution (PriorityQueue)
+class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; getSkyline(int[][] buildings) {
+        List&lt;int[]&gt; events = new ArrayList&lt;&gt;();
+        for (int[] b : buildings) {
+            events.add(new int[]{b[0], -b[2]}); // entering event
+            events.add(new int[]{b[1], b[2]});  // leaving event
+        }
+        events.sort((a, b) -&gt; a[0] != b[0] ? a[0] - b[0] : a[1] - b[1]);
+        List&lt;List&lt;Integer&gt;&gt; res = new ArrayList&lt;&gt;();
+        PriorityQueue&lt;Integer&gt; pq = new PriorityQueue&lt;&gt;(Collections.reverseOrder());
+        pq.add(0);
+        int prev = 0;
+        for (int[] e : events) {
+            if (e[1] &lt; 0) {
+                pq.add(-e[1]);
+            } else {
+                pq.remove(e[1]);
+            }
+            int curr = pq.peek();
+            if (curr != prev) {
+                res.add(Arrays.asList(e[0], curr));
+                prev = curr;
+            }
+        }
+        return res;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/the_skyline_problem_v3_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Computational geometry problems</li>
+            <li>Event-based sweep line algorithms</li>
+            <li>Interval and range queries</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Convert each building into two events: entering and leaving</li>
+            <li>Sort all events by x-coordinate (and height for tie-breaks)</li>
+            <li>Use a max heap to track current building heights</li>
+            <li>For each event, update the heap and record key points when the max height changes</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N log N)</code> where N is the number of events (2 * number of buildings)</li>
+            <li><b>Space:</b> <code>O(N)</code> for the heap and events</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Overlapping buildings</li>
+            <li>Buildings with the same start or end</li>
+            <li>Single building</li>
+            <li>No buildings</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: buildings = [[2,9,10],[3,7,15],[5,12,12],[15,20,10],[19,24,8]]
+Output: [[2,10],[3,15],[7,12],[12,0],[15,10],[20,8],[24,0]]
+</code></pre>
+
+        <h2>🔄 Alternative Solution (Union Find - Merge Overlapping Buildings)</h2>
+        <pre><code>// Java Solution (Union Find - for merging overlapping buildings, not for full skyline output)
+class Solution {
+    public List&lt;List&lt;Integer&gt;&gt; getSkyline(int[][] buildings) {
+        // This approach merges overlapping buildings using Union Find,
+        // but does NOT solve the full skyline problem (which needs sweep line).
+        // It's useful for merging intervals/buildings with the same height.
+
+        int n = buildings.length;
+        UnionFind uf = new UnionFind(n);
+
+        // Merge overlapping buildings
+        for (int i = 0; i &lt; n; i++) {
+            for (int j = i + 1; j &lt; n; j++) {
+                if (overlap(buildings[i], buildings[j])) {
+                    uf.union(i, j);
+                }
+            }
+        }
+
+        // Group merged buildings
+        Map&lt;Integer, List&lt;int[]&gt;&gt; groups = new HashMap&lt;&gt;();
+        for (int i = 0; i &lt; n; i++) {
+            int root = uf.find(i);
+            groups.computeIfAbsent(root, x -&gt; new ArrayList&lt;&gt;()).add(buildings[i]);
+        }
+
+        // For each group, merge intervals and get max height
+        List&lt;int[]&gt; merged = new ArrayList&lt;&gt;();
+        for (List&lt;int[]&gt; group : groups.values()) {
+            int left = Integer.MAX_VALUE, right = Integer.MIN_VALUE, height = 0;
+            for (int[] b : group) {
+                left = Math.min(left, b[0]);
+                right = Math.max(right, b[1]);
+                height = Math.max(height, b[2]);
+            }
+            merged.add(new int[]{left, right, height});
+        }
+
+        // Now, use the sweep line approach on merged intervals to get the skyline
+        List&lt;int[]&gt; events = new ArrayList&lt;&gt;();
+        for (int[] b : merged) {
+            events.add(new int[]{b[0], -b[2]});
+            events.add(new int[]{b[1], b[2]});
+        }
+        events.sort((a, b) -&gt; a[0] != b[0] ? a[0] - b[0] : a[1] - b[1]);
+        List&lt;List&lt;Integer&gt;&gt; res = new ArrayList&lt;&gt;();
+        PriorityQueue&lt;Integer&gt; pq = new PriorityQueue&lt;&gt;(Collections.reverseOrder());
+        pq.add(0);
+        int prev = 0;
+        for (int[] e : events) {
+            if (e[1] &lt; 0) {
+                pq.add(-e[1]);
+            } else {
+                pq.remove(e[1]);
+            }
+            int curr = pq.peek();
+            if (curr != prev) {
+                res.add(Arrays.asList(e[0], curr));
+                prev = curr;
+            }
+        }
+        return res;
+    }
+
+    private boolean overlap(int[] a, int[] b) {
+        // Overlap if intervals intersect
+        return a[1] &gt; b[0] &amp;&amp; b[1] &gt; a[0];
+    }
+
+    class UnionFind {
+        int[] parent;
+        public UnionFind(int n) {
+            parent = new int[n];
+            for (int i = 0; i &lt; n; i++) parent[i] = i;
+        }
+        public int find(int x) {
+            if (parent[x] != x)
+                parent[x] = find(parent[x]);
+            return parent[x];
+        }
+        public void union(int x, int y) {
+            int px = find(x), py = find(y);
+            if (px != py) parent[px] = py;
+        }
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/the_skyline_problem_v3_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+    </div>
+</body>
+</html>

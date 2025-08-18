@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unique Number of Occurrences Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔢 Unique Number of Occurrences – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Unique Number of Occurrences</b> problem (LeetCode 1207) asks you to determine if the number of occurrences of each value in an array is unique.
+        </p>
+
+        <h2>🎯 Solution Pattern (HashMap + HashSet)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public boolean uniqueOccurrences(int[] arr) {
+        Map&lt;Integer, Integer&gt; freq = new HashMap&lt;&gt;();
+        for (int num : arr) freq.put(num, freq.getOrDefault(num, 0) + 1);
+        Set&lt;Integer&gt; set = new HashSet&lt;&gt;(freq.values());
+        return set.size() == freq.size();
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Checking uniqueness of frequency counts</li>
+            <li>Interview questions on arrays and hash maps</li>
+            <li>Data validation and analytics</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Count the frequency of each element using a HashMap</li>
+            <li>Add all frequencies to a HashSet</li>
+            <li>If the size of the set equals the size of the map, all frequencies are unique</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> where N is the length of the array</li>
+            <li><b>Space:</b> <code>O(N)</code> for the map and set</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>All elements are the same</li>
+            <li>All elements are unique</li>
+            <li>Negative numbers and zeros</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: arr = [1,2,2,1,1,3]
+Output: true
+Explanation: 1 occurs 3 times, 2 occurs 2 times, 3 occurs 1 time. All frequencies are unique.
+
+Input: arr = [1,2]
+Output: false
+Explanation: Both 1 and 2 occur once, so frequencies are not unique.
+</code></pre>
+    </div>
+</body>

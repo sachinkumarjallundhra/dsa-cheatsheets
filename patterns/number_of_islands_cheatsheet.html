@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number of Islands Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🏝️ Number of Islands – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Number of Islands</b> problem (LeetCode 200) asks you to count the number of islands in a 2D grid. An island is a group of adjacent lands ('1's) connected horizontally or vertically. Water is represented by '0'.
+        </p>
+
+        <h2>🎯 Solution Pattern (DFS Flood Fill)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public int numIslands(char[][] grid) {
+        int count = 0;
+        for (int r = 0; r < grid.length; r++) {
+            for (int c = 0; c < grid[0].length; c++) {
+                if (grid[r][c] == '1') {
+                    dfs(grid, r, c);
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+    private void dfs(char[][] grid, int r, int c) {
+        if (r < 0 || c < 0 || r >= grid.length || c >= grid[0].length || grid[r][c] != '1') return;
+        grid[r][c] = '0';
+        dfs(grid, r+1, c);
+        dfs(grid, r-1, c);
+        dfs(grid, r, c+1);
+        dfs(grid, r, c-1);
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/number_of_islands_dfs_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>📚 Alternative Solution (Union Find / DSU)</h2>
+        <pre><code>// Java Solution (Union Find)
+class Solution {
+    public int numIslands(char[][] grid) {
+        int rows = grid.length, cols = grid[0].length;
+        UnionFind uf = new UnionFind(rows * cols);
+        int count = 0;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (grid[r][c] == '1') {
+                    count++;
+                    int idx = r * cols + c;
+                    // Check right and down neighbors
+                    if (r + 1 < rows && grid[r + 1][c] == '1') {
+                        if (uf.union(idx, (r + 1) * cols + c)) count--;
+                    }
+                    if (c + 1 < cols && grid[r][c + 1] == '1') {
+                        if (uf.union(idx, r * cols + (c + 1))) count--;
+                    }
+                }
+            }
+        }
+        return count;
+    }
+}
+
+class UnionFind {
+    int[] parent, rank;
+    public UnionFind(int n) {
+        parent = new int[n];
+        rank = new int[n];
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+    public int find(int x) {
+        if (parent[x] != x)
+            parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    public boolean union(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px == py) return false;
+        if (rank[px] < rank[py]) parent[px] = py;
+        else if (rank[px] > rank[py]) parent[py] = px;
+        else {
+            parent[py] = px;
+            rank[px]++;
+        }
+        return true;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/number_of_islands_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Counting connected components in a grid</li>
+            <li>Flood fill and region detection</li>
+            <li>Interview questions on DFS/BFS</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Iterate through each cell in the grid</li>
+            <li>When a land cell ('1') is found, start DFS to mark the whole island</li>
+            <li>Increment the island count</li>
+            <li>DFS marks visited land as water ('0')</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(R * C)</code> where R is rows and C is columns</li>
+            <li><b>Space:</b> <code>O(R * C)</code> for recursion stack in worst case</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>All water (should return 0)</li>
+            <li>All land (should return 1)</li>
+            <li>Single cell islands</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: grid = [
+  ['1','1','1','1','0'],
+  ['1','1','0','1','0'],
+  ['1','1','0','0','0'],
+  ['0','0','0','0','0']
+]
+Output: 1
+
+Input: grid = [
+  ['1','1','0','0','0'],
+  ['1','1','0','0','0'],
+  ['0','0','1','0','0'],
+  ['0','0','0','1','1']
+]
+Output: 3
+</code></pre>
+    </div>
+</body>
+</html>

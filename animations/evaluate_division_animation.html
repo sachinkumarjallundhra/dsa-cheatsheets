@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluate Division (Weighted Union-Find Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #d35400; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(450px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: grid; grid-template-columns: 1fr 2fr; gap: 10px 20px; padding: 10px; background-color: #fbeee6; border-radius: 5px; align-items: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; resize: vertical; height: 50px; }
+        .controls .buttons { grid-column: 1 / -1; display: flex; justify-content: center; gap: 15px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: 1.5fr 2fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.05em; background: #f8f9fa; padding: 8px; border-radius: 4px; line-height: 1.4; }
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node circle { stroke-width: 2px; stroke: #333; }
+        .node text { font-size: 14px; fill: #fff; text-anchor: middle; dominant-baseline: central; font-weight: bold; pointer-events: none; }
+        .node.highlight-x circle, .node.highlight-query-a circle { stroke: var(--color-warning); stroke-width: 4px; }
+        .node.highlight-y circle, .node.highlight-query-b circle { stroke: var(--color-info); stroke-width: 4px; }
+        .edge { stroke: #555; stroke-width: 2; transition: all 0.3s ease; }
+        .edge.highlight-path { stroke: var(--color-danger); stroke-width: 3.5px; }
+        .edge-label { fill: #c0392b; font-size: 12px; text-anchor: middle; }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0; font-family: 'Courier New', monospace; font-size: 0.9em;}
+        .list-item { background: #eee; padding: 5px 8px; margin: 3px; border-radius: 4px; }
+        .list-item.current { background-color: var(--color-warning); font-weight: bold; }
+        .list-item .result { float: right; color: var(--color-primary); font-weight: bold; }
+
+        .state-table { width: 100%; border-collapse: collapse; text-align: center; }
+        .state-table th, .state-table td { padding: 5px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table tr.highlight-find-path { background-color: #fdebd0; }
+        .state-table tr.highlight-x { background-color: #fef3cd; font-weight: bold; }
+        .state-table tr.highlight-y { background-color: #d6eaf8; font-weight: bold; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: left; }
+        #final_result_text { font-size: 1.2em; font-weight: bold; margin: 0; color: var(--color-primary); white-space: pre; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Evaluate Division</h1>
+            <div class="controls">
+                <label>Equations [["a","b"], ...]:</label> <textarea id="equations_input">[["a","b"],["b","c"],["c","d"]]</textarea>
+                <label>Values [2.0, ...]:</label>          <textarea id="values_input">[2.0, 3.0, 4.0]</textarea>
+                <label>Queries [["a","d"], ...]:</label>   <textarea id="queries_input">[["a","d"],["a","c"],["d","b"],["a","e"]]</textarea>
+                <div class="buttons">
+                    <button id="start_button">Start</button>
+                    <button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter data and click 'Start'.</div>
+            </div>
+        </div>
+
+        <div class="main-column panel">
+            <h2>Graph Visualization</h2>
+            <div id="graph_container">
+                 <svg id="graph_svg" width="100%" height="100%"></svg>
+            </div>
+        </div>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Equations & Queries</h2>
+                <div id="eq_queries_container" class="data-container"></div>
+            </div>
+             <div class="panel">
+                <h2>Union-Find State (var → parent, weight)</h2>
+                <div id="state_table_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Query Results</h2>
+            <pre id="final_result_text"></pre>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let equationsInput, valuesInput, queriesInput, startButton, nextStepButton, codeContainer, actionDisplay, graphContainer,
+    eqQueriesContainer, stateTableContainer, resultModal, finalResultText, modalCloseBtn, graphDrawer;
+
+class GraphDrawer {
+    constructor(svg) {
+        this.svg = svg; this.width = svg.parentElement.clientWidth; this.height = svg.parentElement.clientHeight;
+        this.nodeRadius = 22; this.positions = {};
+        this.groupColors = ["#1abc9c", "#3498db", "#9b59b6", "#e74c3c", "#f1c40f", "#2ecc71", "#e67e22", "#34495e"];
+    }
+    calculateNodePositions(nodes) {
+        this.positions = {}; const n = nodes.length; const centerX = this.width / 2; const centerY = this.height / 2;
+        const radius = Math.min(centerX, centerY) * 0.75;
+        nodes.forEach((node, i) => {
+            const angle = (i / n) * 2 * Math.PI;
+            this.positions[node] = { x: centerX + radius * Math.cos(angle), y: centerY + radius * Math.sin(angle) };
+        });
+    }
+    getColor(i) { return this.groupColors[i % this.groupColors.length]; }
+    draw(state) {
+        this.svg.innerHTML = '';
+        const { uf_parent, uf_weight, highlights, all_vars } = state;
+        if (Object.keys(this.positions).length !== all_vars.length) { this.calculateNodePositions(all_vars); }
+
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrow'); marker.setAttribute('viewBox', '0 -5 10 10');
+        marker.setAttribute('refX', 10); marker.setAttribute('markerWidth', 6); marker.setAttribute('markerHeight', 6);
+        marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M0,-5L10,0L0,5'); path.setAttribute('fill', '#555');
+        marker.appendChild(path); defs.appendChild(marker); this.svg.appendChild(defs);
+
+        const edgesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        Object.keys(uf_parent).forEach(node => {
+            const parent = uf_parent[node];
+            if (node !== parent && this.positions[node] && this.positions[parent]) {
+                const p1 = this.positions[node], p2 = this.positions[parent];
+                const dx = p2.x - p1.x, dy = p2.y - p1.y, dist = Math.sqrt(dx*dx + dy*dy);
+                const unitX = dx / dist, unitY = dy / dist;
+                const edge = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                edge.setAttribute('x1', p1.x); edge.setAttribute('y1', p1.y);
+                edge.setAttribute('x2', p2.x - unitX * this.nodeRadius);
+                edge.setAttribute('y2', p2.y - unitY * this.nodeRadius);
+                edge.classList.add('edge'); edge.setAttribute('marker-end', 'url(#arrow)');
+                if (highlights.find_path && highlights.find_path.includes(node)) { edge.classList.add('highlight-path'); }
+                
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', p1.x + dx/2); label.setAttribute('y', p1.y + dy/2 - 5);
+                label.textContent = uf_weight[node]?.toFixed(2) ?? '?'; label.classList.add('edge-label');
+                edgesGroup.appendChild(edge); edgesGroup.appendChild(label);
+            }
+        });
+        this.svg.appendChild(edgesGroup);
+        
+        const nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const roots = {}; let rootCounter = 0;
+        const findRoot = (n, p) => (p[n] === n ? n : findRoot(p[n], p));
+        
+        all_vars.forEach(node => {
+            if (!this.positions[node]) return;
+            const root = uf_parent[node] ? findRoot(node, uf_parent) : node;
+            if (roots[root] === undefined) { roots[root] = rootCounter++; }
+            
+            const pos = this.positions[node];
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.classList.add('node');
+            if (node === highlights.x || node === highlights.query_a) g.classList.add('highlight-x');
+            if (node === highlights.y || node === highlights.query_b) g.classList.add('highlight-y');
+            
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', pos.x); circle.setAttribute('cy', pos.y);
+            circle.setAttribute('r', this.nodeRadius); circle.setAttribute('fill', this.getColor(roots[root]));
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', pos.x); text.setAttribute('y', pos.y); text.textContent = node;
+            
+            g.appendChild(circle); g.appendChild(text); nodesGroup.appendChild(g);
+        });
+        this.svg.appendChild(nodesGroup);
+    }
+}
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays(); resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, eqQueriesContainer, stateTableContainer].forEach(c => c.innerHTML = '');
+        const svg = document.getElementById('graph_svg'); if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const equations = JSON.parse(equationsInput.value.trim().replace(/'/g, '"'));
+            const values = JSON.parse(valuesInput.value.trim().replace(/'/g, '"'));
+            const queries = JSON.parse(queriesInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(equations) || !Array.isArray(values) || !Array.isArray(queries)) throw new Error("Invalid input format.");
+            if (equations.length !== values.length) throw new Error("Equations and values must have the same length.");
+            
+            this.initUI();
+            graphDrawer = new GraphDrawer(document.getElementById('graph_svg'));
+            animationSteps = this.generateSteps(equations, values, queries);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Invalid input. Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// Phase 1: Build Graph", "for (eq, val) in zip(equations, values):", "  union(eq[0], eq[1], val)",
+            "","// Phase 2: Answer Queries", "for query in queries:", "  a, b = query[0], query[1]",
+            "  if a, b not in graph or find(a) != find(b):", "    result = -1.0", "  else:",
+            "    result = weight[a] / weight[b]",
+            "","// --- Helper Functions ---", "find(x):", "  if parent[x] != x:",
+            "    root = find(parent[x])", "    weight[x] *= weight[parent[x]]", "    parent[x] = root",
+            "  return parent[x]","", "union(x, y, val): // x / y = val", "  rootX = find(x); rootY = find(y);",
+            "  if rootX != rootY:", "    parent[rootX] = rootY", "    weight[rootX] = val * weight[y] / weight[x]"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(equations, values, queries) {
+        const steps = []; const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let all_vars = new Set();
+        equations.forEach(eq => { eq.forEach(v => all_vars.add(v)) });
+        queries.forEach(q => { q.forEach(v => all_vars.add(v)) });
+
+        let state = {
+            line: null, msg: "", uf_parent: {}, uf_weight: {}, all_vars: Array.from(all_vars),
+            equations, values, queries, query_results: [],
+            highlights: { eq_idx: null, q_idx: null, x: null, y: null, query_a: null, query_b: null, find_path: null },
+            finalResult: null
+        };
+        
+        const findAndRecord = (x, path=[]) => {
+            if (!state.uf_parent[x]) {
+                state.uf_parent[x] = x; state.uf_weight[x] = 1.0;
+                save({ ...state, line: 14, msg: `Node '${x}' is new. Initialize parent='${x}', weight=1.0.`});
+            }
+            state.highlights.find_path = [...path, x];
+            save({ ...state, line: 15, msg: `find('${x}'): current parent is '${state.uf_parent[x]}'.` });
+
+            const parent = state.uf_parent[x];
+            if (parent !== x) {
+                const root = findAndRecord(parent, [...path, x]);
+                if (state.uf_parent[x] !== root) { // Perform path compression only if parent changes
+                    const old_weight = state.uf_weight[x];
+                    state.uf_weight[x] *= state.uf_weight[parent];
+                    save({ ...state, line: 17, msg: `Update weight['${x}']: ${old_weight.toFixed(2)} × ${state.uf_weight[parent].toFixed(2)} = ${state.uf_weight[x].toFixed(2)}.` });
+                    state.uf_parent[x] = root;
+                    save({ ...state, line: 18, msg: `Path compression: set parent['${x}'] to root '${root}'.` });
+                }
+                return root;
+            }
+            return x; // It's the root
+        };
+        
+        save({ ...state, line: 0, msg: "Phase 1: Processing equations." });
+        for (let i = 0; i < equations.length; i++) {
+            state.highlights = { ...state.highlights, eq_idx: i, q_idx: null };
+            const [x, y] = equations[i]; const val = values[i];
+            state.highlights.x = x; state.highlights.y = y;
+            save({ ...state, line: 1, msg: `Processing eq ${i}: ${x} / ${y} = ${val}.` });
+            save({ ...state, line: 2, msg: `Calling union('${x}', '${y}', ${val}).` });
+
+            save({ ...state, line: 22, msg: `First, find root of '${x}'.` });
+            const rootX = findAndRecord(x);
+            state.highlights.find_path = null; save({ ...state, line: 22, msg: `Root of '${x}' is '${rootX}'.` });
+            
+            save({ ...state, line: 22, msg: `Next, find root of '${y}'.` });
+            const rootY = findAndRecord(y);
+            state.highlights.find_path = null; save({ ...state, line: 22, msg: `Root of '${y}' is '${rootY}'.` });
+            
+            if (rootX !== rootY) {
+                save({ ...state, line: 24, msg: `Roots '${rootX}' and '${rootY}' differ. Merging.` });
+                state.uf_parent[rootX] = rootY;
+                save({ ...state, line: 25, msg: `Set parent of root '${rootX}' to root '${rootY}'.` });
+                state.uf_weight[rootX] = val * state.uf_weight[y] / state.uf_weight[x];
+                save({ ...state, line: 26, msg: `Update weight['${rootX}']: ${val} × ${state.uf_weight[y].toFixed(2)} / ${state.uf_weight[x].toFixed(2)} = ${state.uf_weight[rootX].toFixed(2)}` });
+            } else { save({ ...state, line: 24, msg: `Roots are the same ('${rootX}'). No union needed.` }); }
+            state.highlights.x = null; state.highlights.y = null;
+        }
+
+        save({ ...state, line: 4, msg: "Phase 2: Answering queries." });
+        for(let i = 0; i < queries.length; i++) {
+            state.highlights = { ...state.highlights, q_idx: i, eq_idx: null };
+            const [a, b] = queries[i]; state.highlights.query_a = a; state.highlights.query_b = b;
+            save({ ...state, line: 5, msg: `Processing query ${i}: ${a} / ${b} = ?` });
+            
+            if (!state.uf_parent[a] || !state.uf_parent[b]) {
+                save({ ...state, line: 8, msg: `'${a}' or '${b}' not in graph. Result: -1.0.` });
+                state.query_results.push(-1.0);
+            } else {
+                const rootA = findAndRecord(a); state.highlights.find_path = null;
+                const rootB = findAndRecord(b); state.highlights.find_path = null;
+                save({ ...state, line: 8, msg: `Root of '${a}' is '${rootA}'. Root of '${b}' is '${rootB}'.` });
+
+                if (rootA !== rootB) {
+                    save({ ...state, line: 8, msg: `Roots differ. No path. Result: -1.0.` });
+                    state.query_results.push(-1.0);
+                } else {
+                    save({ ...state, line: 10, msg: `Roots are same. Path exists.` });
+                    const result = state.uf_weight[a] / state.uf_weight[b];
+                    state.query_results.push(result);
+                    save({ ...state, line: 10, msg: `Result = weight['${a}'] / weight['${b}'] = ${state.uf_weight[a].toFixed(2)} / ${state.uf_weight[b].toFixed(2)} = ${result.toFixed(3)}` });
+                }
+            }
+            state.highlights.query_a = null; state.highlights.query_b = null;
+        }
+        state.finalResult = state.query_results;
+        save({...state, msg: "All queries processed. View final results."});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        if(graphDrawer) graphDrawer.draw(state);
+        
+        let listHTML = '<h2>Equations</h2>';
+        state.equations.forEach((eq, i) => {
+            listHTML += `<div class="list-item ${i === state.highlights.eq_idx ? 'current' : ''}">${eq[0]} / ${eq[1]} = ${state.values[i]}</div>`;
+        });
+        listHTML += '<h2>Queries</h2>';
+        state.queries.forEach((q, i) => {
+            const result = state.query_results[i] !== undefined ? `<span class="result">${state.query_results[i].toFixed(3)}</span>` : '';
+            listHTML += `<div class="list-item ${i === state.highlights.q_idx ? 'current' : ''}">${q[0]} / ${q[1]} = ?${result}</div>`;
+        });
+        eqQueriesContainer.innerHTML = listHTML;
+        
+        let tableHTML = `<table class="state-table"><thead><tr><th>Var</th><th>Parent</th><th>Weight</th></tr></thead><tbody>`;
+        Object.keys(state.uf_parent).sort().forEach(node => {
+            let cls = '';
+            if (node === state.highlights.x || node === state.highlights.query_a) cls = 'highlight-x';
+            else if (node === state.highlights.y || node === state.highlights.query_b) cls = 'highlight-y';
+            else if (state.highlights.find_path?.includes(node)) cls = 'highlight-find-path';
+            tableHTML += `<tr class="${cls}"><td>${node}</td><td>${state.uf_parent[node]}</td><td>${state.uf_weight[node]?.toFixed(3) ?? '-'}</td></tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+        stateTableContainer.innerHTML = tableHTML;
+        
+        if (state.finalResult) {
+            finalResultText.textContent = state.queries
+                .map((q, i) => `  ${q[0]} / ${q[1]}  =  ${state.finalResult[i].toFixed(3)}`)
+                .join('\n');
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    equationsInput = document.getElementById('equations_input'); valuesInput = document.getElementById('values_input'); queriesInput = document.getElementById('queries_input');
+    startButton = document.getElementById('start_button'); nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); actionDisplay = document.getElementById('action_display');
+    graphContainer = document.getElementById('graph_container'); eqQueriesContainer = document.getElementById('eq_queries_container');
+    stateTableContainer = document.getElementById('state_table_container'); resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text'); modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

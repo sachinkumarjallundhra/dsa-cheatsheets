@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Most Stones Removed (Union-Find Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #8e44ad; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #f4eef7; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 70px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: auto 1fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #grid_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .stone { stroke: #34495e; stroke-width: 2; transition: all 0.3s ease; }
+        .stone.highlight { stroke: var(--color-warning); stroke-width: 4px; transform: scale(1.2); transform-origin: center; }
+        .axis-node { font-size: 14px; transition: all 0.3s ease; cursor: default; }
+        .axis-node.highlight-row { font-weight: bold; fill: var(--color-info); }
+        .axis-node.highlight-col { font-weight: bold; fill: var(--color-danger); }
+        .axis-node.highlight-path { fill: var(--color-warning); text-decoration: underline; }
+        .uf-edge { stroke: #333; stroke-width: 2; transition: all 0.3s ease; }
+        .uf-edge.highlight-path { stroke: var(--color-warning); stroke-width: 3.5px; }
+        .connection-line { stroke: #a569bd; stroke-width: 2; stroke-dasharray: 4 4; }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        #component_count_display { text-align: center; font-size: 1.5em; font-weight: bold; color: var(--color-primary); padding: 10px; }
+        #component_count_display span { font-size: 0.7em; color: var(--color-text-dark); display: block; }
+
+        .state-table { width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: center; }
+        .state-table th, .state-table td { padding: 4px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; font-family: 'Segoe UI', sans-serif; }
+        .state-table td { font-family: 'Courier New', monospace; }
+        .state-table tr.highlight-row { background-color: #d6eaf8; }
+        .state-table tr.highlight-col { background-color: #fadbd8; }
+        .state-table tr.highlight-path { background-color: #fef3cd; font-weight: bold;}
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center; }
+        #final_result_text { font-size: 1.6em; font-weight: bold; margin: 10px 0; color: var(--color-primary);}
+        .modal-content p { font-size: 1em; color: var(--color-text-dark); margin: 0;}
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Most Stones Removed with Same Row or Column</h1>
+            <div class="controls">
+                <label>Stones [[0,0], [0,1],...]:</label><textarea id="stones_input">[[0,0],[0,2],[1,1],[2,0],[2,2]]</textarea>
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column">
+            <div class="panel">
+                <h2>Algorithm</h2>
+                <div id="code_container"></div>
+            </div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;">
+                <h2>Current Action</h2>
+                <div id="action_display">Enter stones and click 'Start'.</div>
+            </div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Grid Visualization</h2>
+            <div id="grid_container">
+                 <svg id="grid_svg" width="100%" height="100%"></svg>
+            </div>
+        </main>
+
+        <div class="right-column">
+             <div class="panel">
+                <h2>Components</h2>
+                <div id="component_count_display"><span style="font-size: 1em; font-weight: normal;">-</span><span></span></div>
+             </div>
+             <div class="panel">
+                <h2>Union-Find State</h2>
+                <div id="state_table_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p id="final_result_text"></p>
+            <p>(Each component requires one stone to remain)</p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let stonesInput, startButton, nextStepButton, codeContainer, actionDisplay, gridContainer,
+    stateTableContainer, componentCountDisplay, resultModal, finalResultText, modalCloseBtn, gridDrawer;
+
+class GridDrawer {
+    constructor(svg, stones) {
+        this.svg = svg; this.stones = stones; this.width = svg.parentElement.clientWidth; this.height = svg.parentElement.clientHeight;
+        this.padding = { top: 50, right: 20, bottom: 20, left: 50 };
+        this.maxX = 0; this.maxY = 0;
+        stones.forEach(([x, y]) => { this.maxX = Math.max(this.maxX, x); this.maxY = Math.max(this.maxY, y); });
+        this.rows = [...new Set(stones.map(s => s[0]))].sort((a,b)=>a-b);
+        this.cols = [...new Set(stones.map(s => s[1]))].sort((a,b)=>a-b);
+        this.xScale = c => this.padding.left + (this.cols.indexOf(c) + 0.5) * (this.width - this.padding.left - this.padding.right) / this.cols.length;
+        this.yScale = r => this.padding.top + (this.rows.indexOf(r) + 0.5) * (this.height - this.padding.top - this.padding.bottom) / this.rows.length;
+        this.groupColors = ["#1abc9c", "#3498db", "#9b59b6", "#e74c3c", "#f1c40f", "#2ecc71", "#e67e22", "#34495e"];
+    }
+    getColor(i) { return this.groupColors[i % this.groupColors.length]; }
+    draw(state) {
+        this.svg.innerHTML = ''; const { parent, highlights } = state;
+
+        const findRoot = (id, p) => (p[id] === undefined || p[id] === id) ? id : findRoot(p[id], p);
+        const roots = {}; let rootCounter = 0;
+        
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrow'); marker.setAttribute('viewBox', '0 -5 10 10'); marker.setAttribute('refX', 8);
+        marker.setAttribute('markerWidth', 5); marker.setAttribute('markerHeight', 5); marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M0,-5L10,0L0,5'); path.setAttribute('fill', '#333');
+        marker.appendChild(path); defs.appendChild(marker); this.svg.appendChild(defs);
+
+        if (highlights.stone_idx !== null) {
+            const [r, c] = this.stones[highlights.stone_idx];
+            const stoneX = this.xScale(c), stoneY = this.yScale(r);
+            const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line1.setAttribute('x1', this.padding.left); line1.setAttribute('y1', stoneY); line1.setAttribute('x2', stoneX); line1.setAttribute('y2', stoneY);
+            line1.classList.add('connection-line');
+            const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line2.setAttribute('x1', stoneX); line2.setAttribute('y1', this.padding.top); line2.setAttribute('x2', stoneX); line2.setAttribute('y2', stoneY);
+            line2.classList.add('connection-line');
+            this.svg.appendChild(line1); this.svg.appendChild(line2);
+        }
+
+        const ufEdgesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        Object.keys(parent).forEach(id => {
+            if(parent[id] !== id) {
+                const isRow1 = id.startsWith('R'), isRow2 = parent[id].startsWith('R');
+                const p1 = { x: isRow1 ? this.padding.left : this.xScale(parseInt(id.slice(1))), y: isRow1 ? this.yScale(parseInt(id.slice(1))) : this.padding.top };
+                const p2 = { x: isRow2 ? this.padding.left : this.xScale(parseInt(parent[id].slice(1))), y: isRow2 ? this.yScale(parseInt(parent[id].slice(1))) : this.padding.top };
+                const edge = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                edge.setAttribute('x1', p1.x); edge.setAttribute('y1', p1.y); edge.setAttribute('x2', p2.x); edge.setAttribute('y2', p2.y);
+                edge.classList.add('uf-edge'); edge.setAttribute('marker-end', 'url(#arrow)');
+                if (highlights.find_path?.includes(id)) edge.classList.add('highlight-path');
+                ufEdgesGroup.appendChild(edge);
+            }
+        });
+        this.svg.appendChild(ufEdgesGroup);
+
+        const stonesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        this.stones.forEach(([r, c], i) => {
+            const root = findRoot(`R${r}`, parent);
+            if (roots[root] === undefined) roots[root] = rootCounter++;
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', this.xScale(c)); circle.setAttribute('cy', this.yScale(r));
+            circle.setAttribute('r', 8); circle.classList.add('stone');
+            circle.style.fill = parent[`R${r}`] ? this.getColor(roots[root]) : '#ccc';
+            if (i === highlights.stone_idx) circle.classList.add('highlight');
+            stonesGroup.appendChild(circle);
+        });
+        this.svg.appendChild(stonesGroup);
+
+        const axesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        this.rows.forEach(r => {
+            const rowId = `R${r}`, root = findRoot(rowId, parent);
+            if (roots[root] === undefined) roots[root] = rootCounter++;
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', this.padding.left - 15); text.setAttribute('y', this.yScale(r)); text.setAttribute('text-anchor', 'end'); text.setAttribute('dominant-baseline', 'middle');
+            text.textContent = `R${r}`; text.classList.add('axis-node');
+            text.style.fill = parent[rowId] ? this.getColor(roots[root]) : '#333';
+            if (rowId === highlights.rowId) text.classList.add('highlight-row');
+            if (highlights.find_path?.includes(rowId)) text.classList.add('highlight-path');
+            axesGroup.appendChild(text);
+        });
+        this.cols.forEach(c => {
+            const colId = `C${c}`, root = findRoot(colId, parent);
+            if (roots[root] === undefined) roots[root] = rootCounter++;
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', this.xScale(c)); text.setAttribute('y', this.padding.top - 15); text.setAttribute('text-anchor', 'middle');
+            text.textContent = `C${c}`; text.classList.add('axis-node');
+            text.style.fill = parent[colId] ? this.getColor(roots[root]) : '#333';
+            if (colId === highlights.colId) text.classList.add('highlight-col');
+            if (highlights.find_path?.includes(colId)) text.classList.add('highlight-path');
+            axesGroup.appendChild(text);
+        });
+        this.svg.appendChild(axesGroup);
+    }
+}
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays(); resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, stateTableContainer].forEach(c => c.innerHTML = '');
+        componentCountDisplay.innerHTML = `<span style="font-size: 1em; font-weight: normal;">-</span><span></span>`;
+        const svg = document.getElementById('grid_svg'); if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = 'Enter stones and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const stones = JSON.parse(stonesInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(stones)) throw new Error("Invalid input format.");
+            
+            this.initUI();
+            gridDrawer = new GridDrawer(document.getElementById('grid_svg'), stones);
+            animationSteps = this.generateSteps(stones);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Invalid input. Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "uf = UnionFind()",
+            "for (r, c) in stones:",
+            "  row_id = 'R' + r",
+            "  col_id = 'C' + c",
+            "  // Find root of row",
+            "  rootR = find(row_id)",
+            "  // Find root of col",
+            "  rootC = find(col_id)",
+            "  // Union if different",
+            "  if rootR != rootC:",
+            "    union(rootR, rootC)",
+            "return stones.length - components"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(stones) {
+        const steps = []; const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let state = {
+            line: null, msg: "", parent: {}, components: 0,
+            highlights: { stone_idx: null, rowId: null, colId: null, find_path: null },
+            result: null
+        };
+        
+        const findAndRecord = (id) => {
+            let path = [];
+            if (state.parent[id] === undefined) {
+                state.parent[id] = id; state.components++;
+                state.highlights.find_path = [id];
+                save({ ...state, msg: `Discovered new component ${id}. Components: ${state.components}.` });
+            }
+            let current = id;
+            while(state.parent[current] !== current) {
+                path.push(current); current = state.parent[current];
+                state.highlights.find_path = [...path, current];
+                save({ ...state, msg: `Finding root of ${id}... traversing to ${current}` });
+            }
+            state.highlights.find_path = [...path, current];
+            save({ ...state, msg: `Root of ${id} is ${current}.` });
+            return current;
+        };
+        
+        save({ ...state, line: 0, msg: `Initialize Union-Find.` });
+
+        for (let i = 0; i < stones.length; i++) {
+            const [r, c] = stones[i];
+            const rowId = `R${r}`, colId = `C${c}`;
+            state.highlights = { stone_idx: i, rowId, colId, find_path: null };
+            save({ ...state, line: 1, msg: `Processing stone at (${r}, ${c}). This connects Row ${r} and Column ${c}.` });
+            
+            save({ ...state, line: 4, msg: `Find root of ${rowId}.` });
+            const rootR = findAndRecord(rowId);
+            
+            save({ ...state, line: 6, msg: `Find root of ${colId}.` });
+            const rootC = findAndRecord(colId);
+            state.highlights.find_path = null;
+
+            save({ ...state, line: 9, msg: `Comparing roots: ${rootR} vs ${rootC}.` });
+            if (rootR !== rootC) {
+                state.parent[rootR] = rootC; state.components--;
+                save({ ...state, line: 10, msg: `Roots differ. Unioning. Components now: ${state.components}.` });
+            } else {
+                save({ ...state, line: 9, msg: `Roots are the same. No union needed.` });
+            }
+        }
+        state.highlights = { stone_idx: null, rowId: null, colId: null, find_path: null };
+        save({ ...state, line: 11, msg: `All stones processed.` });
+
+        state.result = stones.length - state.components;
+        save({ ...state, line: 11, msg: `Final calculation: ${stones.length} (stones) - ${state.components} (components) = ${state.result}.` });
+        
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        if(gridDrawer) gridDrawer.draw(state);
+        
+        componentCountDisplay.innerHTML = `${state.components} <span>Components</span>`;
+        
+        let tableHTML = `<table class="state-table"><thead><tr><th>Node</th><th>Parent</th></tr></thead><tbody>`;
+        const nodes = Object.keys(state.parent).sort((a,b) => {
+            const typeA = a[0], typeB = b[0];
+            const numA = parseInt(a.slice(1)), numB = parseInt(b.slice(1));
+            if (typeA !== typeB) return typeA === 'R' ? -1 : 1;
+            return numA - numB;
+        });
+        nodes.forEach(node => {
+            let cls = '';
+            if (node === state.highlights.rowId) cls = 'highlight-row';
+            else if (node === state.highlights.colId) cls = 'highlight-col';
+            if (state.highlights.find_path?.includes(node)) cls = 'highlight-path';
+            tableHTML += `<tr class="${cls}"><td>${node}</td><td>${state.parent[node]}</td></tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+        stateTableContainer.innerHTML = tableHTML;
+        
+        if (state.result !== null) {
+            finalResultText.textContent = `${this.stonesInputAsArray().length} Stones - ${state.components} Components = ${state.result}`;
+            resultModal.style.display = 'flex';
+        }
+    }
+
+    stonesInputAsArray() {
+        try { return JSON.parse(stonesInput.value.trim().replace(/'/g, '"')); } catch { return []; }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    stonesInput = document.getElementById('stones_input');
+    startButton = document.getElementById('start_button'); nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); actionDisplay = document.getElementById('action_display');
+    gridContainer = document.getElementById('grid_container'); stateTableContainer = document.getElementById('state_table_container');
+    componentCountDisplay = document.getElementById('component_count_display');
+    resultModal = document.getElementById('result_modal'); finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

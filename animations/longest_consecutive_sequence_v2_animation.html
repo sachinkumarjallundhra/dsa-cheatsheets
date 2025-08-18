@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Consecutive Sequence (Union-Find Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #16a085; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-warning: #f1c40f; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f6f3; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 50px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: auto 1fr 1fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow-x: auto; }
+        .block.number { background-color: #ecf0f1; border-color: #bdc3c7; color: #95a5a6; }
+        .block.number.active { background-color: var(--color-info); border-color: #2980b9; color: white; }
+        .block.index { background-color: #e8f6f3; border-color: var(--color-primary); color: var(--color-primary); }
+        .block.index.highlight-i { background-color: #fcf3cf; border-color: var(--color-warning); }
+        .block.index.highlight-j { background-color: #d4e6f1; border-color: var(--color-info); }
+        .size-label { font-size: 12px; color: #2c3e50; text-anchor: middle; }
+        .connection-line { stroke: #9b59b6; stroke-width: 2; stroke-dasharray: 4 4; }
+        .uf-edge { stroke: #333; stroke-width: 2.5; }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0; }
+        #max_size_display { text-align: center; font-size: 1.5em; font-weight: bold; color: var(--color-primary); padding: 10px; }
+        #max_size_display .label { font-size: 0.7em; color: var(--color-text-dark); display: block; }
+        #max_size_display.flash { animation: flash 0.5s ease; }
+        @keyframes flash { 50% { color: var(--color-warning); transform: scale(1.2); } }
+        .state-table { width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: center; }
+        .state-table th, .state-table td { padding: 4px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table tr.highlight-i { background-color: #fcf3cf; }
+        .state-table tr.highlight-j { background-color: #d4e6f1; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center; }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 20px 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Longest Consecutive Sequence (Union-Find)</h1>
+            <div class="controls"><label>Numbers [100, 4, ...]:</label><textarea id="nums_input">[100, 4, 200, 1, 3, 2]</textarea><button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button></div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter numbers and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel">
+            <h2>Visualization</h2>
+            <div id="viz_container">
+                 <svg width="100%" height="100%" id="viz_svg"></svg>
+            </div>
+        </main>
+        <div class="right-column">
+             <div class="panel"><h2>Max Size Found</h2><div id="max_size_display"><span class="label">Max Component Size</span>0</div></div>
+             <div class="panel"><h2>Map (Number → Index)</h2><div id="map_table_container" class="data-container"></div></div>
+             <div class="panel"><h2>Union-Find State</h2><div id="uf_table_container" class="data-container"></div></div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let numsInput, startButton, nextStepButton, codeContainer, actionDisplay, vizContainer,
+    maxSizeDisplay, mapTableContainer, ufTableContainer, resultModal, finalResultText, modalCloseBtn, vizDrawer;
+
+class VizDrawer {
+    constructor(svg, nums) {
+        this.svg = svg; this.nums = nums;
+        this.sortedUniqueNums = [...new Set(nums)].sort((a,b) => a - b);
+        this.width = svg.parentElement.scrollWidth; this.height = svg.parentElement.clientHeight;
+        this.numBlocks = {}; this.idxBlocks = {};
+    }
+    
+    draw(state) {
+        this.svg.innerHTML = '';
+        const groupColors = ["#1abc9c", "#3498db", "#9b59b6", "#e74c3c", "#f1c40f", "#2ecc71", "#e67e22", "#34495e"];
+        const getColor = (i) => groupColors[i % groupColors.length];
+        const findRoot = (i, p) => (p[i] === i ? i : findRoot(p[i], p));
+        const roots = {}; let rootCounter = 0;
+
+        const numberTierY = this.height * 0.25;
+        const indexTierY = this.height * 0.7;
+        const blockWidth = 55;
+        const totalNumWidth = this.sortedUniqueNums.length * blockWidth;
+        const totalIdxWidth = this.nums.length * blockWidth;
+        const finalWidth = Math.max(this.width, totalNumWidth + blockWidth, totalIdxWidth + blockWidth);
+        this.svg.setAttribute('viewBox', `0 0 ${finalWidth} ${this.height}`);
+        
+        this.sortedUniqueNums.forEach((num, i) => {
+            const x = (i + 0.5) * blockWidth;
+            this.numBlocks[num] = { x, y: numberTierY, el: this.createBlock(x, numberTierY, num, 'number', num) };
+        });
+        
+        this.nums.forEach((num, i) => {
+            const x = (i + 0.5) * blockWidth;
+            this.idxBlocks[i] = { x, y: indexTierY, el: this.createBlock(x, indexTierY, `[${i}]`, 'index', num) };
+        });
+        
+        const { map, parent, size, highlights } = state;
+        
+        Object.keys(map).forEach(num => this.numBlocks[num]?.el.classList.add('active'));
+        
+        for(let i=0; i < this.nums.length; i++) {
+            if (!parent || parent[i] === undefined) continue;
+            const root = findRoot(i, parent);
+            if(roots[root] === undefined) roots[root] = rootCounter++;
+            const color = getColor(roots[root]);
+            this.idxBlocks[i].el.style.borderColor = color;
+            const numVal = this.nums[i];
+            if (this.numBlocks[numVal]) this.numBlocks[numVal].el.style.borderColor = color;
+            
+            if (highlights.i === i) this.idxBlocks[i].el.classList.add('highlight-i');
+            if (highlights.j === i) this.idxBlocks[i].el.classList.add('highlight-j');
+            
+            if (parent[i] === i) {
+                const sizeLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                sizeLabel.setAttribute('x', this.idxBlocks[i].x); sizeLabel.setAttribute('y', this.idxBlocks[i].y + 35);
+                sizeLabel.textContent = `s:${size[i]}`; sizeLabel.classList.add('size-label');
+                this.svg.appendChild(sizeLabel);
+            }
+        }
+
+        if (highlights.i !== null && this.numBlocks[this.nums[highlights.i]] && this.idxBlocks[highlights.i]) {
+            const p1 = this.numBlocks[this.nums[highlights.i]];
+            const p2 = this.idxBlocks[highlights.i];
+            this.svg.appendChild(this.createEdge(p1, p2, 'connection-line'));
+        }
+        
+        const marker = this.createMarker();
+        this.svg.appendChild(marker);
+
+        for (let i = 0; i < this.nums.length; i++) {
+            if (!parent || parent[i] === undefined) continue;
+            if (parent[i] !== i) {
+                const p1 = this.idxBlocks[i];
+                const p2 = this.idxBlocks[parent[i]];
+                const edge = this.createEdge(p1, p2, 'uf-edge');
+                edge.setAttribute('marker-end', 'url(#arrow)');
+                this.svg.appendChild(edge);
+            }
+        }
+    }
+
+    createBlock(x, y, text, type, value) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', x - 22.5); rect.setAttribute('y', y - 22.5);
+        rect.setAttribute('width', 45); rect.setAttribute('height', 45);
+        rect.setAttribute('rx', 5); rect.classList.add('block', type);
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('x', x); label.setAttribute('y', y + (type==='index' ? 10 : 0));
+        label.setAttribute('text-anchor', 'middle'); label.setAttribute('dominant-baseline', 'middle');
+        label.textContent = text;
+        if(type === 'index') {
+            const valLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            valLabel.setAttribute('x', x); valLabel.setAttribute('y', y - 8);
+            valLabel.setAttribute('text-anchor', 'middle'); valLabel.setAttribute('dominant-baseline', 'middle');
+            valLabel.setAttribute('font-size', '12px');
+            valLabel.textContent = value;
+            g.appendChild(valLabel);
+        }
+        g.appendChild(rect); g.appendChild(label);
+        this.svg.appendChild(g);
+        return rect;
+    }
+    
+    createEdge(p1, p2, cls) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+        line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+        line.classList.add(cls);
+        return line;
+    }
+
+    createMarker() {
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrow'); marker.setAttribute('viewBox', '0 -5 10 10'); marker.setAttribute('refX', 28);
+        marker.setAttribute('markerWidth', 6); marker.setAttribute('markerHeight', 6); marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M0,-5L10,0L0,5'); path.setAttribute('fill', '#333');
+        marker.appendChild(path); defs.appendChild(marker);
+        return defs;
+    }
+}
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, vizContainer, mapTableContainer, ufTableContainer].forEach(c => c.innerHTML = '');
+        if(maxSizeDisplay) maxSizeDisplay.innerHTML = `<span class="label">Max Component Size</span>0`;
+        if(actionDisplay) actionDisplay.textContent = 'Enter numbers and click \'Start\'.';
+        if(resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const nums = JSON.parse(numsInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(nums)) throw new Error("Invalid input format.");
+            
+            this.initUI();
+            vizDrawer = new VizDrawer(document.getElementById('viz_svg'), nums);
+            animationSteps = this.generateSteps(nums);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Invalid input. Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "map = new HashMap()", "uf = new UnionFind(n)", "for i, num in enumerate(nums):",
+            "  if num in map: continue", "  map.put(num, i)", "  if (num - 1) in map:",
+            "    uf.union(i, map.get(num - 1))", "  if (num + 1) in map:",
+            "    uf.union(i, map.get(num + 1))", "return uf.maxSize()"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(nums) {
+        const n = nums.length;
+        const steps = []; const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let state = {
+            line: null, msg: "", map: {}, parent: Array.from({length:n}, (_,i)=>i), size: Array(n).fill(1),
+            max_size: n > 0 ? 1 : 0, highlights: { i: null, j: null }, result: null,
+        };
+        save({ ...state, line: 1, msg: "Initialize Union-Find with size 1 for each element." });
+        
+        const find = (p, x) => (p[x] === x ? x : find(p, p[x]));
+
+        for (let i = 0; i < n; i++) {
+            const num = nums[i];
+            state.highlights.i = i;
+            save({ ...state, line: 2, msg: `Processing index ${i} (value ${num}).` });
+            
+            if (state.map[num] !== undefined) {
+                save({ ...state, line: 3, msg: `Value ${num} is a duplicate. Skip.` });
+                continue;
+            }
+            state.map[num] = i;
+            save({ ...state, line: 4, msg: `Adding ${num} -> ${i} to map.` });
+            
+            const neighbors = [[num - 1, 5], [num + 1, 7]];
+            for (const [neighbor, lineNum] of neighbors) {
+                save({ ...state, line: lineNum, msg: `Checking for neighbor ${neighbor} in map.` });
+                if (state.map[neighbor] !== undefined) {
+                    const j = state.map[neighbor];
+                    state.highlights.j = j;
+                    save({ ...state, line: lineNum+1, msg: `Found neighbor ${neighbor} at index ${j}. Union(${i}, ${j}).` });
+                    
+                    const rootI = find(state.parent, i);
+                    const rootJ = find(state.parent, j);
+                    if (rootI !== rootJ) {
+                        state.parent[rootJ] = rootI;
+                        state.size[rootI] += state.size[rootJ];
+                        if (state.size[rootI] > state.max_size) state.max_size = state.size[rootI];
+                        save({ ...state, msg: `Merged components. New size of root ${rootI} is ${state.size[rootI]}.`});
+                    } else {
+                         save({ ...state, msg: `Indices ${i} and ${j} are already in the same component.`});
+                    }
+                    state.highlights.j = null;
+                }
+            }
+        }
+        state.highlights.i = null;
+        state.result = state.max_size;
+        save({ ...state, line: 9, msg: `Processing complete. Final max size is ${state.max_size}.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        if(vizDrawer) vizDrawer.draw(state);
+        
+        if (maxSizeDisplay.innerHTML.includes(String(state.max_size)) === false) {
+            maxSizeDisplay.classList.add('flash');
+            setTimeout(() => maxSizeDisplay.classList.remove('flash'), 500);
+        }
+        maxSizeDisplay.innerHTML = `<span class="label">Max Component Size</span>${state.max_size}`;
+        
+        let mapHTML = `<table class="state-table"><thead><tr><th>Num</th><th>Idx</th></tr></thead><tbody>`;
+        Object.keys(state.map).sort((a,b)=> Number(a)-Number(b)).forEach(num => {
+            mapHTML += `<tr><td>${num}</td><td>${state.map[num]}</td></tr>`;
+        });
+        mapHTML += `</tbody></table>`;
+        mapTableContainer.innerHTML = mapHTML;
+        
+        let ufHTML = `<table class="state-table"><thead><tr><th>Idx</th><th>Parent</th><th>Size</th></tr></thead><tbody>`;
+        for(let i=0; i<state.parent.length; i++) {
+            let cls = '';
+            if (i === state.highlights.i) cls = 'highlight-i';
+            else if (i === state.highlights.j) cls = 'highlight-j';
+            ufHTML += `<tr class="${cls}"><td>${i}</td><td>${state.parent[i]}</td><td>${state.size[i]}</td></tr>`;
+        }
+        ufHTML += `</tbody></table>`;
+        ufTableContainer.innerHTML = ufHTML;
+
+        if (state.result !== null) {
+            finalResultText.textContent = `Longest Sequence is ${state.result}`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    numsInput = document.getElementById('nums_input'); 
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container'); 
+    maxSizeDisplay = document.getElementById('max_size_display');
+    mapTableContainer = document.getElementById('map_table_container'); 
+    ufTableContainer = document.getElementById('uf_table_container');
+    resultModal = document.getElementById('result_modal'); 
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

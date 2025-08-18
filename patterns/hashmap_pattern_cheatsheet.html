@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HashMap Pattern Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🗝️ HashMap Pattern – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>HashMap Pattern</b> is a common approach in coding interviews for solving problems that require fast lookups, counting, grouping, or mapping relationships between data. HashMaps (or HashTables) provide average-case <code>O(1)</code> time for insert, delete, and search operations.
+        </p>
+
+        <h2>🎯 Solution Pattern (Java Example)</h2>
+        <pre><code>// Java Example: Counting frequencies
+Map&lt;Integer, Integer&gt; map = new HashMap&lt;&gt;();
+for (int num : nums) {
+    map.put(num, map.getOrDefault(num, 0) + 1);
+}
+
+// Java Example: Checking for existence
+if (map.containsKey(target)) {
+    // do something
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Counting frequencies of elements</li>
+            <li>Finding duplicates or unique elements</li>
+            <li>Two Sum and similar lookup problems</li>
+            <li>Grouping anagrams or similar items</li>
+            <li>Mapping relationships (parent-child, etc.)</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize a <code>HashMap</code></li>
+            <li>Iterate through the data and update the map as needed</li>
+            <li>Use <code>get</code>, <code>put</code>, <code>containsKey</code>, etc. for lookups and updates</li>
+            <li>Process the map for the final result</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Insert/Search/Delete:</b> <code>O(1)</code> average, <code>O(n)</code> worst-case</li>
+            <li><b>Iterate all entries:</b> <code>O(n)</code></li>
+        </ul>
+
+        
+
+        <h2>📘 Common LeetCode HashMap Problems</h2>
+        <div class="problems-section">
+            <h3 class="problems-header easy">🟢 Easy Problems</h3>
+            <ul class="problems-list">
+                <li>
+                    <div class="problem-card easy">
+                        <div class="problem-title">
+                            Design HashMap
+                            <span class="badge badge-easy">Easy</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/design-hashmap/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="design_hashmap_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Implement a basic HashMap without using built-in hash table libraries.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card easy">
+                        <div class="problem-title">
+                            Logger Rate Limiter
+                            <span class="badge badge-easy">Easy</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/logger-rate-limiter/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="logger_rate_limiter_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Design a logger system that receives a stream of messages and checks if each message should be printed.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card easy">
+                        <div class="problem-title">
+                            Next Greater Element I
+                            <span class="badge badge-easy">Easy</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/next-greater-element-i/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="next_greater_element_i_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find the next greater element for each element in one array using a map.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card easy">
+                        <div class="problem-title">
+                            Isomorphic Strings
+                            <span class="badge badge-easy">Easy</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/isomorphic-strings/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="isomorphic_strings_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Determine if two strings are isomorphic using a map.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card easy">
+                        <div class="problem-title">
+                            High Five
+                            <span class="badge badge-easy">Easy</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/high-five/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="high_five_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find the average of each student's top five scores using a map.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card easy">
+                        <div class="problem-title">
+                            Unique Number of Occurrences
+                            <span class="badge badge-easy">Easy</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/unique-number-of-occurrences/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="unique_number_of_occurrences_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Check if the number of occurrences of each value is unique using a map.
+                        </div>
+                    </div>
+                </li>
+            </ul>
+
+            <h3 class="problems-header medium">🟡 Medium Problems</h3>
+            <ul class="problems-list">
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Fraction to Recurring Decimal
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/fraction-to-recurring-decimal/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="fraction_to_recurring_decimal_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Convert a fraction to a recurring decimal string using a map to detect cycles.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Find Duplicate File in System
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/find-duplicate-file-in-system/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="find_duplicate_file_in_system_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Group files with duplicate contents using a map.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Dot Product of Two Sparse Vectors
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/dot-product-of-two-sparse-vectors/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="dot_product_of_two_sparse_vectors_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Efficiently compute the dot product using maps for sparse vectors.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Bulls and Cows
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/bulls-and-cows/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="bulls_and_cows_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Count bulls and cows using a map to track digits.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Custom Sort String
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/custom-sort-string/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="custom_sort_string_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Sort a string according to the order defined by another string using a map.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Number of Distinct Islands
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/number-of-distinct-islands/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="number_of_distinct_islands_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Count distinct islands in a grid using a map to store shapes.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card medium">
+                        <div class="problem-title">
+                            Continuous Subarray Sum
+                            <span class="badge badge-medium">Medium</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/continuous-subarray-sum/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="continuous_subarray_sum_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Check if the array has a subarray sum that is a multiple of k using a map.
+                        </div>
+                    </div>
+                </li>
+            </ul>
+
+            <h3 class="problems-header hard">🔴 Hard Problems</h3>
+            <ul class="problems-list">
+                <li>
+                    <div class="problem-card hard">
+                        <div class="problem-title">
+                            Number of Wonderful Substrings
+                            <span class="badge badge-hard">Hard</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/number-of-wonderful-substrings/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="number_of_wonderful_substrings_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Count wonderful substrings using bitmask and map.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card hard">
+                        <div class="problem-title">
+                            Total Appeal of a String
+                            <span class="badge badge-hard">Hard</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/total-appeal-of-a-string/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="total_appeal_of_a_string_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Calculate the total appeal of a string using a map.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card hard">
+                        <div class="problem-title">
+                            Longest Happy Prefix
+                            <span class="badge badge-hard">Hard</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/longest-happy-prefix/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="longest_happy_prefix_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find the longest happy prefix using hashing and map.
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <div class="problem-card hard">
+                        <div class="problem-title">
+                            Find Longest Self-Contained Substring
+                            <span class="badge badge-hard">Hard</span>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="https://leetcode.com/problems/find-longest-self-contained-substring/" target="_blank" class="leetcode-link">LeetCode</a>
+                            <a href="find_longest_self_contained_substring_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+                        </div>
+                        <div class="problem-notes">
+                            Find the longest substring with all characters having the same frequency using a map.
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <style>
+.problems-section {
+    margin-bottom: 32px;
+}
+.problems-header {
+    font-size: 1.2em;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+.problems-header.easy { color: #28a745; }
+.problems-header.medium { color: #ffc107; }
+.problems-header.hard { color: #dc3545; }
+.problems-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.problem-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    padding: 16px 18px 10px 18px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+    border-left: 6px solid #dee2e6;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.problem-card.easy { border-color: #28a745; }
+.problem-card.medium { border-color: #ffc107; }
+.problem-card.hard { border-color: #dc3545; }
+.problem-card:hover {
+    box-shadow: 0 4px 16px rgba(44,62,80,0.10);
+    border-left-width: 10px;
+}
+.problem-title {
+    font-weight: bold;
+    font-size: 1.08em;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+.badge-easy { background: #28a745; color: white; }
+.badge-medium { background: #ffc107; color: black; }
+.badge-hard { background: #dc3545; color: white; }
+.problem-actions {
+    margin-bottom: 6px;
+}
+.problem-actions a {
+    display: inline-block;
+    margin-right: 12px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.97em;
+    border: 1px solid #dee2e6;
+    transition: background 0.2s, color 0.2s;
+}
+.problem-actions a:hover {
+    background: #007bff;
+    color: #fff;
+}
+.problem-notes {
+    font-size: 0.93em;
+    color: #6c757d;
+    margin-bottom: 2px;
+    margin-top: 2px;
+}
+</style>
+<h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Empty input array or map</li>
+            <li>Collisions (rare in practice, but possible)</li>
+            <li>Null keys/values (Java HashMap allows one null key)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>// Example: Two Sum
+int[] twoSum(int[] nums, int target) {
+    Map&lt;Integer, Integer&gt; map = new HashMap&lt;&gt;();
+    for (int i = 0; i &lt; nums.length; i++) {
+        int complement = target - nums[i];
+        if (map.containsKey(complement)) {
+            return new int[]{map.get(complement), i};
+        }
+        map.put(nums[i], i);
+    }
+    return new int[0];
+}
+</code></pre>
+    </div>
+</body>
+</html>

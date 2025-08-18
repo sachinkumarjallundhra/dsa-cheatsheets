@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High Five Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🖐️ High Five – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>High Five</b> problem (LeetCode 1086) asks you to calculate the average of each student's top five scores from a list of <code>[student_id, score]</code> pairs.
+        </p>
+
+        <h2>🎯 Solution Pattern (HashMap + PriorityQueue)</h2>
+        <pre><code>// Java Solution
+class Solution {
+    public int[][] highFive(int[][] items) {
+        Map&lt;Integer, PriorityQueue&lt;Integer&gt;&gt; map = new HashMap&lt;&gt;();
+        for (int[] item : items) {
+            int id = item[0], score = item[1];
+            map.computeIfAbsent(id, k -&gt; new PriorityQueue&lt;&gt;());
+            map.get(id).offer(score);
+            if (map.get(id).size() > 5) map.get(id).poll();
+        }
+        int[][] res = new int[map.size()][2];
+        int i = 0;
+        for (int id : map.keySet()) {
+            int sum = 0;
+            for (int score : map.get(id)) sum += score;
+            res[i++] = new int[]{id, sum / 5};
+        }
+        Arrays.sort(res, Comparator.comparingInt(a -&gt; a[0]));
+        return res;
+    }
+}
+</code></pre>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding top-k averages for students or items</li>
+            <li>Leaderboard and ranking systems</li>
+            <li>Efficient score aggregation</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use a HashMap to group scores by student ID</li>
+            <li>For each student, use a min-heap (PriorityQueue) to keep their top 5 scores</li>
+            <li>Sum the top 5 scores and calculate the average</li>
+            <li>Sort the result by student ID</li>
+        </ol>
+
+        <h2>⏱️ Time Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N log 5 + S log S)</code> where N is number of items, S is number of students</li>
+            <li><b>Space:</b> <code>O(S * 5)</code> for storing scores</li>
+        </ul>
+
+        <h2>⚠️ Edge Cases to Consider</h2>
+        <ul>
+            <li>Students with fewer than 5 scores (problem guarantees at least 5)</li>
+            <li>Duplicate scores</li>
+            <li>Large number of students</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: [[1,91],[1,92],[2,93],[2,97],[1,60],[2,77],[1,65],[1,87],[1,100],[2,100],[2,76]]
+Output: [[1,87],[2,88]]
+Explanation: Student 1's top five scores: 100, 92, 91, 87, 65. Average = (100+92+91+87+65)/5 = 87
+Student 2's top five scores: 100, 97, 93, 77, 76. Average = (100+97+93+77
