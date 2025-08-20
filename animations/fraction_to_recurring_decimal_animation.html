@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraction to Recurring Decimal Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #c0392b; --color-success: #27ae60; --color-danger: #e74c3c;
+            --color-warning: #f39c12; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; padding: 10px; background-color: #f9ebea; border-radius: 5px; align-items: center;}
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; }
+        .controls .buttons { grid-column: 1 / -1; display: flex; justify-content: center; gap: 15px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; background: #fafafa; padding: 20px; box-sizing: border-box; }
+        #result_string_display { font-family: 'Courier New', monospace; font-size: 1.5em; font-weight: bold; text-align: center; padding: 15px; background: #f9ebea; border-radius: 5px; color: var(--color-primary); min-height: 30px; word-break: break-all; }
+        .workspace { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr 1fr; gap: 10px; align-items: center; text-align: center; margin-top: 20px; }
+        .workspace-item { border: 2px solid #ccc; border-radius: 8px; padding: 10px; }
+        .workspace-item h4 { margin: 0 0 5px 0; color: #7f8c8d; font-size: 0.9em; }
+        .workspace-item .value { font-family: 'Courier New', monospace; font-size: 1.4em; font-weight: bold; }
+        .workspace-item.highlight { border-color: var(--color-warning); }
+        .op-label { font-size: 2em; font-weight: bold; color: #bdc3c7; }
+        .op-label-vertical { grid-column: 2; font-size: 2em; font-weight: bold; color: #bdc3c7; }
+        
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        .state-table { width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: center; }
+        .state-table th, .state-table td { padding: 5px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table tr.flash-green { animation: flash-green 0.8s ease; }
+        .state-table tr.flash-red { animation: flash-red 0.8s ease; }
+        @keyframes flash-green { 50% { background-color: #d4efdf; } }
+        @keyframes flash-red { 50% { background-color: #fadedb; } }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center; }
+        #final_result_text { font-size: 1.5em; font-weight: bold; margin: 20px 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Fraction to Recurring Decimal</h1>
+            <div class="controls">
+                <label>Numerator:</label><input id="num_input" type="number" value="4">
+                <label>Denominator:</label><input id="den_input" type="number" value="333">
+                <div class="buttons">
+                    <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><h2>Visualization</h2><div id="viz_container"></div></main>
+        <div class="right-column">
+            <div class="panel"><h2>Remainder Map (rem → index)</h2><div id="map_table_container" class="data-container"></div></div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+         <div class="modal-content">
+            <h2>Final Result</h2><p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let numInput, denInput, startButton, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, mapTableContainer, resultModal, finalResultText, modalCloseBtn;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, vizContainer, mapTableContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        if (resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const num = parseInt(numInput.value);
+            const den = parseInt(denInput.value);
+            if (isNaN(num) || isNaN(den)) throw new Error("Invalid input.");
+            if (den === 0) throw new Error("Denominator cannot be zero.");
+            
+            this.initUI();
+            animationSteps = this.generateSteps(num, den);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+           "sb = new StringBuilder()",
+           "// Handle sign...",
+           "num = abs(num); den = abs(den)",
+           "sb.append(num / den)",
+           "rem = num % den",
+           "if rem == 0: return",
+           "sb.append('.')",
+           "map = {}",
+           "while rem != 0:",
+           "  if map.contains(rem):",
+           "    sb.insert(map[rem], '(')",
+           "    sb.append(')')",
+           "    break",
+           "  map.put(rem, sb.length())",
+           "  rem *= 10",
+           "  sb.append(rem / den)",
+           "  rem %= den",
+           "return sb.toString()"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(numerator, denominator) {
+        const steps = []; 
+        let state = {
+            line: null, msg: "", sb: "", map: {}, 
+            workspace: { rem: 'N/A', rem10: 'N/A', den: 'N/A', digit: 'N/A', new_rem: 'N/A' },
+            highlights: { item: null, map_key: null },
+            result: null
+        };
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ ...state, ...data })));
+
+        if (numerator === 0) {
+            save({ result: "0", msg: "Numerator is 0, result is \"0\"." }); return steps;
+        }
+
+        let sb = "";
+        if ((numerator < 0) ^ (denominator < 0)) sb += "-";
+        state.sb = sb;
+        save({line: 1, msg: "Determine sign."});
+
+        let num = Math.abs(numerator);
+        let den = Math.abs(denominator);
+        state.workspace.den = den;
+        save({line: 2, msg: "Use absolute values for calculation."});
+
+        sb += Math.floor(num / den);
+        state.sb = sb;
+        save({line: 3, msg: `Calculate integer part: ${num} / ${den} = ${Math.floor(num / den)}.`});
+
+        let rem = num % den;
+        state.workspace.rem = rem;
+        save({line: 4, highlights: {item: 'rem'}, msg: `Calculate initial remainder: ${num} % ${den} = ${rem}.`});
+
+        if (rem === 0) {
+            state.result = sb;
+            save({line: 5, msg: "Remainder is 0. No fractional part."}); return steps;
+        }
+
+        sb += ".";
+        state.sb = sb;
+        save({line: 6, msg: "Remainder is not zero, append decimal point."});
+
+        save({line: 7, msg: "Initialize map to track remainders."});
+
+        const map = {};
+        while (rem !== 0) {
+            state.highlights = {item: null, map_key: rem};
+            save({line: 9, msg: `Check if remainder ${rem} has been seen before.`});
+
+            if (map[rem] !== undefined) {
+                state.highlights.map_key = rem;
+                save({line: 10, msg: `Remainder ${rem} found in map! Cycle detected.`});
+                let sbArr = sb.split('');
+                sbArr.splice(map[rem], 0, '(');
+                sb = sbArr.join('');
+                state.sb = sb;
+                save({line: 10, msg: `Insert '(' at index ${map[rem]}.`});
+                sb += ")";
+                state.sb = sb;
+                save({line: 11, msg: "Append ')' to close the recurring part."});
+                save({line: 12, msg: "Break the loop."});
+                break;
+            }
+            state.highlights.map_key = rem;
+            map[rem] = sb.length;
+            state.map = map;
+            save({line: 13, msg: `Store remainder ${rem} at current string index ${sb.length}.`});
+            
+            state.workspace.rem = rem;
+            rem *= 10;
+            state.workspace.rem10 = rem;
+            state.highlights.item = 'rem10';
+            save({line: 14, msg: `Multiply remainder by 10 (bring down a '0'). New dividend: ${rem}.`});
+            
+            const digit = Math.floor(rem / den);
+            state.workspace.digit = digit;
+            state.highlights.item = 'digit';
+            save({line: 15, msg: `Calculate next digit: ${rem} / ${den} = ${digit}.`});
+            
+            sb += digit;
+            state.sb = sb;
+            
+            rem %= den;
+            state.workspace.new_rem = rem;
+            state.highlights.item = 'new_rem';
+            save({line: 16, msg: `Calculate new remainder: ${state.workspace.rem10} % ${den} = ${rem}.`});
+
+            state.workspace.rem = rem;
+            state.highlights.item = 'rem';
+            save({line: 8, msg: `New remainder is ${rem}. Starting next iteration.`});
+        }
+        
+        state.result = sb;
+        save({line: 17, sb: state.result, msg: "Algorithm finished."});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        vizContainer.innerHTML = `
+            <div id="result_string_display">${state.sb}</div>
+            <div class="workspace">
+                <div class="workspace-item ${state.highlights.item === 'rem' ? 'highlight' : ''}">
+                    <h4>Remainder (rem)</h4><div class="value">${state.workspace.rem}</div></div>
+                <div class="op-label"></div>
+                <div class="workspace-item ${state.highlights.item === 'rem10' ? 'highlight' : ''}">
+                    <h4>rem × 10</h4><div class="value">${state.workspace.rem10}</div></div>
+
+                <div class="op-label-vertical">÷</div>
+                <div class="op-label-vertical"></div>
+                <div class="op-label-vertical"></div>
+                
+                <div class="workspace-item">
+                    <h4>Divisor (den)</h4><div class="value">${state.workspace.den}</div></div>
+                <div class="op-label">=</div>
+                 <div class="workspace-item ${state.highlights.item === 'digit' ? 'highlight' : ''}">
+                    <h4>New Digit</h4><div class="value">${state.workspace.digit}</div></div>
+                 <div class="op-label"></div>
+                 <div class="workspace-item ${state.highlights.item === 'new_rem' ? 'highlight' : ''}">
+                    <h4>New Remainder</h4><div class="value">${state.workspace.new_rem}</div></div>
+                 <div class="op-label"></div>
+            </div>`;
+
+        let mapHTML = `<table class="state-table"><thead><tr><th>Remainder</th><th>Index</th></tr></thead><tbody>`;
+        Object.entries(state.map).forEach(([key, val]) => {
+            let cls = '';
+            if (Number(key) === state.highlights.map_key) {
+                cls = state.msg.includes('Cycle detected') ? 'flash-red' : 'flash-green';
+            }
+            mapHTML += `<tr class="${cls}"><td>${key}</td><td>${val}</td></tr>`;
+        });
+        mapHTML += `</tbody></table>`;
+        mapTableContainer.innerHTML = mapHTML;
+        
+        if (state.result) {
+            finalResultText.textContent = state.result;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    numInput = document.getElementById('num_input');
+    denInput = document.getElementById('den_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    mapTableContainer = document.getElementById('map_table_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

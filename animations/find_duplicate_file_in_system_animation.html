@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Duplicate File in System Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #34495e; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2.5fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #ecf0f1; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 600px; height: 70px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: 1.5fr 1fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; flex-wrap: wrap; gap: 15px; align-content: flex-start; flex-grow: 1; background: #fafafa; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .content-card { min-width: 150px; background-color: #f2f4f4; border: 2px solid #bdc3c7; border-radius: 8px; padding-bottom: 5px; transition: all 0.3s ease; animation: card-fade-in 0.5s ease; }
+        .content-card.highlight { border-color: var(--color-warning); box-shadow: 0 0 10px var(--color-warning); }
+        .content-card.duplicate-group { border-color: var(--color-success); background-color: #eafaf1; }
+        .content-card.non-duplicate { opacity: 0.5; }
+        .content-card h3 { margin: 0; font-size: 0.9em; background-color: #bdc3c7; color: var(--color-text-dark); padding: 5px; border-radius: 5px 5px 0 0; font-family: 'Courier New', monospace; word-break: break-all;}
+        .content-card.duplicate-group h3 { background-color: var(--color-success); color: white; }
+        .path-list { list-style: none; padding: 5px; margin: 0; font-family: 'Courier New', monospace; font-size: 0.85em; }
+        .path-item { background: white; padding: 3px 5px; margin-top: 3px; border-radius: 3px; animation: path-add 0.4s ease; }
+        @keyframes card-fade-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes path-add { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0; font-family: 'Courier New', monospace; }
+        .list-item { background: #eee; padding: 5px 8px; margin: 3px; border-radius: 4px; font-size: 0.8em; }
+        .list-item.current { background-color: var(--color-warning); font-weight: bold; }
+        .workspace-item { padding: 5px; border-bottom: 1px solid #eee; }
+        .workspace-item span { color: var(--color-primary); font-weight: bold; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center; }
+        #final_result_text { font-size: 1.2em; font-weight: bold; margin: 0; color: var(--color-primary); white-space: pre; text-align: left;}
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Find Duplicate File in System</h1>
+            <div class="controls">
+                <label>Paths (one per line):</label><textarea id="paths_input">root/a 1.txt(abcd) 2.txt(efgh)
+root/c 3.txt(abcd)
+root/c/d 4.txt(efgh)
+root 4.txt(efgh)</textarea>
+                <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><h2>Map (Content → Paths)</h2><div id="viz_container"></div></main>
+        <div class="right-column">
+            <div class="panel"><h2>Input Paths</h2><div id="paths_list_container" class="data-container"></div></div>
+            <div class="panel"><h2>Parsing Workspace / Result</h2><div id="workspace_container" class="data-container"></div></div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+         <div class="modal-content">
+            <h2>Final Result</h2><pre id="final_result_text"></pre>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let pathsInput, startButton, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, pathsListContainer, workspaceContainer,
+    resultModal, finalResultText, modalCloseBtn;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, vizContainer, pathsListContainer, workspaceContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        if (resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const paths = pathsInput.value.trim().split('\n').filter(p => p);
+            if (!Array.isArray(paths)) throw new Error("Invalid input format.");
+            
+            this.initUI();
+            animationSteps = this.generateSteps(paths);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// Phase 1: Build Content Map",
+            "map = {}",
+            "for path_str in paths:",
+            "  parts = path_str.split(' ')",
+            "  dir = parts[0]",
+            "  for file_part in parts[1:]:",
+            "    name = parse_name(file_part)",
+            "    content = parse_content(file_part)",
+            "    full_path = dir + '/' + name",
+            "    map.get(content).add(full_path)",
+            "",
+            "// Phase 2: Filter for Duplicates",
+            "result = []",
+            "for group in map.values():",
+            "  if group.size() > 1:",
+            "    result.add(group)",
+            "return result"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(paths) {
+        const steps = []; 
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ ...state, ...data })));
+        
+        let state = {
+            line: null, msg: "", map: {}, result: [], workspace: {},
+            highlights: { path_idx: null, map_content_key: null }
+        };
+        save({line: 0, msg: "Phase 1: Build a map from content to file paths."});
+        
+        for (let i = 0; i < paths.length; i++) {
+            const path = paths[i];
+            state.highlights = { ...state.highlights, path_idx: i };
+            save({line: 2, msg: `Processing path string ${i + 1}.`});
+            
+            const parts = path.split(" ");
+            const dir = parts[0];
+            state.workspace = { dir };
+            save({line: 4, msg: `Extracted directory: "${dir}".`});
+
+            for (let j = 1; j < parts.length; j++) {
+                const file = parts[j];
+                const idx = file.indexOf('(');
+                const name = file.substring(0, idx);
+                // CORRECTED LINE: Use .length property, not .length() method
+                const content = file.substring(idx + 1, file.length - 1);
+                const fullPath = dir + "/" + name;
+                
+                state.workspace = { dir, file, name, content, fullPath };
+                save({line: 5, msg: `Parsing file: "${file}".`});
+
+                if (!state.map[content]) state.map[content] = [];
+                state.map[content].push(fullPath);
+                state.highlights.map_content_key = content;
+                save({line: 9, msg: `Adding "${fullPath}" to list for content "${content}".`});
+                state.highlights.map_content_key = null;
+            }
+            state.workspace = {};
+        }
+        state.highlights.path_idx = null;
+
+        save({line: 11, msg: "Phase 2: Filter map for groups with more than 1 path."});
+        
+        for (const content in state.map) {
+            const group = state.map[content];
+            state.highlights.map_content_key = content;
+            save({line: 13, msg: `Checking group for content "${content}".`});
+
+            if (group.length > 1) {
+                state.result.push(group);
+                save({line: 14, msg: `Group size is ${group.length} (> 1). It's a duplicate group. Add to result.`});
+            } else {
+                save({line: 14, msg: `Group size is 1. Not a duplicate. Skip.`});
+            }
+        }
+        state.highlights.map_content_key = null;
+        
+        save({line: 16, msg: "Algorithm complete!", final_result: state.result});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        const paths = pathsInput.value.trim().split('\n').filter(p=>p);
+        pathsListContainer.innerHTML = paths.map((p, i) => `<div class="list-item ${i === state.highlights.path_idx ? 'current' : ''}">${p}</div>`).join('');
+
+        // Render Workspace / Result
+        if (state.line < 11) {
+            workspaceContainer.innerHTML = `
+                <h3>Parsing Workspace</h3>
+                <div class="workspace-item">Dir: <span>${state.workspace.dir || ''}</span></div>
+                <div class="workspace-item">File: <span>${state.workspace.file || ''}</span></div>
+                <div class="workspace-item">Content: <span>${state.workspace.content || ''}</span></div>
+                <div class="workspace-item">Full Path: <span>${state.workspace.fullPath || ''}</span></div>`;
+        } else {
+             workspaceContainer.innerHTML = `<h3>Result Groups</h3>${state.result.map(g => `<div class="list-item">${JSON.stringify(g)}</div>`).join('')}`;
+        }
+        
+        // Render map cards
+        vizContainer.innerHTML = '';
+        const sortedContents = Object.keys(state.map).sort();
+        for(const content of sortedContents) {
+            const group = state.map[content];
+            const card = document.createElement('div');
+            card.className = 'content-card';
+            if (content === state.highlights.map_content_key) card.classList.add('highlight');
+            if (state.line >= 13) {
+                 if (group.length > 1) card.classList.add('duplicate-group');
+                 else card.classList.add('non-duplicate');
+            }
+            let pathHTML = group.map(p => `<li class="path-item">${p}</li>`).join('');
+            card.innerHTML = `<h3>"${content}"</h3><ul class="path-list">${pathHTML}</ul>`;
+            vizContainer.appendChild(card);
+        }
+        
+        if (state.final_result) {
+            finalResultText.textContent = JSON.stringify(state.final_result, null, 2);
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    pathsInput = document.getElementById('paths_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    pathsListContainer = document.getElementById('paths_list_container');
+    workspaceContainer = document.getElementById('workspace_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

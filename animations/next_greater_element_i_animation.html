@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Next Greater Element I (Monotonic Stack Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2c3e50; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: grid; grid-template-columns: 1fr 2fr; gap: 10px 20px; padding: 10px; background-color: #f8f9f9; border-radius: 5px; align-items: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; resize: vertical; height: 50px; }
+        .controls .buttons { grid-column: 1 / -1; display: flex; justify-content: center; gap: 15px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: 1fr 1fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; flex-direction: column; align-items: center; justify-content: space-around; flex-grow: 1; background: #fafafa; padding: 20px; box-sizing: border-box;}
+        .array-container { display: flex; gap: 5px; margin-bottom: 20px; }
+        .array-cell { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border: 2px solid #bdc3c7; background-color: #ecf0f1; border-radius: 5px; font-weight: bold; position: relative; }
+        .array-cell.scanner { border-color: var(--color-warning); background-color: #fef9e7; }
+        .array-cell.compare { border-color: var(--color-info); }
+        .scanner-label { position: absolute; top: -20px; font-size: 12px; color: var(--color-warning); font-weight: bold; }
+        
+        .stack-container { width: 60px; height: 250px; border: 2px solid #bdc3c7; border-top: none; display: flex; flex-direction: column-reverse; background-color: #f8f9f9; border-radius: 0 0 5px 5px; }
+        .stack-cell { width: 100%; height: 40px; background-color: var(--color-primary); color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; border-top: 2px solid white; box-sizing: border-box; flex-shrink: 0; }
+        .stack-cell.peek { background-color: var(--color-info); }
+        .stack-cell.popping { opacity: 0; transform: translateY(-20px); transition: all 0.5s ease; }
+        .stack-cell.pushing { opacity: 0; transform: translateY(-20px); }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        .state-table { width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: center; }
+        .state-table th, .state-table td { padding: 5px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table tr.highlight { background-color: #eafaf1; }
+        .state-table tr.flash { animation: flash 0.6s ease; }
+        @keyframes flash { 50% { background-color: #fef9e7; } }
+        .result-array-cell { display: inline-block; width: 35px; height: 35px; line-height: 35px; border: 1px solid #ccc; background-color: #eee; margin: 2px; }
+        .result-array-cell.highlight { border-color: var(--color-warning); border-width: 2px; }
+
+        .modal-overlay { /* ... same as before ... */ }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Next Greater Element I</h1></header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel">
+            <h2>Visualization</h2>
+            <div id="viz_container">
+                <div id="nums2_container"></div>
+                <div id="stack_container"></div>
+            </div>
+        </main>
+        <div class="right-column">
+            <div class="panel"><h2>Next Greater Element Map</h2><div id="map_table_container" class="data-container"></div></div>
+            <div class="panel">
+                <h2>Result for nums1</h2>
+                <div id="nums1_container" class="data-container"></div>
+            </div>
+        </div>
+        <div class="header panel" style="grid-area: header; margin-top: -15px;">
+            <div class="controls">
+                <label>nums1 (subset):</label><textarea id="nums1_input">[4,1,2]</textarea>
+                <label>nums2 (superset):</label><textarea id="nums2_input">[1,3,4,2]</textarea>
+                <div class="buttons">
+                    <button id="start_button">Start</button>
+                    <button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay"> <!-- ... --> </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let nums1Input, nums2Input, startButton, nextStepButton, codeContainer, actionDisplay, 
+    nums2Container, stackContainer, mapTableContainer, nums1Container;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, nums2Container, stackContainer, mapTableContainer, nums1Container].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const nums1 = JSON.parse(nums1Input.value.trim().replace(/'/g, '"'));
+            const nums2 = JSON.parse(nums2Input.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(nums1) || !Array.isArray(nums2)) throw new Error("Invalid input format.");
+            
+            this.initUI();
+            animationSteps = this.generateSteps(nums1, nums2);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Invalid input. Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// Phase 1: Build Map",
+            "map = {}",
+            "stack = []",
+            "for num in nums2:",
+            "  while stack is not empty and num > stack.peek():",
+            "    map[stack.pop()] = num",
+            "  stack.push(num)",
+            "",
+            "// Phase 2: Query Results",
+            "result = []",
+            "for num in nums1:",
+            "  result.append(map.getOrDefault(num, -1))",
+            "return result"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(nums1, nums2) {
+        const steps = []; 
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ ...state, ...data })));
+        
+        let state = {
+            line: null, msg: "", stack: [], map: {}, result: Array(nums1.length).fill('?'),
+            highlights: { nums2_idx: null, stack_peek: false, map_key: null, nums1_idx: null }
+        };
+        save({line: 0, msg: "Phase 1: Build the Next Greater Element map."});
+
+        for (let i = 0; i < nums2.length; i++) {
+            const num = nums2[i];
+            state.highlights = { ...state.highlights, nums2_idx: i, stack_peek: false };
+            save({line: 3, msg: `Processing ${num} from nums2.`});
+            
+            while (state.stack.length > 0 && num > state.stack[state.stack.length - 1]) {
+                state.highlights.stack_peek = true;
+                save({line: 4, msg: `Check: ${num} > stack top (${state.stack[state.stack.length - 1]})? Yes.`});
+
+                const popped = state.stack.pop();
+                state.map[popped] = num;
+                state.highlights.map_key = popped;
+                save({line: 5, msg: `Popped ${popped}. Set map[${popped}] = ${num}.`});
+                state.highlights.map_key = null;
+            }
+
+            if (state.stack.length > 0) {
+                 state.highlights.stack_peek = true;
+                 save({line: 4, msg: `Check: ${num} > stack top (${state.stack[state.stack.length - 1]})? No.`});
+            } else {
+                 save({line: 4, msg: `Stack is empty, cannot check.`});
+            }
+
+            state.stack.push(num);
+            state.highlights.stack_peek = false;
+            save({line: 6, msg: `Push ${num} onto the stack.`});
+        }
+        state.highlights.nums2_idx = null;
+
+        save({line: 8, msg: "Phase 2: Look up results for nums1."});
+
+        for (let i = 0; i < nums1.length; i++) {
+            const num = nums1[i];
+            state.highlights.nums1_idx = i;
+            save({line: 10, msg: `Querying for ${num} from nums1.`});
+
+            state.highlights.map_key = num;
+            const val = state.map[num] !== undefined ? state.map[num] : -1;
+            state.result[i] = val;
+            save({line: 11, msg: `Found map[${num}] = ${val}. Storing in result.`});
+            state.highlights.map_key = null;
+        }
+        state.highlights.nums1_idx = null;
+        
+        save({line: 12, msg: "Algorithm complete!"});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        // Render nums2
+        const nums2 = JSON.parse(nums2Input.value);
+        nums2Container.innerHTML = `<div class="array-container">${nums2.map((n, i) => {
+            let cls = 'array-cell';
+            if (i === state.highlights.nums2_idx) cls += ' scanner';
+            if (state.highlights.stack_peek && n === state.stack[state.stack.length - 1]) cls += ' compare';
+            const label = i === state.highlights.nums2_idx ? '<div class="scanner-label">num</div>' : '';
+            return `<div class="${cls}">${label}${n}</div>`;
+        }).join('')}</div>`;
+
+        // Render stack
+        stackContainer.innerHTML = `<div class="stack-container">${state.stack.map((n, i) => {
+            let cls = 'stack-cell';
+            if (i === state.stack.length - 1 && state.highlights.stack_peek) cls += ' peek';
+            return `<div class="${cls}">${n}</div>`;
+        }).join('')}</div>`;
+        
+        // Render map
+        let mapHTML = `<table class="state-table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>`;
+        Object.entries(state.map).forEach(([key, val]) => {
+            const cls = (Number(key) === state.highlights.map_key) ? 'flash' : '';
+            mapHTML += `<tr class="${cls}"><td>${key}</td><td>${val}</td></tr>`;
+        });
+        mapHTML += `</tbody></table>`;
+        mapTableContainer.innerHTML = mapHTML;
+        
+        // Render nums1 and result
+        const nums1 = JSON.parse(nums1Input.value);
+        let nums1HTML = `<b>nums1:</b> ${nums1.map((n, i) => `<div class="result-array-cell ${i === state.highlights.nums1_idx ? 'highlight' : ''}">${n}</div>`).join('')}<br>`;
+        nums1HTML += `<b>result:</b> ${state.result.map((n, i) => `<div class="result-array-cell ${i === state.highlights.nums1_idx ? 'highlight' : ''}">${n}</div>`).join('')}`;
+        nums1Container.innerHTML = nums1HTML;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    nums1Input = document.getElementById('nums1_input');
+    nums2Input = document.getElementById('nums2_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    nums2Container = document.getElementById('nums2_container');
+    stackContainer = document.getElementById('stack_container');
+    mapTableContainer = document.getElementById('map_table_container');
+    nums1Container = document.getElementById('nums1_container');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+});
+</script>
+</body>
+</html>

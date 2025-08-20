@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unique Number of Occurrences Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #16a085; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f6f3; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 50px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; flex-direction: column; justify-content: space-around; flex-grow: 1; background: #fafafa; padding: 20px; box-sizing: border-box; }
+        .phase-container { border: 2px dashed #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .phase-container h3 { text-align: center; margin-top: 0; color: #7f8c8d; }
+        .array-container, .set-container { display: flex; gap: 8px; justify-content: center; align-items: center; min-height: 50px; }
+        .cell { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border: 2px solid #bdc3c7; background-color: #ecf0f1; border-radius: 5px; font-weight: bold; position: relative; }
+        .cell.scanner { border-color: var(--color-warning); background-color: #fef9e7; }
+        .set-cell { background-color: var(--color-success); color: white; border-color: #27ae60; }
+        .set-cell.conflict { background-color: var(--color-danger); border-color: #a93226; animation: shake 0.5s; }
+        .scanner-label { position: absolute; top: -20px; font-size: 12px; color: var(--color-warning); font-weight: bold; }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        .state-table { width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: center; }
+        .state-table th, .state-table td { padding: 5px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table tr.flash-green { animation: flash-green 0.8s ease; }
+        @keyframes flash-green { 50% { background-color: #d4efdf; } }
+        .result-display { text-align: center; font-size: 1.2em; font-weight: bold; padding-top: 20px;}
+
+        .modal-overlay { /* ... */ } .modal-content { /* ... */ }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 20px 0; }
+        #final_result_text.true { color: var(--color-success); }
+        #final_result_text.false { color: var(--color-danger); }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Unique Number of Occurrences</h1>
+            <div class="controls">
+                <label>Array [1,2,2,...]:</label><textarea id="arr_input">[1,2,2,1,1,3]</textarea>
+                <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><h2>Visualization</h2><div id="viz_container"></div></main>
+        <div class="right-column">
+            <div class="panel"><h2>Frequency Map</h2><div id="map_table_container" class="data-container"></div></div>
+            <div class="panel"><h2>Frequency Set & Result</h2><div id="set_container_wrapper" class="data-container"></div></div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+         <div class="modal-content">
+            <h2>Final Result</h2><p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let arrInput, startButton, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, mapTableContainer, setContainerWrapper,
+    resultModal, finalResultText, modalCloseBtn;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, vizContainer, mapTableContainer, setContainerWrapper].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        if (resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const arr = JSON.parse(arrInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(arr)) throw new Error("Invalid input format.");
+            
+            this.initUI();
+            animationSteps = this.generateSteps(arr);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Invalid input. Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// Phase 1: Count Frequencies",
+            "freq_map = {}",
+            "for num in arr:",
+            "  freq_map[num]++",
+            "",
+            "// Phase 2: Check for Unique Frequencies",
+            "freq_set = new HashSet()",
+            "for freq in freq_map.values():",
+            "  if freq in freq_set: return false",
+            "  freq_set.add(freq)",
+            "",
+            "// Phase 3: Compare sizes",
+            "return freq_map.size() == freq_set.size()"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(arr) {
+        const steps = []; 
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ ...state, ...data })));
+        
+        let state = {
+            line: null, msg: "", freq_map: {}, freq_set: new Set(),
+            highlights: { arr_idx: null, map_key: null, set_val: null, conflict: false },
+            result: null
+        };
+        
+        // Phase 1: Build Freq Map
+        save({line: 0, msg: "Phase 1: Count frequencies of each number."});
+        for (let i = 0; i < arr.length; i++) {
+            const num = arr[i];
+            state.highlights = { arr_idx: i, map_key: null, set_val: null, conflict: false };
+            save({line: 2, msg: `Scanning array at index ${i}.`});
+
+            state.freq_map[num] = (state.freq_map[num] || 0) + 1;
+            state.highlights.map_key = num;
+            save({line: 3, msg: `Updating count for number ${num}.`});
+        }
+        state.highlights = { arr_idx: null, map_key: null, set_val: null, conflict: false };
+
+        // Phase 2: Build Freq Set
+        save({line: 5, msg: "Phase 2: Check if frequencies are unique."});
+        const frequencies = Object.entries(state.freq_map);
+        for (const [num, freq] of frequencies) {
+            state.highlights.map_key = Number(num);
+            save({line: 7, msg: `Checking frequency of number ${num}, which is ${freq}.`});
+
+            if (state.freq_set.has(freq)) {
+                state.highlights.set_val = freq;
+                state.highlights.conflict = true;
+                save({line: 8, msg: `Conflict! Frequency ${freq} has already been seen.`, result: false});
+                return steps;
+            }
+            state.freq_set.add(freq);
+            state.highlights.set_val = freq;
+            save({line: 9, msg: `Frequency ${freq} is unique so far. Adding to set.`});
+        }
+        state.highlights = { arr_idx: null, map_key: null, set_val: null, conflict: false };
+        
+        // Phase 3: Final comparison
+        save({line: 11, msg: "Phase 3: Compare map and set sizes."});
+        const mapSize = Object.keys(state.freq_map).length;
+        const setSize = state.freq_set.size;
+        save({line: 12, msg: `Map size (${mapSize}) == Set size (${setSize})? ${mapSize === setSize}.`, result: mapSize === setSize});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        // Main visualization
+        const arr = JSON.parse(arrInput.value);
+        vizContainer.innerHTML = `
+            <div class="phase-container">
+                <h3>Phase 1: Input Array</h3>
+                <div class="array-container">
+                    ${arr.map((n, i) => {
+                        const isScanner = i === state.highlights.arr_idx;
+                        return `<div class="cell ${isScanner ? 'scanner' : ''}">${isScanner ? '<div class="scanner-label">num</div>' : ''}${n}</div>`;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+        
+        // Map table
+        let mapHTML = `<table class="state-table"><thead><tr><th>Number</th><th>Frequency</th></tr></thead><tbody>`;
+        Object.entries(state.freq_map).forEach(([key, val]) => {
+            const cls = (Number(key) === state.highlights.map_key) ? 'flash-green' : '';
+            mapHTML += `<tr class="${cls}"><td>${key}</td><td>${val}</td></tr>`;
+        });
+        mapHTML += `</tbody></table>`;
+        mapTableContainer.innerHTML = mapHTML;
+        
+        // Set and result
+        const mapSize = Object.keys(state.freq_map).length;
+        const setSize = state.freq_set.size;
+        setContainerWrapper.innerHTML = `
+            <div class="phase-container">
+                <h3>Phase 2: Set of Frequencies</h3>
+                <div class="set-container">
+                    ${Array.from(state.freq_set).sort((a,b)=>a-b).map(freq => {
+                        let cls = 'cell set-cell';
+                        if (freq === state.highlights.set_val && state.highlights.conflict) cls += ' conflict';
+                        return `<div class="${cls}">${freq}</div>`;
+                    }).join('')}
+                </div>
+                ${state.line >= 11 ? `<div class="result-display">
+                    Map Size: ${mapSize} | Set Size: ${setSize} <br/>
+                    Result: ${mapSize === setSize}
+                </div>` : ''}
+            </div>
+        `;
+        
+        if (state.result !== null) {
+            finalResultText.textContent = state.result ? 'True' : 'False';
+            finalResultText.className = state.result ? 'true' : 'false';
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    arrInput = document.getElementById('arr_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    mapTableContainer = document.getElementById('map_table_container');
+    setContainerWrapper = document.getElementById('set_container_wrapper');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulls and Cows Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #34495e; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+            --color-cow: #f1c40f;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: grid; grid-template-columns: 1fr 2fr; gap: 10px 20px; padding: 10px; background-color: #ecf0f1; border-radius: 5px; align-items: center;}
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; }
+        .controls .buttons { grid-column: 1 / -1; display: flex; justify-content: center; gap: 15px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; flex-direction: column; align-items: center; justify-content: space-around; flex-grow: 1; background: #fafafa; padding: 20px; box-sizing: border-box;}
+        .string-container { display: flex; gap: 5px; margin-bottom: 10px; }
+        .char-cell { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border: 2px solid #bdc3c7; background-color: #ecf0f1; border-radius: 5px; font-weight: bold; font-size: 1.2em; position: relative; font-family: 'Courier New', monospace; transition: all 0.3s ease; }
+        .char-cell.scanner { border-color: var(--color-warning); transform: scale(1.1); }
+        .char-cell.bull { background-color: var(--color-success); border-color: #229954; color: white;}
+        .char-cell.potential-cow { background-color: var(--color-cow); border-color: #d39e00; color: white; }
+        .counter-container { margin-top: 20px; width: 100%; }
+        .counter-array { display: flex; justify-content: center; gap: 2px; }
+        .counter-cell { width: 30px; text-align: center; }
+        .counter-label { font-size: 11px; font-weight: bold; color: #7f8c8d; }
+        .counter-bar { height: 10px; background-color: #d0d3d4; margin-top: 2px; border-radius: 3px; transition: height 0.3s ease; }
+        .s-bar { background-color: var(--color-info); }
+        .g-bar { background-color: var(--color-cow); }
+        .counter-cell.highlight .counter-label { color: var(--color-primary); }
+
+        .score-display { display: flex; justify-content: space-around; width: 100%; }
+        .score-box { text-align: center; }
+        .score-value { font-size: 2.5em; font-weight: bold; }
+        .score-box .bull { color: var(--color-success); }
+        .score-box .cow { color: var(--color-cow); }
+        .score-value.flash { animation: flash 0.5s ease; }
+        @keyframes flash { 50% { transform: scale(1.3); } }
+
+        .modal-overlay { /* ... */ } .modal-content { /* ... */ }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 20px 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Bulls and Cows</h1>
+            <div class="controls">
+                <label>Secret:</label><input id="secret_input" type="text" value="1807">
+                <label>Guess:</label><input id="guess_input" type="text" value="7810">
+                <div class="buttons">
+                    <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><h2>Visualization</h2><div id="viz_container"></div></main>
+        <div class="right-column">
+            <div class="panel"><h2>Score</h2>
+                <div class="score-display">
+                    <div class="score-box"><div class="score-value bull" id="bulls_score">0</div>Bulls</div>
+                    <div class="score-box"><div class="score-value cow" id="cows_score">0</div>Cows</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+         <div class="modal-content">
+            <h2>Final Result</h2><p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let secretInput, guessInput, startButton, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, bullsScore, cowsScore, resultModal, finalResultText, modalCloseBtn;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        codeContainer.innerHTML = '';
+        vizContainer.innerHTML = '';
+        if(bullsScore) bullsScore.textContent = '0';
+        if(cowsScore) cowsScore.textContent = '0';
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        if (resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const secret = secretInput.value;
+            const guess = guessInput.value;
+            if(secret.length !== guess.length || secret.length === 0){
+                throw new Error("Strings must be non-empty and of the same length.");
+            }
+            this.initUI();
+            animationSteps = this.generateSteps(secret, guess);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "bulls = 0, cows = 0",
+            "sCount = new int[10]",
+            "gCount = new int[10]",
+            "for i in 0..len-1:",
+            "  if secret[i] == guess[i]:",
+            "    bulls++",
+            "  else:",
+            "    sCount[secret[i]]++",
+            "    gCount[guess[i]]++",
+            "// Calculate cows from counts",
+            "for i in 0..9:",
+            "  cows += min(sCount[i], gCount[i])",
+            "return bulls + 'A' + cows + 'B'"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(secret, guess) {
+        const steps = []; 
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ ...state, ...data })));
+        
+        let state = {
+            line: null, msg: "", bulls: 0, cows: 0, 
+            sCount: Array(10).fill(0), gCount: Array(10).fill(0),
+            charStates: Array(secret.length).fill(''),
+            highlights: { char_idx: null, count_idx: null },
+            result: null
+        };
+        save({line: 0, msg: "Initialize counts."});
+        
+        // Pass 1: Find bulls and count potential cows
+        for (let i = 0; i < secret.length; i++) {
+            state.highlights.char_idx = i;
+            save({line: 3, msg: `Comparing characters at index ${i}.`});
+            
+            if (secret[i] === guess[i]) {
+                state.bulls++;
+                state.charStates[i] = 'bull';
+                save({line: 4, msg: `Match! Found a bull. Bulls = ${state.bulls}.`});
+            } else {
+                state.charStates[i] = 'potential-cow';
+                const sDigit = secret[i] - '0';
+                const gDigit = guess[i] - '0';
+                state.sCount[sDigit]++;
+                state.gCount[gDigit]++;
+                save({line: 7, msg: `Mismatch. Count '${secret[i]}' for secret and '${guess[i]}' for guess.`});
+            }
+        }
+        state.highlights.char_idx = null;
+        
+        // Pass 2: Calculate cows
+        save({line: 9, msg: "Now, calculate cows from mismatched character counts."});
+        for (let i = 0; i < 10; i++) {
+            state.highlights.count_idx = i;
+            save({line: 10, msg: `Checking counts for digit ${i}.`});
+            
+            const toAdd = Math.min(state.sCount[i], state.gCount[i]);
+            if (toAdd > 0) {
+                state.cows += toAdd;
+                save({line: 11, msg: `Found ${toAdd} cow(s) for digit ${i}. Total cows = ${state.cows}.`});
+            }
+        }
+        state.highlights.count_idx = null;
+
+        state.result = `${state.bulls}A${state.cows}B`;
+        save({line: 12, msg: `Finished. Result: ${state.result}.`});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+
+        const secret = secretInput.value;
+        const guess = guessInput.value;
+
+        const createStringHTML = (str, strName) => `<div class="string-container">${str.split('').map((char, i) => {
+            let cls = `char-cell ${state.charStates[i]}`;
+            if (i === state.highlights.char_idx) cls += ' scanner';
+            return `<div class="${cls}">${char}</div>`;
+        }).join('')}</div>`;
+        
+        const createCounterHTML = (counts, name) => `<div class="counter-container">
+            <h4>${name} Counts</h4>
+            <div class="counter-array">${counts.map((count, i) => `
+                <div class="counter-cell ${i === state.highlights.count_idx ? 'highlight' : ''}">
+                    <div class="counter-bar ${name.toLowerCase()}-bar" style="height:${count*10+2}px"></div>
+                    <div class="counter-label">${i}</div>
+                </div>`).join('')}
+            </div></div>`;
+
+        vizContainer.innerHTML = `
+            ${createStringHTML(secret, 'Secret')}
+            ${createStringHTML(guess, 'Guess')}
+            ${createCounterHTML(state.sCount, 'S')}
+            ${createCounterHTML(state.gCount, 'G')}
+        `;
+
+        if (bullsScore.textContent !== String(state.bulls)) bullsScore.classList.add('flash');
+        if (cowsScore.textContent !== String(state.cows)) cowsScore.classList.add('flash');
+        setTimeout(() => {
+            bullsScore.classList.remove('flash');
+            cowsScore.classList.remove('flash');
+        }, 500);
+        bullsScore.textContent = state.bulls;
+        cowsScore.textContent = state.cows;
+        
+        if (state.result) {
+            finalResultText.textContent = state.result;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    secretInput = document.getElementById('secret_input');
+    guessInput = document.getElementById('guess_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    bullsScore = document.getElementById('bulls_score');
+    cowsScore = document.getElementById('cows_score');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number of Distinct Islands Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #8e44ad; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+            --color-land: #16a085; --color-water: #eaf2f8; --color-visited: #d5dbdb;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #f4eef7; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 90px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: 1fr 1fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; align-items: center; justify-content: center; flex-grow: 1; background: #fafafa; padding: 10px; box-sizing: border-box;}
+        .grid { border-collapse: collapse; }
+        .grid-cell { width: 30px; height: 30px; border: 1px solid #ccc; text-align: center; font-size: 10px; color: #aaa; transition: all 0.3s ease; }
+        .grid-cell.land { background-color: var(--color-land); }
+        .grid-cell.water { background-color: var(--color-water); }
+        .grid-cell.visited { background-color: var(--color-visited); }
+        .grid-cell.scanner { box-shadow: inset 0 0 0 3px var(--color-warning); }
+        .grid-cell.dfs-path { box-shadow: inset 0 0 0 3px var(--color-info); }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        #current_shape_display { font-family: 'Courier New', monospace; font-weight: bold; color: var(--color-primary); padding: 10px; background: #eee; border-radius: 4px; word-break: break-all; }
+        .shape-item { background: var(--color-success); color: white; padding: 5px 8px; margin: 5px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.9em; animation: shape-add 0.5s ease; }
+        .shape-item.flash { animation: flash 0.8s ease; }
+        @keyframes shape-add { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes flash { 50% { background-color: var(--color-warning); } }
+        #result-display { text-align: center; font-size: 1.5em; font-weight: bold; padding-top: 20px; color: var(--color-primary); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center; }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 20px 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Number of Distinct Islands</h1>
+            <div class="controls">
+                <label>Grid (0=water, 1=land):</label><textarea id="grid_input">[[1,1,0,1,1],
+[1,0,0,0,0],
+[0,0,0,0,1],
+[1,1,0,1,1]]</textarea>
+                <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><h2>Grid</h2><div id="viz_container"></div></main>
+        <div class="right-column">
+            <div class="panel"><h2>Current Island Shape</h2><div id="current_shape_display"></div></div>
+            <div class="panel"><h2>Set of Distinct Shapes</h2>
+                <div id="shapes_set_container" class="data-container"></div>
+                <div id="result-display"></div>
+            </div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+         <div class="modal-content">
+            <h2>Final Result</h2><p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let gridInput, startButton, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, currentShapeDisplay, shapesSetContainer, resultDisplay,
+    resultModal, finalResultText, modalCloseBtn;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, vizContainer, currentShapeDisplay, shapesSetContainer, resultDisplay].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        if (resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const grid = JSON.parse(gridInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(grid) || !Array.isArray(grid[0])) throw new Error("Invalid grid format.");
+            
+            this.initUI();
+            animationSteps = this.generateSteps(grid);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+           "shapes = new HashSet()",
+           "for r in 0..rows-1:",
+           "  for c in 0..cols-1:",
+           "    if grid[r][c] == 1:",
+           "      shape = new StringBuilder()",
+           "      dfs(r, c, shape, 'o')",
+           "      shapes.add(shape.toString())",
+           "return shapes.size()",
+           "",
+           "dfs(r, c, shape, dir):",
+           "  if out_of_bounds or water: return",
+           "  grid[r][c] = 0 // sink",
+           "  shape.append(dir)",
+           "  dfs(r+1, c, shape, 'd')",
+           "  dfs(r-1, c, shape, 'u')",
+           "  dfs(r, c+1, shape, 'r')",
+           "  dfs(r, c-1, shape, 'l')",
+           "  shape.append('b') // backtrack"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(initialGrid) {
+        const steps = []; 
+        let grid = JSON.parse(JSON.stringify(initialGrid)); // Deep copy
+        const rows = grid.length;
+        const cols = grid[0].length;
+        
+        let state = {
+            line: null, msg: "", grid, shapes: [], current_shape: "",
+            highlights: { scan_r: null, scan_c: null, dfs_path: [], flash_shape: null },
+            result: null
+        };
+        // FIX: Use an array for `shapes` so it can be stringified, convert to set later.
+        const save = () => {
+            steps.push(JSON.parse(JSON.stringify(state)));
+        };
+
+        const dfs = (r, c, dir, path) => {
+            if (r < 0 || c < 0 || r >= rows || c >= cols || grid[r][c] === 0) {
+                state.msg = `DFS(${dir}): Hit boundary or water. Returning.`;
+                state.line = 10;
+                save();
+                return;
+            }
+
+            state.highlights.dfs_path = [...path, [r, c]];
+            grid[r][c] = 0; // Sink the island
+            state.grid = grid;
+            state.msg = `DFS(${dir}): Visiting land at (${r},${c}). Sinking it.`;
+            state.line = 11;
+            save();
+
+            state.current_shape += dir;
+            state.msg = `Appending direction '${dir}' to shape.`;
+            state.line = 12;
+            save();
+            
+            dfs(r + 1, c, "d", state.highlights.dfs_path);
+            dfs(r - 1, c, "u", state.highlights.dfs_path);
+            dfs(r, c + 1, "r", state.highlights.dfs_path);
+            dfs(r, c - 1, "l", state.highlights.dfs_path);
+
+            state.highlights.dfs_path = path; // Pop from path on backtrack
+            state.current_shape += "b";
+            state.msg = `Finished exploring from (${r},${c}). Backtracking.`;
+            state.line = 17;
+            save();
+        };
+
+        let shapesSet = new Set();
+        state.line = 0; state.msg = "Initialize a set to store unique island shapes."; save();
+        
+        for (let r = 0; r < rows; r++) {
+            state.line = 1; save();
+            for (let c = 0; c < cols; c++) {
+                state.highlights.scan_r = r; state.highlights.scan_c = c;
+                state.line = 2; state.msg = `Scanning grid at (${r}, ${c}).`; save();
+                if (grid[r][c] === 1) {
+                    state.line = 3; state.msg = `Found land! Starting DFS to find its shape.`; save();
+                    state.current_shape = "";
+                    state.line = 4; state.msg = "Resetting current shape string."; save();
+
+                    dfs(r, c, "o", []);
+                    
+                    state.line = 6;
+                    state.highlights.dfs_path = [];
+                    if (shapesSet.has(state.current_shape)) {
+                        state.msg = `Shape "${state.current_shape}" is a duplicate.`;
+                        state.highlights.flash_shape = state.current_shape;
+                    } else {
+                        state.msg = `New shape "${state.current_shape}" found. Adding to set.`;
+                        shapesSet.add(state.current_shape);
+                        state.shapes = Array.from(shapesSet); // Update the serializable array
+                        state.highlights.flash_shape = null;
+                    }
+                    save();
+                }
+            }
+        }
+        
+        state.highlights = {};
+        state.result = shapesSet.size;
+        state.line = 7;
+        state.msg = `Grid scan complete. Found ${state.result} distinct islands.`;
+        save();
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        let gridHTML = '<table class="grid">';
+        const initialGrid = JSON.parse(gridInput.value);
+        for (let r = 0; r < state.grid.length; r++) {
+            gridHTML += '<tr>';
+            for (let c = 0; c < state.grid[0].length; c++) {
+                let cls = 'grid-cell';
+                if (initialGrid[r][c] === 1 && state.grid[r][c] === 1) cls += ' land';
+                else if (initialGrid[r][c] === 1 && state.grid[r][c] === 0) cls += ' visited';
+                else cls += ' water';
+                if (r === state.highlights.scan_r && c === state.highlights.scan_c) cls += ' scanner';
+                if (state.highlights.dfs_path.some(p => p[0] === r && p[1] === c)) cls += ' dfs-path';
+                gridHTML += `<td class="${cls}">(${r},${c})</td>`;
+            }
+            gridHTML += '</tr>';
+        }
+        gridHTML += '</table>';
+        vizContainer.innerHTML = gridHTML;
+
+        currentShapeDisplay.textContent = state.current_shape;
+        
+        let shapesHTML = '';
+        // FIX: state.shapes is now an array, which has .forEach
+        state.shapes.forEach(shape => {
+            let cls = 'shape-item';
+            if(shape === state.highlights.flash_shape) cls += ' flash';
+            shapesHTML += `<div class="${cls}">${shape}</div>`;
+        });
+        shapesSetContainer.innerHTML = shapesHTML;
+        
+        if (state.line >= 7) {
+            resultDisplay.innerHTML = `Distinct Shapes: ${state.shapes.length}`;
+        } else {
+            resultDisplay.innerHTML = '';
+        }
+
+        if (state.result !== null) {
+            finalResultText.textContent = state.result;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    gridInput = document.getElementById('grid_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    currentShapeDisplay = document.getElementById('current_shape_display');
+    shapesSetContainer = document.getElementById('shapes_set_container');
+    resultDisplay = document.getElementById('result-display');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

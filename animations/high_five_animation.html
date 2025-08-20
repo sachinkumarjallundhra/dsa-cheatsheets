@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High Five (HashMap + PQ Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #16a085; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2.5fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f6f3; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 500px; height: 70px; resize: vertical; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: 1fr 1fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; flex-wrap: wrap; gap: 15px; align-content: flex-start; flex-grow: 1; background: #fafafa; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .student-card { width: 120px; background-color: #eafaf1; border: 2px solid var(--color-primary); border-radius: 8px; padding: 5px; text-align: center; transition: all 0.3s ease; animation: card-fade-in 0.5s ease; }
+        .student-card.highlight { border-color: var(--color-warning); box-shadow: 0 0 10px var(--color-warning); }
+        .student-card h3 { margin: 0 0 5px 0; font-size: 1em; background-color: var(--color-primary); color: white; padding: 5px; border-radius: 5px 5px 0 0; }
+        .score-list { list-style: none; padding: 0; margin: 0; }
+        .score-item { background-color: var(--color-info); color: white; font-weight: bold; padding: 5px; margin: 3px 0; border-radius: 4px; transition: all 0.4s ease; animation: score-add 0.4s ease; }
+        .score-item.polling { background-color: var(--color-danger); opacity: 0; transform: translateX(-20px); }
+        .score-item.summing { background-color: var(--color-success); }
+        @keyframes card-fade-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes score-add { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0; font-family: 'Courier New', monospace; }
+        .list-item { background: #eee; padding: 5px 8px; margin: 3px; border-radius: 4px; }
+        .list-item.current { background-color: var(--color-warning); font-weight: bold; }
+        .calculation-display { text-align: center; font-weight: bold; padding: 10px; }
+
+        .modal-overlay { /* ... */ } .modal-content { /* ... */ }
+        #final_result_text { font-size: 1.2em; font-weight: bold; margin: 0; color: var(--color-primary); white-space: pre; text-align: left;}
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>High Five</h1>
+            <div class="controls">
+                <label>Items [[id, score],...]:</label><textarea id="items_input">[[1,91],[1,92],[2,93],[2,97],[1,60],[2,77],[1,65],[1,87],[1,100],[2,100],[2,76]]</textarea>
+                <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><h2>Student Scores (Map of Min-Heaps)</h2><div id="viz_container"></div></main>
+        <div class="right-column">
+            <div class="panel"><h2>Input Items</h2><div id="items_list_container" class="data-container"></div></div>
+            <div class="panel"><h2>Final Averages</h2><div id="result_container" class="data-container"></div></div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+         <div class="modal-content">
+            <h2>Final Result</h2><pre id="final_result_text"></pre>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let itemsInput, startButton, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, itemsListContainer, resultContainer,
+    resultModal, finalResultText, modalCloseBtn;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, vizContainer, itemsListContainer, resultContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        if (resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const items = JSON.parse(itemsInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(items)) throw new Error("Invalid input format.");
+            
+            this.initUI();
+            animationSteps = this.generateSteps(items);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Invalid input. Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// Phase 1: Process items",
+            "map = new HashMap<ID, MinHeap>()",
+            "for item in items:",
+            "  map.putIfAbsent(id, new MinHeap())",
+            "  heap = map.get(id)",
+            "  heap.offer(score)",
+            "  if heap.size() > 5:",
+            "    heap.poll() // remove lowest",
+            "",
+            "// Phase 2: Calculate averages",
+            "for id, heap in map.items():",
+            "  sum = 0; for score in heap: sum += score",
+            "  result.add([id, sum / 5])",
+            "",
+            "// Phase 3: Sort results",
+            "result.sort(by id)",
+            "return result"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(items) {
+        const steps = []; 
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ ...state, ...data })));
+        
+        let state = {
+            line: null, msg: "", map: {}, result: [],
+            highlights: { item_idx: null, student_id: null, poll_id: null, sum_id: null, calculation: "" }
+        };
+        save({line: 0, msg: "Phase 1: Process all scores."});
+        
+        for (let i = 0; i < items.length; i++) {
+            const [id, score] = items[i];
+            state.highlights = { ...state.highlights, item_idx: i, student_id: id };
+            save({line: 2, msg: `Processing item [${id}, ${score}].`});
+
+            if (!state.map[id]) {
+                state.map[id] = [];
+                save({line: 3, msg: `First score for student ${id}. Created new min-heap.`});
+            }
+            
+            save({line: 5, msg: `Adding score ${score} to heap for student ${id}.`});
+            state.map[id].push(score);
+            state.map[id].sort((a,b) => a - b); // Simulate min-heap
+            
+            if (state.map[id].length > 5) {
+                state.highlights.poll_id = id;
+                save({line: 6, msg: `Heap size is ${state.map[id].length} (> 5).`});
+                const polled = state.map[id].shift(); // Remove smallest
+                save({line: 7, msg: `Polling lowest score (${polled}) from heap for student ${id}.`});
+                state.highlights.poll_id = null;
+            }
+        }
+        state.highlights.item_idx = null; state.highlights.student_id = null;
+
+        save({line: 9, msg: "Phase 2: Calculate averages."});
+        const sortedIds = Object.keys(state.map).map(Number).sort((a,b)=>a-b);
+
+        for (const id of sortedIds) {
+            state.highlights.sum_id = id;
+            save({line: 10, msg: `Calculating average for student ${id}.`});
+            
+            const scores = state.map[id];
+            const sum = scores.reduce((a, b) => a + b, 0);
+            const avg = Math.floor(sum / 5);
+            
+            state.highlights.calculation = `(${scores.join(' + ')}) / 5 = ${avg}`;
+            save({line: 11, msg: `Summing scores for student ${id}.`});
+
+            state.result.push([id, avg]);
+            save({line: 12, msg: `Added [${id}, ${avg}] to results.`});
+            state.highlights.sum_id = null; state.highlights.calculation = "";
+        }
+
+        save({line: 14, msg: "Phase 3: Sort final result by ID."});
+        state.result.sort((a,b) => a[0] - b[0]);
+        save({line: 15, msg: "Sorting complete."});
+
+        save({msg: "Algorithm finished!", final_result: state.result});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        // Render items list
+        const items = JSON.parse(itemsInput.value);
+        itemsListContainer.innerHTML = items.map((item, i) => 
+            `<div class="list-item ${i === state.highlights.item_idx ? 'current' : ''}">[${item[0]}, ${item[1]}]</div>`
+        ).join('');
+        
+        // Render student cards (the map)
+        vizContainer.innerHTML = '';
+        const sortedIds = Object.keys(state.map).map(Number).sort((a,b)=>a-b);
+        for (const id of sortedIds) {
+            const card = document.createElement('div');
+            card.className = 'student-card';
+            if (id === state.highlights.student_id || id === state.highlights.sum_id) card.classList.add('highlight');
+            card.innerHTML = `<h3>ID: ${id}</h3><ul class="score-list">
+                ${state.map[id].map((score, i) => {
+                    let cls = 'score-item';
+                    if (i === 0 && id === state.highlights.poll_id) cls += ' polling';
+                    if (id === state.highlights.sum_id) cls += ' summing';
+                    return `<li class="${cls}">${score}</li>`
+                }).join('')}
+            </ul>`;
+            if (id === state.highlights.sum_id && state.highlights.calculation) {
+                card.innerHTML += `<div class="calculation-display">${state.highlights.calculation}</div>`;
+            }
+            vizContainer.appendChild(card);
+        }
+
+        // Render result list
+        resultContainer.innerHTML = state.result.map(res => `<div class="list-item">[${res[0]}, ${res[1]}]</div>`).join('');
+        
+        if (state.final_result) {
+            finalResultText.textContent = JSON.stringify(state.final_result, null, 2);
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    itemsInput = document.getElementById('items_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    itemsListContainer = document.getElementById('items_list_container');
+    resultContainer = document.getElementById('result_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

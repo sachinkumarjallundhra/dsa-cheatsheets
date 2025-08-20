@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design HashMap Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2980b9; --color-success: #2ecc71; --color-danger: #e74c3c;
+            --color-warning: #f1c40f; --color-info: #8e44ad;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .header .panel { padding-bottom: 20px; }
+        
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: auto; }
+        .bucket { fill: #ecf0f1; stroke: #bdc3c7; stroke-width: 2; }
+        .bucket.highlight { fill: var(--color-warning); }
+        .bucket-label { font-size: 12px; fill: #7f8c8d; text-anchor: middle; }
+        .node-group rect { stroke-width: 2; rx: 5; }
+        .node-group text { font-size: 14px; fill: white; text-anchor: middle; dominant-baseline: central; font-weight: bold; }
+        .node-group .key-text { transform: translateY(-8px); }
+        .node-group .val-text { transform: translateY(8px); }
+        .node-group .node-rect { fill: var(--color-primary); stroke: #2471a3; }
+        .node-group .dummy-rect { fill: #95a5a6; stroke: #7f8c8d; }
+        .node-group.highlight-prev .node-rect { stroke: var(--color-danger); stroke-width: 3.5px; }
+        .node-group.highlight-curr .node-rect { stroke: var(--color-info); stroke-width: 3.5px; }
+        .node-group.fade-out { opacity: 0.3; transition: opacity 0.5s; }
+        .node-link { stroke: #34495e; stroke-width: 2; }
+        @keyframes value-update { 50% { fill: var(--color-warning); } }
+        .value-update-anim text { animation: value-update 0.6s; }
+        
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .controls input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .op-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        .op-buttons button { flex-grow: 1; padding: 10px; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .op-buttons button:disabled { background-color: #bdc3c7; }
+        #put_btn { background-color: var(--color-success); }
+        #get_btn { background-color: var(--color-info); }
+        #remove_btn { background-color: var(--color-danger); }
+        .step-controls { display: flex; gap: 10px; }
+        .step-controls button { flex-grow: 1; padding: 10px; color: white; background-color: var(--color-primary); border: none; border-radius: 4px; cursor: pointer; }
+        
+        .state-display { text-align: center; font-family: 'Courier New', monospace; font-size: 1.2em; background: #eaf5fb; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Design HashMap</h1></header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Initialize the map to begin.</div></div>
+        </div>
+        <main class="main-column panel">
+            <h2>Visualization</h2>
+            <div id="viz_container">
+                 <svg width="100%" height="100%" id="viz_svg"></svg>
+            </div>
+        </main>
+        <div class="right-column">
+             <div class="panel">
+                <h2>Controls</h2>
+                <div class="controls">
+                    <label>Key:</label><input id="key_input" type="number" value="15">
+                    <label>Value:</label><input id="value_input" type="number" value="99">
+                </div>
+                <div class="op-buttons">
+                    <button id="put_btn">Put</button>
+                    <button id="get_btn">Get</button>
+                    <button id="remove_btn">Remove</button>
+                </div>
+                <hr style="width:100%; margin: 20px 0;">
+                <div class="step-controls">
+                    <button id="init_btn">Initialize / Reset</button>
+                    <button id="next_step_btn" disabled>Next Step</button>
+                </div>
+            </div>
+             <div class="panel">
+                <h2>Operation State</h2>
+                <h3 style="text-align:center; margin: 5px 0;">Hash Calculation</h3>
+                <div id="hash_display" class="state-display">-</div>
+                <h3 style="text-align:center; margin: 15px 0 5px 0;">Get Result</h3>
+                <div id="get_result_display" class="state-display">-</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0;
+let keyInput, valueInput, putBtn, getBtn, removeBtn, initBtn, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, hashDisplay, getResultDisplay, vizDrawer;
+
+const HASH_SIZE = 11; // Smaller prime for visualization
+let buckets = [];
+
+class VizDrawer {
+    constructor(svg) {
+        this.svg = svg;
+        this.width = svg.parentElement.clientWidth;
+        this.height = svg.parentElement.clientHeight;
+        this.bucketWidth = 60;
+        this.bucketHeight = 40;
+        this.nodeWidth = 70;
+        this.nodeHeight = 50;
+        this.nodeSpacing = 20;
+    }
+
+    draw(state) {
+        this.svg.innerHTML = '';
+        const { buckets, highlights } = state;
+
+        // Draw Buckets
+        for (let i = 0; i < HASH_SIZE; i++) {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', 10);
+            rect.setAttribute('y', i * (this.bucketHeight + 5) + 10);
+            rect.setAttribute('width', this.bucketWidth);
+            rect.setAttribute('height', this.bucketHeight);
+            rect.classList.add('bucket');
+            if (highlights.bucket_idx === i) rect.classList.add('highlight');
+            
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', 10 + this.bucketWidth / 2);
+            label.setAttribute('y', i * (this.bucketHeight + 5) + 10 + this.bucketHeight / 2 + 5);
+            label.textContent = `[${i}]`;
+            label.classList.add('bucket-label');
+            
+            g.appendChild(rect);
+            g.appendChild(label);
+            this.svg.appendChild(g);
+
+            // Draw Linked List
+            let node = buckets[i];
+            let prevNodePos = { x: 10 + this.bucketWidth, y: i * (this.bucketHeight + 5) + 10 + this.bucketHeight / 2 };
+            let nodeIdx = 0;
+            while (node) {
+                const nodeX = 10 + this.bucketWidth + this.nodeSpacing + nodeIdx * (this.nodeWidth + this.nodeSpacing);
+                const nodeY = prevNodePos.y;
+                const nodeGroup = this.createNode(node, nodeX, nodeY, highlights);
+
+                this.svg.appendChild(nodeGroup);
+                
+                const link = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                link.setAttribute('x1', prevNodePos.x); link.setAttribute('y1', prevNodePos.y);
+                link.setAttribute('x2', nodeX - this.nodeWidth / 2); link.setAttribute('y2', nodeY);
+                link.classList.add('node-link');
+                this.svg.appendChild(link);
+                
+                prevNodePos = { x: nodeX + this.nodeWidth / 2, y: nodeY };
+                node = node.next;
+                nodeIdx++;
+            }
+        }
+    }
+    
+    createNode(node, x, y, highlights) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.classList.add('node-group');
+        
+        if (highlights.prev_node === node) g.classList.add('highlight-prev');
+        if (highlights.curr_node === node) g.classList.add('highlight-curr');
+        if (highlights.removed_node === node) g.classList.add('fade-out');
+        if (highlights.updated_node === node) g.classList.add('value-update-anim');
+
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', x - this.nodeWidth / 2); rect.setAttribute('y', y - this.nodeHeight / 2);
+        rect.setAttribute('width', this.nodeWidth); rect.setAttribute('height', this.nodeHeight);
+        
+        const keyText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        keyText.setAttribute('x', x); keyText.setAttribute('y', y);
+        keyText.classList.add('key-text');
+        
+        const valText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        valText.setAttribute('x', x); valText.setAttribute('y', y);
+        valText.classList.add('val-text');
+
+        if (node.key === -1) { // Dummy node
+            rect.classList.add('dummy-rect');
+            keyText.textContent = `DUMMY`;
+            valText.textContent = `HEAD`;
+        } else {
+            rect.classList.add('node-rect');
+            keyText.textContent = `k: ${node.key}`;
+            valText.textContent = `v: ${node.value}`;
+        }
+        g.appendChild(rect); g.appendChild(keyText); g.appendChild(valText);
+        return g;
+    }
+}
+
+class Animation {
+    constructor() { this.reset(); }
+    
+    reset() {
+        buckets = new Array(HASH_SIZE).fill(null);
+        animationSteps = []; currentStepIndex = 0;
+        actionDisplay.textContent = 'Map reset. Ready for operations.';
+        hashDisplay.textContent = '-';
+        getResultDisplay.textContent = '-';
+        this.updateButtons(false);
+        this.renderState({ buckets, highlights: {} });
+    }
+
+    startOperation(op) {
+        let key, value;
+        try {
+            key = parseInt(keyInput.value);
+            value = parseInt(valueInput.value);
+            if(isNaN(key) || (op === 'put' && isNaN(value))) throw new Error();
+        } catch {
+            alert('Invalid key/value. Please enter numbers.'); return;
+        }
+
+        animationSteps = [];
+        currentStepIndex = 0;
+        
+        switch(op) {
+            case 'put': animationSteps = this.generatePutSteps(key, value); break;
+            case 'get': animationSteps = this.generateGetSteps(key); break;
+            case 'remove': animationSteps = this.generateRemoveSteps(key); break;
+        }
+
+        if (animationSteps.length > 0) {
+            this.updateButtons(true);
+            this.renderState(animationSteps[0]);
+        }
+    }
+
+    next() {
+        if (currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        if (currentStepIndex === animationSteps.length - 1) {
+            this.updateButtons(false);
+        }
+    }
+
+    updateButtons(isAnimating) {
+        [putBtn, getBtn, removeBtn, initBtn, keyInput, valueInput].forEach(el => el.disabled = isAnimating);
+        nextStepButton.disabled = !isAnimating;
+    }
+
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+        hashDisplay.textContent = state.hash_text || hashDisplay.textContent;
+        getResultDisplay.textContent = state.get_result !== undefined ? state.get_result : getResultDisplay.textContent;
+
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        if(vizDrawer) vizDrawer.draw(state);
+    }
+    
+    generatePutSteps(key, value) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ buckets, ...data })));
+        
+        const idx = key % HASH_SIZE;
+        save({line: 0, msg: `put(key=${key}, value=${value})`, hash_text: `${key} % ${HASH_SIZE} = ${idx}`, highlights: {}});
+        
+        if (buckets[idx] === null) {
+            buckets[idx] = { key: -1, value: -1, next: null };
+            save({line: 1, msg: `Bucket ${idx} is empty. Creating dummy head.`, highlights: { bucket_idx: idx }});
+        }
+        
+        let prev = buckets[idx];
+        let curr = prev.next;
+        let path = [prev];
+        save({line: 2, msg: `Find previous node for key ${key}. Start at dummy head.`, highlights: { bucket_idx: idx, prev_node: prev }});
+
+        while (curr !== null && curr.key !== key) {
+            prev = curr;
+            curr = curr.next;
+            path.push(prev);
+            save({line: 3, msg: `Traversing... current key is ${prev.key}. Not a match.`, highlights: { bucket_idx: idx, prev_node: prev, curr_node: curr }});
+        }
+
+        if (curr === null) {
+            save({line: 4, msg: `Key ${key} not found. Appending new node.`, highlights: { bucket_idx: idx, prev_node: prev }});
+            prev.next = { key, value, next: null };
+        } else {
+            save({line: 5, msg: `Key ${key} found. Updating value.`, highlights: { bucket_idx: idx, prev_node: prev, curr_node: curr }});
+            curr.value = value;
+            save({line: 5, msg: `Value updated to ${value}.`, highlights: { bucket_idx: idx, prev_node: prev, updated_node: curr }});
+        }
+        
+        save({ msg: `Put operation for key ${key} complete.`, highlights: {} });
+        return steps;
+    }
+
+    generateGetSteps(key) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ buckets, ...data })));
+        
+        const idx = key % HASH_SIZE;
+        save({line: 6, msg: `get(key=${key})`, hash_text: `${key} % ${HASH_SIZE} = ${idx}`, get_result: '-', highlights: {}});
+        
+        if (buckets[idx] === null) {
+            save({line: 7, msg: `Bucket ${idx} is empty. Key not found.`, highlights: { bucket_idx: idx }, get_result: -1});
+            return steps;
+        }
+
+        let prev = buckets[idx];
+        let curr = prev.next;
+        save({line: 8, msg: `Find previous node for key ${key}.`, highlights: { bucket_idx: idx, prev_node: prev }});
+        
+        while (curr !== null && curr.key !== key) {
+            prev = curr;
+            curr = curr.next;
+            save({line: 8, msg: `Traversing... current key is ${prev.key}.`, highlights: { bucket_idx: idx, prev_node: prev, curr_node: curr }});
+        }
+
+        if (curr === null) {
+            save({line: 9, msg: `Key ${key} not found.`, highlights: { bucket_idx: idx, prev_node: prev }, get_result: -1});
+        } else {
+            save({line: 9, msg: `Key ${key} found! Returning value ${curr.value}.`, highlights: { bucket_idx: idx, curr_node: curr }, get_result: curr.value});
+        }
+        return steps;
+    }
+
+    generateRemoveSteps(key) {
+        const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ buckets, ...data })));
+        
+        const idx = key % HASH_SIZE;
+        save({line: 10, msg: `remove(key=${key})`, hash_text: `${key} % ${HASH_SIZE} = ${idx}`, highlights: {}});
+        
+        if (buckets[idx] === null) {
+            save({line: 11, msg: `Bucket ${idx} is empty. Nothing to remove.`, highlights: { bucket_idx: idx }});
+            return steps;
+        }
+
+        let prev = buckets[idx];
+        let curr = prev.next;
+        save({line: 12, msg: `Find previous node for key ${key}.`, highlights: { bucket_idx: idx, prev_node: prev }});
+
+        while (curr !== null && curr.key !== key) {
+            prev = curr;
+            curr = curr.next;
+            save({line: 12, msg: `Traversing... current key is ${prev.key}.`, highlights: { bucket_idx: idx, prev_node: prev, curr_node: curr }});
+        }
+
+        if (curr !== null) {
+            save({line: 13, msg: `Key ${key} found. Re-linking pointers to remove.`, highlights: { bucket_idx: idx, prev_node: prev, removed_node: curr }});
+            prev.next = curr.next;
+            save({line: 13, msg: `Remove operation complete.`, highlights: { bucket_idx: idx }});
+        } else {
+            save({ msg: `Key ${key} not found. Nothing to remove.`, highlights: { bucket_idx: idx }});
+        }
+        return steps;
+    }
+    
+    initCode() {
+        const code = [
+           "put(key, value):",
+           "  if (bucket is null) create dummy",
+           "  prev = find(head, key)",
+           "  while (node != null && key not match)",
+           "  if (not found) prev.next = new Node()",
+           "  else prev.next.value = value",
+           "get(key):",
+           "  if (bucket is null) return -1",
+           "  prev = find(head, key)",
+           "  return prev.next?.value ?? -1",
+           "remove(key):",
+           "  if (bucket is null) return",
+           "  prev = find(head, key)",
+           "  if (found) prev.next = prev.next.next"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Assign all elements to variables
+    keyInput = document.getElementById('key_input');
+    valueInput = document.getElementById('value_input');
+    putBtn = document.getElementById('put_btn');
+    getBtn = document.getElementById('get_btn');
+    removeBtn = document.getElementById('remove_btn');
+    initBtn = document.getElementById('init_btn');
+    nextStepButton = document.getElementById('next_step_btn');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    hashDisplay = document.getElementById('hash_display');
+    getResultDisplay = document.getElementById('get_result_display');
+    vizDrawer = new VizDrawer(document.getElementById('viz_svg'));
+    
+    const anim = new Animation();
+    anim.initCode();
+
+    // Attach event listeners
+    initBtn.addEventListener('click', () => anim.reset());
+    putBtn.addEventListener('click', () => anim.startOperation('put'));
+    getBtn.addEventListener('click', () => anim.startOperation('get'));
+    removeBtn.addEventListener('click', () => anim.startOperation('remove'));
+    nextStepButton.addEventListener('click', () => anim.next());
+
+    // Initial state
+    anim.reset();
+});
+</script>
+</body>
+</html>

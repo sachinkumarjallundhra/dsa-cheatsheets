@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logger Rate Limiter Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #8e44ad; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+            --color-cooldown: rgba(231, 76, 60, 0.2);
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .header .panel { padding-bottom: 20px; }
+        
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .timeline { stroke: #bdc3c7; stroke-width: 2; }
+        .tick { stroke: #bdc3c7; stroke-width: 1; }
+        .tick-label { font-size: 12px; fill: #7f8c8d; }
+        .log-entry { transition: all 0.5s ease; }
+        .log-entry text { font-size: 12px; text-anchor: middle; fill: white; }
+        .log-entry rect { rx: 5; }
+        .log-entry.allowed rect { fill: var(--color-success); }
+        .rejected-marker { font-size: 30px; fill: var(--color-danger); text-anchor: middle; }
+        .cooldown-zone { fill: var(--color-cooldown); stroke: var(--color-danger); stroke-dasharray: 4 2; }
+        .current-time-marker { stroke: var(--color-warning); stroke-width: 2; stroke-dasharray: 5 5; }
+        
+        .controls { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px; }
+        .controls input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .op-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        .op-buttons button { flex-grow: 1; padding: 10px; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .op-buttons button:disabled { background-color: #bdc3c7; }
+        #log_btn { background-color: var(--color-info); }
+        .step-controls { display: flex; gap: 10px; }
+        .step-controls button { flex-grow: 1; padding: 10px; color: white; background-color: var(--color-primary); border: none; border-radius: 4px; cursor: pointer; }
+        
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        .state-table { width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: center; }
+        .state-table th, .state-table td { padding: 5px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table tr.highlight { background-color: #fef3cd; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Logger Rate Limiter</h1></header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Initialize the logger to begin.</div></div>
+        </div>
+        <main class="main-column panel">
+            <h2>Timeline Visualization</h2>
+            <div id="viz_container">
+                 <svg width="100%" height="100%" id="viz_svg"></svg>
+            </div>
+        </main>
+        <div class="right-column">
+             <div class="panel">
+                <h2>Controls</h2>
+                <div class="controls">
+                    <label>Timestamp:</label><input id="timestamp_input" type="number" value="1" min="0">
+                    <label>Message:</label><input id="message_input" type="text" value="foo">
+                </div>
+                <div class="op-buttons">
+                    <button id="log_btn">Log Message</button>
+                </div>
+                <hr style="width:100%; margin: 20px 0;">
+                <div class="step-controls">
+                    <button id="init_btn">Initialize / Reset</button>
+                    <button id="next_step_btn" disabled>Next Step</button>
+                </div>
+            </div>
+             <div class="panel">
+                <h2>HashMap State (Message → Timestamp)</h2>
+                <div id="map_table_container" class="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0;
+let timestampInput, messageInput, logBtn, initBtn, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, mapTableContainer, vizDrawer;
+let messageMap = {};
+
+class VizDrawer {
+    constructor(svg) {
+        this.svg = svg;
+        this.padding = { top: 20, right: 30, bottom: 60, left: 30 };
+        this.maxTimestamp = 30; // Initial visible range
+    }
+
+    draw(state) {
+        const { logs, highlights } = state;
+        const width = this.svg.parentElement.clientWidth;
+        const height = this.svg.parentElement.clientHeight;
+
+        if (highlights.current_timestamp > this.maxTimestamp) {
+            this.maxTimestamp = highlights.current_timestamp + 10;
+        }
+        
+        const xScale = t => this.padding.left + (t / this.maxTimestamp) * (width - this.padding.left - this.padding.right);
+        const timelineY = height / 2;
+
+        this.svg.innerHTML = ''; // Clear SVG
+
+        // Timeline and Ticks
+        const timeline = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        timeline.setAttribute('x1', this.padding.left);
+        timeline.setAttribute('x2', width - this.padding.right);
+        timeline.setAttribute('y1', timelineY);
+        timeline.setAttribute('y2', timelineY);
+        timeline.classList.add('timeline');
+        this.svg.appendChild(timeline);
+
+        for (let t = 0; t <= this.maxTimestamp; t += 5) {
+            const x = xScale(t);
+            const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            tick.setAttribute('x1', x); tick.setAttribute('x2', x);
+            tick.setAttribute('y1', timelineY - 5); tick.setAttribute('y2', timelineY + 5);
+            tick.classList.add('tick');
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', x); label.setAttribute('y', timelineY + 20);
+            label.setAttribute('text-anchor', 'middle');
+            label.textContent = t;
+            label.classList.add('tick-label');
+            this.svg.appendChild(tick);
+            this.svg.appendChild(label);
+        }
+
+        // Draw logs
+        Object.values(logs).forEach(log => {
+            if (log.allowed) {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.classList.add('log-entry', 'allowed');
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const textWidth = log.message.length * 7 + 10;
+                rect.setAttribute('x', xScale(log.timestamp) - textWidth/2);
+                rect.setAttribute('y', timelineY - 30);
+                rect.setAttribute('width', textWidth);
+                rect.setAttribute('height', 20);
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', xScale(log.timestamp));
+                text.setAttribute('y', timelineY - 20);
+                text.textContent = log.message;
+                g.appendChild(rect);
+                g.appendChild(text);
+                this.svg.appendChild(g);
+            }
+        });
+        
+        // Highlights
+        if (highlights.current_timestamp !== null) {
+            const x = xScale(highlights.current_timestamp);
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            marker.setAttribute('x1', x); marker.setAttribute('x2', x);
+            marker.setAttribute('y1', this.padding.top);
+            marker.setAttribute('y2', height - this.padding.bottom);
+            marker.classList.add('current-time-marker');
+            this.svg.appendChild(marker);
+        }
+
+        if (highlights.cooldown_start !== null) {
+            const startX = xScale(highlights.cooldown_start);
+            const endX = xScale(highlights.cooldown_start + 10);
+            const zone = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            zone.setAttribute('x', startX);
+            zone.setAttribute('y', timelineY - 10);
+            zone.setAttribute('width', endX - startX);
+            zone.setAttribute('height', 20);
+            zone.classList.add('cooldown-zone');
+            this.svg.appendChild(zone);
+        }
+        
+        if (highlights.rejected_at !== null) {
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            marker.setAttribute('x', xScale(highlights.rejected_at));
+            marker.setAttribute('y', timelineY - 15);
+            marker.textContent = '❌';
+            marker.classList.add('rejected-marker');
+            this.svg.appendChild(marker);
+        }
+    }
+}
+
+class Animation {
+    constructor() { this.reset(); }
+    
+    reset() {
+        messageMap = {};
+        animationSteps = []; currentStepIndex = 0;
+        actionDisplay.textContent = 'Logger reset. Ready for messages.';
+        this.updateButtons(false);
+        if (vizDrawer) vizDrawer.maxTimestamp = 30; // Reset zoom
+        this.renderState({ logs: {}, highlights: {}, map: {} });
+    }
+
+    startOperation() {
+        let timestamp, message;
+        try {
+            timestamp = parseInt(timestampInput.value);
+            message = messageInput.value.trim();
+            if(isNaN(timestamp) || message === '') throw new Error();
+        } catch {
+            alert('Invalid timestamp or message.'); return;
+        }
+
+        animationSteps = this.generateLogSteps(timestamp, message);
+        currentStepIndex = 0;
+        
+        if (animationSteps.length > 0) {
+            this.updateButtons(true);
+            this.renderState(animationSteps[0]);
+        }
+    }
+
+    next() {
+        if (currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++;
+        this.renderState(animationSteps[currentStepIndex]);
+        if (currentStepIndex === animationSteps.length - 1) {
+            this.updateButtons(false);
+            // Auto-increment timestamp for convenience
+            timestampInput.value = parseInt(timestampInput.value) + 1;
+        }
+    }
+
+    updateButtons(isAnimating) {
+        [logBtn, initBtn, timestampInput, messageInput].forEach(el => el.disabled = isAnimating);
+        nextStepButton.disabled = !isAnimating;
+    }
+
+    renderState(state) {
+        actionDisplay.textContent = state.msg;
+
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        let mapHTML = `<table class="state-table"><thead><tr><th>Message</th><th>Timestamp</th></tr></thead><tbody>`;
+        Object.entries(state.map).forEach(([msg, ts]) => {
+            const highlightClass = (msg === state.highlights.message) ? 'highlight' : '';
+            mapHTML += `<tr class="${highlightClass}"><td>"${msg}"</td><td>${ts}</td></tr>`;
+        });
+        mapHTML += `</tbody></table>`;
+        mapTableContainer.innerHTML = mapHTML;
+
+        if(vizDrawer) vizDrawer.draw(state);
+    }
+    
+    generateLogSteps(timestamp, message) {
+        const steps = [];
+        const save = (data) => {
+            const currentState = JSON.parse(JSON.stringify({
+                map: messageMap,
+                logs: Object.fromEntries(Object.entries(messageMap).map(([k,v]) => [k, {message:k, timestamp:v, allowed:true}])),
+                ...data
+            }));
+            steps.push(currentState);
+        };
+        
+        const lastTimestamp = messageMap[message];
+        const shouldPrint = lastTimestamp === undefined || (timestamp - lastTimestamp >= 10);
+        
+        save({
+            line: 0, msg: `shouldPrintMessage(timestamp=${timestamp}, message="${message}")?`,
+            highlights: { current_timestamp: timestamp, message }
+        });
+
+        if (lastTimestamp === undefined) {
+            save({
+                line: 1, msg: `Message "${message}" not found in map. It's a new message.`,
+                highlights: { current_timestamp: timestamp, message }
+            });
+        } else {
+            save({
+                line: 1, msg: `Found "${message}" with last timestamp ${lastTimestamp}. Checking cooldown.`,
+                highlights: { current_timestamp: timestamp, message, cooldown_start: lastTimestamp }
+            });
+            save({
+                line: 1, msg: `Condition: ${timestamp} - ${lastTimestamp} >= 10 is ${shouldPrint}.`,
+                highlights: { current_timestamp: timestamp, message, cooldown_start: lastTimestamp }
+            });
+        }
+
+        if (shouldPrint) {
+            save({
+                line: 2, msg: `Condition is true. Update map: "${message}" -> ${timestamp}.`,
+                highlights: { current_timestamp: timestamp, message, cooldown_start: lastTimestamp }
+            });
+            
+            messageMap[message] = timestamp;
+            
+            save({
+                line: 3, msg: `Return true. Message is allowed.`,
+                highlights: { current_timestamp: timestamp, message }
+            });
+
+        } else {
+            save({
+                line: 5, msg: `Return false. Message is rejected.`,
+                highlights: { current_timestamp: timestamp, message, cooldown_start: lastTimestamp, rejected_at: timestamp }
+            });
+        }
+        return steps;
+    }
+    
+    initCode() {
+        const code = [
+           "shouldPrintMessage(ts, msg):",
+           "  if msg not in map or ts - map[msg] >= 10:",
+           "    map[msg] = ts",
+           "    return true",
+           "  else:",
+           "    return false"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    timestampInput = document.getElementById('timestamp_input');
+    messageInput = document.getElementById('message_input');
+    logBtn = document.getElementById('log_btn');
+    initBtn = document.getElementById('init_btn');
+    nextStepButton = document.getElementById('next_step_btn');
+    codeContainer = document.getElementById('code_container');
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    mapTableContainer = document.getElementById('map_table_container');
+    vizDrawer = new VizDrawer(document.getElementById('viz_svg'));
+    
+    const anim = new Animation();
+    anim.initCode();
+
+    initBtn.addEventListener('click', () => anim.reset());
+    logBtn.addEventListener('click', () => anim.startOperation());
+    nextStepButton.addEventListener('click', () => anim.next());
+
+    anim.reset();
+});
+</script>
+</body>
+</html>

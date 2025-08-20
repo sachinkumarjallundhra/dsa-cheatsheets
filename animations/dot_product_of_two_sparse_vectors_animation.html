@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dot Product of Two Sparse Vectors Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #2980b9; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #8e44ad;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.1fr) 2.5fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: grid; grid-template-columns: 1fr 2fr; gap: 10px 20px; padding: 10px; background-color: #ebf5fb; border-radius: 5px; align-items: center;}
+        .controls textarea { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; resize: vertical; height: 50px; }
+        .controls .buttons { grid-column: 1 / -1; display: flex; justify-content: center; gap: 15px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: grid; grid-template-rows: 1fr 1fr; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; background: #fafafa; padding: 20px; box-sizing: border-box; overflow-x: auto;}
+        .vector-container { margin-bottom: 30px; position: relative; }
+        .array-container { display: flex; gap: 2px; }
+        .vector-label { font-weight: bold; margin-bottom: 5px; }
+        .cell { width: 35px; height: 35px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #ccc; font-weight: bold; position: relative; font-size: 0.9em; }
+        .cell-index { font-size: 9px; color: #7f8c8d; }
+        .cell.zero { background-color: #f8f9f9; color: #d0d3d4; }
+        .cell.non-zero { background-color: var(--color-info); color: white; border-color: #7d3c98; }
+        .cell.scanner { border: 2px solid var(--color-warning); }
+        .cell.match { background-color: var(--color-success); border-color: #229954; }
+        .cell.miss { background-color: var(--color-danger); border-color: #b03a2e; }
+        .match-line { position: absolute; left: 50%; top: 100%; height: 30px; border-left: 2px dashed var(--color-warning); transform: translateX(-1px); }
+
+        .data-container { overflow-y: auto; padding: 5px; background: #fafafa; border-radius: 4px; min-height: 0;}
+        .state-table { width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: center; }
+        .state-table th, .state-table td { padding: 5px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table tr.flash-green { animation: flash-green 0.8s ease; }
+        .state-table tr.highlight { background-color: #fdebd0; }
+        @keyframes flash-green { 50% { background-color: #d4efdf; } }
+        
+        .calculation-box { text-align: center; font-family: 'Courier New', monospace; }
+        .calculation-box .value { font-size: 1.2em; font-weight: bold; background: #eee; padding: 5px; border-radius: 4px; }
+
+        .modal-overlay { /* ... */ } .modal-content { /* ... */ }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 20px 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Dot Product of Two Sparse Vectors</h1></header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><h2>Vector Visualization</h2><div id="viz_container"></div></main>
+        <div class="right-column">
+            <div class="panel"><h2>Sparse Maps</h2>
+                <div id="map1_container" class="data-container"></div>
+                <div id="map2_container" class="data-container" style="margin-top: 15px;"></div>
+            </div>
+            <div class="panel"><h2>Calculation</h2>
+                <div id="calculation_container" class="data-container calculation-box"></div>
+            </div>
+        </div>
+        <div class="header panel" style="grid-area: header; margin-top: -15px;">
+            <div class="controls">
+                <label>Vector 1 (nums1):</label><textarea id="nums1_input">[1,0,0,2,3]</textarea>
+                <label>Vector 2 (nums2):</label><textarea id="nums2_input">[0,3,0,4,0]</textarea>
+                <div class="buttons">
+                    <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+         <div class="modal-content">
+            <h2>Final Result</h2><p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let nums1Input, nums2Input, startButton, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, map1Container, map2Container, calculationContainer,
+    resultModal, finalResultText, modalCloseBtn;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, vizContainer, map1Container, map2Container, calculationContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        if (resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const nums1 = JSON.parse(nums1Input.value.trim().replace(/'/g, '"'));
+            const nums2 = JSON.parse(nums2Input.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(nums1) || !Array.isArray(nums2) || nums1.length !== nums2.length) {
+                throw new Error("Inputs must be two arrays of the same length.");
+            }
+            
+            this.initUI();
+            animationSteps = this.generateSteps(nums1, nums2);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+           "// Constructor for v1",
+           "map1 = {}",
+           "for i, num in enumerate(nums1):",
+           "  if num != 0: map1[i] = num",
+           "// Constructor for v2...",
+           "",
+           "// dotProduct(v2)",
+           "res = 0",
+           "for idx, val1 in map1.items():",
+           "  if idx in map2:",
+           "    val2 = map2[idx]",
+           "    res += val1 * val2",
+           "return res"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(nums1, nums2) {
+        const steps = []; 
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ ...state, ...data })));
+        
+        let state = {
+            line: null, msg: "", map1: {}, map2: {}, result: 0,
+            workspace: { v1: '?', op: '×', v2: '?', eq: '=', prod: '?' },
+            highlights: { v1_idx: null, v2_idx: null, map_idx: null }
+        };
+
+        // Phase 1: Build map1
+        save({line: 0, msg: "Phase 1: Build sparse map for Vector 1."});
+        for (let i = 0; i < nums1.length; i++) {
+            save({line: 2, msg: `Scanning v1 at index ${i}.`, highlights: { v1_idx: i }});
+            if (nums1[i] !== 0) {
+                state.map1[i] = nums1[i];
+                save({line: 3, msg: `Found non-zero value. Add (${i}: ${nums1[i]}) to map1.`, highlights: { v1_idx: i, map_idx: i }});
+            }
+        }
+        
+        // Phase 2: Build map2
+        save({line: 4, msg: "Phase 2: Build sparse map for Vector 2."});
+        for (let i = 0; i < nums2.length; i++) {
+            save({msg: `Scanning v2 at index ${i}.`, highlights: { v2_idx: i }});
+            if (nums2[i] !== 0) {
+                state.map2[i] = nums2[i];
+                save({msg: `Found non-zero value. Add (${i}: ${nums2[i]}) to map2.`, highlights: { v2_idx: i, map_idx: i }});
+            }
+        }
+
+        // Phase 3: Dot Product
+        state.highlights = {};
+        save({line: 6, msg: "Phase 3: Calculate dot product."});
+        
+        const sortedKeys = Object.keys(state.map1).map(Number).sort((a,b)=>a-b);
+        for (const idx of sortedKeys) {
+            state.highlights = { v1_idx: idx, v2_idx: idx, map_idx: idx };
+            save({line: 8, msg: `Iterating on map1 keys. Checking index ${idx}.`});
+
+            if (state.map2[idx] !== undefined) {
+                state.highlights.match = true;
+                save({line: 9, msg: `Match! Index ${idx} also non-zero in v2.`});
+                
+                const val1 = state.map1[idx];
+                const val2 = state.map2[idx];
+                const product = val1 * val2;
+                state.workspace = { v1: val1, op: '×', v2: val2, eq: '=', prod: product };
+                save({line: 11, msg: `Multiplying values: ${val1} × ${val2} = ${product}.`});
+                
+                state.result += product;
+                save({line: 11, msg: `Adding ${product} to result. New total: ${state.result}.`});
+            } else {
+                state.highlights.match = false;
+                save({line: 9, msg: `Miss. Index ${idx} is zero in v2. Skipping.`});
+            }
+            state.workspace = { v1: '?', op: '×', v2: '?', eq: '=', prod: '?' };
+        }
+        
+        state.highlights = {};
+        save({line: 12, msg: `Finished iteration. Final dot product is ${state.result}.`, final_result: state.result });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        const nums1 = JSON.parse(nums1Input.value);
+        const nums2 = JSON.parse(nums2Input.value);
+        
+        const createVectorHTML = (nums, highlights_idx, match_state) => {
+            return `<div class="array-container">${nums.map((n, i) => {
+                let cls = `cell ${n === 0 ? 'zero' : 'non-zero'}`;
+                if (i === highlights_idx) {
+                    cls += ' scanner';
+                    if (match_state === true) cls += ' match';
+                    if (match_state === false) cls += ' miss';
+                }
+                const line = (i === highlights_idx && state.line > 6) ? '<div class="match-line"></div>' : '';
+                return `<div class="${cls}"><div class="cell-index">${i}</div>${n}${line}</div>`;
+            }).join('')}</div>`;
+        }
+        vizContainer.innerHTML = `
+            <div class="vector-container">
+                <div class="vector-label">Vector 1 (v1)</div>
+                ${createVectorHTML(nums1, state.highlights.v1_idx, state.highlights.match)}
+            </div>
+            <div class="vector-container">
+                <div class="vector-label">Vector 2 (v2)</div>
+                ${createVectorHTML(nums2, state.highlights.v2_idx, state.highlights.match)}
+            </div>
+        `;
+        
+        const createMapHTML = (title, map, h_idx) => {
+            let html = `<h4>${title}</h4><table class="state-table"><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody>`;
+            Object.entries(map).forEach(([key, val]) => {
+                let cls = '';
+                if (state.line < 7 && Number(key) === h_idx) cls = 'flash-green';
+                if (state.line >= 8 && Number(key) === h_idx) cls = 'highlight';
+                html += `<tr class="${cls}"><td>${key}</td><td>${val}</td></tr>`;
+            });
+            return html + `</tbody></table>`;
+        };
+        map1Container.innerHTML = createMapHTML("Map for v1", state.map1, state.highlights.map_idx);
+        map2Container.innerHTML = createMapHTML("Map for v2", state.map2, state.highlights.map_idx);
+
+        calculationContainer.innerHTML = `
+            <h3>Current Calculation</h3>
+            <p><span class="value">${state.workspace.v1}</span> ${state.workspace.op} <span class="value">${state.workspace.v2}</span> ${state.workspace.eq} <span class="value">${state.workspace.prod}</span></p>
+            <h3>Dot Product</h3>
+            <p><span class="value">${state.result}</span></p>
+        `;
+        
+        if (state.final_result !== undefined) {
+            finalResultText.textContent = state.final_result;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    nums1Input = document.getElementById('nums1_input');
+    nums2Input = document.getElementById('nums2_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    map1Container = document.getElementById('map1_container');
+    map2Container = document.getElementById('map2_container');
+    calculationContainer = document.getElementById('calculation_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

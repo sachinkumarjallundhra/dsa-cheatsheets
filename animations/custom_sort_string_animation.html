@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Sort String Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #1abc9c; --color-s-string: #3498db; --color-order-string: #9b59b6;
+            --color-warning: #f39c12;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: grid; grid-template-columns: 1fr 2fr; gap: 10px 20px; padding: 10px; background-color: #e8f8f5; border-radius: 5px; align-items: center;}
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; }
+        .controls .buttons { grid-column: 1 / -1; display: flex; justify-content: center; gap: 15px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; flex-direction: column; align-items: center; justify-content: space-around; flex-grow: 1; background: #fafafa; padding: 10px; box-sizing: border-box;}
+        .string-display { display: flex; gap: 5px; margin-bottom: 15px; align-items: center; }
+        .string-label { font-weight: bold; font-family: 'Courier New', monospace; }
+        .char-cell { width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; border: 2px solid; border-radius: 5px; font-weight: bold; position: relative; font-family: 'Courier New', monospace; transition: all 0.3s ease; }
+        .s-char { border-color: var(--color-s-string); }
+        .order-char { border-color: var(--color-order-string); }
+        .scanner { border-color: var(--color-warning); transform: scale(1.15); background-color: #fef9e7; z-index: 10;}
+
+        .counter-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 5px; width: 100%; }
+        .counter-cell { border: 1px solid #ccc; border-radius: 4px; text-align: center; padding: 2px; transition: all 0.3s ease; }
+        .counter-cell .char-label { font-size: 11px; font-weight: bold; color: #7f8c8d; }
+        .counter-cell .count-value { font-size: 1.1em; font-weight: bold; }
+        .counter-cell.highlight { background-color: #fef9e7; border-color: var(--color-warning); }
+        .counter-cell.flash { animation: flash 0.5s ease; }
+        .counter-cell.dimmed { background-color: #f2f2f2; color: #aaa; }
+        @keyframes flash { 50% { background-color: #d4efdf; transform: scale(1.1); } }
+        
+        #result_container { background: #e8f8f5; border-radius: 5px; padding: 10px; font-family: 'Courier New', monospace; font-size: 1.2em; font-weight: bold; word-break: break-all; min-height: 50px;}
+
+        .modal-overlay { /* ... */ } .modal-content { /* ... */ }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 20px 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Custom Sort String</h1>
+            <div class="controls">
+                <label>order:</label><input id="order_input" type="text" value="cba">
+                <label>s:</label><input id="s_input" type="text" value="abcd">
+                <div class="buttons">
+                    <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><h2>Visualization</h2><div id="viz_container"></div></main>
+        <div class="right-column">
+            <div class="panel"><h2>Result String</h2><div id="result_container"></div></div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+         <div class="modal-content">
+            <h2>Final Result</h2><p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let orderInput, sInput, startButton, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, resultContainer, resultModal, finalResultText, modalCloseBtn;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, vizContainer, resultContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        if (resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const order = orderInput.value;
+            const s = sInput.value;
+            this.initUI();
+            animationSteps = this.generateSteps(order, s);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "// Phase 1: Count frequencies",
+            "count = new int[26]",
+            "for c in s:",
+            "  count[c - 'a']++",
+            "",
+            "// Phase 2: Append ordered chars",
+            "sb = new StringBuilder()",
+            "for c in order:",
+            "  while count[c - 'a']-- > 0:",
+            "    sb.append(c)",
+            "",
+            "// Phase 3: Append remaining chars",
+            "for c = 'a' to 'z':",
+            "  while count[c - 'a']-- > 0:",
+            "    sb.append(c)",
+            "return sb.toString()"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(order, s) {
+        const steps = []; 
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ ...state, ...data })));
+        
+        let state = {
+            line: null, msg: "", count: Array(26).fill(0), sb: "",
+            highlights: { s_idx: null, order_idx: null, count_idx: null, flash_idx: null },
+            result: null
+        };
+
+        // Phase 1
+        save({line: 0, msg: "Phase 1: Count character frequencies in 's'."});
+        for (let i = 0; i < s.length; i++) {
+            const charCode = s.charCodeAt(i) - 97;
+            state.highlights = { s_idx: i };
+            save({line: 2, msg: `Scanning 's' at index ${i}.`});
+            
+            state.count[charCode]++;
+            state.highlights.flash_idx = charCode;
+            save({line: 3, msg: `Incrementing count for '${s[i]}'.`});
+        }
+        state.highlights = {};
+
+        // Phase 2
+        save({line: 5, msg: "Phase 2: Build result based on 'order'."});
+        for (let i = 0; i < order.length; i++) {
+            const charCode = order.charCodeAt(i) - 97;
+            state.highlights = { order_idx: i, count_idx: charCode };
+            save({line: 7, msg: `Processing '${order[i]}' from 'order'.`});
+            
+            while (state.count[charCode]-- > 0) {
+                state.sb += order[i];
+                 state.highlights.flash_idx = charCode;
+                save({line: 8, msg: `Count for '${order[i]}' is > 0. Appending to result.`});
+            }
+        }
+        state.highlights = {};
+        
+        // Phase 3
+        save({line: 11, msg: "Phase 3: Append remaining characters alphabetically."});
+        for (let i = 0; i < 26; i++) {
+            const char = String.fromCharCode(97 + i);
+            state.highlights = { count_idx: i };
+            save({line: 12, msg: `Checking for remaining '${char}'s.`});
+
+             while (state.count[i]-- > 0) {
+                state.sb += char;
+                state.highlights.flash_idx = i;
+                save({line: 14, msg: `Count for '${char}' is > 0. Appending to result.`});
+            }
+        }
+        state.highlights = {};
+
+        state.result = state.sb;
+        save({line: 15, msg: "Algorithm complete!", result: state.sb});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        const order = orderInput.value;
+        const s = sInput.value;
+
+        let vizHTML = `
+            <div class="string-display">
+                <div class="string-label">s:</div>
+                ${s.split('').map((c, i) => `<div class="char-cell s-char ${i === state.highlights.s_idx ? 'scanner' : ''}">${c}</div>`).join('')}
+            </div>
+            <div class="string-display">
+                <div class="string-label">order:</div>
+                ${order.split('').map((c, i) => `<div class="char-cell order-char ${i === state.highlights.order_idx ? 'scanner' : ''}">${c}</div>`).join('')}
+            </div>
+            <h4>Frequency Counts</h4>
+            <div class="counter-grid">
+        `;
+        for (let i=0; i < 26; i++) {
+            let cls = 'counter-cell';
+            if (i === state.highlights.count_idx) cls += ' highlight';
+            if (i === state.highlights.flash_idx) cls += ' flash';
+            if (state.count[i] < 0) cls += ' dimmed';
+            const char = String.fromCharCode(97+i);
+            vizHTML += `<div class="${cls}"><div class="char-label">${char}</div><div class="count-value">${Math.max(0, state.count[i])}</div></div>`;
+        }
+        vizHTML += `</div>`;
+        vizContainer.innerHTML = vizHTML;
+
+        resultContainer.textContent = state.sb;
+        
+        if (state.result !== null) {
+            finalResultText.textContent = state.result;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    orderInput = document.getElementById('order_input');
+    sInput = document.getElementById('s_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    resultContainer = document.getElementById('result_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

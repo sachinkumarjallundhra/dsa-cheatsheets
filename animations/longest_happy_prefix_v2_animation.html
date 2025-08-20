@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Happy Prefix (KMP-LPS) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #8e44ad; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-warning: #f39c12; --color-info: #3498db;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1.1fr) 2fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #f4eef7; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 400px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; flex-direction: column; min-height: 0; }
+        .right-column { grid-area: right; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; background: #fafafa; padding: 20px; box-sizing: border-box; overflow-x: auto;}
+        .array-container { display: flex; gap: 2px; position: relative; }
+        .cell { width: 35px; height: 35px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #ccc; font-weight: bold; position: relative; font-size: 0.9em; background-color: white; }
+        .cell .index-label { font-size: 9px; color: #7f8c8d; position: absolute; top: -15px; }
+        .char-cell.match { background-color: #d4efdf; border-color: var(--color-success); }
+        .char-cell.mismatch { background-color: #fadedb; border-color: var(--color-danger); }
+        .lps-cell { background-color: #ebf5fb; }
+        .lps-cell.highlight-write { animation: flash-write 0.6s; }
+        .lps-cell.highlight-read { background-color: #fdebd0; }
+        .pointer { position: absolute; top: 40px; width: 37px; text-align: center; font-weight: bold; transition: left 0.4s ease; }
+        .pointer.i-ptr { color: var(--color-warning); }
+        .pointer.len-ptr { top: -30px; color: var(--color-info); }
+        .final-highlight { position: absolute; top: 0; height: 37px; background-color: rgba(142, 68, 173, 0.3); border: 2px solid var(--color-primary); transition: width 0.5s ease; }
+
+        .data-container { overflow-y: auto; padding: 10px; background: #fafafa; border-radius: 4px; min-height: 0; font-family: 'Courier New', monospace; text-align: center; }
+        .data-box { margin-bottom: 20px; }
+        .data-box h3 { margin: 0 0 5px 0; font-size: 1em; }
+        .value-box { font-size: 1.5em; font-weight: bold; background-color: #eee; padding: 5px; border-radius: 4px; }
+        .comparison-box { font-size: 1.2em; }
+        
+        @keyframes flash-write { 50% { background-color: var(--color-success); color: white; } }
+        .modal-overlay, .modal-content, #final_result_text { /* Standard styles */ }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Longest Happy Prefix (KMP LPS Array)</h1>
+            <div class="controls">
+                <label>s:</label><input id="s_input" type="text" value="abacaba">
+                <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><h2>Visualization</h2><div id="viz_container"></div></main>
+        <div class="right-column">
+            <div class="panel"><h2>State</h2><div id="state_container" class="data-container"></div></div>
+        </div>
+    </div>
+    <div id="result_modal" class="modal-overlay">
+         <div class="modal-content">
+            <h2>Final Result</h2><p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let sInput, startButton, nextStepButton, codeContainer, actionDisplay, 
+    vizContainer, stateContainer, resultModal, finalResultText, modalCloseBtn;
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays();
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer, vizContainer, stateContainer].forEach(c => c.innerHTML = '');
+        actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        if (resultModal) resultModal.style.display = 'none';
+    }
+    start() {
+        this.reset();
+        try {
+            const s = sInput.value;
+            this.initUI();
+            animationSteps = this.generateSteps(s);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+           "lps = new int[n]",
+           "len = 0",
+           "i = 1",
+           "while i < n:",
+           "  if s[i] == s[len]:",
+           "    len++",
+           "    lps[i] = len",
+           "    i++",
+           "  else:",
+           "    if len != 0:",
+           "      len = lps[len - 1]",
+           "    else:",
+           "      lps[i] = 0",
+           "      i++",
+           "return s.substring(0, lps[n-1])"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(s) {
+        if (s.length === 0) return [];
+        const n = s.length;
+        const steps = []; 
+        const save = (data) => steps.push(JSON.parse(JSON.stringify({ ...state, ...data })));
+        
+        let state = {
+            line: null, msg: "", lps: Array(n).fill(0), len: 0, i: 1,
+            highlights: { i_ptr: 1, len_ptr: 0, match: 'none', lps_read: -1, lps_write: -1, final_len: -1 },
+            result: null
+        };
+        save({line: 0, msg: "Initialize LPS array to all zeros."});
+        save({line: 1, msg: "Initialize prefix length `len` to 0."});
+        save({line: 2, msg: "Initialize main pointer `i` to 1."});
+
+        while (state.i < n) {
+            state.highlights = { ...state.highlights, i_ptr: state.i, len_ptr: state.len, lps_read: -1, lps_write: -1 };
+            save({line: 3, msg: `Start loop: i=${state.i}, len=${state.len}`});
+            
+            if (s[state.i] === s[state.len]) {
+                state.highlights.match = 'match';
+                save({line: 4, msg: `Match! s[${state.i}] == s[${state.len}] ('${s[state.i]}').`});
+                
+                state.len++;
+                state.highlights.len_ptr = state.len;
+                save({line: 5, msg: `Increment len to ${state.len}.`});
+
+                state.lps[state.i] = state.len;
+                state.highlights.lps_write = state.i;
+                save({line: 6, msg: `Set lps[${state.i}] = ${state.len}.`});
+
+                state.i++;
+                state.highlights.i_ptr = state.i;
+                save({line: 7, msg: `Increment i to ${state.i}.`});
+
+            } else {
+                state.highlights.match = 'mismatch';
+                save({line: 4, msg: `Mismatch: s[${state.i}] ('${s[state.i]}') != s[${state.len}] ('${s[state.len]}').`});
+                
+                if (state.len !== 0) {
+                    state.highlights.lps_read = state.len - 1;
+                    save({line: 10, msg: `len is not 0. Fallback using lps[len-1].`});
+                    
+                    state.len = state.lps[state.len - 1];
+                    state.highlights.len_ptr = state.len;
+                    save({line: 11, msg: `len becomes lps[${state.highlights.lps_read}] which is ${state.len}.`});
+
+                } else {
+                    state.lps[state.i] = 0;
+                    state.highlights.lps_write = state.i;
+                    save({line: 12, msg: `len is 0. Set lps[${state.i}] = 0.`});
+                    
+                    state.i++;
+                    state.highlights.i_ptr = state.i;
+                    save({line: 13, msg: `Increment i to ${state.i}.`});
+                }
+            }
+             state.highlights.match = 'none';
+        }
+        
+        const final_len = n > 0 ? state.lps[n - 1] : 0;
+        state.result = s.substring(0, final_len);
+        state.highlights = { ...state.highlights, lps_read: n-1 };
+        save({line: 14, msg: `Loop finished. Longest prefix length is lps[${n-1}] = ${final_len}.`});
+
+        state.highlights.final_len = final_len;
+        save({line: 14, msg: `The longest happy prefix is "${state.result}".`});
+
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        const s = sInput.value;
+        const cellWidth = 37;
+
+        let vizHTML = `
+            <div class="array-container">
+                ${s.split('').map((c, i) => {
+                    let cls = 'cell char-cell';
+                    if ((i === state.highlights.i_ptr || i === state.highlights.len_ptr) && state.highlights.match === 'match') cls += ' match';
+                    if ((i === state.highlights.i_ptr || i === state.highlights.len_ptr) && state.highlights.match === 'mismatch') cls += ' mismatch';
+                    return `<div class="${cls}"><div class="index-label">${i}</div>${c}</div>`;
+                }).join('')}
+                <div class="pointer i-ptr" style="left: ${state.highlights.i_ptr * cellWidth}px">i=${state.highlights.i_ptr}</div>
+                <div class="pointer len-ptr" style="left: ${state.highlights.len_ptr * cellWidth}px">len=${state.highlights.len_ptr}</div>
+                ${state.highlights.final_len > -1 ? `<div class="final-highlight" style="left:0; width:${state.highlights.final_len * cellWidth}px"></div>` : ''}
+            </div>
+            <div style="margin-top: 50px;">LPS Array</div>
+            <div class="array-container">
+                ${state.lps.map((val, i) => {
+                    let cls = 'cell lps-cell';
+                    if (i === state.highlights.lps_read) cls += ' highlight-read';
+                    if (i === state.highlights.lps_write) cls += ' highlight-write';
+                    return `<div class="${cls}"><div class="index-label">${i}</div>${val}</div>`;
+                }).join('')}
+            </div>
+        `;
+        vizContainer.innerHTML = vizHTML;
+
+        let stateHTML = `
+            <div class="data-box">
+                <h3>Pointers</h3>
+                <div class="value-box">i = ${state.i}</div>
+                <div class="value-box" style="margin-top:5px;">len = ${state.len}</div>
+            </div>
+            <div class="data-box comparison-box">
+                <h3>Comparison</h3>
+        `;
+        if (state.i < s.length) {
+            const char_i = s[state.i];
+            const char_len = s[state.len];
+            const symbol = char_i === char_len ? '==' : '!=';
+            stateHTML += `s[${state.i}] (${char_i}) ${symbol} s[${state.len}] (${char_len})`;
+        }
+        stateHTML += '</div>';
+        stateContainer.innerHTML = stateHTML;
+        
+        if (state.result !== null) {
+            finalResultText.textContent = `"${state.result}"`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    sInput = document.getElementById('s_input');
+    startButton = document.getElementById('start_button'); 
+    nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); 
+    actionDisplay = document.getElementById('action_display');
+    vizContainer = document.getElementById('viz_container');
+    stateContainer = document.getElementById('state_container');
+    resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if(e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>
