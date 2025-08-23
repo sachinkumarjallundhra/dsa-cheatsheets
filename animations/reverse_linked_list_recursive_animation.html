@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse Linked List (Recursive) Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-node: #9b59b6; /* Purple from image */
+            --color-head: #c0392b; /* Red from image */
+            --color-p: #27ae60; /* Green from image */
+            --color-null: #7f8c8d;
+            --color-link: #34495e;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2.5fr;
+            grid-template-rows: auto 1fr; grid-template-areas: "header header" "left main";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #f4eef7; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 400px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-node); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: grid; grid-template-rows: 1fr auto; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; display: flex; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { width: 70%; height: 100%; overflow: auto; }
+        #call_stack_container { width: 30%; height: 100%; border-left: 2px solid #eee; padding-left: 15px; }
+        
+        #viz_svg .node circle { stroke-width: 0; }
+        #viz_svg .node text { font-size: 22px; fill: white; text-anchor: middle; dominant-baseline: central; font-weight: bold; pointer-events: none; }
+        #viz_svg .node .node-circle { fill: var(--color-node); }
+        #viz_svg .node .null-rect { fill: var(--color-null); }
+        #viz_svg .node-link { stroke: var(--color-link); stroke-width: 3px; fill: none; transition: all 0.5s ease; }
+        #viz_svg .node-link.reversing { stroke: var(--color-p); }
+        #viz_svg .node-link.fading { opacity: 0.1; }
+        #viz_svg .pointer { transition: transform 0.5s ease; }
+        #viz_svg .pointer text { font-family: 'Arial', sans-serif; font-size: 18px; font-weight: bold; text-anchor: middle; }
+        
+        .call-stack { display: flex; flex-direction: column-reverse; height: 100%; }
+        .stack-frame { border: 2px solid #ccc; border-radius: 5px; padding: 10px; margin-top: 10px; background-color: #fafafa; transition: all 0.5s ease; }
+        .stack-frame.active { border-color: var(--color-node); background-color: #f4eef7; }
+        .stack-frame .func-name { font-weight: bold; font-family: 'Courier New', monospace; }
+        .stack-frame .param { font-family: 'Courier New', monospace; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Reverse Linked List (Recursive)</h1>
+            <div class="controls">
+                <label>List (e.g., 1,2,3,4):</label><input id="list_input" type="text" value="1,2,3,4">
+                <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-grow: 0; flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel">
+            <div id="viz_container"><svg id="viz_svg" width="100%" height="100%"></svg></div>
+            <div id="call_stack_container"><h2>Call Stack</h2></div>
+        </main>
+    </div>
+
+<script>
+class AnimationController {
+    constructor() {
+        this.listInput = document.getElementById('list_input');
+        this.startButton = document.getElementById('start_button');
+        this.nextStepButton = document.getElementById('next_step_button');
+        this.codeContainer = document.getElementById('code_container');
+        this.actionDisplay = document.getElementById('action_display');
+        this.svg = document.getElementById('viz_svg');
+        this.callStackContainer = document.getElementById('call_stack_container');
+        this.animationSteps = [];
+        this.currentStepIndex = 0;
+        this.simulationRunning = false;
+        
+        this.startButton.addEventListener('click', () => this.start());
+        this.nextStepButton.addEventListener('click', () => this.next());
+    }
+
+    reset() {
+        this.animationSteps = []; this.currentStepIndex = 0; this.simulationRunning = false;
+        this.updateButtons();
+        this.actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        this.svg.innerHTML = '';
+        if (this.codeContainer) this.codeContainer.innerHTML = '';
+        if (this.callStackContainer) this.callStackContainer.innerHTML = '<h2>Call Stack</h2>';
+    }
+
+    start() {
+        this.reset();
+        try {
+            const listStr = this.listInput.value.trim();
+            const nums = listStr ? listStr.split(',').map(s => Number(s.trim())) : [];
+            if (listStr && !/^(\d+)(,\s*\d+)*$/.test(listStr)) {
+                throw new Error("Invalid input. Use comma-separated numbers for the list.");
+            }
+            this.initUI();
+            this.animationSteps = this.generateSteps(nums);
+            this.simulationRunning = true;
+            if (this.animationSteps.length > 0) this.renderState(this.animationSteps[0]);
+            this.updateButtons();
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    }
+
+    next() {
+        if (!this.simulationRunning || this.currentStepIndex >= this.animationSteps.length - 1) return;
+        this.currentStepIndex++;
+        this.renderState(this.animationSteps[this.currentStepIndex]);
+        this.updateButtons();
+    }
+    
+    updateButtons() {
+        this.startButton.textContent = this.simulationRunning ? "Reset" : "Start";
+        this.nextStepButton.disabled = !this.simulationRunning || this.currentStepIndex >= this.animationSteps.length - 1;
+    }
+
+    initUI() {
+        const code = [
+           "reverseList(head):",
+           "  if head == null or head.next == null:",
+           "    return head",
+           "  p = reverseList(head.next)",
+           "  head.next.next = head",
+           "  head.next = null",
+           "  return p",
+        ];
+        this.codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(nums) {
+        const steps = [];
+        let initialNodes = [];
+        if (nums.length > 0) {
+            nums.forEach((val, i) => {
+                initialNodes.push({ id: i, val, next: (i === nums.length - 1) ? 'null' : i + 1 });
+            });
+        }
+        
+        let state = {
+            line: null, msg: "", nodes: JSON.parse(JSON.stringify(initialNodes)),
+            callStack: [], pointers: { p: 'null' }
+        };
+        const save = () => steps.push(JSON.parse(JSON.stringify(state)));
+
+        function findNode(nodes, id) {
+            return nodes.find(n => n.id === id);
+        }
+
+        function reverse(headId) {
+            if (headId === 'null') return 'null';
+            
+            const headNode = findNode(state.nodes, headId);
+            state.callStack.push({ headId });
+            state.line = 0; state.msg = `Calling reverseList(head = Node ${headNode.val}).`; save();
+
+            if (headNode.next === 'null') {
+                state.line = 1; state.msg = `Base case reached. Head's next is null.`; save();
+                state.pointers.p = headId;
+                state.line = 2; state.msg = `Return Node ${headNode.val} as the new head 'p'.`; save();
+                state.callStack.pop();
+                return headId;
+            }
+
+            state.line = 3; state.msg = "Not base case. Making recursive call with `head.next`."; save();
+            const newHeadId = reverse(headNode.next);
+
+            state.callStack.push({ headId });
+            state.pointers.p = newHeadId;
+            state.msg = `Unwinding stack. Current \`head\` is Node ${headNode.val}.`; save();
+            
+            const headNextNode = findNode(state.nodes, headNode.next);
+            if (headNextNode) {
+                 findNode(state.nodes, headNextNode.id).next = headId;
+            }
+            state.line = 4; state.msg = `Re-linking pointer: \`head.next.next\` (Node ${headNextNode.val}) points to \`head\` (Node ${headNode.val}).`; save();
+            
+            findNode(state.nodes, headNode.id).next = 'null';
+            state.line = 5; state.msg = "Breaking the original forward link: `head.next` becomes null."; save();
+            
+            state.line = 6; state.msg = `Return \`p\` (Node ${findNode(state.nodes, newHeadId).val}) up the call stack.`; save();
+            state.callStack.pop();
+            
+            return newHeadId;
+        }
+
+        if (nums.length > 0) {
+            reverse(0);
+        }
+
+        state.pointers = {};
+        state.msg = "Final reversed list returned."; save();
+        return steps;
+    }
+
+    renderState(state) {
+        this.actionDisplay.textContent = state.msg;
+        this.codeContainer.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        this.svg.innerHTML = '';
+        const nodeRadius = 35, nodeSpacing = 120, listY = 150;
+        
+        const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+        marker.setAttribute('id', 'arrowhead'); marker.setAttribute('viewBox', '-0 -5 10 10');
+        marker.setAttribute('refX', 0); marker.setAttribute('refY', 0);
+        marker.setAttribute('orient', 'auto'); marker.setAttribute('markerWidth', 8);
+        marker.setAttribute('markerHeight', 8);
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute('d', 'M0,-4L10,0L0,4'); path.setAttribute('fill', 'var(--color-link)');
+        marker.appendChild(path); defs.appendChild(marker); this.svg.appendChild(defs);
+        
+        const nodePositions = {};
+        state.nodes.forEach((node, i) => nodePositions[node.id] = { x: 50 + (i + 1) * nodeSpacing, y: listY });
+        nodePositions['null'] = {x: 50 + (state.nodes.length + 1) * nodeSpacing, y: listY };
+
+        // Draw Links
+        state.nodes.forEach(node => {
+            if (node.next !== null && nodePositions[node.id] && nodePositions[node.next]) {
+                const startPos = nodePositions[node.id];
+                const endPos = nodePositions[node.next];
+                const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                const isReversed = endPos.x < startPos.x;
+                
+                const x1 = startPos.x;
+                const y1 = startPos.y;
+                const x2 = endPos.x;
+                const y2 = endPos.y;
+
+                const dx = x2 - x1, dy = y2 - y1;
+                const angle = Math.atan2(dy, dx);
+                
+                const startX = x1 + Math.cos(angle) * nodeRadius;
+                const startY = y1 + Math.sin(angle) * nodeRadius;
+                const endX = x2 - Math.cos(angle) * nodeRadius;
+                const endY = y2 - Math.sin(angle) * nodeRadius;
+                
+                const yOffset = isReversed ? 60 : -60;
+
+                const d = `M ${startX} ${startY} C ${startX} ${startY + yOffset}, ${endX} ${endY + yOffset}, ${endX} ${endY}`;
+                p.setAttribute('d', d); p.classList.add('node-link');
+                
+                if(isReversed) p.classList.add('reversing');
+                const activeFrame = state.callStack[state.callStack.length-1];
+                if(state.line === 5 && activeFrame && node.id === activeFrame.headId) {
+                     p.classList.add('fading');
+                }
+                
+                p.setAttribute('marker-end', 'url(#arrowhead)');
+                this.svg.appendChild(p);
+            }
+        });
+        
+        // Draw NULL box and Nodes
+        Object.entries(nodePositions).forEach(([id, pos]) => {
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.classList.add('node');
+            g.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+            
+            if (id === 'null') {
+                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute('x', -30); rect.setAttribute('y', -30);
+                rect.setAttribute('width', 60); rect.setAttribute('height', 60);
+                rect.setAttribute('rx', 8); rect.classList.add('null-rect');
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.textContent = 'null';
+                g.appendChild(rect); g.appendChild(text);
+            } else {
+                const node = state.nodes.find(n => n.id.toString() === id.toString());
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute('r', nodeRadius); circle.classList.add('node-circle');
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.textContent = node.val;
+                g.appendChild(circle); g.appendChild(text);
+            }
+            this.svg.appendChild(g);
+        });
+
+        // Draw Pointers
+        const pointerColors = { head: 'var(--color-head)', p: 'var(--color-p)' };
+        let activeHeadId = state.callStack[state.callStack.length - 1]?.headId;
+        const pointersToDraw = { head: activeHeadId, p: state.pointers.p };
+
+        Object.entries(pointersToDraw).forEach(([name, id]) => {
+            if (id === null || id === 'null' || !nodePositions[id]) return;
+            const pos = nodePositions[id];
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.classList.add('pointer');
+            const yOffset = name === 'head' ? -80 : 80;
+            g.setAttribute('transform', `translate(${pos.x}, ${pos.y + yOffset})`);
+            
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            const pathD = (name === 'head') ? `M0,-8 l-8,-12 h16 z` : `M0,8 l-8,12 h16 z`;
+            path.setAttribute('d', pathD);
+            path.setAttribute('fill', pointerColors[name]);
+            
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            const textY = (name === 'head') ? -30 : 30;
+            text.setAttribute('y', textY);
+            text.textContent = name; text.setAttribute('fill', pointerColors[name]);
+            
+            g.appendChild(path); g.appendChild(text); this.svg.appendChild(g);
+        });
+        
+        // Update call stack display
+        let stackHTML = '<h2>Call Stack</h2><div class="call-stack">';
+        state.callStack.forEach((frame, i) => {
+            const headNode = state.nodes.find(n => n.id === frame.headId);
+            const isActive = i === state.callStack.length - 1;
+            stackHTML += `
+                <div class="stack-frame ${isActive ? 'active' : ''}">
+                    <div class="func-name">reverseList</div>
+                    <div class="param">head: Node(${headNode ? headNode.val : '?'})</div>
+                </div>`;
+        });
+        stackHTML += '</div>';
+        this.callStackContainer.innerHTML = stackHTML;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    new AnimationController();
+});
+</script>
+</body>
+</html>

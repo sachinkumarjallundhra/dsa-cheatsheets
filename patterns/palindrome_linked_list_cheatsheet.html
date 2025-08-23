@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palindrome Linked List Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔁 Palindrome Linked List – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Palindrome Linked List</b> problem (LeetCode 234) asks you to determine if a singly linked list is a palindrome (reads the same forward and backward).
+        </p>
+
+        <h2>🎯 Solution Pattern (Reverse Second Half)</h2>
+        <pre><code>// Java Solution (Reverse Second Half)
+class Solution {
+    public boolean isPalindrome(ListNode head) {
+        if (head == null || head.next == null) return true;
+        // Find middle (slow/fast pointer)
+        ListNode slow = head, fast = head;
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        // Reverse second half
+        ListNode prev = null, curr = slow;
+        while (curr != null) {
+            ListNode nextTemp = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = nextTemp;
+        }
+        // Compare first and second half
+        ListNode p1 = head, p2 = prev;
+        while (p2 != null) {
+            if (p1.val != p2.val) return false;
+            p1 = p1.next;
+            p2 = p2.next;
+        }
+        return true;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/palindrome_linked_list_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Checking if a linked list is a palindrome</li>
+            <li>Interview questions on pointer manipulation</li>
+            <li>Linked list reversal and comparison</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use fast and slow pointers to find the middle of the list</li>
+            <li>Reverse the second half of the list</li>
+            <li>Compare the first half and the reversed second half</li>
+            <li>Return <code>true</code> if all nodes match, else <code>false</code></li>
+        </ol>
+
+        <h2>⏱️ Time & Space Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> for N nodes</li>
+            <li><b>Space:</b> <code>O(1)</code> (in-place reversal)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: head = [1,2,2,1]
+Output: true
+
+Input: head = [1,2]
+Output: false
+</code></pre>
+    </div>

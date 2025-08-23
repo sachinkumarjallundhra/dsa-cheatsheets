@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse Nodes in k-Group Animation</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #c0392b; --color-success: #27ae60; --color-danger: #e74c3c;
+            --color-warning: #f39c12; --color-info: #3498db;
+            --color-dummy: #7f8c8d;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(450px, 1fr) 2.5fr;
+            grid-template-rows: auto 1fr; grid-template-areas: "header header" "left main";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: grid; grid-template-columns: 2fr 1fr; gap: 10px 20px; padding: 10px; background-color: #f9ebea; border-radius: 5px; align-items: center;}
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; }
+        .controls .buttons { grid-column: 1 / -1; display: flex; justify-content: center; gap: 15px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; display: flex; flex-direction: column; gap: 15px; min-height: 0; }
+        .main-column { grid-area: main; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto;}
+        .code-line { padding: 2px 5px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        
+        #viz_container { width: 100%; height: 100%; overflow: auto; }
+        #viz_svg .node circle { stroke-width: 2px; }
+        #viz_svg .node text { font-size: 16px; fill: white; text-anchor: middle; dominant-baseline: central; font-weight: bold; pointer-events: none; }
+        #viz_svg .node .node-circle { fill: var(--color-info); stroke: #2980b9; }
+        #viz_svg .node .dummy-circle { fill: var(--color-dummy); stroke: #616a6b; }
+        #viz_svg .node.in-group .node-circle { fill: var(--color-warning); stroke: #d68910; }
+        #viz_svg .node-link { stroke: #34495e; stroke-width: 2.5px; fill: none; transition: d 0.5s ease; }
+        #viz_svg .node-link.reconnect { stroke: var(--color-success); stroke-width: 3.5px; }
+        #viz_svg .pointer { transition: transform 0.5s ease; }
+        #viz_svg .pointer text { font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; text-anchor: middle; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel"><h1>Reverse Nodes in k-Group</h1>
+            <div class="controls">
+                <label>List (e.g., 1,2,3,4,5):</label><input id="list_input" type="text" value="1,2,3,4,5,6,7,8">
+                <label>k:</label><input id="k_input" type="number" value="3">
+                <div class="buttons">
+                    <button id="start_button">Start</button><button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </header>
+        <div class="left-column">
+            <div class="panel"><h2>Algorithm</h2><div id="code_container"></div></div>
+            <div class="panel" style="flex-shrink: 0;"><h2>Current Action</h2><div id="action_display">Enter data and click 'Start'.</div></div>
+        </div>
+        <main class="main-column panel"><div id="viz_container"><svg id="viz_svg" width="100%" height="100%"></svg></div></main>
+    </div>
+
+<script>
+class AnimationController {
+    constructor() {
+        this.listInput = document.getElementById('list_input');
+        this.kInput = document.getElementById('k_input');
+        this.startButton = document.getElementById('start_button');
+        this.nextStepButton = document.getElementById('next_step_button');
+        this.codeContainer = document.getElementById('code_container');
+        this.actionDisplay = document.getElementById('action_display');
+        this.svg = document.getElementById('viz_svg');
+        this.animationSteps = [];
+        this.currentStepIndex = 0;
+        this.simulationRunning = false;
+        
+        this.startButton.addEventListener('click', () => this.start());
+        this.nextStepButton.addEventListener('click', () => this.next());
+    }
+
+    reset() {
+        this.animationSteps = [];
+        this.currentStepIndex = 0;
+        this.simulationRunning = false;
+        this.updateButtons();
+        this.actionDisplay.textContent = 'Enter data and click \'Start\'.';
+        this.svg.innerHTML = '';
+        if (this.codeContainer) this.codeContainer.innerHTML = '';
+    }
+
+    start() {
+        this.reset();
+        try {
+            const listStr = this.listInput.value;
+            const k = parseInt(this.kInput.value);
+            if (!/^\d+(,\s*\d+)*$/.test(listStr) || isNaN(k) || k < 1) {
+                throw new Error("Invalid input. Use comma-separated numbers for the list and k >= 1.");
+            }
+            const nums = listStr.split(',').map(s => Number(s.trim()));
+            this.initUI();
+            this.animationSteps = this.generateSteps(nums, k);
+            this.simulationRunning = true;
+            if (this.animationSteps.length > 0) this.renderState(this.animationSteps[0]);
+            this.updateButtons();
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    }
+
+    next() {
+        if (!this.simulationRunning || this.currentStepIndex >= this.animationSteps.length - 1) return;
+        this.currentStepIndex++;
+        this.renderState(this.animationSteps[this.currentStepIndex]);
+        this.updateButtons();
+    }
+    
+    updateButtons() {
+        this.startButton.textContent = this.simulationRunning ? "Reset" : "Start";
+        this.nextStepButton.disabled = !this.simulationRunning || this.currentStepIndex >= this.animationSteps.length - 1;
+    }
+
+    initUI() {
+        const code = [
+           "dummy = new ListNode(0, head)", "prevGroupEnd = dummy", "while true:",
+           "  kth = getKthNode(prevGroupEnd, k)", "  if kth == null: break",
+           "  groupStart = prevGroupEnd.next", "  nextGroupStart = kth.next",
+           "  reverse(groupStart, kth)", "  // Reconnect list", "  prevGroupEnd.next = kth",
+           "  groupStart.next = nextGroupStart", "  // Move to next group",
+           "  prevGroupEnd = groupStart", "return dummy.next"
+        ];
+        this.codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(nums, k) {
+        const steps = [];
+        let initialNodes = [{id: 'dummy', val: 0, next: nums.length > 0 ? 0 : null}];
+        nums.forEach((val, i) => {
+            initialNodes.push({ id: i, val, next: (i === nums.length - 1) ? null : i + 1 });
+        });
+
+        const findNodeById = (nodes, id) => nodes.find(n => n.id === id);
+
+        let state = {
+            line: null, msg: "", nodes: initialNodes,
+            pointers: {}, group: []
+        };
+        const save = () => steps.push(JSON.parse(JSON.stringify(state)));
+
+        state.line = 0; state.msg = "Create a dummy node to simplify list head operations."; save();
+        
+        let prevGroupEndId = 'dummy';
+        state.pointers.prevGroupEnd = prevGroupEndId;
+        state.line = 1; state.msg = "Initialize `prevGroupEnd` to point to the dummy node."; save();
+
+        while (true) {
+            state.line = 2; state.msg = "Start of the main loop."; save();
+            
+            let kthNode = findNodeById(state.nodes, prevGroupEndId);
+            for (let i = 0; i < k; i++) {
+                if (kthNode === null || kthNode.next === null) { kthNode = null; break; }
+                kthNode = findNodeById(state.nodes, kthNode.next);
+            }
+            const kthId = kthNode ? kthNode.id : null;
+            state.pointers.kth = kthId;
+            state.line = 3; state.msg = `Finding the ${k}-th node from the start of the group.`; save();
+            
+            if (kthId === null) {
+                state.line = 4; state.msg = "Not enough nodes left for a full group. Break loop."; save();
+                break;
+            }
+            
+            const groupStartId = findNodeById(state.nodes, prevGroupEndId).next;
+            const nextGroupStartId = findNodeById(state.nodes, kthId).next;
+            
+            state.pointers.groupStart = groupStartId;
+            state.pointers.nextGroupStart = nextGroupStartId;
+            
+            let current = groupStartId; state.group = [];
+            while(true){ state.group.push(current); if (current === kthId) break; current = findNodeById(state.nodes, current).next; }
+            state.line = 5; state.msg = "Identified the current group to be reversed."; save();
+            
+            // Animate reversal
+            state.line = 7;
+            let tempNodes = JSON.parse(JSON.stringify(state.nodes));
+            let prevId = null; let currId = groupStartId;
+            for(let i=0; i < state.group.length; i++){
+                let currNode = findNodeById(tempNodes, currId);
+                let nextId = currNode.next;
+                currNode.next = prevId;
+                prevId = currId;
+                currId = nextId;
+                state.nodes = JSON.parse(JSON.stringify(tempNodes));
+                state.pointers.rev_prev = prevId; state.pointers.rev_curr = currId;
+                state.msg = `Reversing link for node ${currNode.val}.`;
+                save();
+            }
+            state.group = [];
+            
+            findNodeById(state.nodes, prevGroupEndId).next = kthId;
+            state.line = 9; state.msg = `Reconnect previous group's end to the new group head (${kthId}).`;
+            save();
+
+            findNodeById(state.nodes, groupStartId).next = nextGroupStartId;
+            state.line = 10; state.msg = `Reconnect the new group's tail (${groupStartId}) to the start of the next group.`;
+            save();
+
+            prevGroupEndId = groupStartId;
+            state.pointers = { prevGroupEnd: prevGroupEndId };
+            state.line = 12; state.msg = `Update \`prevGroupEnd\` to the new tail of the processed section.`;
+            save();
+        }
+
+        state.pointers = {};
+        state.line = 13; state.msg = "Algorithm finished. Returning the new head of the list."; save();
+        return steps;
+    }
+
+    renderState(state) {
+        this.actionDisplay.textContent = state.msg;
+        this.codeContainer.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        this.svg.innerHTML = ''; // Clear SVG
+        const nodeRadius = 25; const nodeSpacing = 80; const nodePositions = {};
+
+        state.nodes.forEach((node, i) => nodePositions[node.id] = { x: 50 + i * nodeSpacing, y: 150 });
+        
+        const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+        marker.setAttribute('id', 'arrowhead'); marker.setAttribute('viewBox', '-0 -5 10 10'); marker.setAttribute('refX', 5);
+        marker.setAttribute('refY', 0); marker.setAttribute('orient', 'auto'); marker.setAttribute('markerWidth', 5);
+        marker.setAttribute('markerHeight', 5);
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute('d', 'M0,-5L10,0L0,5'); path.setAttribute('fill', '#34495e');
+        marker.appendChild(path); defs.appendChild(marker); this.svg.appendChild(defs);
+
+        // Draw links
+        state.nodes.forEach(node => {
+            if (node.next !== null && nodePositions[node.id] && nodePositions[node.next]) {
+                const startPos = nodePositions[node.id];
+                const endPos = nodePositions[node.next];
+                const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                const yOffset = 40;
+                const d = `M ${startPos.x + nodeRadius} ${startPos.y} C ${startPos.x + nodeRadius + yOffset/2} ${startPos.y - yOffset}, ${endPos.x - nodeRadius - yOffset/2} ${endPos.y - yOffset}, ${endPos.x - nodeRadius} ${endPos.y}`;
+                p.setAttribute('d', d); p.classList.add('node-link');
+                if((node.id === state.pointers.prevGroupEnd && node.next === state.pointers.kth) || (node.id === state.pointers.groupStart && node.next === state.pointers.nextGroupStart)) {
+                    p.classList.add('reconnect');
+                }
+                p.setAttribute('marker-end', 'url(#arrowhead)');
+                this.svg.appendChild(p);
+            }
+        });
+        
+        // Draw nodes
+        state.nodes.forEach(node => {
+            const pos = nodePositions[node.id];
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.classList.add('node'); if(state.group.includes(node.id)) g.classList.add('in-group');
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute('cx', pos.x); circle.setAttribute('cy', pos.y); circle.setAttribute('r', nodeRadius);
+            circle.classList.add(node.id === 'dummy' ? 'dummy-circle' : 'node-circle');
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute('x', pos.x); text.setAttribute('y', pos.y);
+            text.textContent = node.val;
+            g.appendChild(circle); g.appendChild(text); this.svg.appendChild(g);
+        });
+
+        // Draw pointers
+        const pointerColors = { prevGroupEnd: '#c0392b', kth: '#27ae60', groupStart: '#2980b9', nextGroupStart: '#f39c12', rev_prev: '#1abc9c', rev_curr: '#f1c40f' };
+        let pointerYOffset = 40;
+        Object.entries(state.pointers).forEach(([name, id]) => {
+            if (id === null || !nodePositions[id]) return;
+            const pos = nodePositions[id];
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.classList.add('pointer');
+            g.setAttribute('transform', `translate(0, ${pointerYOffset})`);
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute('d', `M${pos.x},${pos.y - nodeRadius - 5} l-7,-10 h14 z`);
+            path.setAttribute('fill', pointerColors[name] || '#34495e');
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute('x', pos.x); text.setAttribute('y', pos.y - nodeRadius - 20);
+            text.textContent = name;
+            text.setAttribute('fill', pointerColors[name] || '#34495e');
+            g.appendChild(path); g.appendChild(text); this.svg.appendChild(g);
+            pointerYOffset += 45;
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    new AnimationController();
+});
+</script>
+</body>
+</html>

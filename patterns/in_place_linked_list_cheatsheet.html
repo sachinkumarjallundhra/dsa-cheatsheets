@@ -20,34 +20,34 @@
     </ul>
 
     <h2>🧱 Pattern Template</h2>
-    <pre><code>// Reverse a Linked List
+    <pre><code>// Reverse a Linked List (Iterative)
 public ListNode reverse(ListNode head) {
     ListNode prev = null;
     while (head != null) {
-        ListNode next = head.next;
-        head.next = prev;
-        prev = head;
-        head = next;
+        ListNode next = head.next; // Save next node
+        head.next = prev;          // Reverse pointer
+        prev = head;               // Move prev forward
+        head = next;               // Move head forward
     }
     return prev;
 }
 
-// Reorder a Linked List
+// Reorder a Linked List (Find Middle, Reverse, Merge)
 public void reorderList(ListNode head) {
     if (head == null || head.next == null) return;
 
-    // Find the middle of the list
+    // 1. Find the middle of the list
     ListNode slow = head, fast = head;
     while (fast != null && fast.next != null) {
         slow = slow.next;
         fast = fast.next.next;
     }
 
-    // Reverse the second half
+    // 2. Reverse the second half
     ListNode second = reverse(slow.next);
     slow.next = null;
 
-    // Merge two halves
+    // 3. Merge two halves
     ListNode first = head;
     while (second != null) {
         ListNode temp1 = first.next, temp2 = second.next;
@@ -66,38 +66,189 @@ public void reorderList(ListNode head) {
     </ul>
 
     <h2>📘 Common LeetCode Problems</h2>
-    <ul>
+    <div class="problems-section">
+      <h3 class="problems-header easy">🟢 Easy Problems</h3>
+      <ul class="problems-list">
         <li>
-          <a href="https://leetcode.com/problems/reverse-linked-list/" target="_blank" rel="noopener noreferrer">206: Reverse Linked List</a>
-          <span class="badge badge-easy">[Easy]</span>
-          <span class="badge badge-tag">Linked List</span>
+          <div class="problem-card easy">
+            <div class="problem-title">
+              Reverse Linked List
+              <span class="badge badge-easy">Easy</span>
+              <span class="badge badge-tag">Amazon</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/reverse-linked-list/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="reverse_linked_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Reverse a singly linked list in-place.
+            </div>
+          </div>
         </li>
         <li>
-          <a href="reverse_linked_list_ii_cheatsheet.html" target="_blank" rel="noopener noreferrer">92: Reverse Linked List II</a>
-          <span class="badge badge-medium">[Medium]</span>
-          <span class="badge badge-tag">Linked List</span>
-        </li>
-        <li>
-          <a href="reverse_nodes_k_group_cheatsheet.html" target="_blank" rel="noopener noreferrer">25: Reverse Nodes in K-Group</a>
-          <span class="badge badge-hard">[Hard]</span>
-          <span class="badge badge-tag">Linked List</span>
-        </li>
-        <li>
-          <a href="https://leetcode.com/problems/reorder-list/" target="_blank" rel="noopener noreferrer">143: Reorder List</a>
-          <span class="badge badge-medium">[Medium]</span>
-          <span class="badge badge-tag">Linked List</span>
-        </li>
-        <li>
-          <a href="https://leetcode.com/problems/rotate-list/" target="_blank" rel="noopener noreferrer">61: Rotate List</a>
-          <span class="badge badge-medium">[Medium]</span>
-          <span class="badge badge-tag">Linked List</span>
-        </li>
-        <li>
-          <a href="https://leetcode.com/problems/palindrome-linked-list/" target="_blank" rel="noopener noreferrer">234: Palindrome Linked List</a>
-          <span class="badge badge-easy">[Easy]</span>
-          <span class="badge badge-tag">Linked List</span>
+          <div class="problem-card easy">
+            <div class="problem-title">
+              Palindrome Linked List
+              <span class="badge badge-easy">Easy</span>
+              <span class="badge badge-tag">Google</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/palindrome-linked-list/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="palindrome_linked_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Check if a linked list is a palindrome.
+            </div>
+          </div>
         </li>
       </ul>
+
+      <h3 class="problems-header medium">🟡 Medium Problems</h3>
+      <ul class="problems-list">
+        <li>
+          <div class="problem-card medium">
+            <div class="problem-title">
+              Reverse Linked List II
+              <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/reverse-linked-list-ii/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="reverse_linked_list_ii_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Reverse a sublist of a linked list in-place.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card medium">
+            <div class="problem-title">
+              Reorder List
+              <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/reorder-list/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="reorder_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Reorder a linked list in a specific pattern.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card medium">
+            <div class="problem-title">
+              Rotate List
+              <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/rotate-list/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="rotate_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Rotate a linked list to the right by k places.
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <h3 class="problems-header hard">🔴 Hard Problems</h3>
+      <ul class="problems-list">
+        <li>
+          <div class="problem-card hard">
+            <div class="problem-title">
+              Reverse Nodes in K-Group
+              <span class="badge badge-hard">Hard</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/reverse-nodes-in-k-group/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="reverse_nodes_k_group_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Reverse nodes of a linked list in k-group.
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <style>
+.problems-section {
+    margin-bottom: 32px;
+}
+.problems-header {
+    font-size: 1.2em;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+.problems-header.easy { color: #28a745; }
+.problems-header.medium { color: #ffc107; }
+.problems-header.hard { color: #dc3545; }
+.problems-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.problem-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    padding: 16px 18px 10px 18px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+    border-left: 6px solid #dee2e6;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.problem-card.easy { border-color: #28a745; }
+.problem-card.medium { border-color: #ffc107; }
+.problem-card.hard { border-color: #dc3545; }
+.problem-card:hover {
+    box-shadow: 0 4px 16px rgba(44,62,80,0.10);
+    border-left-width: 10px;
+}
+.problem-title {
+    font-weight: bold;
+    font-size: 1.08em;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+.badge-easy { background: #28a745; color: white; }
+.badge-medium { background: #ffc107; color: black; }
+.badge-hard { background: #dc3545; color: white; }
+.problem-actions {
+    margin-bottom: 6px;
+}
+.problem-actions a {
+    display: inline-block;
+    margin-right: 12px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.97em;
+    border: 1px solid #dee2e6;
+    transition: background 0.2s, color 0.2s;
+}
+.problem-actions a:hover {
+    background: #007bff;
+    color: #fff;
+}
+.problem-notes {
+    font-size: 0.93em;
+    color: #6c757d;
+    margin-bottom: 2px;
+    margin-top: 2px;
+}
+</style>
 
     <h2>🧪 Example: Reverse a Linked List</h2>
     <pre><code>Input: head = [1,2,3,4,5]

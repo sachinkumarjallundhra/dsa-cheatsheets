@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse Linked List Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔄 Reverse Linked List – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Reverse Linked List</b> problem (LeetCode 206) asks you to reverse a singly linked list in-place and return the new head.
+        </p>
+
+        <h2>🎯 Solution Pattern (Iterative)</h2>
+        <pre><code>// Java Solution (Iterative)
+class Solution {
+    public ListNode reverseList(ListNode head) {
+        ListNode prev = null, curr = head;
+        while (curr != null) {
+            ListNode nextTemp = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = nextTemp;
+        }
+        return prev;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/reverse_linked_list_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>🎯 Solution Pattern (Recursive)</h2>
+        <pre><code>// Java Solution (Recursive)
+class Solution {
+    public ListNode reverseList(ListNode head) {
+        if (head == null || head.next == null) return head;
+        ListNode p = reverseList(head.next);
+        head.next.next = head;
+        head.next = null;
+        return p;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/reverse_linked_list_recursive_animation.html'" class="animation-btn">
+    ▶️ View Animation (Recursive)
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Reversing a singly linked list in-place</li>
+            <li>Manipulating pointers in linked lists</li>
+            <li>Interview questions on linked list fundamentals</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps (Iterative)</h2>
+        <ol>
+            <li>Initialize <code>prev</code> as <code>null</code> and <code>curr</code> as <code>head</code></li>
+            <li>Iterate while <code>curr</code> is not null:</li>
+            <ul>
+                <li>Store <code>curr.next</code> in <code>nextTemp</code></li>
+                <li>Set <code>curr.next = prev</code></li>
+                <li>Move <code>prev</code> to <code>curr</code></li>
+                <li>Move <code>curr</code> to <code>nextTemp</code></li>
+            </ul>
+            <li>Return <code>prev</code> as the new head</li>
+        </ol>
+
+        <h2>⏱️ Time & Space Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> for N nodes</li>
+            <li><b>Space:</b> <code>O(1)</code> (iterative), <code>O(N)</code> (recursive stack)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: head = [1,2,3,4,5]
+Output: [5,4,3,2,1]
+</code></pre>
+    </div
