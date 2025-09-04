@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circular Array Loop Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔄 Circular Array Loop – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Circular Array Loop</b> problem (LeetCode 457) asks you to determine if there is a cycle in a circular array. Each element in the array represents the number of steps to move forward or backward. The cycle must be longer than 1 and must move in a single direction (all positive or all negative).
+        </p>
+
+        <h2>🎯 Solution Pattern (Fast and Slow Pointer)</h2>
+        <pre><code>// Java Solution (Fast and Slow Pointer)
+class Solution {
+    public boolean circularArrayLoop(int[] nums) {
+        int size = nums.length;
+
+        for (int i = 0; i < size; i++) {
+            int slow = i, fast = i;
+            boolean forward = nums[i] > 0;
+
+            while (true) {
+                slow = nextStep(slow, nums[slow], size);
+
+                if (isNotCycle(nums, forward, slow))
+                    break;
+
+                fast = nextStep(fast, nums[fast], size);
+
+                if (isNotCycle(nums, forward, fast))
+                    break;
+
+                fast = nextStep(fast, nums[fast], size);
+
+                if (isNotCycle(nums, forward, fast))
+                    break;
+
+                if (slow == fast)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    // A function to calculate the next step
+    public static int nextStep(int pointer, int value, int size) {
+        int result = (pointer + value) % size;
+        if (result < 0)
+            result += size;
+        return result;
+    }
+    
+    // A function to detect a cycle doesn't exist
+    public static boolean isNotCycle(int[] nums, boolean prevDirection, int pointer) {
+        boolean currDirection = nums[pointer] >= 0;
+
+        if (prevDirection != currDirection || Math.abs(nums[pointer] % nums.length) == 0) {
+            return true;
+        }
+
+        return false;
+    }
+}
+</code></pre>
+<button onclick="window.location.href='../animations/circular_array_loop_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Detecting cycles in arrays with jumps</li>
+            <li>Cycle detection with direction constraints</li>
+            <li>Interview questions on fast/slow pointer in arrays</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Iterate through each index as a starting point</li>
+            <li>Use fast and slow pointers to detect a cycle in the same direction</li>
+            <li>If a cycle is found (length &gt; 1), return true</li>
+            <li>Mark all visited nodes as 0 to avoid revisiting</li>
+        </ol>
+
+        <h2>⏱️ Time & Space Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> for N elements</li>
+            <li><b>Space:</b> <code>O(1)</code> (in-place marking)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: nums = [2,-1,1,2,2]
+Output: true
+
+Input: nums = [-1,2]
+Output: false
+
+Input: nums = [-2,1,-1,-2,-2]
+Output: false
+</code></pre>
+    </div>
+</body>
+</html>

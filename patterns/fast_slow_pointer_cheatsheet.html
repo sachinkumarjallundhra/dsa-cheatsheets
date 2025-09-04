@@ -37,33 +37,90 @@ while (fast != null && fast.next != null) {
     </ul>
 
     <h2>📘 Common LeetCode Problems</h2>
-    <ul>
-      <li>
-        <a href="https://leetcode.com/problems/linked-list-cycle/" target="_blank" rel="noopener noreferrer">141: Linked List Cycle</a>
-        <span class="badge badge-easy">[Easy]</span>
-        <span class="badge badge-tag">Fast & Slow Pointer</span>
-      </li>
-      <li>
-        <a href="https://leetcode.com/problems/middle-of-the-linked-list/" target="_blank" rel="noopener noreferrer">876: Middle of the Linked List</a>
-        <span class="badge badge-easy">[Easy]</span>
-        <span class="badge badge-tag">Fast & Slow Pointer</span>
-      </li>
-      <li>
-        <a href="https://leetcode.com/problems/palindrome-linked-list/" target="_blank" rel="noopener noreferrer">234: Palindrome Linked List</a>
-        <span class="badge badge-medium">[Medium]</span>
-        <span class="badge badge-tag">Fast & Slow Pointer, Two Pointers</span>
-      </li>
-      <li>
-        <a href="https://leetcode.com/problems/happy-number/" target="_blank" rel="noopener noreferrer">202: Happy Number</a>
-        <span class="badge badge-easy">[Easy]</span>
-        <span class="badge badge-tag">Fast & Slow Pointer, Math</span>
-      </li>
-      <li>
-        <a href="https://leetcode.com/problems/circular-array-loop/" target="_blank" rel="noopener noreferrer">457: Circular Array Loop</a>
-        <span class="badge badge-medium">[Medium]</span>
-        <span class="badge badge-tag">Fast & Slow Pointer, Array</span>
-      </li>
-    </ul>
+    <div class="problems-section">
+      <h3 class="problems-header easy">🟢 Easy Problems</h3>
+      <ul class="problems-list">
+        <li>
+          <div class="problem-card easy">
+            <div class="problem-title">
+              Linked List Cycle
+              <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/linked-list-cycle/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="linked_list_cycle_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Detect if a linked list has a cycle using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card easy">
+            <div class="problem-title">
+              Middle of the Linked List
+              <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/middle-of-the-linked-list/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="middle_of_the_linked_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Find the middle node of a linked list.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card easy">
+            <div class="problem-title">
+              Happy Number
+              <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/happy-number/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="happy_number_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Detect cycles in number transformation using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <h3 class="problems-header medium">🟡 Medium Problems</h3>
+      <ul class="problems-list">
+        <li>
+          <div class="problem-card medium">
+            <div class="problem-title">
+              Palindrome Linked List
+              <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/palindrome-linked-list/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="palindrome_linked_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Check if a linked list is a palindrome using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card medium">
+            <div class="problem-title">
+              Circular Array Loop
+              <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/circular-array-loop/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="circular_array_loop_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Detect cycles in a circular array using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
 
     <h2>🧪 Example 1: Detect Cycle in Linked List</h2>
     <pre><code>public boolean hasCycle(ListNode head) {
@@ -95,5 +152,83 @@ while (fast != null && fast.next != null) {
       <li>Works for arrays using indices too</li>
     </ul>
   </div>
+  <style>
+.problems-section {
+    margin-bottom: 32px;
+}
+.problems-header {
+    font-size: 1.2em;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+.problems-header.easy { color: #28a745; }
+.problems-header.medium { color: #ffc107; }
+.problems-header.hard { color: #dc3545; }
+.problems-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.problem-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    padding: 16px 18px 10px 18px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+    border-left: 6px solid #dee2e6;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.problem-card.easy { border-color: #28a745; }
+.problem-card.medium { border-color: #ffc107; }
+.problem-card.hard { border-color: #dc3545; }
+.problem-card:hover {
+    box-shadow: 0 4px 16px rgba(44,62,80,0.10);
+    border-left-width: 10px;
+}
+.problem-title {
+    font-weight: bold;
+    font-size: 1.08em;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 8px;
+    font-weight: 500;
+}
+.badge-easy { background: #28a745; color: white; }
+.badge-medium { background: #ffc107; color: black; }
+.badge-hard { background: #dc3545; color: white; }
+.problem-actions {
+    margin-bottom: 6px;
+}
+.problem-actions a {
+    display: inline-block;
+    margin-right: 12px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: #e9ecef;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.97em;
+    border: 1px solid #dee2e6;
+    transition: background 0.2s, color 0.2s;
+}
+.problem-actions a:hover {
+    background: #007bff;
+    color: #fff;
+}
+.problem-notes {
+    font-size: 0.93em;
+    color: #6c757d;
+    margin-bottom: 2px;
+    margin-top: 2px;
+}
+</style>
 </body>
 </html>

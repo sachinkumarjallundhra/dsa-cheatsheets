@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linked List Cycle Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔁 Linked List Cycle – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Linked List Cycle</b> problem (LeetCode 141) asks you to determine if a singly linked list contains a cycle (i.e., a node's next pointer points to a previous node).
+        </p>
+
+        <h2>🎯 Solution Pattern (Fast and Slow Pointer)</h2>
+        <pre><code>// Java Solution (Floyd's Tortoise and Hare)
+public boolean hasCycle(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow == fast) return true;
+    }
+    return false;
+}
+</code></pre>
+<button onclick="window.location.href='../animations/linked_list_cycle_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Detecting cycles in linked lists</li>
+            <li>Cycle detection in graphs or arrays (with index pointers)</li>
+            <li>Interview questions on pointer manipulation</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize two pointers, <code>slow</code> and <code>fast</code>, at the head</li>
+            <li>Move <code>slow</code> by one step and <code>fast</code> by two steps in each iteration</li>
+            <li>If <code>slow</code> and <code>fast</code> meet, a cycle exists</li>
+            <li>If <code>fast</code> reaches the end, there is no cycle</li>
+        </ol>
+
+        <h2>⏱️ Time & Space Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> for N nodes</li>
+            <li><b>Space:</b> <code>O(1)</code> (constant space)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: head = [3,2,0,-4], pos = 1
+Output: true
+
+Input: head = [1,2], pos = 0
+Output: true
+
+Input: head = [1], pos = -1
+Output: false
+</code></pre>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Middle of the Linked List Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔸 Middle of the Linked List – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Middle of the Linked List</b> problem (LeetCode 876) asks you to return the middle node of a singly linked list. If there are two middle nodes, return the second one.
+        </p>
+
+        <h2>🎯 Solution Pattern (Fast and Slow Pointer)</h2>
+        <pre><code>// Java Solution (Fast and Slow Pointer)
+public ListNode middleNode(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    return slow;
+}
+</code></pre>
+<button onclick="window.location.href='../animations/middle_of_the_linked_list_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding the midpoint in a linked list</li>
+            <li>Splitting a linked list into halves</li>
+            <li>Used as a subroutine in many linked list problems</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Initialize two pointers, <code>slow</code> and <code>fast</code>, at the head</li>
+            <li>Move <code>slow</code> by one step and <code>fast</code> by two steps in each iteration</li>
+            <li>When <code>fast</code> reaches the end, <code>slow</code> will be at the middle</li>
+            <li>Return <code>slow</code></li>
+        </ol>
+
+        <h2>⏱️ Time & Space Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> for N nodes</li>
+            <li><b>Space:</b> <code>O(1)</code> (constant space)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: head = [1,2,3,4,5]
+Output: [3,4,5]
+
+Input: head = [1,2,3,4,5,6]
+Output: [4,5,6]
+</code></pre>
+    </div>
+</body>
+</html>

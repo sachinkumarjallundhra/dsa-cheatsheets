@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Middle of the Linked List (Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #16a085; --color-slow: #3498db; --color-fast: #e74c3c;
+            --color-result: #2ecc71; --color-node-bg: #ecf0f1; --color-node-border: #bdc3c7;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(400px, 1fr) 2.5fr minmax(350px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f6f3; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls .buttons { display: flex; gap: 15px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; }
+        .main-column { grid-area: main; }
+        .right-column { grid-area: right; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto; padding: 10px; border-radius: 5px;}
+        .code-line { padding: 2px 8px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 15px; }
+        
+        #list_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node { fill: var(--color-node-bg); stroke: var(--color-node-border); stroke-width: 2; transition: all 0.3s ease; }
+        .node-text { font-size: 16px; font-weight: bold; fill: #2c3e50; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+        .node.middle-node { animation: pulse-green 1.5s infinite; }
+        @keyframes pulse-green { 0% { fill: var(--color-node-bg); stroke: var(--color-node-border); } 50% { fill: var(--color-result); stroke: var(--color-primary); } 100% { fill: var(--color-node-bg); stroke: var(--color-node-border); } }
+        .pointer-arrow { stroke: #555; stroke-width: 2; marker-end: url(#arrow); }
+        .pointer-label { font-size: 18px; font-weight: bold; text-anchor: middle; transition: all 0.4s ease-in-out; pointer-events: none; }
+        .slow-ptr { fill: var(--color-slow); }
+        .fast-ptr { fill: var(--color-fast); }
+
+        .state-table { width: 100%; border-collapse: collapse; font-size: 1.1em; text-align: center; margin-top: 20px;}
+        .state-table th, .state-table td { padding: 10px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table .slow-val { color: var(--color-slow); font-weight: bold; }
+        .state-table .fast-val { color: var(--color-fast); font-weight: bold; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center; }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 20px 0; color: var(--color-primary); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Middle of the Linked List</h1>
+            <div class="controls">
+                <label>List values (comma-separated):</label>
+                <input id="list_input" type="text" value="1,2,3,4,5" size="40">
+                <div class="buttons">
+                    <button id="start_button">Start</button>
+                    <button id="next_step_button" disabled>Next Step</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="left-column panel">
+            <h2>Algorithm</h2>
+            <div id="code_container"></div>
+            <div id="action_display">Enter list data and click 'Start'.</div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Visualization</h2>
+            <div id="list_container">
+                 <svg id="list_svg" width="100%" height="100%"></svg>
+            </div>
+        </main>
+
+        <div class="right-column panel">
+            <h2>Pointer State</h2>
+            <table class="state-table">
+                <thead><tr><th>Pointer</th><th>Points to Node</th></tr></thead>
+                <tbody>
+                    <tr><td>Slow (S)</td><td id="slow_val_td" class="slow-val">-</td></tr>
+                    <tr><td>Fast (F)</td><td id="fast_val_td" class="fast-val">-</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let listInput, startButton, nextStepButton, codeContainer, actionDisplay, listContainer,
+    slowValTd, fastValTd, resultModal, finalResultText, modalCloseBtn, listDrawer;
+
+class ListDrawer {
+    constructor(svg, values) {
+        this.svg = svg; this.values = values;
+        this.width = svg.parentElement.clientWidth; this.height = svg.parentElement.clientHeight;
+        this.nodeRadius = 25;
+        this.positions = this.calculateNodePositions();
+    }
+    calculateNodePositions() {
+        const pos = [];
+        const n = this.values.length;
+        if (n === 0) return pos;
+        const spacing = (this.width - 100) / n;
+        for (let i = 0; i < n; i++) {
+            pos.push({ x: 50 + i * spacing + spacing / 2, y: this.height / 2 });
+        }
+        return pos;
+    }
+    draw(state) {
+        this.svg.innerHTML = '';
+        const { slow_idx, fast_idx, result_idx } = state;
+        
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrow'); marker.setAttribute('viewBox', '0 -5 10 10');
+        marker.setAttribute('refX', 10); marker.setAttribute('markerWidth', 6); marker.setAttribute('markerHeight', 6);
+        marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M0,-5L10,0L0,5'); path.setAttribute('fill', '#555');
+        marker.appendChild(path); defs.appendChild(marker); this.svg.appendChild(defs);
+
+        const edgesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        for (let i = 0; i < this.values.length - 1; i++) {
+            const p1 = this.positions[i], p2 = this.positions[i+1];
+            const edge = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            edge.setAttribute('x1', p1.x + this.nodeRadius); edge.setAttribute('y1', p1.y);
+            edge.setAttribute('x2', p2.x - this.nodeRadius); edge.setAttribute('y2', p2.y);
+            edge.classList.add('pointer-arrow');
+            edgesGroup.appendChild(edge);
+        }
+        this.svg.appendChild(edgesGroup);
+        
+        const nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        this.values.forEach((val, i) => {
+            const pos = this.positions[i];
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', pos.x); circle.setAttribute('cy', pos.y);
+            circle.setAttribute('r', this.nodeRadius); circle.classList.add('node');
+            if (result_idx === i) circle.classList.add('middle-node');
+            
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', pos.x); text.setAttribute('y', pos.y);
+            text.textContent = val; text.classList.add('node-text');
+            
+            g.appendChild(circle); g.appendChild(text); nodesGroup.appendChild(g);
+        });
+        this.svg.appendChild(nodesGroup);
+        
+        const pointersGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        if (slow_idx !== null) {
+            const pos = this.positions[slow_idx];
+            pointersGroup.appendChild(this.createPointerLabel('S', pos.x, pos.y - this.nodeRadius - 15, 'slow-ptr'));
+        }
+        if (fast_idx !== null) {
+            const pos = this.positions[fast_idx];
+            pointersGroup.appendChild(this.createPointerLabel('F', pos.x, pos.y + this.nodeRadius + 20, 'fast-ptr'));
+        }
+        this.svg.appendChild(pointersGroup);
+    }
+    createPointerLabel(label, x, y, className) {
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', x); text.setAttribute('y', y);
+        text.textContent = label; text.classList.add('pointer-label', className);
+        return text;
+    }
+}
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays(); resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return;
+        [codeContainer].forEach(c => c.innerHTML = '');
+        slowValTd.textContent = '-'; fastValTd.textContent = '-';
+        const svg = document.getElementById('list_svg'); if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = 'Enter list data and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const values = listInput.value.split(',').map(s => s.trim()).filter(s => s !== '').map(Number);
+            if (values.some(isNaN)) throw new Error("Invalid number format.");
+            
+            this.initUI();
+            listDrawer = new ListDrawer(document.getElementById('list_svg'), values);
+            animationSteps = this.generateSteps(values);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Invalid input. Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+            "slow = head, fast = head",
+            "while (fast != null && fast.next != null):",
+            "  slow = slow.next",
+            "  fast = fast.next.next",
+            "return slow"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(values) {
+        const n = values.length;
+        if (n === 0) return [{line: 4, msg: "List is empty, returning null.", slow_idx: null, fast_idx: null, result_idx: null}];
+
+        const steps = []; const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        const next = (idx) => (idx + 1 < n) ? idx + 1 : null;
+        
+        let state = { line: null, msg: "", slow_idx: null, fast_idx: null, result_idx: null };
+
+        state.slow_idx = 0; state.fast_idx = 0;
+        save({ ...state, line: 0, msg: `Initialize slow and fast pointers to head.` });
+
+        while (state.fast_idx !== null && next(state.fast_idx) !== null) {
+            save({ ...state, line: 1, msg: `Loop condition holds: fast pointer and its 'next' are not null.` });
+
+            state.slow_idx = next(state.slow_idx);
+            save({ ...state, line: 2, msg: `Move slow pointer one step.` });
+            
+            state.fast_idx = next(next(state.fast_idx));
+            save({ ...state, line: 3, msg: `Move fast pointer two steps.` });
+        }
+        
+        save({ ...state, line: 1, msg: `Loop condition fails. Fast pointer has reached the end.` });
+        
+        state.result_idx = state.slow_idx;
+        save({ ...state, line: 4, msg: `Return the slow pointer. The middle node is ${values[state.result_idx]}.` });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        if(listDrawer) listDrawer.draw(state);
+        
+        slowValTd.textContent = state.slow_idx !== null ? listDrawer.values[state.slow_idx] : 'null';
+        fastValTd.textContent = state.fast_idx !== null ? listDrawer.values[state.fast_idx] : 'null';
+        
+        if (state.result_idx !== null) {
+            finalResultText.textContent = `Middle Node is ${listDrawer.values[state.result_idx]}`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    listInput = document.getElementById('list_input');
+    startButton = document.getElementById('start_button'); nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); actionDisplay = document.getElementById('action_display');
+    listContainer = document.getElementById('list_container'); slowValTd = document.getElementById('slow_val_td');
+    fastValTd = document.getElementById('fast_val_td'); resultModal = document.getElementById('result_modal');
+    finalResultText = document.getElementById('final_result_text'); modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>
