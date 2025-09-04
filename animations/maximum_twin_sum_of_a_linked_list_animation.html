@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maximum Twin Sum of a Linked List (Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #16a085; --color-success: #27ae60; --color-danger: #c0392b;
+            --color-slow: #3498db; --color-fast: #e67e22; --color-first: #8e44ad; --color-second: #d35400;
+            --color-node-bg: #ecf0f1; --color-node-border: #bdc3c7;
+        }
+        html, body {
+            height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+            overflow: auto;
+        }
+        .dashboard-container {
+            display: flex; flex-direction: column;
+            gap: 15px; padding: 15px; min-height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { flex-shrink: 0; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #e8f6f3; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .content-container {
+            display: flex; flex-direction: column; gap: 15px; flex-grow: 1; min-height: 0;
+        }
+        .main-column { flex-grow: 1; min-height: 250px; }
+        .info-column { display: flex; flex-direction: column; gap: 15px; }
+
+        #list_container { position: relative; width: 100%; height: 100%; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; }
+        .node { fill: var(--color-node-bg); stroke: var(--color-node-border); stroke-width: 2; transition: all 0.3s ease; }
+        .node-text { font-size: 16px; font-weight: bold; fill: #2c3e50; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+        .pointer-arrow { stroke: #555; stroke-width: 2; marker-end: url(#arrow); transition: d 0.4s ease, opacity 0.4s ease; }
+        .pointer-label { font-size: 16px; font-weight: bold; text-anchor: middle; pointer-events: none; transition: all 0.4s ease-in-out; }
+        .twin-line { stroke: var(--color-primary); stroke-width: 2.5; stroke-dasharray: 4 4; }
+        .twin-sum-text { font-size: 20px; font-weight: bold; fill: var(--color-primary); text-anchor: middle; }
+
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; }
+        #state_panel { flex-shrink: 0; }
+        .state-table { width: 100%; border-collapse: collapse; font-size: 1.1em; text-align: center; }
+        .state-table th, .state-table td { padding: 8px; border: 1px solid #ddd; }
+        .state-table th { background-color: #f2f2f2; }
+        #max_sum_val { font-weight: bold; color: var(--color-primary); font-size: 1.2em; transition: all 0.2s ease; display: inline-block; }
+        #max_sum_val.highlight { transform: scale(1.3); color: var(--color-success); }
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.8em; flex-shrink: 1; overflow-y: auto; padding: 10px; border-radius: 5px; min-height: 150px; }
+        .code-line { padding: 2px 8px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center; }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 20px 0; color: var(--color-success); }
+        
+        @media (min-width: 1024px) {
+            html, body { overflow: hidden; }
+            .dashboard-container { flex-direction: row; flex-wrap: wrap; height: 100%; }
+            .header { width: 100%; }
+            .content-container { flex-direction: row; }
+            .main-column { min-width: 0; }
+            .info-column { min-width: 400px; max-width: 400px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Maximum Twin Sum of a Linked List</h1>
+            <div class="controls">
+                <label>List values (comma-separated):</label>
+                <input id="list_input" type="text" value="4,2,2,3" size="30">
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="content-container">
+            <main class="main-column panel">
+                <h2>Visualization</h2>
+                <div id="list_container">
+                     <svg id="list_svg" width="100%" height="100%"></svg>
+                </div>
+            </main>
+    
+            <div class="info-column">
+                <div class="panel">
+                    <h2>Current Action</h2>
+                    <div id="action_display">Enter list data and click 'Start'.</div>
+                </div>
+                <div id="state_panel" class="panel">
+                    <h2>State</h2>
+                    <table id="state_table" class="state-table"></table>
+                </div>
+                <div class="panel">
+                    <h2>Algorithm</h2>
+                    <div id="code_container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let listInput, startButton, nextStepButton, codeContainer, actionDisplay, listContainer,
+    stateTable, resultModal, finalResultText, modalCloseBtn, listDrawer;
+
+class ListDrawer {
+    constructor(svg, values) {
+        this.svg = svg; this.values = values; this.nodeRadius = 22;
+    }
+    calculatePositions(state) {
+        const { node_links, phase, middle_idx, reversed_head_idx } = state;
+        const n = this.values.length; const pos = Array(n);
+        const width = this.svg.parentElement.clientWidth; const height = this.svg.parentElement.clientHeight;
+
+        if (phase < 3) {
+            const spacing = (width - 80) / n;
+            for (let i=0; i < n; i++) pos[i] = { x: 40 + i * spacing + spacing / 2, y: height / 2 };
+        } else {
+            const first_half_len = n / 2;
+            const second_half_len = n / 2;
+            const top_spacing = (width - 80) / first_half_len;
+            const bottom_spacing = (width - 80) / second_half_len;
+            
+            let curr_first = 0, i=0;
+            while(i < first_half_len) {
+                pos[curr_first] = { x: 40 + i * top_spacing + top_spacing / 2, y: height * 0.35 };
+                curr_first = node_links[curr_first]; i++;
+            }
+            
+            let curr_second = reversed_head_idx; i = 0;
+            while (curr_second !== null) {
+                pos[curr_second] = { x: 40 + (second_half_len - 1 - i) * bottom_spacing + bottom_spacing / 2, y: height * 0.65 };
+                curr_second = node_links[curr_second]; i++;
+            }
+        }
+        return pos;
+    }
+    draw(state) {
+        this.svg.innerHTML = '';
+        const { pointers, node_links, comparison, phase } = state;
+        const positions = this.calculatePositions(state);
+        
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrow'); marker.setAttribute('viewBox', '0 -5 10 10'); marker.setAttribute('refX', 10);
+        marker.setAttribute('markerWidth', 6); marker.setAttribute('markerHeight', 6); marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M0,-5L10,0L0,5'); path.setAttribute('fill', '#555');
+        marker.appendChild(path); defs.appendChild(marker); this.svg.appendChild(defs);
+        
+        const edgesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        node_links.forEach((next_idx, i) => {
+            if (next_idx !== null && positions[i] && positions[next_idx]) {
+                const p1 = positions[i], p2 = positions[next_idx];
+                const dx = p2.x - p1.x, dy = p2.y - p1.y, dist = Math.sqrt(dx*dx + dy*dy);
+                const unitX = dx / dist, unitY = dy / dist;
+                const edge = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                edge.setAttribute('x1', p1.x + unitX * this.nodeRadius); edge.setAttribute('y1', p1.y + unitY * this.nodeRadius);
+                edge.setAttribute('x2', p2.x - unitX * this.nodeRadius); edge.setAttribute('y2', p2.y - unitY * this.nodeRadius);
+                edge.classList.add('pointer-arrow'); edgesGroup.appendChild(edge);
+            }
+        });
+        this.svg.appendChild(edgesGroup);
+
+        if (comparison && comparison.p1_idx !== null && comparison.p2_idx !== null) {
+            const p1 = positions[comparison.p1_idx], p2 = positions[comparison.p2_idx];
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y); line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+            line.classList.add('twin-line'); this.svg.appendChild(line);
+
+            const sumText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            sumText.setAttribute('x', (p1.x + p2.x)/2); sumText.setAttribute('y', (p1.y + p2.y)/2);
+            sumText.textContent = `${this.values[comparison.p1_idx]} + ${this.values[comparison.p2_idx]} = ${comparison.sum}`;
+            sumText.classList.add('twin-sum-text'); this.svg.appendChild(sumText);
+        }
+        
+        const nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        this.values.forEach((val, i) => {
+            if(!positions[i]) return;
+            const pos = positions[i];
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', pos.x); circle.setAttribute('cy', pos.y); circle.setAttribute('r', this.nodeRadius);
+            circle.classList.add('node');
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', pos.x); text.setAttribute('y', pos.y);
+            text.textContent = val; text.classList.add('node-text');
+            nodesGroup.appendChild(circle); nodesGroup.appendChild(text);
+        });
+        this.svg.appendChild(nodesGroup);
+        
+        const pointersGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        let y_offsets = {};
+        for (const [name, idx] of Object.entries(pointers)) {
+            if (idx !== null && positions[idx]) {
+                const pos = positions[idx];
+                y_offsets[idx] = (y_offsets[idx] || 0) + 1;
+                const sign = (phase === 3 && name === 'second') ? 1 : -1;
+                const y_offset = sign * (this.nodeRadius + 15 * y_offsets[idx]);
+                pointersGroup.appendChild(this.createPointerLabel(name, pos.x, pos.y + y_offset));
+            }
+        }
+        this.svg.appendChild(pointersGroup);
+    }
+    createPointerLabel(label, x, y) {
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', x); text.setAttribute('y', y);
+        text.textContent = label; text.classList.add('pointer-label');
+        return text;
+    }
+}
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays(); resultModal.style.display = 'none';
+    }
+    clearDisplays() {
+        if (!codeContainer) return; codeContainer.innerHTML = ''; stateTable.innerHTML = '';
+        const svg = document.getElementById('list_svg'); if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = 'Enter list data and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const values = listInput.value.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s));
+            if (values.length === 0 || values.length % 2 !== 0) throw new Error("Please enter an even number of values.");
+            this.initUI();
+            listDrawer = new ListDrawer(document.getElementById('list_svg'), values);
+            animationSteps = this.generateSteps(values);
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Invalid input. Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+           "// Phase 1: Find Middle", "slow = head, fast = head", "while (fast && fast.next):", "  slow = slow.next", "  fast = fast.next.next",
+           "", "// Phase 2: Reverse 2nd half", "prev = null, curr = slow", "while (curr != null):", "  nextTemp = curr.next", "  curr.next = prev",
+           "  prev = curr", "  curr = nextTemp",
+           "", "// Phase 3: Find Max Twin Sum", "first = head, second = prev", "while (second != null):",
+           "  sum = first.val + second.val", "  maxSum = max(maxSum, sum)", "  first = first.next", "  second = second.next", "return maxSum"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(values) {
+        const n = values.length; const steps = [];
+        const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let state = {
+            line: null, msg: "", result: null, phase: 1, middle_idx: null, reversed_head_idx: null, maxSum: 0, maxSumHighlight: false,
+            pointers: {}, node_links: Array.from({length: n}, (_, i) => i + 1 < n ? i + 1 : null), comparison: null
+        };
+        
+        // Phase 1: Find Middle
+        state.pointers = { slow: 0, fast: 0 };
+        save({ ...state, line: 0, msg: `Phase 1: Find the middle of the list.` });
+        while (state.pointers.fast !== null && state.node_links[state.pointers.fast] !== null) {
+            save({ ...state, line: 2, msg: `Loop condition holds.` });
+            state.pointers.slow = state.node_links[state.pointers.slow];
+            save({ ...state, line: 3, msg: `Move slow pointer.` });
+            state.pointers.fast = state.node_links[state.node_links[state.pointers.fast]];
+            save({ ...state, line: 4, msg: `Move fast pointer.` });
+        }
+        state.middle_idx = Math.floor(n/2) - 1;
+        const second_half_start = state.pointers.slow;
+        save({ ...state, line: 2, msg: `Loop ends. The second half starts at node ${values[second_half_start]}.` });
+        
+        // Phase 2: Reverse
+        state.phase = 2; state.pointers = { prev: null, curr: second_half_start };
+        save({ ...state, line: 6, msg: `Phase 2: Reverse the second half.` });
+        
+        // --- IMPROVED REVERSAL ANIMATION ---
+        while (state.pointers.curr !== null) {
+            save({ ...state, line: 8, msg: `Start of reversal loop.` });
+            
+            const nextTemp = state.node_links[state.pointers.curr];
+            state.pointers.nextTemp = nextTemp;
+            save({ ...state, line: 9, msg: `Store next node (${nextTemp !== null ? values[nextTemp] : 'null'}) in nextTemp.` });
+            
+            state.node_links[state.pointers.curr] = state.pointers.prev;
+            save({ ...state, line: 10, msg: `Reverse pointer of node ${values[state.pointers.curr]}.` });
+            
+            state.pointers.prev = state.pointers.curr;
+            save({ ...state, line: 11, msg: `Move prev pointer to current node.` });
+            
+            state.pointers.curr = nextTemp;
+            delete state.pointers.nextTemp;
+            save({ ...state, line: 12, msg: `Move curr pointer to the stored next node.` });
+        }
+        state.reversed_head_idx = state.pointers.prev;
+        save({ ...state, line: 8, msg: `Reversal complete.`, pointers: {} });
+
+        // Phase 3: Compare
+        state.phase = 3; state.pointers = { first: 0, second: state.reversed_head_idx };
+        save({ ...state, line: 14, msg: `Phase 3: Find maximum twin sum.` });
+        while(state.pointers.second !== null) {
+            state.maxSumHighlight = false;
+            const sum = values[state.pointers.first] + values[state.pointers.second];
+            state.comparison = { p1_idx: state.pointers.first, p2_idx: state.pointers.second, sum };
+            save({ ...state, line: 16, msg: `Comparing twins (${values[state.pointers.first]}, ${values[state.pointers.second]}).` });
+            if(sum > state.maxSum) {
+                state.maxSum = sum; state.maxSumHighlight = true;
+                save({ ...state, line: 17, msg: `New max sum found: ${sum}.` });
+            } else {
+                 save({ ...state, line: 17, msg: `Sum is ${sum}. Max sum remains ${state.maxSum}.` });
+            }
+            state.pointers.first = state.node_links[state.pointers.first];
+            state.pointers.second = state.node_links[state.pointers.second];
+            save({ ...state, line: 18, msg: `Advance pointers.`, comparison: null, maxSumHighlight: false });
+        }
+        
+        state.result = state.maxSum;
+        save({ ...state, line: 20, msg: `Comparison complete. Final max sum is ${state.maxSum}.`, pointers:{} });
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        if(listDrawer) listDrawer.draw(state);
+        
+        let tableHTML = `<thead><tr><th>Item</th><th>Value</th></tr></thead><tbody>`;
+        const colors = {slow: 'var(--color-slow)', fast: 'var(--color-fast)', prev: '#7f8c8d', curr: '#f39c12', nextTemp: '#f1c40f', first: 'var(--color-first)', second: 'var(--color-second)'};
+        for(const [name, idx] of Object.entries(state.pointers)) {
+            if (idx !== null) {
+                tableHTML += `<tr><td style="color: ${colors[name]}; font-weight: bold;">${name}</td><td>${listDrawer.values[idx]}</td></tr>`;
+            }
+        }
+        tableHTML += `<tr><td><b>Max Sum</b></td><td><span id="max_sum_val">${state.maxSum}</span></td></tr>`;
+        tableHTML += '</tbody>';
+        stateTable.innerHTML = tableHTML;
+        
+        const maxSumSpan = document.getElementById('max_sum_val');
+        if (maxSumSpan && state.maxSumHighlight) {
+            maxSumSpan.classList.add('highlight');
+            setTimeout(() => maxSumSpan.classList.remove('highlight'), 300);
+        }
+        
+        if (state.result !== null) {
+            finalResultText.textContent = `Maximum Twin Sum: ${state.result}`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    listInput = document.getElementById('list_input');
+    startButton = document.getElementById('start_button'); nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); actionDisplay = document.getElementById('action_display');
+    listContainer = document.getElementById('list_container'); stateTable = document.getElementById('state_table');
+    resultModal = document.getElementById('result_modal'); finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

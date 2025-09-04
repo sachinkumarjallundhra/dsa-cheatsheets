@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maximum Twin Sum of a Linked List Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Maximum Twin Sum of a Linked List – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Maximum Twin Sum of a Linked List</b> problem (LeetCode 2130) asks you to find the maximum twin sum in a singly linked list. A twin sum is defined as the sum of the ith node from the start and the ith node from the end (for all i in the first half of the list).
+        </p>
+
+        <h2>🎯 Solution Pattern (Find Middle, Reverse Second Half, Compare)</h2>
+        <pre><code>// Java Solution
+public int pairSum(ListNode head) {
+    // 1. Find the middle of the list
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    // 2. Reverse the second half
+    ListNode prev = null, curr = slow;
+    while (curr != null) {
+        ListNode nextTemp = curr.next;
+        curr.next = prev;
+        prev = curr;
+        curr = nextTemp;
+    }
+    // 3. Calculate twin sums
+    int maxSum = 0;
+    ListNode first = head, second = prev;
+    while (second != null) {
+        maxSum = Math.max(maxSum, first.val + second.val);
+        first = first.next;
+        second = second.next;
+    }
+    return maxSum;
+}
+</code></pre>
+<button onclick="window.location.href='../animations/maximum_twin_sum_of_a_linked_list_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Finding maximum twin sum in a linked list</li>
+            <li>Interview questions on pointer manipulation and list reversal</li>
+            <li>Splitting and merging linked lists</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use fast and slow pointers to find the middle of the list</li>
+            <li>Reverse the second half of the list</li>
+            <li>Iterate through both halves, calculating twin sums</li>
+            <li>Return the maximum twin sum found</li>
+        </ol>
+
+        <h2>⏱️ Time & Space Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> for N nodes</li>
+            <li><b>Space:</b> <code>O(1)</code> (in-place reversal)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: head = [5,4,2,1]
+Output: 6
+Explanation: Twin sums are 5+1=6 and 4+2=6. Maximum is 6.
+
+Input: head = [1,100000]
+Output: 100001
+</code></pre>
+    </div>
+</body>
+</html>

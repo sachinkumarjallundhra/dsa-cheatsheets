@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split a Circular Linked List Cheat Sheet</title>
+    <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+    <div class="container">
+        <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+        <h1>🔗 Split a Circular Linked List – Java Cheat Sheet</h1>
+
+        <h2>📌 What Is It?</h2>
+        <p>
+            The <b>Split a Circular Linked List into Two Halves</b> problem (LeetCode 725, GFG, etc.) asks you to split a circular singly linked list into two halves. If the number of nodes is odd, the extra node goes in the first list. Both halves should remain circular.
+        </p>
+
+        <h2>🎯 Solution Pattern (Fast and Slow Pointer)</h2>
+        <pre><code>// Java Solution (Fast and Slow Pointer)
+public void splitList(Node head, Node[] result) {
+    if (head == null) return;
+    Node slow = head, fast = head;
+    // Find the middle using fast and slow pointers
+    while (fast.next != head && fast.next.next != head) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    // For even number of nodes, move fast to the last node
+    if (fast.next.next == head) fast = fast.next;
+
+    // Set the heads of the two halves
+    Node head1 = head;
+    Node head2 = slow.next;
+
+    // Make the first half circular
+    slow.next = head1;
+    // Make the second half circular
+    fast.next = head2;
+
+    result[0] = head1;
+    result[1] = head2;
+}
+</code></pre>
+<button onclick="window.location.href='../animations/split_circular_linked_list_animation.html'" class="animation-btn">
+    ▶️ View Animation
+</button>
+
+        <h2>✅ Use Cases</h2>
+        <ul>
+            <li>Splitting a circular linked list into two halves</li>
+            <li>Interview questions on pointer manipulation and circular lists</li>
+            <li>Understanding fast and slow pointer technique</li>
+        </ul>
+
+        <h2>📝 Algorithm Steps</h2>
+        <ol>
+            <li>Use fast and slow pointers to find the middle of the circular list</li>
+            <li>Set the next of the slow pointer to the head to close the first half</li>
+            <li>Set the next of the fast pointer to the node after slow to close the second half</li>
+            <li>Return the two heads</li>
+        </ol>
+
+        <h2>⏱️ Time & Space Complexity</h2>
+        <ul>
+            <li><b>Time:</b> <code>O(N)</code> for N nodes</li>
+            <li><b>Space:</b> <code>O(1)</code> (in-place)</li>
+        </ul>
+
+        <h2>🧪 Example</h2>
+        <pre><code>Input: head = [1,2,3,4,5] (circular)
+Output: [1,2,3] (circular), [4,5] (circular)
+
+Input: head = [1,2,3,4] (circular)
+Output: [1,2] (circular), [3,4] (circular)
+</code></pre>
+    </div>
+</body>
+</html>

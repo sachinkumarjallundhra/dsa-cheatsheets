@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find the Duplicate Number (Proper Animation)</title>
+    <style>
+        :root {
+            --color-bg-light: #f4f7f6; --color-bg-panel: #ffffff; --color-text-dark: #2c3e50;
+            --color-primary: #8e44ad; --color-success: #27ae60; --color-collision: #f39c12;
+            --color-slow: #3498db; --color-fast: #c0392b;
+        }
+        html, body {
+            height: 100%; margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: var(--color-bg-light);
+        }
+        .dashboard-container {
+            display: grid; grid-template-columns: minmax(400px, 1fr) 2.5fr minmax(400px, 1fr);
+            grid-template-rows: auto 1fr; grid-template-areas: "header header header" "left main right";
+            gap: 15px; padding: 15px; height: 100%; box-sizing: border-box;
+        }
+        .panel { background-color: var(--color-bg-panel); border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 15px; display: flex; flex-direction: column; min-height: 0; }
+        h1, h2 { color: var(--color-text-dark); text-align: center; margin-top: 0; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee;}
+        h1 { font-size: 1.5em; border: none; } h2 { font-size: 1.1em; }
+
+        .header { grid-area: header; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; padding: 10px; background-color: #f4eef7; border-radius: 5px; align-items: center; justify-content: center;}
+        .controls input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: 'Courier New', monospace; width: 300px; }
+        .controls button { padding: 10px 15px; background-color: var(--color-primary); color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .controls button:disabled { background-color: #bdc3c7; }
+
+        .left-column { grid-area: left; }
+        .main-column { grid-area: main; }
+        .right-column { grid-area: right; }
+        
+        #code_container { background: #2d2d2d; color: #f1f1f1; font-family: 'Courier New', monospace; font-size: 0.9em; flex-shrink: 1; overflow-y: auto; padding: 10px; border-radius: 5px;}
+        .code-line { padding: 2px 8px; border-radius: 3px; transition: background-color 0.3s; }
+        .code-line.highlight { background-color: #555; }
+        #action_display { text-align: center; font-weight: bold; font-size: 1.1em; background: #f8f9fa; padding: 8px; border-radius: 4px; margin-top: 15px; }
+        
+        #graph_container { position: relative; width: 100%; flex-grow: 1; background: #fafafa; border-radius: 5px; border: 1px solid #e0e0e0; overflow: hidden; }
+        .node circle { 
+            stroke: #2c3e50; /* Dark border to match reference */
+            stroke-width: 3; 
+            fill: #dde4e6; /* Light grey/blue fill */
+        }
+        .node text { font-size: 18px; font-weight: bold; fill: #2c3e50; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+        .node.collision circle { fill: var(--color-collision); stroke: #d68910; }
+        .node.result circle { animation: pulse-green 1s infinite; }
+        @keyframes pulse-green { 0% { fill: #d4efdf; } 50% { fill: var(--color-success); } 100% { fill: #d4efdf; } }
+        .edge { stroke: #7f8c8d; stroke-width: 2.5; }
+        .pointer-label { font-size: 20px; font-weight: bold; text-anchor: middle; pointer-events: none; }
+        .slow-ptr { fill: var(--color-slow); }
+        .fast-ptr { fill: var(--color-fast); }
+        
+        .state-table { width: 100%; border-collapse: collapse; text-align: center; }
+        .state-table th, .state-table td { padding: 5px; border: 1px solid #ddd; font-family: 'Courier New', monospace; }
+        .state-table th { background-color: #f2f2f2; }
+        .state-table .slow-row { background-color: rgba(52, 152, 219, 0.1); }
+        .state-table .fast-row { background-color: rgba(192, 57, 43, 0.1); }
+        .state-table .slow-row.fast-row { background: linear-gradient(90deg, rgba(52, 152, 219, 0.2), rgba(192, 57, 43, 0.2)); }
+        .state-table .ptr-cell { font-weight: bold; width: 40px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); text-align: center; }
+        #final_result_text { font-size: 1.8em; font-weight: bold; margin: 10px 0; color: var(--color-success); }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="header panel">
+            <h1>Find the Duplicate Number</h1>
+            <div class="controls">
+                <label>Array (e.g., [1,3,4,2,2]):</label>
+                <input id="array_input" type="text" value="[3,1,3,4,2]">
+                <button id="start_button">Start</button>
+                <button id="next_step_button" disabled>Next Step</button>
+            </div>
+        </header>
+
+        <div class="left-column panel">
+            <h2>Algorithm (Array as a Linked List)</h2>
+            <div id="code_container"></div>
+            <div id="action_display">Enter an array and click 'Start'.</div>
+        </div>
+
+        <main class="main-column panel">
+            <h2>Index &rarr; Value Graph</h2>
+            <div id="graph_container">
+                 <svg id="graph_svg" width="100%" height="100%"></svg>
+            </div>
+        </main>
+
+        <div class="right-column panel">
+            <h2>Array State</h2>
+            <div style="overflow-y: auto;">
+                <table id="state_table" class="state-table"></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="result_modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Final Result</h2>
+            <p id="final_result_text"></p>
+            <button id="modal_close_btn" class="controls button">Close</button>
+        </div>
+    </div>
+
+<script>
+let animationSteps = [], currentStepIndex = 0, simulationRunning = false;
+let arrayInput, startButton, nextStepButton, codeContainer, actionDisplay, graphContainer,
+    stateTable, resultModal, finalResultText, modalCloseBtn, graphDrawer;
+
+class GraphDrawer {
+    constructor(svg) {
+        this.svg = svg; this.width = svg.parentElement.clientWidth; this.height = svg.parentElement.clientHeight;
+        this.positions = {}; this.nodeRadius = 28;
+        this.positionsCalculated = false;
+    }
+    
+    // NEW: Static circular layout for a clean, predictable diagram
+    calculateNodePositions(nodes) {
+        const n = nodes.length;
+        const centerX = this.width / 2;
+        const centerY = this.height / 2;
+        const radius = Math.min(this.width, this.height) / 2 * 0.75;
+        
+        nodes.forEach((node, i) => {
+            const angle = (i / n) * 2 * Math.PI - (Math.PI / 2); // Start at the top
+            this.positions[node.id] = {
+                x: centerX + radius * Math.cos(angle),
+                y: centerY + radius * Math.sin(angle)
+            };
+        });
+        this.positionsCalculated = true;
+    }
+
+    draw(state) {
+        const { graph, pointers, highlights } = state;
+        
+        if (!this.positionsCalculated) {
+            this.calculateNodePositions(graph.nodes);
+        }
+        
+        this.svg.innerHTML = '';
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrow'); marker.setAttribute('viewBox', '0 -5 10 10');
+        marker.setAttribute('refX', 10); marker.setAttribute('markerWidth', 6); marker.setAttribute('markerHeight', 6);
+        marker.setAttribute('orient', 'auto');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M0,-5L10,0L0,5'); path.setAttribute('fill', '#7f8c8d');
+        marker.appendChild(path); defs.appendChild(marker); this.svg.appendChild(defs);
+        
+        const edgesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        graph.edges.forEach(edge => {
+            const p_from = this.positions[edge.from], p_to = this.positions[edge.to];
+            if (!p_from || !p_to) return;
+            const dx = p_to.x - p_from.x, dy = p_to.y - p_from.y, dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < this.nodeRadius * 2) return; // Don't draw self-loops this way
+            const unitX = dx / dist, unitY = dy / dist;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', p_from.x); line.setAttribute('y1', p_from.y);
+            line.setAttribute('x2', p_to.x - unitX * (this.nodeRadius + 3)); // Stop line on circumference
+            line.setAttribute('y2', p_to.y - unitY * (this.nodeRadius + 3));
+            line.classList.add('edge'); line.setAttribute('marker-end', 'url(#arrow)');
+            edgesGroup.appendChild(line);
+        });
+        this.svg.appendChild(edgesGroup);
+        
+        const nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        graph.nodes.forEach(node => {
+            const pos = this.positions[node.id]; if (!pos) return;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.classList.add('node');
+            if (highlights.collision_node === node.id) g.classList.add('collision');
+            if (highlights.result_node === node.id) g.classList.add('result');
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', pos.x); circle.setAttribute('cy', pos.y); circle.setAttribute('r', this.nodeRadius);
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', pos.x); text.setAttribute('y', pos.y); text.textContent = node.id;
+            g.appendChild(circle); g.appendChild(text); nodesGroup.appendChild(g);
+        });
+        this.svg.appendChild(nodesGroup);
+        
+        const pointersGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const pSlow = this.positions[pointers.slow], pFast = this.positions[pointers.fast];
+        if (pSlow) pointersGroup.appendChild(this.createPointerLabel('S', pSlow.x, pSlow.y - this.nodeRadius - 15, 'slow-ptr'));
+        if (pFast) pointersGroup.appendChild(this.createPointerLabel('F', pFast.x, pFast.y + this.nodeRadius + 20, 'fast-ptr'));
+        this.svg.appendChild(pointersGroup);
+    }
+    createPointerLabel(label, x, y, className) {
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', x); text.setAttribute('y', y);
+        text.textContent = label; text.classList.add('pointer-label', className);
+        return text;
+    }
+}
+
+class Animation {
+    constructor() { this.reset(); }
+    reset() {
+        animationSteps = []; currentStepIndex = 0; simulationRunning = false;
+        this.updateButtons(); this.clearDisplays(); resultModal.style.display = 'none';
+        if (graphDrawer) graphDrawer.positionsCalculated = false;
+    }
+    clearDisplays() {
+        if (!codeContainer) return; codeContainer.innerHTML = '';
+        stateTable.innerHTML = '';
+        const svg = document.getElementById('graph_svg'); if (svg) svg.innerHTML = '';
+        actionDisplay.textContent = 'Enter an array and click \'Start\'.';
+    }
+    start() {
+        this.reset();
+        try {
+            const nums = JSON.parse(arrayInput.value.trim().replace(/'/g, '"'));
+            if (!Array.isArray(nums)) throw new Error("Invalid array format.");
+            
+            this.initUI();
+            graphDrawer = new GraphDrawer(document.getElementById('graph_svg'));
+            animationSteps = this.generateSteps(nums);
+            
+            simulationRunning = true;
+            if (animationSteps.length > 0) this.renderState(animationSteps[0]);
+            this.updateButtons();
+        } catch(e) { console.error(e); alert("Invalid input. Error: " + e.message); }
+    }
+    next() {
+        if (!simulationRunning || currentStepIndex >= animationSteps.length - 1) return;
+        currentStepIndex++; this.renderState(animationSteps[currentStepIndex]); this.updateButtons();
+    }
+    updateButtons() {
+        startButton.textContent = simulationRunning ? "Reset" : "Start";
+        nextStepButton.disabled = !simulationRunning || currentStepIndex >= animationSteps.length - 1;
+    }
+    
+    initUI() {
+        const code = [
+           "// Phase 1: Find collision point", "slow = nums[0], fast = nums[0]", "do:", "  slow = nums[slow]", "  fast = nums[nums[fast]]",
+           "while (slow != fast)", "", "// Phase 2: Find cycle entry point", "slow = nums[0]", "while (slow != fast):", "  slow = nums[slow]",
+           "  fast = nums[fast]", "return slow"
+        ];
+        codeContainer.innerHTML = code.map((line, i) => `<div class="code-line" id="code-line-${i}">${line.replace(/ /g, '&nbsp;')}</div>`).join('');
+    }
+
+    generateSteps(nums) {
+        const steps = []; const save = (data) => steps.push(JSON.parse(JSON.stringify(data)));
+        let state = {
+            line: null, msg: "", result: null,
+            pointers: { slow: null, fast: null },
+            graph: { nodes: [], edges: [] },
+            highlights: { collision_node: null, result_node: null }
+        };
+
+        for(let i=0; i < nums.length; i++) {
+            state.graph.nodes.push({ id: i });
+            state.graph.edges.push({ from: i, to: nums[i] });
+        }
+        
+        save({ ...state, line: 0, msg: `Phase 1: Finding a collision point in the cycle.`});
+        state.pointers.slow = nums[0]; state.pointers.fast = nums[0];
+        save({ ...state, line: 1, msg: `Initialize slow and fast to nums[0], which is ${nums[0]}.`});
+
+        do {
+            const slow_prev = state.pointers.slow;
+            state.pointers.slow = nums[state.pointers.slow];
+            save({ ...state, line: 3, msg: `slow moves from ${slow_prev} to nums[${slow_prev}] = ${state.pointers.slow}.` });
+
+            const fast_prev1 = state.pointers.fast;
+            const fast_mid = nums[state.pointers.fast];
+            save({ ...state, line: 4, msg: `fast moves from ${fast_prev1} to nums[${fast_prev1}] = ${fast_mid} (step 1/2).` });
+            state.pointers.fast = fast_mid;
+
+            const fast_prev2 = state.pointers.fast;
+            state.pointers.fast = nums[state.pointers.fast];
+            save({ ...state, line: 4, msg: `fast moves from ${fast_prev2} to nums[${fast_prev2}] = ${state.pointers.fast} (step 2/2).` });
+            
+            save({ ...state, line: 5, msg: `Checking for collision: slow (${state.pointers.slow}) == fast (${state.pointers.fast})?` });
+        } while (state.pointers.slow !== state.pointers.fast);
+        
+        state.highlights.collision_node = state.pointers.slow;
+        save({ ...state, line: 5, msg: `Collision! Pointers met at index ${state.pointers.slow}.` });
+
+        save({ ...state, line: 7, msg: `Phase 2: Finding the cycle's entry point.` });
+        state.pointers.slow = nums[0];
+        save({ ...state, line: 8, msg: `Reset slow to nums[0], which is ${nums[0]}.` });
+        
+        while (state.pointers.slow !== state.pointers.fast) {
+            save({ ...state, line: 9, msg: `slow (${state.pointers.slow}) != fast (${state.pointers.fast}). Continue.` });
+            const slow_prev = state.pointers.slow;
+            state.pointers.slow = nums[state.pointers.slow];
+            save({ ...state, line: 10, msg: `slow moves from ${slow_prev} to nums[${slow_prev}] = ${state.pointers.slow}.` });
+            const fast_prev = state.pointers.fast;
+            state.pointers.fast = nums[state.pointers.fast];
+            save({ ...state, line: 11, msg: `fast moves from ${fast_prev} to nums[${fast_prev}] = ${state.pointers.fast}.` });
+        }
+        
+        state.highlights.collision_node = null;
+        state.highlights.result_node = state.pointers.slow;
+        state.result = state.pointers.slow;
+        save({ ...state, line: 12, msg: `Pointers met at ${state.result}! This is the duplicate number.`});
+        return steps;
+    }
+    
+    renderState(state) {
+        actionDisplay.innerHTML = state.msg;
+        document.querySelectorAll('.code-line').forEach(el => el.classList.remove('highlight'));
+        if (state.line !== null) document.getElementById(`code-line-${state.line}`)?.classList.add('highlight');
+        
+        if(graphDrawer) graphDrawer.draw(state);
+        
+        const nums = JSON.parse(arrayInput.value.trim().replace(/'/g, '"'));
+        let tableHTML = '<thead><tr><th>Idx</th><th>Val</th><th>Ptrs</th></tr></thead><tbody>';
+        for(let i=0; i < nums.length; i++) {
+            let ptrs = []; let classes = [];
+            if(i === state.pointers.slow) { ptrs.push('<span style="color:var(--color-slow)">S</span>'); classes.push('slow-row'); }
+            if(i === state.pointers.fast) { ptrs.push('<span style="color:var(--color-fast)">F</span>'); classes.push('fast-row'); }
+            tableHTML += `<tr class="${classes.join(' ')}"><td>${i}</td><td>${nums[i]}</td><td class="ptr-cell">${ptrs.join(',')}</td></tr>`;
+        }
+        tableHTML += '</tbody>';
+        stateTable.innerHTML = tableHTML;
+        
+        if (state.result !== null) {
+            finalResultText.textContent = `The Duplicate Number is ${state.result}`;
+            resultModal.style.display = 'flex';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    arrayInput = document.getElementById('array_input');
+    startButton = document.getElementById('start_button'); nextStepButton = document.getElementById('next_step_button');
+    codeContainer = document.getElementById('code_container'); actionDisplay = document.getElementById('action_display');
+    graphContainer = document.getElementById('graph_container'); stateTable = document.getElementById('state_table');
+    resultModal = document.getElementById('result_modal'); finalResultText = document.getElementById('final_result_text');
+    modalCloseBtn = document.getElementById('modal_close_btn');
+    
+    const anim = new Animation();
+    startButton.addEventListener('click', () => { if(simulationRunning) anim.reset(); else anim.start(); });
+    nextStepButton.addEventListener('click', () => anim.next());
+    modalCloseBtn.addEventListener('click', () => resultModal.style.display = 'none');
+    resultModal.addEventListener('click', (e) => { if (e.target === resultModal) resultModal.style.display = 'none'; });
+});
+</script>
+</body>
+</html>
