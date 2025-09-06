@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fast and Slow Pointer Cheat Sheet</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    .interactive-demo {
+      background: #f1f8ff;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 32px 0 24px 0;
+      border-left: 6px solid #007bff;
+    }
+    .demo-select {
+      font-size: 1em;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #dee2e6;
+      margin-bottom: 14px;
+      margin-right: 10px;
+    }
+    .demo-section {
+      margin-top: 10px;
+      background: #fff;
+      border-radius: 6px;
+      padding: 14px 16px;
+      box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+      border: 1px solid #e3e6ea;
+    }
+    .demo-section h4 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      color: #007bff;
+    }
+    .demo-section .explain {
+      color: #444;
+      font-size: 1em;
+      margin-bottom: 8px;
+    }
+    .demo-section .example {
+      color: #555;
+      font-size: 0.98em;
+      margin-bottom: 4px;
+    }
+    .demo-section .step {
+      margin-bottom: 6px;
+      color: #333;
+      font-size: 0.97em;
+    }
+    .demo-section .animation-btn {
+      margin-top: 8px;
+      margin-bottom: 8px;
+      display: inline-block;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 16px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .demo-section .animation-btn:hover {
+      background: #0056b3;
+    }
+    .demo-section .trace-btn {
+      margin-left: 8px;
+      background: #ffc107;
+      color: #222;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 0.98em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .demo-section .trace-btn:hover {
+      background: #e0a800;
+    }
+    .demo-section .trace-output {
+      background: #f8f9fa;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-top: 8px;
+      font-size: 0.97em;
+      color: #444;
+      border: 1px solid #e3e6ea;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p class="no-print"><a href="../index.html">← Back to Index</a></p>
+    <h1>🐢🐇 Fast and Slow Pointer – Java Cheat Sheet (Interactive)</h1>
+
+    <h2>📌 What Is It?</h2>
+    <p>
+      The <b>Fast and Slow Pointer</b> (Floyd’s Tortoise and Hare) is a powerful pattern for solving linked list and array problems. It uses two pointers moving at different speeds to detect cycles, find midpoints, and more—all in <b>O(N)</b> time and <b>O(1)</b> space.
+    </p>
+    <ul>
+      <li>Slow moves one step at a time</li>
+      <li>Fast moves two steps at a time</li>
+    </ul>
+
+    <h2>🧱 Pattern Template</h2>
+    <pre><code>ListNode slow = head;
+ListNode fast = head;
+
+while (fast != null && fast.next != null) {
+    slow = slow.next;
+    fast = fast.next.next;
+}</code></pre>
+
+    <h2>✅ Use Cases</h2>
+    <ul>
+      <li>Detect cycles in linked list or array</li>
+      <li>Find middle of a linked list</li>
+      <li>Check if a linked list is a palindrome</li>
+      <li>Detect infinite loop (e.g., Happy Number)</li>
+      <li>Find circular paths in arrays</li>
+    </ul>
+
+    <h2>📘 Common LeetCode Problems</h2>
+    <div class="problems-section">
+      <h3 class="problems-header easy">🟢 Easy Problems</h3>
+      <ul class="problems-list">
+        <li>
+          <div class="problem-card easy">
+            <div class="problem-title">
+              Linked List Cycle
+              <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/linked-list-cycle/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="linked_list_cycle_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Detect if a linked list has a cycle using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card easy">
+            <div class="problem-title">
+              Middle of the Linked List
+              <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/middle-of-the-linked-list/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="middle_of_the_linked_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Find the middle node of a linked list.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card easy">
+            <div class="problem-title">
+              Happy Number
+              <span class="badge badge-easy">Easy</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/happy-number/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="happy_number_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Detect cycles in number transformation using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <h3 class="problems-header medium">🟡 Medium Problems</h3>
+      <ul class="problems-list">
+        <li>
+          <div class="problem-card medium">
+            <div class="problem-title">
+              Palindrome Linked List
+              <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/palindrome-linked-list/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="palindrome_linked_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Check if a linked list is a palindrome using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card medium">
+            <div class="problem-title">
+              Circular Array Loop
+              <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/circular-array-loop/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="circular_array_loop_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Detect cycles in a circular array using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card medium">
+            <div class="problem-title">
+              Maximum Twin Sum of a Linked List
+              <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/maximum-twin-sum-of-a-linked-list/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="maximum_twin_sum_of_a_linked_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Find the maximum twin sum in a linked list using fast and slow pointers and list reversal.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card medium">
+            <div class="problem-title">
+              Split a Circular Linked List
+              <span class="badge badge-medium">Medium</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/split-a-circular-linked-list-into-two-halves/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="split_circular_linked_list_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Split a circular linked list into two halves using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <h3 class="problems-header hard">🔴 Hard Problems</h3>
+      <ul class="problems-list">
+        <li>
+          <div class="problem-card hard">
+            <div class="problem-title">
+              Find the Duplicate Number
+              <span class="badge badge-hard">Hard</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/find-the-duplicate-number/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="find_the_duplicate_number_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Find the duplicate in an array using fast and slow pointers (Floyd's Tortoise and Hare).
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="problem-card hard">
+            <div class="problem-title">
+              Linked List Cycle II
+              <span class="badge badge-hard">Hard</span>
+            </div>
+            <div class="problem-actions">
+              <a href="https://leetcode.com/problems/linked-list-cycle-ii/" target="_blank" class="leetcode-link">LeetCode</a>
+              <a href="linked_list_cycle_ii_cheatsheet.html" class="cheatsheet-link">Cheat Sheet</a>
+            </div>
+            <div class="problem-notes">
+              Find the node where the cycle begins in a linked list using fast and slow pointers.
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <h2>💡 Pro Tips</h2>
+    <ul>
+      <li>Fast pointer catches slow → cycle exists</li>
+      <li>Slow can be used to reverse second half for palindrome check</li>
+      <li>Works for arrays using indices too</li>
+      <li>Draw pointer movements on paper or use a debugger for deep understanding</li>
+    </ul>
+  </div>
+      <div class="interactive-demo">
+      <h2>🎓 Interactive Learning Demo</h2>
+      <p>
+        <b>How does the Fast and Slow Pointer pattern work?</b> Select a problem to see a step-by-step explanation, code, and a sample trace!
+      </p>
+      <label for="demo-select"><b>Select a Problem:</b></label>
+      <select id="demo-select" class="demo-select" onchange="showDemo()">
+        <option value="cycle">Linked List Cycle</option>
+        <option value="middle">Middle of the Linked List</option>
+        <option value="happy">Happy Number</option>
+        <option value="palindrome">Palindrome Linked List</option>
+        <option value="circular">Circular Array Loop</option>
+        <option value="twin">Maximum Twin Sum of a Linked List</option>
+        <option value="split">Split a Circular Linked List</option>
+        <option value="duplicate">Find the Duplicate Number</option>
+        <option value="cycle2">Linked List Cycle II</option>
+      </select>
+      <div id="demo-content" class="demo-section"></div>
+    </div>
+  <script>
+    const demos = {
+      cycle: {
+        title: "Linked List Cycle",
+        explain: "Detect if a linked list has a cycle. Move slow by 1 and fast by 2. If they meet, there's a cycle.",
+        steps: [
+          "1. Initialize slow and fast at head.",
+          "2. Move slow by 1, fast by 2 each step.",
+          "3. If slow == fast, a cycle exists.",
+          "4. If fast reaches null, no cycle."
+        ],
+        code: `public boolean hasCycle(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow == fast) return true;
+    }
+    return false;
+}`,
+        example: "Input: head = [3,2,0,-4], pos = 1 → Output: true",
+        trace: `Step 1: slow=3, fast=3
+Step 2: slow=2, fast=0
+Step 3: slow=0, fast=2
+Step 4: slow=-4, fast=-4 (slow == fast, cycle detected)`
+      },
+      middle: {
+        title: "Middle of the Linked List",
+        explain: "Find the middle node. Move slow by 1 and fast by 2. When fast reaches the end, slow is at the middle.",
+        steps: [
+          "1. Initialize slow and fast at head.",
+          "2. Move slow by 1, fast by 2 each step.",
+          "3. When fast reaches end, slow is at the middle."
+        ],
+        code: `public ListNode middleNode(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    return slow;
+}`,
+        example: "Input: head = [1,2,3,4,5] → Output: [3,4,5]",
+        trace: `Step 1: slow=1, fast=1
+Step 2: slow=2, fast=3
+Step 3: slow=3, fast=5 (end)
+Result: slow at 3 (middle node)`
+      },
+      happy: {
+        title: "Happy Number",
+        explain: "Detect if a number is happy by checking for cycles in the transformation sequence using fast and slow pointers.",
+        steps: [
+          "1. Initialize slow and fast to n.",
+          "2. Move slow by one transformation, fast by two.",
+          "3. If slow == fast, check if it's 1 (happy) or not (cycle)."
+        ],
+        code: `public boolean isHappy(int n) {
+    int slow = n, fast = n;
+    do {
+        slow = getNext(slow);
+        fast = getNext(getNext(fast));
+    } while (slow != fast);
+    return slow == 1;
+}
+private int getNext(int n) {
+    int sum = 0;
+    while (n > 0) {
+        int d = n % 10;
+        sum += d * d;
+        n /= 10;
+    }
+    return sum;
+}`,
+        example: "Input: n = 19 → Output: true",
+        trace: `19 → 82 → 68 → 100 → 1 (happy number, no cycle)`
+      },
+      palindrome: {
+        title: "Palindrome Linked List",
+        explain: "Check if a linked list is a palindrome. Use fast/slow to find the middle, reverse the second half, and compare both halves.",
+        steps: [
+          "1. Use fast/slow to find the middle.",
+          "2. Reverse the second half.",
+          "3. Compare first and second halves node by node."
+        ],
+        code: `public boolean isPalindrome(ListNode head) {
+    if (head == null || head.next == null) return true;
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    ListNode prev = null, curr = slow;
+    while (curr != null) {
+        ListNode nextTemp = curr.next;
+        curr.next = prev;
+        prev = curr;
+        curr = nextTemp;
+    }
+    ListNode p1 = head, p2 = prev;
+    while (p2 != null) {
+        if (p1.val != p2.val) return false;
+        p1 = p1.next;
+        p2 = p2.next;
+    }
+    return true;
+}`,
+        example: "Input: head = [1,2,2,1] → Output: true",
+        trace: `First half: 1→2, Second half reversed: 1→2. Compare: 1==1, 2==2. Palindrome!`
+      },
+      circular: {
+        title: "Circular Array Loop",
+        explain: "Detect a cycle in a circular array. Use fast/slow pointers with index arithmetic and direction checks.",
+        steps: [
+          "1. For each index, use fast/slow pointers.",
+          "2. Move pointers according to value and direction.",
+          "3. If slow == fast and length > 1, cycle exists.",
+          "4. Mark visited nodes to avoid repeats."
+        ],
+        code: `public boolean circularArrayLoop(int[] nums) {
+    int n = nums.length;
+    for (int i = 0; i < n; i++) {
+        if (nums[i] == 0) continue;
+        int slow = i, fast = i;
+        boolean forward = nums[i] > 0;
+        while (true) {
+            slow = next(nums, forward, slow);
+            fast = next(nums, forward, fast);
+            if (fast != -1) fast = next(nums, forward, fast);
+            if (slow == -1 || fast == -1 || slow == fast) break;
+        }
+        if (slow != -1 && slow == fast) return true;
+        int idx = i;
+        while (nums[idx] != 0 && (nums[idx] > 0) == forward) {
+            int nextIdx = next(nums, forward, idx);
+            nums[idx] = 0;
+            idx = nextIdx;
+            if (idx == -1) break;
+        }
+    }
+    return false;
+}
+private int next(int[] nums, boolean forward, int i) {
+    boolean dir = nums[i] > 0;
+    if (dir != forward) return -1;
+    int n = nums.length;
+    int next = ((i + nums[i]) % n + n) % n;
+    if (next == i) return -1;
+    return next;
+}`,
+        example: "Input: nums = [2,-1,1,2,2] → Output: true",
+        trace: `Start at 0: slow=0, fast=0. Move: slow=2, fast=1. Continue... slow and fast meet at 0 (cycle).`
+      },
+      twin: {
+        title: "Maximum Twin Sum of a Linked List",
+        explain: "Find the maximum twin sum. Use fast/slow to find the middle, reverse the second half, and compare pairs.",
+        steps: [
+          "1. Use fast/slow to find the middle.",
+          "2. Reverse the second half.",
+          "3. Compare pairs from both halves for max sum."
+        ],
+        code: `public int pairSum(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    ListNode prev = null, curr = slow;
+    while (curr != null) {
+        ListNode nextTemp = curr.next;
+        curr.next = prev;
+        prev = curr;
+        curr = nextTemp;
+    }
+    int maxSum = 0;
+    ListNode first = head, second = prev;
+    while (second != null) {
+        maxSum = Math.max(maxSum, first.val + second.val);
+        first = first.next;
+        second = second.next;
+    }
+    return maxSum;
+}`,
+        example: "Input: head = [5,4,2,1] → Output: 6",
+        trace: `First half: 5→4, Second half reversed: 1→2. Twin sums: 5+1=6, 4+2=6. Max=6.`
+      },
+      split: {
+        title: "Split a Circular Linked List",
+        explain: "Split a circular linked list into two halves using fast and slow pointers.",
+        steps: [
+          "1. Use fast/slow to find the middle.",
+          "2. Set slow.next to head (first half circular).",
+          "3. Set fast.next to slow.next (second half circular)."
+        ],
+        code: `public void splitList(Node head, Node[] result) {
+    if (head == null) return;
+    Node slow = head, fast = head;
+    while (fast.next != head && fast.next.next != head) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    if (fast.next.next == head) fast = fast.next;
+    Node head1 = head, head2 = slow.next;
+    slow.next = head1;
+    fast.next = head2;
+    result[0] = head1;
+    result[1] = head2;
+}`,
+        example: "Input: head = [1,2,3,4,5] (circular) → Output: [1,2,3], [4,5] (both circular)",
+        trace: `slow at 3, fast at 5. First half: 1→2→3, Second half: 4→5. Both circular.`
+      },
+      duplicate: {
+        title: "Find the Duplicate Number",
+        explain: "Find the duplicate in an array by treating values as pointers and using fast/slow to find the cycle.",
+        steps: [
+          "1. Use fast/slow to find intersection in value-as-pointer cycle.",
+          "2. Reset slow to start, move both by 1 until they meet.",
+          "3. Meeting point is the duplicate."
+        ],
+        code: `public int findDuplicate(int[] nums) {
+    int slow = nums[0], fast = nums[0];
+    do {
+        slow = nums[slow];
+        fast = nums[nums[fast]];
+    } while (slow != fast);
+    slow = nums[0];
+    while (slow != fast) {
+        slow = nums[slow];
+        fast = nums[fast];
+    }
+    return slow;
+}`,
+        example: "Input: nums = [1,3,4,2,2] → Output: 2",
+        trace: `slow=1, fast=1 → slow=3, fast=2 → slow=2, fast=4 ... meet at 2 (duplicate)`
+      },
+      cycle2: {
+        title: "Linked List Cycle II",
+        explain: "Find the node where the cycle begins. After detecting a cycle, move one pointer to head and both one step at a time.",
+        steps: [
+          "1. Use fast/slow to detect cycle.",
+          "2. Move one pointer to head, both step by step.",
+          "3. Meeting point is the cycle start."
+        ],
+        code: `public ListNode detectCycle(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow == fast) {
+            ListNode entry = head;
+            while (entry != slow) {
+                entry = entry.next;
+                slow = slow.next;
+            }
+            return entry;
+        }
+    }
+    return null;
+}`,
+        example: "Input: head = [3,2,0,-4], pos = 1 → Output: Reference to node with value 2",
+        trace: `slow and fast meet at node 2. Move entry from head and slow from meeting point; both meet at node 2 (cycle start).`
+      }
+    };
+
+    function showDemo() {
+      const val = document.getElementById('demo-select').value;
+      const d = demos[val];
+      let stepsHtml = '';
+      if (d.steps) {
+        stepsHtml = '<b>How it works:</b><ul>' + d.steps.map(s => `<li class="step">${s}</li>`).join('') + '</ul>';
+      }
+      let animationBtn = '';
+      // Animation links for some problems
+      if (val === 'cycle') {
+        animationBtn = `<button class="animation-btn" onclick="window.open('fast_slow_pointer_cycle_animation.html', '_blank')">▶️ View Animation</button>`;
+      } else if (val === 'middle') {
+        animationBtn = `<button class="animation-btn" onclick="window.open('fast_slow_pointer_find_middle_linear.html', '_blank')">▶️ View Animation</button>`;
+      } else if (val === 'happy') {
+        animationBtn = `<button class="animation-btn" onclick="window.open('../animations/happy_number_animation.html', '_blank')">▶️ View Animation</button>`;
+      } else if (val === 'circular') {
+        animationBtn = `<button class="animation-btn" onclick="window.open('../animations/circular_array_loop_animation.html', '_blank')">▶️ View Animation</button>`;
+      } else if (val === 'twin') {
+        animationBtn = `<button class="animation-btn" onclick="window.open('../animations/maximum_twin_sum_of_a_linked_list_animation.html', '_blank')">▶️ View Animation</button>`;
+      } else if (val === 'split') {
+        animationBtn = `<button class="animation-btn" onclick="window.open('../animations/split_circular_linked_list_animation.html', '_blank')">▶️ View Animation</button>`;
+      } else if (val === 'duplicate') {
+        animationBtn = `<button class="animation-btn" onclick="window.open('../animations/find_the_duplicate_number_animation.html', '_blank')">▶️ View Animation</button>`;
+      } else if (val === 'cycle2') {
+        animationBtn = `<button class="animation-btn" onclick="window.open('../animations/linked_list_cycle_ii_animation.html', '_blank')">▶️ View Animation</button>`;
+      }
+      let traceBtn = '';
+      if (d.trace) {
+        traceBtn = `<button class="trace-btn" onclick="showTrace('${val}')">Show Trace</button>
+        <div id="trace-output" class="trace-output" style="display:none;"></div>`;
+      }
+      document.getElementById('demo-content').innerHTML = `
+        <h4>${d.title}</h4>
+        <div class="explain">${d.explain}</div>
+        ${stepsHtml}
+        <pre><code>${d.code}</code></pre>
+        <div class="example"><b>Example:</b> ${d.example}</div>
+        ${animationBtn}
+        ${traceBtn}
+      `;
+    }
+    function showTrace(val) {
+      const d = demos[val];
+      const traceDiv = document.getElementById('trace-output');
+      if (traceDiv) {
+        traceDiv.style.display = 'block';
+        traceDiv.textContent = d.trace || 'No trace available.';
+      }
+    }
+    window.onload = showDemo;
+  </script>
+</body>
+</html>
