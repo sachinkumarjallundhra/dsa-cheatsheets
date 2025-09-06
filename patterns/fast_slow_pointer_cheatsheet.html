@@ -194,6 +194,15 @@ while (fast != null && fast.next != null) {
               Detect if a linked list has a cycle using fast and slow pointers.
             </div>
           </div>
+          <div class="how-it-works-problem" style="display:none; margin:12px 0 0 0; padding:14px 18px; background:#f8f9fa; border-radius:8px; border:1px solid #e3e6ea;">
+            <b>How it works:</b>
+            <ul style="margin-top:8px;">
+              <li>Start both pointers at the head.</li>
+              <li>Move slow by 1 step, fast by 2 steps each iteration.</li>
+              <li>If fast meets slow, a cycle exists.</li>
+              <li>If fast reaches the end, no cycle exists.</li>
+            </ul>
+          </div>
         </li>
         <li>
           <div class="problem-card easy">
@@ -209,6 +218,14 @@ while (fast != null && fast.next != null) {
               Find the middle node of a linked list.
             </div>
           </div>
+          <div class="how-it-works-problem" style="display:none; margin:12px 0 0 0; padding:14px 18px; background:#f8f9fa; border-radius:8px; border:1px solid #e3e6ea;">
+            <b>How it works:</b>
+            <ul style="margin-top:8px;">
+              <li>Start both pointers at the head.</li>
+              <li>Move slow by 1 step, fast by 2 steps each iteration.</li>
+              <li>When fast reaches the end, slow will be at the middle node.</li>
+            </ul>
+          </div>
         </li>
         <li>
           <div class="problem-card easy">
@@ -223,6 +240,14 @@ while (fast != null && fast.next != null) {
             <div class="problem-notes">
               Detect cycles in number transformation using fast and slow pointers.
             </div>
+          </div>
+          <div class="how-it-works-problem" style="display:none; margin:12px 0 0 0; padding:14px 18px; background:#f8f9fa; border-radius:8px; border:1px solid #e3e6ea;">
+            <b>How it works:</b>
+            <ul style="margin-top:8px;">
+              <li>Apply the transformation to both pointers: slow moves one step, fast moves two steps.</li>
+              <li>If fast meets slow, a cycle exists (not a happy number).</li>
+              <li>If fast reaches 1, the number is happy.</li>
+            </ul>
           </div>
         </li>
       </ul>
@@ -243,6 +268,15 @@ while (fast != null && fast.next != null) {
               Check if a linked list is a palindrome using fast and slow pointers.
             </div>
           </div>
+          <div class="how-it-works-problem" style="display:none; margin:12px 0 0 0; padding:14px 18px; background:#f8f9fa; border-radius:8px; border:1px solid #e3e6ea;">
+            <b>How it works:</b>
+            <ul style="margin-top:8px;">
+              <li>Use fast/slow pointers to find the middle of the list.</li>
+              <li>Reverse the second half of the list.</li>
+              <li>Compare the first and second halves node by node.</li>
+              <li>If all nodes match, the list is a palindrome.</li>
+            </ul>
+          </div>
         </li>
         <li>
           <div class="problem-card medium">
@@ -257,6 +291,15 @@ while (fast != null && fast.next != null) {
             <div class="problem-notes">
               Detect cycles in a circular array using fast and slow pointers.
             </div>
+          </div>
+          <div class="how-it-works-problem" style="display:none; margin:12px 0 0 0; padding:14px 18px; background:#f8f9fa; border-radius:8px; border:1px solid #e3e6ea;">
+            <b>How it works:</b>
+            <ul style="margin-top:8px;">
+              <li>Use array indices as pointers.</li>
+              <li>Move slow by 1 step, fast by 2 steps, wrapping around the array.</li>
+              <li>If fast meets slow, a cycle exists.</li>
+              <li>Check direction and length to ensure a valid cycle.</li>
+            </ul>
           </div>
         </li>
         <li>
@@ -273,6 +316,15 @@ while (fast != null && fast.next != null) {
               Find the maximum twin sum in a linked list using fast and slow pointers and list reversal.
             </div>
           </div>
+          <div class="how-it-works-problem" style="display:none; margin:12px 0 0 0; padding:14px 18px; background:#f8f9fa; border-radius:8px; border:1px solid #e3e6ea;">
+            <b>How it works:</b>
+            <ul style="margin-top:8px;">
+              <li>Use fast/slow pointers to find the middle of the list.</li>
+              <li>Reverse the second half of the list.</li>
+              <li>Pair nodes from the start and end, summing their values.</li>
+              <li>Track the maximum twin sum.</li>
+            </ul>
+          </div>
         </li>
         <li>
           <div class="problem-card medium">
@@ -287,6 +339,14 @@ while (fast != null && fast.next != null) {
             <div class="problem-notes">
               Split a circular linked list into two halves using fast and slow pointers.
             </div>
+          </div>
+          <div class="how-it-works-problem" style="display:none; margin:12px 0 0 0; padding:14px 18px; background:#f8f9fa; border-radius:8px; border:1px solid #e3e6ea;">
+            <b>How it works:</b>
+            <ul style="margin-top:8px;">
+              <li>Use fast/slow pointers to find the middle of the circular list.</li>
+              <li>Break the list into two halves at the middle and end.</li>
+              <li>Reconnect the ends to form two separate circular lists.</li>
+            </ul>
           </div>
         </li>
       </ul>
@@ -307,6 +367,14 @@ while (fast != null && fast.next != null) {
               Find the duplicate in an array using fast and slow pointers (Floyd's Tortoise and Hare).
             </div>
           </div>
+          <div class="how-it-works-problem" style="display:none; margin:12px 0 0 0; padding:14px 18px; background:#f8f9fa; border-radius:8px; border:1px solid #e3e6ea;">
+            <b>How it works:</b>
+            <ul style="margin-top:8px;">
+              <li>Treat array values as pointers (indices).</li>
+              <li>Use fast/slow pointers to detect a cycle (duplicate).</li>
+              <li>Once they meet, reset one pointer to start and move both by 1 step to find the duplicate.</li>
+            </ul>
+          </div>
         </li>
         <li>
           <div class="problem-card hard">
@@ -321,6 +389,14 @@ while (fast != null && fast.next != null) {
             <div class="problem-notes">
               Find the node where the cycle begins in a linked list using fast and slow pointers.
             </div>
+          </div>
+          <div class="how-it-works-problem" style="display:none; margin:12px 0 0 0; padding:14px 18px; background:#f8f9fa; border-radius:8px; border:1px solid #e3e6ea;">
+            <b>How it works:</b>
+            <ul style="margin-top:8px;">
+              <li>Use fast/slow pointers to detect a cycle.</li>
+              <li>When they meet, reset one pointer to the head.</li>
+              <li>Move both pointers one step at a time; where they meet again is the cycle start.</li>
+            </ul>
           </div>
         </li>
       </ul>
@@ -450,5 +526,38 @@ while (fast != null && fast.next != null) {
     margin-top: 2px;
 }
 </style>
+<script>
+  // Show/hide the "How it works" for each problem card
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.problem-card').forEach(function(card) {
+      // Create a toggle button
+      let btn = document.createElement('button');
+      btn.textContent = 'How it works';
+      btn.style.margin = '8px 0 0 0';
+      btn.style.padding = '4px 14px';
+      btn.style.borderRadius = '6px';
+      btn.style.border = '1px solid #dee2e6';
+      btn.style.background = '#e9ecef';
+      btn.style.cursor = 'pointer';
+      btn.style.fontSize = '0.97em';
+      btn.style.color = '#007bff';
+      btn.style.transition = 'background 0.2s, color 0.2s';
+      btn.onmouseover = function() { btn.style.background = '#007bff'; btn.style.color = '#fff'; };
+      btn.onmouseout = function() { btn.style.background = '#e9ecef'; btn.style.color = '#007bff'; };
+
+      // Find the next .how-it-works-problem div after this card
+      let howDiv = card.nextElementSibling;
+      while (howDiv && !howDiv.classList.contains('how-it-works-problem')) {
+        howDiv = howDiv.nextElementSibling;
+      }
+      if (howDiv) {
+        btn.onclick = function() {
+          howDiv.style.display = (howDiv.style.display === 'none' || howDiv.style.display === '') ? 'block' : 'none';
+        };
+        card.appendChild(btn);
+      }
+    });
+  });
+</script>
 </body>
 </html>
